@@ -1,0 +1,6 @@
+-- Migration number: 0001 2025-04-26T19:23:41.252Z
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY,
+  text TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
