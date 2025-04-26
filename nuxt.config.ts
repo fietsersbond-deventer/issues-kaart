@@ -1,27 +1,30 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-04-25',
-  // Nuxt 4 directory structure and features
-  // https://nuxt.com/docs/getting-started/upgrade#testing-nuxt-4
+  compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
-  // Nuxt Modules
-  // https://nuxt.com/modules
-  modules: [
-    '@nuxthub/core',
-    '@nuxt/eslint'
-  ],
+  modules: ["@nuxthub/core", "@nuxt/eslint", "@sidebase/nuxt-auth"],
   hub: {
     database: true,
     kv: true,
     blob: true,
     cache: true,
   },
+  auth: {
+    baseURL: process.env.AUTH_ORIGIN,
+    provider: {
+      type: "local",
+      endpoints: {
+        signIn: { path: "/api/auth/login", method: "post" },
+        signOut: { path: "/api/auth/logout", method: "post" },
+        signUp: { path: "/api/auth/register", method: "post" },
+        getSession: { path: "/api/auth/session", method: "get" },
+      },
+    },
+  },
   nitro: {
     experimental: {
-      // Enable Server API documentation within NuxtHub
-      openAPI: true
-    }
+      openAPI: true,
+    },
   },
-  // Development
   devtools: { enabled: true },
-})
+});
