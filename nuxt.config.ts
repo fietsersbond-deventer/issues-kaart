@@ -5,9 +5,9 @@ export default defineNuxtConfig({
   modules: ["@nuxthub/core", "@nuxt/eslint", "@sidebase/nuxt-auth"],
   hub: {
     database: true,
-    kv: true,
-    blob: true,
-    cache: true,
+    kv: false,
+    blob: false,
+    cache: false,
   },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
