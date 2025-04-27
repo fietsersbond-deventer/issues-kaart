@@ -22,7 +22,7 @@
         type="password"
         required
         class="w-full px-3 py-2 border rounded"
-        autocomplet="password"
+        autocomplete="current-password"
       />
     </div>
 
