@@ -1,6 +1,12 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
+import type { User } from "~~/server/database/schema";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 
 export default defineEventHandler(async (event) => {
+  const db = hubDatabase();
+
   const { username, password } = await readBody(event);
 
   if (!username || !password) {
@@ -10,12 +16,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const result = await hubDatabase().query(
-    "SELECT id, username, password_hash FROM users WHERE username = $1",
-    [username]
-  );
+  const user: User | null = await db
+    .prepare("SELECT id, username, password_hash FROM users WHERE username = ?")
+    .bind(username)
+    .first();
 
-  const user = result.rows[0];
   if (!user) {
     throw createError({
       statusCode: 401,
@@ -23,7 +28,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  console.log("Attempting login for username:", username);
+  console.log("Retrieved password hash:", user.password_hash);
+
   const isValidPassword = await bcrypt.compare(password, user.password_hash);
+  console.log("Password comparison result:", isValidPassword);
+
   if (!isValidPassword) {
     throw createError({
       statusCode: 401,
@@ -32,16 +42,22 @@ export default defineEventHandler(async (event) => {
   }
 
   // Create session
-  const session = await sign({
-    id: user.id,
-    username: user.username,
-  });
+  const session = jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+    },
+    JWT_SECRET,
+    {
+      expiresIn: "1h",
+    }
+  );
 
   return {
     user: {
       id: user.id,
       username: user.username,
     },
-    session,
+    token: session,
   };
 });

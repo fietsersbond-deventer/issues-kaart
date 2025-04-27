@@ -74,8 +74,9 @@ async function handleSubmit() {
     // After successful registration, log the user in
     const { signIn } = useAuth();
     await signIn({ username: username.value, password: password.value });
-    navigateTo("/");
+    return navigateTo("/");
   } catch (e: any) {
+    console.error(e);
     error.value = e.data?.message || "Registration failed";
   } finally {
     isLoading.value = false;
