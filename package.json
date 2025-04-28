@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --inspect",
     "build": "nuxt build",
     "preview": "npx nuxthub preview",
     "deploy": "npx nuxthub deploy",
@@ -14,7 +14,9 @@
   "dependencies": {
     "@auth/core": "^0.39.0",
     "@nuxt/eslint": "^1.3.0",
+    "@nuxt/ui": "^3.1.0",
     "@nuxthub/core": "^0.8.25",
+    "@nuxtjs/leaflet": "1.2.6",
     "@sidebase/nuxt-auth": "^0.10.1",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",

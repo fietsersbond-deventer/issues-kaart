@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import type { User } from "~~/server/database/schema";
 
 const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 
@@ -22,8 +23,11 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const session = await verify(token);
-    return session;
+    const session: User = (await verify(token)) as User;
+    return {
+      id: session.id,
+      username: session.username,
+    };
   } catch {
     throw createError({
       statusCode: 401,

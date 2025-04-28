@@ -2,7 +2,14 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
-  modules: ["@nuxthub/core", "@nuxt/eslint", "@sidebase/nuxt-auth"],
+  css: ["@/assets/css/main.css"],
+  modules: [
+    "@nuxthub/core",
+    "@nuxt/eslint",
+    "@sidebase/nuxt-auth",
+    "@nuxtjs/leaflet",
+    "@nuxt/ui",
+  ],
   hub: {
     database: true,
     kv: false,
@@ -13,6 +20,13 @@ export default defineNuxtConfig({
     baseURL: process.env.AUTH_ORIGIN,
     provider: {
       type: "local",
+      session: {
+        // hiervan wordt de typescript SessionData type gegenereerd
+        dataType: {
+          id: "string",
+          username: "string",
+        },
+      },
       endpoints: {
         signIn: { path: "/api/auth/login", method: "post" },
         signOut: { path: "/api/auth/logout", method: "post" },
