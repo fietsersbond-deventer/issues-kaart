@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen w-screen">
+  <div class="w-full h-full">
     <LMap
       v-model:zoom="zoom"
       v-model:center="center"
@@ -7,7 +7,12 @@
       :use-global-leaflet="true"
       @ready="mapLoaded"
     >
-      <LTileLayer :url layer-type="base" name="OpenStreetMap" :attribution />
+      <LTileLayer
+        :url="url"
+        layer-type="base"
+        name="OpenStreetMap"
+        :attribution="attribution"
+      />
       <LControlZoom position="topright" />
       <LControlScale position="bottomright" />
     </LMap>

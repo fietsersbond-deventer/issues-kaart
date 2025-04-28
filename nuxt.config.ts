@@ -15,6 +15,7 @@ export default defineNuxtConfig({
     "@sidebase/nuxt-auth",
     "@nuxtjs/leaflet",
     "@nuxt/ui",
+    "@compodium/nuxt",
   ],
   hub: {
     database: true,
