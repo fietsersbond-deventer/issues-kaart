@@ -1,3 +1,6 @@
 <template>
-  <main>Hello World</main>
+  <Map />
 </template>
+<style>
+@import "leaflet/dist/leaflet.css";
+</style>

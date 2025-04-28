@@ -20,8 +20,10 @@
     "@sidebase/nuxt-auth": "^0.10.1",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
     "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
+    "leaflet": "^1.9.4",
     "nock": "^14.0.4",
     "nuxt": "^3.16.2"
   },
