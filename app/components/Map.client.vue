@@ -4,14 +4,10 @@
       v-model:zoom="zoom"
       v-model:center="center"
       v-model:bounds="bounds"
+      :use-global-leaflet="true"
       @ready="mapLoaded"
     >
-      <LTileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        layer-type="base"
-        name="OpenStreetMap"
-        attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-      />
+      <LTileLayer :url layer-type="base" name="OpenStreetMap" :attribution />
       <LControlZoom position="topright" />
       <LControlScale position="bottomright" />
     </LMap>
@@ -20,6 +16,10 @@
 
 <script setup lang="ts">
 import { isBoundsTuples } from "~/types/IBounds";
+
+// voorkom fout bij het importeren van leaflet
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import L from "leaflet";
 import {
   LMap,
   LTileLayer,
@@ -29,9 +29,16 @@ import {
 import type { Map } from "leaflet";
 
 const bounds = ref<[[number, number], [number, number]]>([
-  [50.75, 3.2],
-  [53.7, 7.22],
+  [52.229059859924256, 6.04574203491211],
+  [52.30207457819167, 6.30941390991211],
 ]);
+
+const apikey = useRuntimeConfig().public.apikey;
+const url = `https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${apikey}`;
+const mapLink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+const ocmlink = '<a href="http://thunderforest.com/">Thunderforest</a>';
+const attribution = `&copy; ${mapLink} contributors, &copy; contributers ${ocmlink} `;
+
 // try {
 //   const parsed = JSON.parse(useRuntimeConfig().env.bounds);
 //   if (parsed) {

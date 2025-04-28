@@ -4,11 +4,11 @@ export default defineNuxtConfig({
   future: { compatibilityVersion: 4 },
   ssr: false,
   css: ["@/assets/css/main.css"],
-  // runtimeConfig: {
-  //   env: {
-  //     extent: "[[50.75, 3.2], [53.7, 7.22]]",
-  //   },
-  // },
+  runtimeConfig: {
+    public: {
+      apikey: "1c05c1c698bc42d2bf452ad2d15def50",
+    },
+  },
   modules: [
     "@nuxthub/core",
     "@nuxt/eslint",
