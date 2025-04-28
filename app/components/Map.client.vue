@@ -1,6 +1,11 @@
 <template>
   <div class="h-screen w-screen">
-    <LMap :zoom="zoom" :center="center" :bounds="bounds" @ready="mapLoaded">
+    <LMap
+      v-model:zoom="zoom"
+      v-model:center="center"
+      v-model:bounds="bounds"
+      @ready="mapLoaded"
+    >
       <LTileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         layer-type="base"
@@ -36,13 +41,13 @@ const bounds = ref<[[number, number], [number, number]]>([
 //   console.error("Invalid bounds format in runtime config:", e);
 //   throw new Error("Invalid bounds format in runtime config");
 // }
-const center: [number, number] = [
+const center = ref<[number, number]>([
   (bounds.value[0][0] + bounds.value[1][0]) / 2,
   (bounds.value[0][1] + bounds.value[1][1]) / 2,
-];
+]);
 
 console.log("bounds:", bounds.value);
-console.log("Center:", center);
+console.log("Center:", center.value);
 
 const zoom = ref(8);
 
