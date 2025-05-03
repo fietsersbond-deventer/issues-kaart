@@ -6,30 +6,23 @@ useSeoMeta({
 </script>
 
 <template>
-  <UApp>
-    <!-- <UContainer>
-      <header class="border-b border-gray-200 py-4">
-        <UNavigationMenu>
-          <template #brand>
-            <NuxtLink to="/" class="text-xl font-bold"
-              >Fietsersbond Deventer</NuxtLink
-            >
+  <NuxtLayout>
+    <NuxtLoadingIndicator />
+
+    <v-app>
+      <v-main>
+        <NuxtErrorBoundary>
+          <!-- You use the default slot to render your content -->
+          <template #error="{ error, clearError }">
+            You can display the error locally here: {{ error }}
+            <button @click="clearError">This will clear the error.</button>
           </template>
-          <template #links>
-            <div class="flex gap-4">
-              <NuxtLink to="/">Kaart</NuxtLink>
-            </div>
-          </template>
-          <template #right>
-            <div class="flex items-center gap-4">
-              <UButton to="/login" variant="ghost">Login</UButton>
-            </div>
-          </template>
-        </UNavigationMenu>
-      </header>
-    </UContainer> -->
-    <NuxtPage />
-  </UApp>
+        </NuxtErrorBoundary>
+
+        <NuxtPage />
+      </v-main>
+    </v-app>
+  </NuxtLayout>
 </template>
 
 <style>

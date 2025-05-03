@@ -1,6 +1,6 @@
 <template>
   <div>
-    <UButton
+    <v-btn
       v-for="tool in drawingTools"
       :key="tool.type"
       :icon="tool.icon"

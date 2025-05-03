@@ -1,3 +1,5 @@
+import vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
@@ -14,9 +16,8 @@ export default defineNuxtConfig({
     "@nuxt/eslint",
     "@sidebase/nuxt-auth",
     "@nuxtjs/leaflet",
-    "@nuxt/ui",
-    "@compodium/nuxt",
     "nuxt-mdi",
+    "vuetify-nuxt-module",
   ],
   hub: {
     database: true,
@@ -49,4 +50,20 @@ export default defineNuxtConfig({
     },
   },
   devtools: { enabled: true },
+  vuetify: {
+    moduleOptions: {
+      /* module specific options */
+    },
+    vuetifyOptions: {
+      /* vuetify options */
+      components: ["VApp", "VMain", "VContainer", "VRow", "VCol"],
+    },
+  },
+  vite: {
+    vue: {
+      template: {
+        transformAssetUrls,
+      },
+    },
+  },
 });

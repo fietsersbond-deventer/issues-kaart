@@ -1,22 +1,20 @@
 <template>
-  <div class="w-full h-full relative">
-    <MapBase
-      v-model:zoom="zoom"
-      v-model:center="center"
-      v-model:bounds="bounds"
-      :url
-      :attribution
-      @map-loaded="mapLoaded"
+  <MapBase
+    v-model:zoom="zoom"
+    v-model:center="center"
+    v-model:bounds="bounds"
+    :url
+    :attribution
+    @map-loaded="mapLoaded"
+  >
+    <MapEditableFeatureLayer />
+    <!-- Drawing toolbar -->
+    <div
+      class="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 flex gap-2"
     >
-      <MapEditableFeatureLayer />
-      <!-- Drawing toolbar -->
-      <div
-        class="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 flex gap-2"
-      >
-        <Toolbar />
-      </div>
-    </MapBase>
-  </div>
+      <Toolbar />
+    </div>
+  </MapBase>
 </template>
 
 <script setup lang="ts">
