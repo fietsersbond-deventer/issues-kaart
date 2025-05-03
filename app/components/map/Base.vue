@@ -59,6 +59,9 @@ function mapLoaded(map: Map) {
 }
 
 const fitted = ref(false);
+const emit = defineEmits<{
+  (e: "mapLoaded", map: Map): void;
+}>();
 watch(
   [bounds, mapObject],
   () => {
@@ -73,6 +76,7 @@ watch(
       if (!fitted.value) {
         mapObject.value.fitBounds(bounds.value);
         fitted.value = true;
+        emit("mapLoaded", mapObject.value);
       }
     }
   },

@@ -6,46 +6,20 @@
       v-model:bounds="bounds"
       :url
       :attribution
-      @ready="mapLoaded"
+      @map-loaded="mapLoaded"
     >
       <MapEditableFeatureLayer />
       <!-- Drawing toolbar -->
       <div
         class="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 flex gap-2"
       >
-        <UButton
-          v-for="tool in drawingTools"
-          :key="tool.type"
-          :icon="tool.icon"
-          color="primary"
-          :aria-label="tool.label"
-          @click="startDrawing(tool.type)"
-        />
+        <Toolbar />
       </div>
-
-      <!-- Description input dialog -->
-      <UModal v-model="showDescriptionModal">
-        <div class="p-4">
-          <h2 class="text-lg font-bold mb-4">Add Issue Description</h2>
-          <UTextarea
-            v-model="description"
-            placeholder="Describe the issue..."
-            class="mb-4"
-          />
-          <div class="flex justify-end gap-2">
-            <UButton variant="outline" @click="cancelIssue">Cancel</UButton>
-            <UButton @click="submitIssue">Submit</UButton>
-          </div>
-        </div>
-      </UModal>
     </MapBase>
   </div>
 </template>
 
 <script setup lang="ts">
-import { isBoundsTuples } from "~/types/IBounds";
-import "leaflet/dist/leaflet.css";
-
 import type { Map, FeatureGroup } from "leaflet";
 import type { Geometry } from "geojson";
 
@@ -65,6 +39,11 @@ const center = ref<[number, number]>([
   (bounds.value[0][1] + bounds.value[1][1]) / 2,
 ]);
 
+const reactiveFeature = new ReactiveFeature();
+
+useMapEventBus().provide();
+useEditableFeature().provide(reactiveFeature);
+
 const zoom = ref(8);
 const mapObject = ref<Map | null>(null);
 const drawLayer = ref<FeatureGroup | null>(null);
@@ -74,49 +53,20 @@ const showDescriptionModal = ref(false);
 const description = ref("");
 let currentGeometry: Geometry | null = null;
 
-const drawingTools = [
-  { type: "point", icon: "i-lucide-map-pin", label: "Draw Point" },
-  { type: "line", icon: "i-lucide-arrow-right", label: "Draw Line" },
-  { type: "polygon", icon: "i-lucide-triangle", label: "Draw Polygon" },
-];
+watch(
+  reactiveFeature.feature,
+  (feature) => {
+    if (feature) {
+      // prepareAreaOfInterest(feature);
+    } else {
+      // areaOfInterest.value = null;
+    }
+  },
+  { deep: true }
+);
 
 function mapLoaded(map: Map) {
   mapObject.value = map;
-
-  // Handle draw events
-  map.on("draw:created", (e: any) => {
-    const layer = e.layer;
-    if (drawLayer.value && layer) {
-      drawLayer.value.addLayer(layer);
-      currentGeometry = (layer as any).toGeoJSON().geometry;
-      showDescriptionModal.value = true;
-    }
-  });
-
-  // Setup resize handling
-  const resizeObserver = new ResizeObserver(() => {
-    map.invalidateSize();
-  });
-  resizeObserver.observe(map.getContainer());
-}
-
-const eventBus = useMapEventBus().inject();
-function startDrawing(tool: string) {
-  if (!mapObject.value) return;
-
-  switch (tool) {
-    case "point":
-      eventBus?.emit("startPoint");
-      break;
-    case "line":
-      eventBus?.emit("startLine");
-      break;
-    case "polygon":
-      eventBus?.emit("startPolygon");
-      break;
-    default:
-      return;
-  }
 }
 
 async function submitIssue() {
@@ -136,7 +86,6 @@ async function submitIssue() {
     description.value = "";
     showDescriptionModal.value = false;
     currentGeometry = null;
-    activeDrawingTool.value = null;
 
     // Optionally refresh the issues on the map
     // await refreshIssues();
@@ -153,25 +102,4 @@ function cancelIssue() {
   currentGeometry = null;
   activeDrawingTool.value = null;
 }
-
-const fitted = ref(false);
-watch(
-  [bounds, mapObject],
-  () => {
-    if (mapObject.value && bounds.value) {
-      const [[south, west], [north, east]] = parseBounds(bounds.value);
-      if (!isBoundsTuples(bounds.value)) {
-        bounds.value = [
-          [south, west],
-          [north, east],
-        ];
-      }
-      if (!fitted.value) {
-        mapObject.value.fitBounds(bounds.value);
-        fitted.value = true;
-      }
-    }
-  },
-  { immediate: true, deep: true }
-);
 </script>

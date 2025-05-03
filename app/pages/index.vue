@@ -7,13 +7,6 @@
   </div>
 </template>
 
-<script setup lang="ts">
-const reactiveFeature = new ReactiveFeature();
-
-useMapEventBus().provide();
-useEditableFeature().provide(reactiveFeature);
-</script>
-
 <style>
 .leaflet-container {
   height: 100%;

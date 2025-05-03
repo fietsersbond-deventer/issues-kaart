@@ -2,10 +2,10 @@
   <div />
 </template>
 <script setup lang="ts">
-import { LIcon } from "#components";
 import type {
   Marker,
   Polygon,
+  Polyline,
   FitBoundsOptions,
   LeafletKeyboardEvent,
   Map,
@@ -18,7 +18,7 @@ const mapPromise = useMap().injectMap();
 const editableFeature = useEditableFeature().inject();
 let map: Map | null | undefined = null;
 
-const layerRef = shallowRef<Polygon | Marker | null>(null);
+const layerRef = shallowRef<Polygon | Polyline | Marker | null>(null);
 
 const editableEnabledStyle = computed(() => ({
   color: "blue",
