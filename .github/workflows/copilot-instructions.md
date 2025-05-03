@@ -24,6 +24,7 @@
 # technical stack
 
 - nuxt for both frontend and backend
+- pnpm for package management
 
 You are a senior TypeScript programmer with experience in the NestJS framework and a preference for clean programming and design patterns. Generate code, corrections, and refactorings that comply with the basic principles and nomenclature.
 
@@ -129,3 +130,8 @@ You are a senior TypeScript programmer with experience in the NestJS framework a
 
 - Use the geojson types from the @types/geojson package.
 - try to use any function from the turfjs library to manipulate geojson objects. If you need to use turfjs, use the turfjs types from the @types/turf package.
+
+# user interface
+
+- Use the @nuxt/ui package for UI components.
+- use Dutch in all user interface texts

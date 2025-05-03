@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
   ssr: false,
-  css: ["@/assets/css/main.css"],
+  css: ["@/assets/css/main.css", "leaflet/dist/leaflet.css"],
   runtimeConfig: {
     public: {
       apikey: "1c05c1c698bc42d2bf452ad2d15def50",
@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     "@nuxtjs/leaflet",
     "@nuxt/ui",
     "@compodium/nuxt",
+    "nuxt-mdi",
   ],
   hub: {
     database: true,
