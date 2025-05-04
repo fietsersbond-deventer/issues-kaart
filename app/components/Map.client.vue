@@ -9,11 +9,6 @@
   >
     <MapEditableFeatureLayer />
     <!-- Drawing toolbar -->
-    <div
-      class="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 flex gap-2"
-    >
-      <Toolbar />
-    </div>
   </MapBase>
 </template>
 
@@ -39,7 +34,6 @@ const center = ref<[number, number]>([
 
 const reactiveFeature = new ReactiveFeature();
 
-useMapEventBus().provide();
 useEditableFeature().provide(reactiveFeature);
 
 const zoom = ref(8);
@@ -98,6 +92,5 @@ function cancelIssue() {
   description.value = "";
   showDescriptionModal.value = false;
   currentGeometry = null;
-  activeDrawingTool.value = null;
 }
 </script>

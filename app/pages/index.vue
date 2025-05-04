@@ -4,30 +4,39 @@
 
     <v-navigation-drawer>
       <v-list nav>
-        <v-list-item title="Drawer left" link />
+        <div
+          class="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-2 flex gap-2"
+        >
+          <Toolbar />
+        </div>
       </v-list>
     </v-navigation-drawer>
 
     <v-navigation-drawer location="right">
-      <v-list nav>
-        <v-list-item title="Drawer right" link />
-      </v-list>
+      <NuxtPage />
     </v-navigation-drawer>
 
     <v-main class="d-flex align-center justify-center" height="100%">
-      <v-container>
+      <v-container class="fill-height">
         <v-sheet
           border="dashed md"
           color="surface-light"
-          height="200"
+          class="fill-height d-flex"
           rounded="lg"
           width="100%"
         >
-          <Map /> </v-sheet
-      ></v-container>
+          <Map class="flex-grow-1" />
+        </v-sheet>
+      </v-container>
     </v-main>
   </v-layout>
 </template>
+
+<script setup lang="ts">
+import { useMapEventBus } from "~/composables/useMapEventBus";
+
+useMapEventBus().provide();
+</script>
 
 <style>
 .leaflet-container {
