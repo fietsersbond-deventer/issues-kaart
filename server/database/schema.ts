@@ -8,7 +8,9 @@ export type User = {
 export type Issue = {
   id: number;
   user_id: number;
+  title: string;
   description: string;
+  color: string;
   geometry: string; // GeoJSON stored as string
   created_at: Date;
 };

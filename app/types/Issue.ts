@@ -2,7 +2,9 @@ import type { Geometry } from "geojson";
 
 export type Issue = {
   id: string;
+  title: string;
   description: string;
-  geometry: Geometry;
-  created_at: Date;
+  color: string;
+  geometry?: Geometry;
+  created_at?: Date;
 };

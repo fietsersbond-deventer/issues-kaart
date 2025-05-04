@@ -8,7 +8,7 @@ type IssueWithUser = Issue & {
 export default defineEventHandler(async () => {
   const result = await hubDatabase()
     .prepare(
-      `SELECT i.id, i.user_id, i.description, i.geometry, i.created_at, u.username 
+      `SELECT i.id, i.user_id, i.title, i.description, i.color, i.geometry, i.created_at, u.username 
        FROM issues i 
        LEFT JOIN users u ON i.user_id = u.id 
        ORDER BY i.created_at DESC`
@@ -24,7 +24,9 @@ export default defineEventHandler(async () => {
       id: issue.id,
       user_id: issue.user_id,
       username: issue.username,
+      title: issue.title,
       description: issue.description,
+      color: issue.color,
       created_at: issue.created_at,
     },
   }));

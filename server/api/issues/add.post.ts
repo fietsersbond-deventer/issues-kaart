@@ -3,13 +3,18 @@ import type { Issue } from "../../database/schema";
 import { booleanValid } from "@turf/boolean-valid";
 
 export default defineEventHandler(async (event) => {
-  const { description, geometry }: { description: string; geometry: Geometry } =
+  const {
+    title,
+    description,
+    color,
+    geometry,
+  }: { title: string; description: string; color: string; geometry: Geometry } =
     await readBody(event);
 
-  if (!description || !geometry) {
+  if (!title || !description || !geometry) {
     throw createError({
       statusCode: 400,
-      message: "Description and geometry are required",
+      message: "Title, description and geometry are required",
     });
   }
 
@@ -33,9 +38,9 @@ export default defineEventHandler(async (event) => {
 
   const issue = await hubDatabase()
     .prepare(
-      "INSERT INTO issues (user_id, description, geometry) VALUES (?1, ?2, ?3) RETURNING id, user_id, description, geometry, created_at"
+      "INSERT INTO issues (user_id, title, description, color, geometry) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, user_id, title, description, color, geometry, created_at"
     )
-    .bind(user.id, description, geometry)
+    .bind(user.id, title, description, color || "#2196F3", geometry)
     .first<Issue>();
 
   if (!issue) {
