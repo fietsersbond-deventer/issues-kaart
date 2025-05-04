@@ -32,10 +32,6 @@ const center = ref<[number, number]>([
   (bounds.value[0][1] + bounds.value[1][1]) / 2,
 ]);
 
-const reactiveFeature = new ReactiveFeature();
-
-useEditableFeature().provide(reactiveFeature);
-
 const zoom = ref(8);
 const mapObject = ref<Map | null>(null);
 const drawLayer = ref<FeatureGroup | null>(null);
@@ -44,6 +40,8 @@ const drawLayer = ref<FeatureGroup | null>(null);
 const showDescriptionModal = ref(false);
 const description = ref("");
 let currentGeometry: Geometry | null = null;
+
+const reactiveFeature = useEditableFeature().inject();
 
 watch(
   reactiveFeature.feature,
