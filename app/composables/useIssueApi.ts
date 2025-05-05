@@ -4,7 +4,7 @@ export const useIssueApi = () => {
   const { token } = useAuth();
 
   function list() {
-    return useFetch<Issue[]>("/api/issues", {
+    return $fetch<Issue[]>("/api/issues", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -13,15 +13,15 @@ export const useIssueApi = () => {
   }
 
   function get(id: string) {
-    return useFetch<Issue>(`/api/issues/${id}`, {
+    return $fetch<Issue>(`/api/issues/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
   }
-  function create(body: Issue) {
-    return useFetch<Issue>("/api/issues", {
+  async function create(body: Issue) {
+    const issue = await $fetch<Issue>("/api/issues", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -29,10 +29,12 @@ export const useIssueApi = () => {
       },
       body,
     });
+    console.log("issue", issue);
+    return issue;
   }
 
   function update(id: string, data: Issue) {
-    return useFetch<Issue>(`/api/issues/${id}`, {
+    return $fetch<Issue>(`/api/issues/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

@@ -80,8 +80,8 @@ async function onSubmit() {
     } else {
       // Create new issue
       const result = await create(issue.value);
-      if (result.data.value?.id) {
-        return navigateTo(`/kaart/${result.data.value.id}`);
+      if (result.id) {
+        return navigateTo(`/kaart/${result.id}`);
       }
     }
   }
