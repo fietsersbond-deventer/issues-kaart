@@ -35,29 +35,38 @@ export default defineEventHandler(async (event) => {
   console.log("Password comparison result:", isValidPassword);
 
   if (!isValidPassword) {
+    console.log("Invalid password for username:", username);
     throw createError({
       statusCode: 401,
       message: "Invalid credentials",
     });
   }
 
-  // Create session
-  const session = jwt.sign(
-    {
-      id: user.id,
-      username: user.username,
-    },
-    JWT_SECRET,
-    {
-      expiresIn: "1h",
-    }
-  );
+  try {
+    // Create session
+    const session = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
-  return {
-    user: {
-      id: user.id,
-      username: user.username,
-    },
-    token: session,
-  };
+    return {
+      user: {
+        id: user.id,
+        username: user.username,
+      },
+      token: session,
+    };
+  } catch (error) {
+    console.error("Error creating JWT:", error);
+    throw createError({
+      statusCode: 500,
+      message: (error as Error).message || "Internal server error",
+    });
+  }
 });

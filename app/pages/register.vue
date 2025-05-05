@@ -4,7 +4,7 @@
       <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
       <RegisterForm />
       <p class="mt-4 text-center">
-        Already have an account?
+        Heb je al een account?
         <NuxtLink to="/login" class="text-blue-500 hover:text-blue-600">
           Login
         </NuxtLink>

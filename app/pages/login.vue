@@ -6,7 +6,7 @@
       <p class="mt-4 text-center">
         Nog geen account?
         <NuxtLink to="/register" class="text-blue-500 hover:text-blue-600">
-          Register
+          Registreer hier
         </NuxtLink>
       </p>
     </div>

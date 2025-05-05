@@ -1,28 +1,30 @@
 export default defineEventHandler(async (event) => {
   const path = getRequestPath(event);
 
-  // Skip auth for public routes
-  if (path.startsWith("/api/auth/") || !path.startsWith("/api/")) {
-    return;
-  }
+  return;
 
-  const token = getHeader(event, "authorization")?.replace("Bearer ", "");
+  // // Skip auth for public routes
+  // if (path.startsWith("/api/auth/") || !path.startsWith("/api/")) {
+  //   return;
+  // }
 
-  if (!token) {
-    throw createError({
-      statusCode: 401,
-      message: "Unauthorized",
-    });
-  }
+  // const token = getHeader(event, "authorization")?.replace("Bearer ", "");
 
-  try {
-    const session = await verify(token);
-    // Add user to event context
-    event.context.user = session;
-  } catch (error) {
-    throw createError({
-      statusCode: 401,
-      message: "Invalid session",
-    });
-  }
+  // if (!token) {
+  //   throw createError({
+  //     statusCode: 401,
+  //     message: "Unauthorized",
+  //   });
+  // }
+
+  // try {
+  //   const session = await verify(token);
+  //   // Add user to event context
+  //   event.context.user = session;
+  // } catch (error) {
+  //   throw createError({
+  //     statusCode: 401,
+  //     message: "Invalid session",
+  //   });
+  // }
 });

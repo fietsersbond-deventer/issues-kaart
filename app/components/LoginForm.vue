@@ -50,7 +50,7 @@ async function handleSubmit() {
 
   try {
     await signIn({ username: username.value, password: password.value });
-    navigateTo("/");
+    return navigateTo("/");
   } catch {
     error.value = "Invalid credentials";
   } finally {
