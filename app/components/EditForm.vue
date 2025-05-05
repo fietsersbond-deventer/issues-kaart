@@ -2,7 +2,7 @@
   <div>
     <v-form
       v-if="issue"
-      v-form="valid"
+      v-model="valid"
       lazy-validation
       @submit.prevent="onSubmit"
     >
@@ -13,7 +13,7 @@
         required
       />
 
-      <v-text-area
+      <v-textarea
         v-model.trim="issue.description"
         label="Beschrijving"
         :rules="[(v:string) => !!v || 'Beschrijving is verplicht']"
@@ -28,6 +28,8 @@
       />
 
       <v-btn type="submit" color="primary">Opslaan</v-btn>
+
+      <pre>{{ issue }}</pre>
     </v-form>
   </div>
 </template>
@@ -38,7 +40,7 @@ import type { Issue } from "~/types/Issue";
 const valid = ref(true);
 const route = useRoute();
 const { id } = route.params;
-let issue: Issue | null = null;
+const issue = ref<Issue | null>(null);
 
 const { get, update, create } = useIssueApi();
 
@@ -51,7 +53,7 @@ if (!id) {
   // Handle invalid id type
   navigateTo("/kaart");
 } else if (id === "new") {
-  issue = {
+  issue.value = {
     id: "",
     title: "",
     description: "",
@@ -60,33 +62,40 @@ if (!id) {
   };
 } else {
   // Fetch existing item
-  const issue = await get(id as string);
-  if (!issue) {
+  const data = await get(id as string);
+  if (!data) {
+    issue.value = null;
     // Handle issue not found
     navigateTo("/kaart");
+  } else {
+    issue.value = data;
   }
 }
 
 async function onSubmit() {
-  if (issue && valid.value) {
-    if (issue.id) {
+  if (issue.value && valid.value) {
+    if (issue.value.id) {
       // Update existing issue
-      await update(issue.id, {
-        ...issue,
-        geometry: reactiveFeature.feature.value?.geometry,
-      });
+      await update(issue.value.id, issue.value);
     } else {
       // Create new issue
-      const result = await create({
-        ...issue,
-        geometry: reactiveFeature.feature.value?.geometry,
-      });
+      const result = await create(issue.value);
       if (result.data.value?.id) {
         return navigateTo(`/kaart/${result.data.value.id}`);
       }
     }
   }
 }
+
+watch(
+  reactiveFeature.feature,
+  (newValue) => {
+    if (issue.value) {
+      issue.value.geometry = newValue?.geometry;
+    }
+  },
+  { immediate: true, deep: true }
+);
 </script>
 
 <style></style>

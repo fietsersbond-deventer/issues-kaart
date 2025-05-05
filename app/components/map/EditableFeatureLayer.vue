@@ -254,6 +254,7 @@ onMounted(async () => {
   map.on("editable:created", function ({ layer }: { layer: Polygon | Marker }) {
     layerRef.value = layer;
     addHandlers(layer);
+    navigateTo("/kaart/new");
   });
 
   // as soon as the user finished drawing, store its coordinates

@@ -20,14 +20,14 @@ export const useIssueApi = () => {
       },
     });
   }
-  function create(data: Issue) {
+  function create(body: Issue) {
     return useFetch<Issue>("/api/issues", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token.value}`,
       },
-      body: JSON.stringify(data),
+      body,
     });
   }
 

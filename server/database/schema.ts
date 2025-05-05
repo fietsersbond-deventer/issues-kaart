@@ -7,7 +7,6 @@ export type User = {
 
 export type Issue = {
   id: number;
-  user_id: number;
   title: string;
   description: string;
   color: string;

@@ -1,6 +1,3 @@
 <template>
-  <h1>{{ params.id }}</h1>
+  <EditForm />
 </template>
-<script setup lang="ts">
-const { params } = useRoute("kaart-id");
-</script>

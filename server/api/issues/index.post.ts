@@ -33,15 +33,14 @@ export default defineEventHandler(async (event) => {
     throw error;
   }
 
-  // Get authenticated user from context (set by auth middleware)
-  const user = event.context.user;
-
   const issue = await hubDatabase()
     .prepare(
-      "INSERT INTO issues (user_id, title, description, color, geometry) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, user_id, title, description, color, geometry, created_at"
+      "INSERT INTO issues (title, description, color, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, color, geometry, created_at"
     )
-    .bind(user.id, title, description, color || "#2196F3", geometry)
-    .first<Issue>();
+    .bind(title, description, color || "#2196F3", JSON.stringify(geometry))
+    .first();
+
+  console.log("Inserted issue:", issue);
 
   if (!issue) {
     throw createError({
