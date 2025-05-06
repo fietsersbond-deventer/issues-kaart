@@ -13,12 +13,43 @@
         required
       />
 
-      <v-textarea
-        v-model.trim="issue.description"
-        label="Beschrijving"
-        :rules="[(v:string) => !!v || 'Beschrijving is verplicht']"
-        required
-      />
+      <div class="mb-4">
+        <label class="text-subtitle-1 mb-1">Beschrijving</label>
+        <Editor
+          v-model="issue.description"
+          :api-key="config.public.tinymceApiKey"
+          :init="{
+            height: 300,
+            menubar: false,
+            plugins: ['link', 'lists'],
+            toolbar: [
+              { name: 'history', items: ['undo', 'redo'] },
+              { name: 'styles', items: ['styles'] },
+              { name: 'formatting', items: ['bold', 'italic'] },
+              {
+                name: 'alignment',
+                items: [
+                  'alignleft',
+                  'aligncenter',
+                  'alignright',
+                  'alignjustify',
+                ],
+              },
+              { name: 'indentation', items: ['outdent', 'indent'] },
+            ],
+            formats: {
+              h1: { block: 'h1' },
+              h2: { block: 'h2' },
+              h3: { block: 'h3' },
+              p: { block: 'p' },
+            },
+            statusbar: false,
+          }"
+        />
+        <div v-if="!issue.description" class="text-error text-caption mt-1">
+          Beschrijving is verplicht
+        </div>
+      </div>
 
       <v-color-picker
         v-model="issue.color"
@@ -44,6 +75,7 @@
 </template>
 
 <script lang="ts" setup>
+import Editor from "@tinymce/tinymce-vue";
 import type { Issue } from "~/types/Issue";
 
 const valid = ref(true);
@@ -62,6 +94,7 @@ const swatches = [
 ];
 
 const reactiveFeature = useEditableFeature().inject();
+const config = useRuntimeConfig();
 
 if (!id) {
   // Redirect to new item creation

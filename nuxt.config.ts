@@ -9,6 +9,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apikey: "1c05c1c698bc42d2bf452ad2d15def50",
+      tinymceApiKey: "", // Add your TinyMCE API key in .env file
     },
   },
   modules: [

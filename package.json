@@ -19,6 +19,7 @@
     "@nuxthub/core": "^0.8.25",
     "@nuxtjs/leaflet": "1.2.6",
     "@sidebase/nuxt-auth": "^0.10.1",
+    "@tinymce/tinymce-vue": "^6.1.0",
     "@turf/boolean-valid": "^7.2.0",
     "@turf/invariant": "^7.2.0",
     "@turf/meta": "^7.2.0",
