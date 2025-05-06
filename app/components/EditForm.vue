@@ -69,7 +69,7 @@
         >
       </div>
 
-      <pre>{{ issue }}</pre>
+      <pre v-if="!isProduction">{{ issue }}</pre>
     </v-form>
   </div>
 </template>
@@ -82,6 +82,8 @@ const valid = ref(true);
 const route = useRoute();
 const { id } = route.params;
 const issue = ref<Issue | null>(null);
+
+const isProduction = useRuntimeConfig().isProduction;
 
 const { get, update, create, remove } = useIssueApi();
 
