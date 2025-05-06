@@ -24,5 +24,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return issue;
+  return {
+    ...issue,
+    geometry: JSON.parse(issue.geometry),
+  } as Issue;
 });

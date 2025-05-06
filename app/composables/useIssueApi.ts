@@ -3,13 +3,11 @@ import type { Issue } from "@/types/Issue";
 export const useIssueApi = () => {
   const { token } = useAuth();
 
-  function list() {
-    return $fetch<Issue[]>("/api/issues", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  const { data: issues, refresh: refreshIssues } =
+    useFetch<Issue[]>("/api/issues");
+
+  function refresh() {
+    refreshIssues();
   }
 
   function get(id: string) {
@@ -29,33 +27,38 @@ export const useIssueApi = () => {
       },
       body,
     });
-    console.log("issue", issue);
+    refresh();
     return issue;
   }
 
-  function update(id: string, data: Issue) {
-    return $fetch<Issue>(`/api/issues/${id}`, {
-      method: "PUT",
+  async function update(id: string, data: Partial<Issue>) {
+    const issue = await $fetch<Issue>(`/api/issues/${id}`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token.value}`,
       },
-      body: JSON.stringify(data),
+      body: data,
     });
+
+    refresh();
+    return issue;
   }
 
-  function remove(id: string) {
-    return useFetch<{ id: string }>(`/api/issues/${id}`, {
+  async function remove(id: string) {
+    const result = await $fetch<{ id: string }>(`/api/issues/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token.value}`,
       },
     });
+    refresh();
+    return { id: result.id };
   }
 
   return {
-    list,
+    issues,
     get,
     create,
     update,
