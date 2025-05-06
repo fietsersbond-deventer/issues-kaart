@@ -25,9 +25,18 @@
         mode="hex"
         label="Kleur"
         hide-inputs
+        hide-sliders
+        hide-canvas
+        show-swatches
+        :swatches
       />
 
-      <v-btn type="submit" color="primary">Opslaan</v-btn>
+      <div class="d-flex gap-4">
+        <v-btn type="submit" color="primary">Opslaan</v-btn>
+        <v-btn v-if="issue.id" color="error" @click="onDelete"
+          >Verwijderen</v-btn
+        >
+      </div>
 
       <pre>{{ issue }}</pre>
     </v-form>
@@ -42,7 +51,15 @@ const route = useRoute();
 const { id } = route.params;
 const issue = ref<Issue | null>(null);
 
-const { get, update, create } = useIssueApi();
+const { get, update, create, remove } = useIssueApi();
+
+const swatches = [
+  ["#FF0000", "#FF5555", "#FFAAAA"], // Very Bad (Red)
+  ["#FFAA00", "#FFBB55", "#FFCCAA"], // Bad (Orange)
+  ["#FFFF00", "#FFFF55", "#FFFFAA"], // Neutral (Yellow)
+  ["#AAFF00", "#BBFF55", "#CCFFAA"], // Good (Light Green)
+  ["#00FF00", "#55FF55", "#AAFFAA"], // Very Good (Green)
+];
 
 const reactiveFeature = useEditableFeature().inject();
 
@@ -58,7 +75,10 @@ if (!id) {
     title: "",
     description: "",
     color: "#2196F3",
-    geometry: reactiveFeature.feature.value?.geometry,
+    geometry: reactiveFeature.feature.value?.geometry || {
+      type: "Point",
+      coordinates: [0, 0],
+    },
   };
 } else {
   // Fetch existing item
@@ -87,10 +107,21 @@ async function onSubmit() {
   }
 }
 
+async function onDelete() {
+  if (issue.value?.id) {
+    if (
+      confirm(`Weet je zeker dat je '${issue.value.title}' wilt verwijderen?`)
+    ) {
+      await remove(issue.value.id);
+      navigateTo("/kaart");
+    }
+  }
+}
+
 watch(
   reactiveFeature.feature,
   (newValue) => {
-    if (issue.value) {
+    if (issue.value && newValue) {
       issue.value.geometry = newValue?.geometry;
     }
   },
