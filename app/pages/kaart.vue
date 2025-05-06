@@ -10,23 +10,16 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-navigation-drawer location="right">
-      <NuxtPage />
-    </v-navigation-drawer>
-
     <v-main class="d-flex align-center justify-center" height="100%" fluid>
       <v-container class="fill-height">
-        <v-sheet
-          border="dashed md"
-          color="surface-light"
-          class="fill-height d-flex"
-          rounded="lg"
-          width="100%"
-        >
+        <v-sheet color="surface-light" class="fill-height d-flex" width="100%">
           <Map class="flex-grow-1" />
         </v-sheet>
       </v-container>
     </v-main>
+    <v-navigation-drawer location="right" width="400" app>
+      <NuxtPage />
+    </v-navigation-drawer>
   </v-layout>
 </template>
 
