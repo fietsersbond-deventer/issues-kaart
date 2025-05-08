@@ -1,10 +1,8 @@
 <template>
-  <MapBase
+  <MapContainer
     v-model:zoom="zoom"
     v-model:center="center"
     v-model:bounds="bounds"
-    :url
-    :attribution
   >
     <MapEditableFeatureLayer />
 
@@ -47,9 +45,7 @@
     >
       <LTooltip :content="issue.title" :sticky="true" />
     </LPolyline>
-
-    /></MapBase
-  >
+  </MapContainer>
 </template>
 
 <script setup lang="ts">
@@ -62,12 +58,6 @@ const bounds = ref<[[number, number], [number, number]]>([
   [52.229059859924256, 6.04574203491211],
   [52.30207457819167, 6.30941390991211],
 ]);
-
-const apikey = useRuntimeConfig().public.apikey;
-const url = `https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${apikey}`;
-const mapLink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
-const ocmlink = '<a href="http://thunderforest.com/">Thunderforest</a>';
-const attribution = `&copy; ${mapLink} contributors, &copy; contributers ${ocmlink}`;
 
 const center = ref<[number, number]>([
   (bounds.value[0][0] + bounds.value[1][0]) / 2,
