@@ -49,10 +49,15 @@ async function handleSubmit() {
   isLoading.value = true;
 
   try {
-    await signIn({ username: username.value, password: password.value });
-    return navigateTo("/");
-  } catch {
-    error.value = "Invalid credentials";
+    await signIn(
+      { username: username.value, password: password.value },
+      {
+        callbackUrl: "/",
+      }
+    );
+  } catch (e) {
+    console.error(e);
+    error.value = "Ongeldige gebruikersnaam of wachtwoord.";
   } finally {
     isLoading.value = false;
   }

@@ -25,8 +25,11 @@ export default defineEventHandler(async (event) => {
   try {
     const session: User = (await verify(token)) as User;
     return {
-      id: session.id,
-      username: session.username,
+      accessToken: token,
+      user: {
+        id: session.id,
+        username: session.username,
+      },
     };
   } catch {
     throw createError({
