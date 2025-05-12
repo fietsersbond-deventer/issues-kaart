@@ -22,10 +22,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: "pnpm"
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Clean and reinstall dependencies
+        run: |
+          pnpm install
+          pnpm update
 
       - name: Ensure NuxtHub module is installed
         run: pnpx nuxthub@latest ensure
