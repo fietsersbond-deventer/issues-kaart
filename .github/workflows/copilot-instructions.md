@@ -134,5 +134,5 @@ You are a senior TypeScript programmer with experience in the NestJS framework a
 
 # user interface
 
-- Use the @nuxt/ui package for UI components.
+- Use vuetify for UI components.
 - use Dutch in all user interface texts
