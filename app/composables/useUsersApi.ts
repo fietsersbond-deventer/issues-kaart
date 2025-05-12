@@ -7,12 +7,15 @@ interface User {
 export const useUsersApi = () => {
   const { token } = useAuth();
 
+  const headers = computed(() => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token.value?.replace("Bearer ", "")}`,
+  }));
+
   const { data: users, refresh: refreshUsers } = useFetch<User[]>(
     "/api/admin/users",
     {
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      },
+      headers: headers.value,
     }
   );
 
@@ -23,10 +26,7 @@ export const useUsersApi = () => {
   async function create(body: { username: string; password: string }) {
     const user = await $fetch<User>("/api/admin/users", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token.value}`,
-      },
+      headers: headers.value,
       body,
     });
     refresh();
@@ -38,10 +38,7 @@ export const useUsersApi = () => {
       `/api/admin/users/${id}`,
       {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token.value}`,
-        },
+        headers: headers.value,
       }
     );
     refresh();

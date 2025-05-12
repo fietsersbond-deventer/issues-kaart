@@ -2,11 +2,10 @@ import type { H3Event, EventHandlerRequest } from "h3";
 
 export function requireUserSession(event: H3Event<EventHandlerRequest>) {
   const user = event.context.user;
-  return;
-  // if (!user) {
-  //   throw createError({
-  //     statusCode: 401,
-  //     message: "Unauthorized",
-  //   });
-  // }
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      message: "Unauthorized",
+    });
+  }
 }

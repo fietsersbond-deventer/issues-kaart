@@ -3,6 +3,11 @@ import type { Issue } from "@/types/Issue";
 export const useIssueApi = () => {
   const { token } = useAuth();
 
+  const headers = computed(() => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token.value?.replace("Bearer ", "")}`,
+  }));
+
   const { data: issues, refresh: refreshIssues } =
     useFetch<Issue[]>("/api/issues");
 
@@ -21,10 +26,7 @@ export const useIssueApi = () => {
   async function create(body: Issue) {
     const issue = await $fetch<Issue>("/api/issues", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token.value}`,
-      },
+      headers: headers.value,
       body,
     });
     refresh();
@@ -34,10 +36,7 @@ export const useIssueApi = () => {
   async function update(id: string, data: Partial<Issue>) {
     const issue = await $fetch<Issue>(`/api/issues/${id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token.value}`,
-      },
+      headers: headers.value,
       body: data,
     });
 
@@ -48,10 +47,7 @@ export const useIssueApi = () => {
   async function remove(id: string) {
     const result = await $fetch<{ id: string }>(`/api/issues/${id}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token.value}`,
-      },
+      headers: headers.value,
     });
     refresh();
     return { id: result.id };
