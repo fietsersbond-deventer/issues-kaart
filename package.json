@@ -38,6 +38,7 @@
     "nock": "^14.0.4",
     "nuxt": "^3.17.0",
     "nuxt-mdi": "2.1.1",
+    "postmark": "^4.0.5",
     "vuetify-nuxt-module": "0.18.6"
   },
   "devDependencies": {
