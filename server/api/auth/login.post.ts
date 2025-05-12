@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { User } from "~~/server/database/schema";
-import * as jose from 'jose';
+import * as jose from "jose";
 
 const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 
@@ -49,8 +49,8 @@ export default defineEventHandler(async (event) => {
       id: user.id,
       username: user.username,
     })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('1h')
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1h")
       .sign(secret);
 
     return {

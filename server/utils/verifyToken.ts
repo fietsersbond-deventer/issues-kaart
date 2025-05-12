@@ -1,4 +1,4 @@
-import * as jose from 'jose';
+import * as jose from "jose";
 import type { User } from "../database/schema";
 const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 

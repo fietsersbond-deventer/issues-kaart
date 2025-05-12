@@ -1,8 +1,8 @@
 export default defineNuxtRouteMiddleware((to) => {
   const { status } = useAuth();
 
-  // Skip middleware for login and register pages
-  if (to.path === "/login" || to.path === "/register") {
+  // Skip middleware for login page
+  if (to.path === "/login") {
     return;
   }
 
