@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { User } from "~~/server/database/schema";
-import jwt from "jsonwebtoken";
+import * as jose from 'jose';
 
 const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 
@@ -44,16 +44,14 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Create session
-    const session = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
-    );
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const session = await new jose.SignJWT({
+      id: user.id,
+      username: user.username,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('1h')
+      .sign(secret);
 
     return {
       user: {
