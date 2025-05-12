@@ -1,6 +1,20 @@
 <template>
   <v-layout class="rounded rounded-md border" height="100%">
-    <v-app-bar color="surface-variant" title="Application bar" />
+    <v-app-bar color="surface-variant">
+      <v-app-bar-title>Application bar</v-app-bar-title>
+      <v-spacer />
+      <template v-if="status === 'authenticated'">
+        <v-btn to="/admin/users" variant="text" prepend-icon="mdi-cog">
+          Beheer
+        </v-btn>
+        <v-btn variant="text" prepend-icon="mdi-logout" @click="handleLogout">
+          Uitloggen
+        </v-btn>
+      </template>
+      <v-btn v-else to="/login" variant="text" prepend-icon="mdi-login">
+        Login
+      </v-btn>
+    </v-app-bar>
 
     <v-navigation-drawer>
       <v-list nav>
@@ -26,11 +40,15 @@
 <script setup lang="ts">
 import { useMapEventBus } from "~/composables/useMapEventBus";
 
+const { status, signOut } = useAuth();
 useMapEventBus().provide();
 
 const reactiveFeature = new ReactiveFeature();
-
 useEditableFeature().provide(reactiveFeature);
+
+async function handleLogout() {
+  await signOut({ callbackUrl: "/" });
+}
 </script>
 
 <style>
