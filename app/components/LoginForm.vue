@@ -13,14 +13,11 @@
       prepend-inner-icon="mdi-account"
     />
 
-    <v-text-field
+    <PasswordInput
       v-model="password"
       label="Wachtwoord"
-      type="password"
-      required
       :disabled="isLoading"
-      autocomplete="current-password"
-      prepend-inner-icon="mdi-lock"
+      disable-strength-check
     />
 
     <v-btn
@@ -29,8 +26,18 @@
       block
       color="primary"
       size="large"
+      class="mb-3"
     >
       Login
+    </v-btn>
+
+    <v-btn
+      variant="text"
+      block
+      :disabled="isLoading"
+      @click="navigateTo('/reset-password')"
+    >
+      Wachtwoord vergeten?
     </v-btn>
   </v-form>
 </template>
