@@ -21,6 +21,6 @@
 <script setup lang="ts">
 definePageMeta({
   title: "Beheer",
-  middleware: ["admin"],
+  // middleware: ["admin"],
 });
 </script>
