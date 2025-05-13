@@ -19,10 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import type { NavigationGuard } from "#vue-router";
-
 definePageMeta({
   title: "Beheer",
-  middleware: ["admin"] as unknown as NavigationGuard[],
+  middleware: ["admin"],
 });
 </script>

@@ -6,70 +6,74 @@
       lazy-validation
       @submit.prevent="onSubmit"
     >
-      <v-text-field
-        v-model.trim="issue.title"
-        label="Titel"
-        :rules="[(v:string) => !!v || 'Titel is verplicht']"
-        required
-      />
+      <v-card>
+        <v-card-text>
+          <v-text-field
+            v-model.trim="issue.title"
+            label="Titel"
+            :rules="[(v:string) => !!v || 'Titel is verplicht']"
+            required
+          />
 
-      <div class="mb-4">
-        <label class="text-subtitle-1 mb-1">Beschrijving</label>
-        <Editor
-          v-model="issue.description"
-          :api-key="config.public.tinymceApiKey"
-          :init="{
-            height: 300,
-            menubar: false,
-            plugins: ['link', 'lists'],
-            toolbar: [
-              { name: 'history', items: ['undo', 'redo'] },
-              { name: 'styles', items: ['styles'] },
-              { name: 'formatting', items: ['bold', 'italic'] },
-              {
-                name: 'alignment',
-                items: [
-                  'alignleft',
-                  'aligncenter',
-                  'alignright',
-                  'alignjustify',
+          <div class="mb-4">
+            <label class="text-subtitle-1 mb-1">Beschrijving</label>
+            <Editor
+              v-model="issue.description"
+              :api-key="config.public.tinymceApiKey"
+              :init="{
+                height: 300,
+                menubar: false,
+                plugins: ['link', 'lists'],
+                toolbar: [
+                  { name: 'history', items: ['undo', 'redo'] },
+                  { name: 'styles', items: ['styles'] },
+                  { name: 'formatting', items: ['bold', 'italic'] },
+                  {
+                    name: 'alignment',
+                    items: [
+                      'alignleft',
+                      'aligncenter',
+                      'alignright',
+                      'alignjustify',
+                    ],
+                  },
+                  { name: 'indentation', items: ['outdent', 'indent'] },
                 ],
-              },
-              { name: 'indentation', items: ['outdent', 'indent'] },
-            ],
-            formats: {
-              h1: { block: 'h1' },
-              h2: { block: 'h2' },
-              h3: { block: 'h3' },
-              p: { block: 'p' },
-            },
-            statusbar: false,
-          }"
-        />
-        <div v-if="!issue.description" class="text-error text-caption mt-1">
-          Beschrijving is verplicht
-        </div>
-      </div>
+                formats: {
+                  h1: { block: 'h1' },
+                  h2: { block: 'h2' },
+                  h3: { block: 'h3' },
+                  p: { block: 'p' },
+                },
+                statusbar: false,
+              }"
+            />
+            <div v-if="!issue.description" class="text-error text-caption mt-1">
+              Beschrijving is verplicht
+            </div>
+          </div>
 
-      <v-color-picker
-        v-model="issue.color"
-        mode="hex"
-        label="Kleur"
-        hide-inputs
-        hide-sliders
-        hide-canvas
-        show-swatches
-        :swatches
-      />
+          <v-color-picker
+            v-model="issue.color"
+            mode="hex"
+            label="Kleur"
+            hide-inputs
+            hide-sliders
+            hide-canvas
+            show-swatches
+            :swatches
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-btn type="submit" color="primary">Opslaan</v-btn>
+          <v-btn color="secondary" @click="showDialog = false">Annuleren</v-btn>
+          <v-btn v-if="issue.id" color="error" @click="onDelete"
+            >Verwijderen</v-btn
+          >
+        </v-card-actions>
 
-      <div class="d-flex gap-4">
-        <v-btn type="submit" color="primary">Opslaan</v-btn>
-        <v-btn v-if="issue.id" color="error" @click="onDelete"
-          >Verwijderen</v-btn
-        >
-      </div>
-
-      <pre v-if="!isProduction">{{ issue }}</pre>
+        <!-- <pre v-if="!isProduction">{{ issue }}</pre> -->
+      </v-card>
     </v-form>
   </div>
 </template>
@@ -79,13 +83,12 @@ import Editor from "@tinymce/tinymce-vue";
 import type { Issue } from "~/types/Issue";
 
 const valid = ref(true);
-const route = useRoute();
-const { id } = route.params;
-const issue = ref<Issue | null>(null);
 
 const isProduction = useRuntimeConfig().isProduction;
+const showDialog = defineModel<boolean>("dialog", { required: false });
+const issue = defineModel<Issue>({ required: true });
 
-const { get, update, create, remove } = useIssueApi();
+const { update, create, remove } = useIssueApi();
 
 const swatches = [
   ["#FF0000", "#FF5555", "#FFAAAA"], // Very Bad (Red)
@@ -98,35 +101,6 @@ const swatches = [
 const reactiveFeature = useEditableFeature().inject();
 const config = useRuntimeConfig();
 
-if (!id) {
-  // Redirect to new item creation
-  navigateTo("/kaart");
-} else if (typeof id !== "string") {
-  // Handle invalid id type
-  navigateTo("/kaart");
-} else if (id === "new") {
-  issue.value = {
-    id: "",
-    title: "",
-    description: "",
-    color: "#2196F3",
-    geometry: reactiveFeature.feature.value?.geometry || {
-      type: "Point",
-      coordinates: [0, 0],
-    },
-  };
-} else {
-  // Fetch existing item
-  const data = await get(id as string);
-  if (!data) {
-    issue.value = null;
-    // Handle issue not found
-    navigateTo("/kaart");
-  } else {
-    issue.value = data;
-  }
-}
-
 async function onSubmit() {
   if (issue.value && valid.value) {
     if (issue.value.id) {
@@ -136,10 +110,12 @@ async function onSubmit() {
       // Create new issue
       const result = await create(issue.value);
       if (result.id) {
+        showDialog.value = false;
         return navigateTo(`/kaart/${result.id}`);
       }
     }
   }
+  showDialog.value = false;
 }
 
 async function onDelete() {
@@ -148,7 +124,8 @@ async function onDelete() {
       confirm(`Weet je zeker dat je '${issue.value.title}' wilt verwijderen?`)
     ) {
       await remove(issue.value.id);
-      navigateTo("/kaart");
+      showDialog.value = false;
+      return navigateTo("/kaart");
     }
   }
 }
