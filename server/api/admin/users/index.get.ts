@@ -1,5 +1,7 @@
+import { requireAdminSession } from "~~/server/utils/requireUserSession";
+
 export default defineEventHandler(async (event) => {
-  requireUserSession(event);
+  requireAdminSession(event);
 
   const db = hubDatabase();
   const { results: users } = await db

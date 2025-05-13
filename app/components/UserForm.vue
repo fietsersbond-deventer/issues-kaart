@@ -12,7 +12,9 @@
     <v-select
       v-model="form.role"
       label="Rol"
-      :items="['user', 'admin']"
+      :items="roles"
+      item-title="label"
+      item-value="name"
       required
     />
     <PasswordInput
@@ -39,6 +41,7 @@
 
 <script setup lang="ts">
 import type { User } from '~/types/User';
+import { useRoles } from '~/composables/useRoles';
 
 const props = defineProps<{
   user?: Pick<User, 'id' | 'username' | 'name' | 'role'>;
@@ -56,6 +59,8 @@ const emit = defineEmits<{
 }>();
 
 const editMode = computed(() => !!props.user);
+const { getAllRoles } = useRoles();
+const roles = getAllRoles();
 
 const form = ref({
   username: props.user?.username ?? '',
