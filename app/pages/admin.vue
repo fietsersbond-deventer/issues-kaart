@@ -1,11 +1,5 @@
 <template>
   <v-layout>
-    <v-app-bar color="primary" title="Beheer">
-      <template #prepend>
-        <v-btn icon="mdi-arrow-left" variant="text" to="/kaart" />
-      </template>
-    </v-app-bar>
-
     <v-navigation-drawer permanent>
       <v-list>
         <v-list-item
@@ -18,14 +12,17 @@
 
     <v-main>
       <v-container>
-        <slot />
+        <NuxtPage />
       </v-container>
     </v-main>
   </v-layout>
 </template>
 
 <script setup lang="ts">
+import type { NavigationGuard } from "#vue-router";
+
 definePageMeta({
-  middleware: 'admin'
+  title: "Beheer",
+  middleware: ["admin"] as unknown as NavigationGuard[],
 });
 </script>

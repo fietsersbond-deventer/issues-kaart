@@ -60,6 +60,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  title: "Wachtwoord herstellen",
+});
+
 const email = ref("");
 const error = ref("");
 const success = ref("");

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: "Fietsersbond Deventer - Meldingen",
-  description: "Meldingen op de kaart",
+  title: "Fietsersbond Deventer - Projecten",
+  description: "Projecten op de kaart",
 });
 </script>
 
@@ -10,6 +10,7 @@ useSeoMeta({
     <NuxtLoadingIndicator />
 
     <v-app>
+      <NavBar />
       <v-main>
         <NuxtErrorBoundary>
           <!-- You use the default slot to render your content -->

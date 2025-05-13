@@ -104,7 +104,7 @@
 import type { User } from "~/types/User";
 
 definePageMeta({
-  layout: "admin",
+  title: "Gebruikers",
 });
 
 const { users, create, update, remove } = useUsersApi();
@@ -130,13 +130,23 @@ function editUser(user: User) {
 
 async function createUser(data: {
   username: string;
-  password: string;
   name: string | null;
   role: string;
+  password?: string;
 }) {
+  if (!data.password) {
+    console.error("Password is required for new users");
+    return;
+  }
+
   loading.value = true;
   try {
-    await create(data);
+    await create({
+      username: data.username,
+      password: data.password,
+      name: data.name,
+      role: data.role,
+    });
     showNewUserDialog.value = false;
   } catch (error) {
     console.error("Error creating user:", error);

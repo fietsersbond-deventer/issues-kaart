@@ -1,3 +1,9 @@
+<script setup lang="ts">
+definePageMeta({
+  title: "Inloggen",
+});
+</script>
+
 <template>
   <v-layout>
     <v-main>
@@ -5,7 +11,7 @@
         <v-row align="center" justify="center">
           <v-col cols="12" sm="8" md="6" lg="4">
             <v-card class="pa-8">
-              <h1 class="text-h4 mb-6 text-center">Login</h1>
+              <h1 class="text-h4 mb-6 text-center">Inloggen</h1>
               <LoginForm />
             </v-card>
           </v-col>
