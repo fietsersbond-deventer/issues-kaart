@@ -4,7 +4,11 @@
       <v-card-title class="d-flex align-center">
         <span>Gebruikers</span>
         <v-spacer />
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="showNewUserDialog = true">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="showNewUserDialog = true"
+        >
           Nieuwe gebruiker
         </v-btn>
       </v-card-title>
@@ -15,7 +19,6 @@
               <th>Gebruikersnaam</th>
               <th>Naam</th>
               <th>Rol</th>
-              <th>Aangemaakt op</th>
               <th>Acties</th>
             </tr>
           </thead>
@@ -24,7 +27,6 @@
               <td>{{ user.username }}</td>
               <td>{{ user.name || "-" }}</td>
               <td>{{ user.role }}</td>
-              <td>{{ new Date(user.created_at).toLocaleDateString() }}</td>
               <td>
                 <v-btn
                   icon="mdi-pencil"
@@ -99,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import type { User } from '~/types/User';
+import type { User } from "~/types/User";
 
 definePageMeta({
   layout: "admin",
@@ -112,19 +114,26 @@ const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteUser = ref<{ id: number; username: string } | null>(null);
-const editedUser = ref<Pick<User, 'id' | 'username' | 'name' | 'role'> | null>(null);
+const editedUser = ref<Pick<User, "id" | "username" | "name" | "role"> | null>(
+  null
+);
 
 function editUser(user: User) {
   editedUser.value = {
     id: user.id,
     username: user.username,
     name: user.name,
-    role: user.role
+    role: user.role,
   };
   showEditDialog.value = true;
 }
 
-async function createUser(data: { username: string; password: string; name: string | null; role: string }) {
+async function createUser(data: {
+  username: string;
+  password: string;
+  name: string | null;
+  role: string;
+}) {
   loading.value = true;
   try {
     await create(data);
@@ -136,7 +145,11 @@ async function createUser(data: { username: string; password: string; name: stri
   }
 }
 
-async function updateUser(data: { username: string; name: string | null; role: string }) {
+async function updateUser(data: {
+  username: string;
+  name: string | null;
+  role: string;
+}) {
   if (!editedUser.value) return;
 
   loading.value = true;
