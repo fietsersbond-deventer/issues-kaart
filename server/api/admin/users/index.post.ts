@@ -6,7 +6,7 @@ function hashPassword(password: string): string {
 }
 
 export default defineEventHandler(async (event) => {
-  const { username, password } = await readBody(event);
+  const { username, password, name, role = "user" } = await readBody(event);
 
   if (!username || !password) {
     throw createError({
@@ -21,9 +21,9 @@ export default defineEventHandler(async (event) => {
   try {
     const user = await db
       .prepare(
-        "INSERT INTO users (username, password_hash) VALUES (?1, ?2) RETURNING id, username, created_at"
+        "INSERT INTO users (username, password_hash, name, role) VALUES (?1, ?2, ?3, ?4) RETURNING id, username, name, role, created_at"
       )
-      .bind(username, passwordHash)
+      .bind(username, passwordHash, name || null, role)
       .first();
 
     return user;

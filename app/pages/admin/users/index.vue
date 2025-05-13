@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         <span>Gebruikers</span>
         <v-spacer />
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="showDialog">
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="showNewUserDialog = true">
           Nieuwe gebruiker
         </v-btn>
       </v-card-title>
@@ -13,6 +13,8 @@
           <thead>
             <tr>
               <th>Gebruikersnaam</th>
+              <th>Naam</th>
+              <th>Rol</th>
               <th>Aangemaakt op</th>
               <th>Acties</th>
             </tr>
@@ -20,8 +22,18 @@
           <tbody>
             <tr v-for="user in users" :key="user.id">
               <td>{{ user.username }}</td>
+              <td>{{ user.name || "-" }}</td>
+              <td>{{ user.role }}</td>
               <td>{{ new Date(user.created_at).toLocaleDateString() }}</td>
               <td>
+                <v-btn
+                  icon="mdi-pencil"
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  class="mr-2"
+                  @click="editUser(user)"
+                />
                 <v-btn
                   icon="mdi-delete"
                   variant="text"
@@ -36,38 +48,32 @@
       </v-card-text>
     </v-card>
 
+    <!-- Edit User Dialog -->
+    <v-dialog v-model="showEditDialog" max-width="500px">
+      <v-card>
+        <v-card-title>Gebruiker bewerken</v-card-title>
+        <v-card-text>
+          <UserForm
+            v-if="editedUser"
+            :user="editedUser"
+            :loading="loading"
+            @submit="updateUser"
+            @cancel="showEditDialog = false"
+          />
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <!-- New User Dialog -->
     <v-dialog v-model="showNewUserDialog" max-width="500px">
       <v-card>
         <v-card-title>Nieuwe gebruiker</v-card-title>
         <v-card-text>
-          <v-form @submit.prevent="createUser">
-            <v-text-field
-              v-model="newUser.username"
-              label="Gebruikersnaam"
-              required
-            />
-            <PasswordInput
-              v-model="newUser.password"
-              label="Wachtwoord"
-              :disabled="loading"
-              @strength-change="handlePasswordStrength"
-            />
-            <v-card-actions>
-              <v-spacer />
-              <v-btn
-                :loading="loading"
-                color="primary"
-                type="submit"
-                :disabled="!isPasswordValid"
-              >
-                Opslaan
-              </v-btn>
-              <v-btn color="error" @click="showNewUserDialog = false"
-                >Annuleren</v-btn
-              >
-            </v-card-actions>
-          </v-form>
+          <UserForm
+            :loading="loading"
+            @submit="createUser"
+            @cancel="showNewUserDialog = false"
+          />
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -93,44 +99,36 @@
 </template>
 
 <script setup lang="ts">
+import type { User } from '~/types/User';
+
 definePageMeta({
   layout: "admin",
 });
 
-const { users, create, remove } = useUsersApi();
+const { users, create, update, remove } = useUsersApi();
 
 const showNewUserDialog = ref(false);
+const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteUser = ref<{ id: number; username: string } | null>(null);
-const newUser = ref({
-  username: "",
-  password: "",
-});
-const isPasswordValid = ref(false);
+const editedUser = ref<Pick<User, 'id' | 'username' | 'name' | 'role'> | null>(null);
 
-function showDialog() {
-  showNewUserDialog.value = true;
-  newUser.value = { username: "", password: "" };
+function editUser(user: User) {
+  editedUser.value = {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role
+  };
+  showEditDialog.value = true;
 }
 
-function handlePasswordStrength(strength: { score: number; isStrong: boolean }) {
-  isPasswordValid.value = strength.isStrong;
-}
-
-// Create new user
-async function createUser() {
-  if (!newUser.value.username || !newUser.value.password || !isPasswordValid.value) return;
-
+async function createUser(data: { username: string; password: string; name: string | null; role: string }) {
   loading.value = true;
   try {
-    await create({
-      username: newUser.value.username,
-      password: newUser.value.password,
-    });
+    await create(data);
     showNewUserDialog.value = false;
-    newUser.value = { username: "", password: "" };
-    isPasswordValid.value = false;
   } catch (error) {
     console.error("Error creating user:", error);
   } finally {
@@ -138,7 +136,21 @@ async function createUser() {
   }
 }
 
-// Delete user
+async function updateUser(data: { username: string; name: string | null; role: string }) {
+  if (!editedUser.value) return;
+
+  loading.value = true;
+  try {
+    await update(editedUser.value.id, data);
+    showEditDialog.value = false;
+    editedUser.value = null;
+  } catch (error) {
+    console.error("Error updating user:", error);
+  } finally {
+    loading.value = false;
+  }
+}
+
 function confirmDelete(user: { id: number; username: string }) {
   deleteUser.value = user;
   showDeleteDialog.value = true;
