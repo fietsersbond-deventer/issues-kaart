@@ -12,7 +12,6 @@
         :bounds="bounds"
       />
     </l-control>
-    <LControlZoom position="topright" />
     <LControlScale position="bottomright" />
   </MapBase>
 </template>
