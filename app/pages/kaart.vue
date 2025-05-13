@@ -4,7 +4,7 @@
       <v-app-bar-title>Application bar</v-app-bar-title>
       <v-spacer />
       <template v-if="status === 'authenticated'">
-        <v-btn to="/admin/users" variant="text" prepend-icon="mdi-cog">
+        <v-btn v-if="isAdmin" to="/admin/users" variant="text" prepend-icon="mdi-cog">
           Beheer
         </v-btn>
         <v-btn variant="text" prepend-icon="mdi-logout" @click="handleLogout">
@@ -39,8 +39,11 @@
 
 <script setup lang="ts">
 import { useMapEventBus } from "~/composables/useMapEventBus";
+import { useRoles } from "~/composables/useRoles";
 
 const { status, signOut } = useAuth();
+const { isAdmin } = useRoles();
+
 useMapEventBus().provide();
 
 const reactiveFeature = new ReactiveFeature();

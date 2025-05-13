@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { requireAdminSession } from "~~/server/utils/requireUserSession";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -6,6 +7,8 @@ function hashPassword(password: string): string {
 }
 
 export default defineEventHandler(async (event) => {
+  requireAdminSession(event);
+
   const { username, password, name, role = "user" } = await readBody(event);
 
   if (!username || !password) {
