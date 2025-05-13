@@ -17,6 +17,8 @@ export default defineEventHandler(async (event) => {
       user: {
         id: session.id,
         username: session.username,
+        name: session.name,
+        role: session.role,
       },
     };
   } catch {

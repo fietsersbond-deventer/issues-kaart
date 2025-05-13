@@ -1,6 +1,8 @@
 interface User {
   id: number;
   username: string;
+  name: string | null;
+  role: string;
   created_at: string;
 }
 
@@ -23,9 +25,28 @@ export const useUsersApi = () => {
     refreshUsers();
   }
 
-  async function create(body: { username: string; password: string }) {
+  async function create(body: {
+    username: string;
+    password: string;
+    name?: string | null;
+    role?: string;
+  }) {
     const user = await $fetch<User>("/api/admin/users", {
       method: "POST",
+      headers: headers.value,
+      body,
+    });
+    refresh();
+    return user;
+  }
+
+  async function update(id: number, body: {
+    username: string;
+    name?: string | null;
+    role: string;
+  }) {
+    const user = await $fetch<User>(`/api/admin/users/${id}`, {
+      method: "PATCH",
       headers: headers.value,
       body,
     });
@@ -48,6 +69,7 @@ export const useUsersApi = () => {
   return {
     users,
     create,
+    update,
     remove,
   };
 };

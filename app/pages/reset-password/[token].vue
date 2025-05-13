@@ -5,7 +5,9 @@
         <v-row align="center" justify="center">
           <v-col cols="12" sm="8" md="6" lg="4">
             <v-card class="pa-8">
-              <h1 class="text-h4 mb-6 text-center">Nieuw wachtwoord instellen</h1>
+              <h1 class="text-h4 mb-6 text-center">
+                Nieuw wachtwoord instellen
+              </h1>
 
               <v-form @submit.prevent="handleSubmit">
                 <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
@@ -25,7 +27,9 @@
                   type="password"
                   required
                   :disabled="isLoading"
-                  :rules="[v => v === password || 'Wachtwoorden komen niet overeen']"
+                  :rules="[
+                    (v) => v === password || 'Wachtwoorden komen niet overeen',
+                  ]"
                   autocomplete="new-password"
                   prepend-inner-icon="mdi-lock"
                 />

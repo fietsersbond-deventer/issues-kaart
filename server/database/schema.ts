@@ -1,6 +1,8 @@
 export type User = {
   id: number;
   username: string;
+  name: string | null;
+  role: string;
   password_hash: string;
   created_at: Date;
 };

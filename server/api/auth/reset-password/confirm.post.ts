@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -11,14 +11,14 @@ export default defineEventHandler(async (event) => {
   if (!token || !password) {
     throw createError({
       statusCode: 400,
-      message: 'Token and password are required',
+      message: "Token and password are required",
     });
   }
 
   if (password.length < 8) {
     throw createError({
       statusCode: 400,
-      message: 'Password must be at least 8 characters long',
+      message: "Password must be at least 8 characters long",
     });
   }
 
@@ -27,9 +27,9 @@ export default defineEventHandler(async (event) => {
   // Get reset token and associated user
   const resetToken = await db
     .prepare(
-      'SELECT prt.*, u.id as user_id FROM password_reset_tokens prt ' +
-      'JOIN users u ON u.id = prt.user_id ' +
-      'WHERE prt.token = ? AND prt.expires_at > datetime(\'now\')'
+      "SELECT prt.*, u.id as user_id FROM password_reset_tokens prt " +
+        "JOIN users u ON u.id = prt.user_id " +
+        "WHERE prt.token = ? AND prt.expires_at > datetime('now')"
     )
     .bind(token)
     .first();
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
   if (!resetToken) {
     throw createError({
       statusCode: 400,
-      message: 'Invalid or expired token',
+      message: "Invalid or expired token",
     });
   }
 
@@ -46,11 +46,9 @@ export default defineEventHandler(async (event) => {
   // Update password and delete used token
   await db.batch([
     db
-      .prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+      .prepare("UPDATE users SET password_hash = ? WHERE id = ?")
       .bind(passwordHash, resetToken.user_id),
-    db
-      .prepare('DELETE FROM password_reset_tokens WHERE token = ?')
-      .bind(token),
+    db.prepare("DELETE FROM password_reset_tokens WHERE token = ?").bind(token),
   ]);
 
   return { success: true };

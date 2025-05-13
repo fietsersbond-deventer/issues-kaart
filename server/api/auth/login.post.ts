@@ -17,7 +17,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const user: User | null = await db
-    .prepare("SELECT id, username, password_hash FROM users WHERE username = ?")
+    .prepare(
+      "SELECT id, username, name, role, password_hash FROM users WHERE username = ?"
+    )
     .bind(username)
     .first();
 
@@ -48,6 +50,8 @@ export default defineEventHandler(async (event) => {
     const session = await new jose.SignJWT({
       id: user.id,
       username: user.username,
+      name: user.name,
+      role: user.role,
     })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("1h")
@@ -57,6 +61,8 @@ export default defineEventHandler(async (event) => {
       user: {
         id: user.id,
         username: user.username,
+        name: user.name,
+        role: user.role,
       },
       token: session,
     };
