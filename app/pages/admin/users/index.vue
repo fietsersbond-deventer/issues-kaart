@@ -47,15 +47,20 @@
               label="Gebruikersnaam"
               required
             />
-            <v-text-field
+            <PasswordInput
               v-model="newUser.password"
               label="Wachtwoord"
-              type="password"
-              required
+              :disabled="loading"
+              @strength-change="handlePasswordStrength"
             />
             <v-card-actions>
               <v-spacer />
-              <v-btn :loading="loading" color="primary" type="submit">
+              <v-btn
+                :loading="loading"
+                color="primary"
+                type="submit"
+                :disabled="!isPasswordValid"
+              >
                 Opslaan
               </v-btn>
               <v-btn color="error" @click="showNewUserDialog = false"
@@ -102,15 +107,20 @@ const newUser = ref({
   username: "",
   password: "",
 });
+const isPasswordValid = ref(false);
 
 function showDialog() {
   showNewUserDialog.value = true;
   newUser.value = { username: "", password: "" };
 }
 
+function handlePasswordStrength(strength: { score: number; isStrong: boolean }) {
+  isPasswordValid.value = strength.isStrong;
+}
+
 // Create new user
 async function createUser() {
-  if (!newUser.value.username || !newUser.value.password) return;
+  if (!newUser.value.username || !newUser.value.password || !isPasswordValid.value) return;
 
   loading.value = true;
   try {
@@ -119,6 +129,8 @@ async function createUser() {
       password: newUser.value.password,
     });
     showNewUserDialog.value = false;
+    newUser.value = { username: "", password: "" };
+    isPasswordValid.value = false;
   } catch (error) {
     console.error("Error creating user:", error);
   } finally {
