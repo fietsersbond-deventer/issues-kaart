@@ -1,39 +1,38 @@
 <template>
-  <form class="space-y-4" @submit.prevent="handleSubmit">
-    <div v-if="error" class="text-red-500">{{ error }}</div>
+  <v-form @submit.prevent="handleSubmit">
+    <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
+      {{ error }}
+    </v-alert>
 
-    <div>
-      <label for="username" class="block">Gebruikersnaam</label>
-      <input
-        id="username"
-        v-model="username"
-        type="text"
-        required
-        class="w-full px-3 py-2 border rounded"
-        autocomplete="username"
-      />
-    </div>
-
-    <div>
-      <label for="password" class="block">Wachtwoord</label>
-      <input
-        id="password"
-        v-model="password"
-        type="password"
-        required
-        class="w-full px-3 py-2 border rounded"
-        autocomplete="current-password"
-      />
-    </div>
-
-    <button
-      type="submit"
+    <v-text-field
+      v-model="username"
+      label="E-mailadres of gebruikersnaam"
+      required
       :disabled="isLoading"
-      class="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
+      autocomplete="username"
+      prepend-inner-icon="mdi-account"
+    />
+
+    <v-text-field
+      v-model="password"
+      label="Wachtwoord"
+      type="password"
+      required
+      :disabled="isLoading"
+      autocomplete="current-password"
+      prepend-inner-icon="mdi-lock"
+    />
+
+    <v-btn
+      type="submit"
+      :loading="isLoading"
+      block
+      color="primary"
+      size="large"
     >
-      {{ isLoading ? "Loading..." : "Login" }}
-    </button>
-  </form>
+      Login
+    </v-btn>
+  </v-form>
 </template>
 
 <script setup lang="ts">
