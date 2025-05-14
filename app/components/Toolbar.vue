@@ -1,13 +1,21 @@
 <template>
-  <div>
-    <v-btn
-      v-for="tool in drawingTools"
-      :key="tool.type"
-      :icon="tool.icon"
-      color="primary"
-      :aria-label="tool.label"
-      @click="startDrawing(tool.type)"
-    />
+  <div class="d-flex align-center">
+    <div class="d-flex align-center">
+      <v-btn
+        v-for="tool in drawingTools"
+        :key="tool.type"
+        :icon="tool.icon"
+        color="primary"
+        :aria-label="tool.label"
+        @click="startDrawing(tool.type)"
+      />
+    </div>
+
+    <v-divider v-if="$slots.default" vertical class="mx-2" />
+
+    <div class="d-flex align-center">
+      <slot />
+    </div>
   </div>
 </template>
 
