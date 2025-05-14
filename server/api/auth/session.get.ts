@@ -13,13 +13,13 @@ export default defineEventHandler(async (event) => {
   try {
     const session: User = await verifyToken(token);
     return {
-      accessToken: token,
-      user: {
-        id: session.id,
-        username: session.username,
-        name: session.name,
-        role: session.role,
-      },
+      // accessToken: token,
+      // user: {
+      id: session.id,
+      username: session.username,
+      name: session.name,
+      role: session.role,
+      // },
     };
   } catch {
     throw createError({

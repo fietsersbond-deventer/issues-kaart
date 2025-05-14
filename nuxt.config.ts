@@ -35,6 +35,8 @@ export default defineNuxtConfig({
         dataType: {
           id: "string",
           username: "string",
+          name: "string",
+          role: "string",
         },
       },
       endpoints: {
