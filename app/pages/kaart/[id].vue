@@ -1,28 +1,61 @@
 <template>
   <div>
     <v-toolbar v-if="status === 'authenticated'">
-      <Toolbar />
+      <Toolbar>
+        <v-btn
+          v-if="status === 'authenticated'"
+          :icon="!isEditing ? 'mdi-pencil' : 'mdi-pencil-remove'"
+          variant="text"
+          @click="isEditing = !isEditing"
+        />
+        <v-btn
+          v-if="isEditing"
+          icon="mdi-fullscreen"
+          variant="text"
+          @click="
+            showEditDialog = !showEditDialog;
+            isEditing = false;
+          "
+        />
+      </Toolbar>
     </v-toolbar>
 
     <div v-if="issue" class="pa-4">
       <template v-if="issue.id">
-        <div class="d-flex align-center mb-4">
-          <h2 class="text-h5 mr-4">{{ issue.title }}</h2>
-          <v-btn
-            v-if="status === 'authenticated'"
-            icon="mdi-pencil"
-            variant="text"
-            @click="showEditDialog = true"
-          />
-        </div>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-html="issue.description" />
+        <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
 
-        <v-dialog v-model="showEditDialog" max-width="800px">
-          <EditForm v-model="issue" v-model:dialog="showEditDialog" />
-        </v-dialog>
+        <template v-if="isEditing">
+          <EditForm
+            v-model="issue"
+            :is-new="false"
+            @save="isEditing = false"
+            @cancel="isEditing = false"
+          />
+        </template>
+        <div v-else v-html="issue.description" />
       </template>
-      <EditForm v-else v-model="issue" :is-new="true" />
+      <template v-else>
+        <h2 class="text-h5 mb-4">New Issue</h2>
+        <template v-if="isEditing">
+          <EditForm
+            v-model="issue"
+            :is-new="true"
+            @save="isEditing = false"
+            @cancel="isEditing = false"
+          />
+        </template>
+        <div v-else>Click the edit button to create a new issue</div>
+      </template>
+
+      <v-dialog v-model="showEditDialog" max-width="800px">
+        <EditForm
+          v-model="issue"
+          v-model:dialog="showEditDialog"
+          :is-new="!issue.id"
+          @save="showEditDialog = false"
+          @cancel="showEditDialog = false"
+        />
+      </v-dialog>
     </div>
   </div>
 </template>
@@ -34,6 +67,7 @@ const route = useRoute();
 const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
+const isEditing = ref(false);
 
 const { get } = useIssueApi();
 const issue = ref<Issue | null>(null);
