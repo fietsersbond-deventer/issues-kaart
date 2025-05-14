@@ -20,10 +20,10 @@ const roles: RoleDefinition[] = [
 ];
 
 export function useRoles() {
-  const { data: session } = useSessionApi();
+  const { data: user } = useAuth();
 
   const currentRole = computed<Role | null>(() => {
-    return (session.value?.user?.role as Role) || null;
+    return (user.value?.role as Role) || null;
   });
 
   const isAdmin = computed(() => currentRole.value === "admin");

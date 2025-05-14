@@ -1,9 +1,9 @@
 export default defineNuxtRouteMiddleware(async (_to) => {
-  const { data: session } = useSessionApi();
+  const { data: user } = useAuth();
 
-  console.log("session", session.value);
+  console.log("user", user.value);
 
-  if (!session.value?.user?.role || session.value.user.role !== "admin") {
+  if (!user.value?.role || user.value.role !== "admin") {
     return navigateTo("/");
   }
 });
