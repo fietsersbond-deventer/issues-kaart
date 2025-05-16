@@ -17,36 +17,11 @@
 
           <div class="mb-4">
             <label class="text-subtitle-1 mb-1">Beschrijving</label>
-            <Editor
-              v-model="issue.description"
-              :api-key="config.public.tinymceApiKey"
-              :init="{
-                height: 300,
-                menubar: false,
-                plugins: ['link', 'lists'],
-                toolbar: [
-                  { name: 'history', items: ['undo', 'redo'] },
-                  { name: 'styles', items: ['styles'] },
-                  { name: 'formatting', items: ['bold', 'italic'] },
-                  {
-                    name: 'alignment',
-                    items: [
-                      'alignleft',
-                      'aligncenter',
-                      'alignright',
-                      'alignjustify',
-                    ],
-                  },
-                  { name: 'indentation', items: ['outdent', 'indent'] },
-                ],
-                formats: {
-                  h1: { block: 'h1' },
-                  h2: { block: 'h2' },
-                  h3: { block: 'h3' },
-                  p: { block: 'p' },
-                },
-                statusbar: false,
-              }"
+            <QuillEditor
+              v-model:content="issue.description"
+              content-type="html"
+              :modules
+              style="min-height: 200px"
             />
             <div v-if="!issue.description" class="text-error text-caption mt-1">
               Beschrijving is verplicht
@@ -79,14 +54,36 @@
 </template>
 
 <script lang="ts" setup>
-import Editor from "@tinymce/tinymce-vue";
+import { QuillEditor } from "@vueup/vue-quill";
+import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import type { Issue } from "~/types/Issue";
+import { ImageDrop } from "quill-image-drop-module";
+import { imageCompressor } from "quill-image-compress";
 
 const valid = ref(true);
 
 const isProduction = useRuntimeConfig().isProduction;
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue>({ required: true });
+
+const modules = [
+  { name: "imagedrop", module: ImageDrop },
+  // { name: "resize", module: ImageResize },
+  {
+    name: "compress",
+    module: imageCompressor,
+    options: {
+      quality: 0.7, // default
+      maxWidth: 1000, // default
+      maxHeight: 1000, // default
+      imageType: "image/jpeg", // default
+      debug: true, // default
+      suppressErrorLogging: false, // default
+      handleOnPaste: true, //default
+      insertIntoEditor: undefined, // default
+    },
+  },
+];
 
 const { update, create, remove } = useIssueApi();
 
