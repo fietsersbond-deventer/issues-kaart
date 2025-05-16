@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
       role: user.role,
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("1h")
+      .setExpirationTime("1day")
       .sign(secret);
 
     return {
