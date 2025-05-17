@@ -7,6 +7,14 @@ export type User = {
   created_at: Date;
 };
 
+export type RefreshToken = {
+  id: number;
+  user_id: number;
+  token: string;
+  expires_at: Date;
+  created_at: Date;
+};
+
 export type Legend = {
   id: number;
   name: string;

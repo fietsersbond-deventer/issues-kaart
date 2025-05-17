@@ -1,8 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { User } from "~~/server/database/schema";
-import * as jose from "jose";
-
-const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
+import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils";
 
 export default defineEventHandler(async (event) => {
   const db = hubDatabase();
@@ -12,7 +10,7 @@ export default defineEventHandler(async (event) => {
   if (!username || !password) {
     throw createError({
       statusCode: 400,
-      message: "Username and password are required",
+      message: "Gebruikersnaam en wachtwoord zijn verplicht",
     });
   }
 
@@ -26,7 +24,7 @@ export default defineEventHandler(async (event) => {
   if (!user) {
     throw createError({
       statusCode: 401,
-      message: "Invalid credentials",
+      message: "Ongeldige inloggegevens",
     });
   }
 
@@ -40,22 +38,16 @@ export default defineEventHandler(async (event) => {
     console.log("Invalid password for username:", username);
     throw createError({
       statusCode: 401,
-      message: "Invalid credentials",
+      message: "Ongeldige inloggegevens",
     });
   }
 
   try {
-    // Create session
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const session = await new jose.SignJWT({
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      role: user.role,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("1day")
-      .sign(secret);
+    // Create access token and refresh token
+    const [accessToken, refreshToken] = await Promise.all([
+      generateAccessToken(user),
+      generateRefreshToken(user.id)
+    ]);
 
     return {
       user: {
@@ -64,13 +56,14 @@ export default defineEventHandler(async (event) => {
         name: user.name,
         role: user.role,
       },
-      token: session,
+      token: accessToken,
+      refreshToken: refreshToken,
     };
   } catch (error) {
     console.error("Error creating JWT:", error);
     throw createError({
       statusCode: 500,
-      message: (error as Error).message || "Internal server error",
+      message: (error as Error).message || "Interne serverfout",
     });
   }
 });
