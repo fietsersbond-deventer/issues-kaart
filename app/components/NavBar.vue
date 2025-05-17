@@ -4,6 +4,9 @@
     <v-breadcrumbs :items="breadcrumbs" />
     <v-spacer />
     <template v-if="status === 'authenticated'">
+      <v-btn to="/kaart/new" variant="text" prepend-icon="mdi-plus-circle"> 
+        Nieuw Issue
+      </v-btn>
       <v-btn to="/admin" variant="text" prepend-icon="mdi-cog"> Beheer </v-btn>
       <v-btn variant="text" prepend-icon="mdi-logout" @click="handleLogout">
         Uitloggen

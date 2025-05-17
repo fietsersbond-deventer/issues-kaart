@@ -106,6 +106,7 @@ import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import type { Issue } from "~/types/Issue";
 import { ImageDrop } from "quill-image-drop-module";
 import { imageCompressor } from "quill-image-compress";
+import type { Legend } from "~~/server/database/schema";
 
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });

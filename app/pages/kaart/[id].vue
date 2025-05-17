@@ -32,10 +32,11 @@
             @cancel="isEditing = false"
           />
         </template>
+        <!-- eslint-disable-next-line vue/no-v-html -->
         <div v-else v-html="issue.description" />
       </template>
       <template v-else>
-        <h2 class="text-h5 mb-4">New Issue</h2>
+        <h2 class="text-h5 mb-4">Nieuw project</h2>
         <template v-if="isEditing">
           <EditForm
             v-model="issue"
@@ -44,7 +45,7 @@
             @cancel="isEditing = false"
           />
         </template>
-        <div v-else>Click the edit button to create a new issue</div>
+        <div v-else>Klik op de edit knop om een nieuw issue toe te voegen</div>
       </template>
 
       <v-dialog
@@ -56,7 +57,6 @@
         <EditForm
           v-model="issue"
           v-model:dialog="showEditDialog"
-          :is-new="!issue.id"
           @save="showEditDialog = false"
           @cancel="showEditDialog = false"
         />
@@ -86,11 +86,12 @@ if (!id) {
   // Handle invalid id type
   navigateTo("/kaart");
 } else if (id === "new") {
+  isEditing.value = true;
   issue.value = {
     id: "",
     title: "",
     description: "",
-    color: "#2196F3",
+    legend_id: null,
     geometry: reactiveFeature.feature.value?.geometry || {
       type: "Point",
       coordinates: [0, 0],
