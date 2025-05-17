@@ -1,4 +1,4 @@
--- Create legend table
+-- Create legend table if it doesn't exist
 CREATE TABLE IF NOT EXISTS legend (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -7,23 +7,29 @@ CREATE TABLE IF NOT EXISTS legend (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default legend items from existing colors
-INSERT INTO legend (name, color, description)
-SELECT DISTINCT 
-    'Item ' || ROW_NUMBER() OVER (ORDER BY color) as name,
-    color,
-    'Migrated from existing color' as description
-FROM issues
-WHERE color IS NOT NULL;
-
--- Add legend_id to issues table
-ALTER TABLE issues ADD COLUMN legend_id INTEGER REFERENCES legend(id);
-
--- Update issues to reference legend items
-UPDATE issues 
-SET legend_id = (
-    SELECT id FROM legend WHERE legend.color = issues.color
+-- Create a temporary table with the new schema
+CREATE TABLE IF NOT EXISTS _issues_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    geometry TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    legend_id INTEGER REFERENCES legend(id)
 );
 
--- Make legend_id required and drop color column
--- We'll do this in a separate migration once the application is updated
+-- Only copy data if we haven't done this migration before
+INSERT OR IGNORE INTO _issues_new (id, title, description, geometry, created_at)
+SELECT id, title, description, geometry, created_at
+FROM issues
+WHERE NOT EXISTS (
+    SELECT 1 FROM pragma_table_info('issues') WHERE name='legend_id'
+);
+
+-- Only perform the table swap if we actually did the migration (i.e., if legend_id didn't exist)
+DROP TABLE IF EXISTS issues_old;
+ALTER TABLE issues RENAME TO issues_old;
+ALTER TABLE _issues_new RENAME TO issues;
+
+-- Clean up
+DROP TABLE IF EXISTS issues_old;
+
