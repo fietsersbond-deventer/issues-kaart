@@ -13,7 +13,14 @@
       :color="issue.color"
       @click="navigateToIssue(issue)"
     >
-      <LTooltip :content="issue.title" :sticky="true" />
+      <LTooltip :sticky="true">
+        <div>
+          <strong>{{ issue.title }}</strong>
+          <div v-if="issue.legend_name" class="text-caption">
+            {{ issue.legend_name }}
+          </div>
+        </div>
+      </LTooltip>
       <LIcon
         :options="{ iconSize: [40, 40], iconAnchor: [20, 40] }"
         class="marker-icon"
@@ -33,7 +40,14 @@
       :lat-lngs="toLatLng(issue)"
       @click="navigateToIssue(issue)"
     >
-      <LTooltip :content="issue.title" :sticky="true" />
+      <LTooltip :sticky="true">
+        <div>
+          <strong>{{ issue.title }}</strong>
+          <div v-if="issue.legend_name" class="text-caption">
+            {{ issue.legend_name }}
+          </div>
+        </div>
+      </LTooltip>
     </LPolygon>
 
     <LPolyline
@@ -43,7 +57,14 @@
       :lat-lngs="toLatLng(issue)"
       @click="navigateToIssue(issue)"
     >
-      <LTooltip :content="issue.title" :sticky="true" />
+      <LTooltip :sticky="true">
+        <div>
+          <strong>{{ issue.title }}</strong>
+          <div v-if="issue.legend_name" class="text-caption">
+            {{ issue.legend_name }}
+          </div>
+        </div>
+      </LTooltip>
     </LPolyline>
   </MapContainer>
 </template>

@@ -28,16 +28,39 @@
             </div>
           </div>
 
-          <v-color-picker
-            v-model="issue.color"
-            mode="hex"
-            label="Kleur"
-            hide-inputs
-            hide-sliders
-            hide-canvas
-            show-swatches
-            :swatches
-          />
+          <v-select
+            v-model="issue.legend_id"
+            :items="legends"
+            item-title="name"
+            item-value="id"
+            label="Issue Type"
+            required
+          >
+            <template #selection="{ item }">
+              <div class="d-flex align-center">
+                <div
+                  class="me-2"
+                  style="width: 20px; height: 20px; border-radius: 4px"
+                  :style="{ backgroundColor: item.raw.color }"
+                />
+                {{ item.title }}
+              </div>
+            </template>
+            <template #item="{ item, props }">
+              <v-list-item
+                v-bind="props"
+                :title="item.raw.name"
+                :subtitle="item.raw.description"
+              >
+                <template #prepend>
+                  <div
+                    style="width: 20px; height: 20px; border-radius: 4px"
+                    :style="{ backgroundColor: item.raw.color }"
+                  />
+                </template>
+              </v-list-item>
+            </template>
+          </v-select>
         </v-card-text>
         <v-card-actions>
           <v-btn type="submit" color="primary">Opslaan</v-btn>
@@ -87,13 +110,13 @@ const modules = [
 
 const { update, create, remove } = useIssueApi();
 
-const swatches = [
-  ["#FF0000", "#FF5555", "#FFAAAA"], // Very Bad (Red)
-  ["#FFAA00", "#FFBB55", "#FFCCAA"], // Bad (Orange)
-  ["#FFFF00", "#FFFF55", "#FFFFAA"], // Neutral (Yellow)
-  ["#AAFF00", "#BBFF55", "#CCFFAA"], // Good (Light Green)
-  ["#00FF00", "#55FF55", "#AAFFAA"], // Very Good (Green)
-];
+// Get legends for the color selector
+const { getAll: getLegends } = useLegendApi();
+const legends = ref<Legend[]>([]);
+
+onMounted(async () => {
+  legends.value = await getLegends();
+});
 
 const reactiveFeature = useEditableFeature().inject();
 const config = useRuntimeConfig();

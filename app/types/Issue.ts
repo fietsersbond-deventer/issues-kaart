@@ -4,7 +4,10 @@ export type Issue = {
   id: string;
   title: string;
   description: string;
-  color: string;
+  color: string;  // Will be removed in future migration
+  legend_id: number | null;
+  legend_name?: string;  // Added from join
+  legend_color?: string; // Added from join
   geometry: Point | Polygon | LineString;
   created_at?: Date;
 };

@@ -4,11 +4,15 @@ import type { Issue } from "../../database/schema";
 export default defineEventHandler(async () => {
   const result = await hubDatabase()
     .prepare(
-      `SELECT id, title, description, color, geometry, created_at 
-       FROM issues 
-       ORDER BY created_at DESC`
+      `SELECT i.id, i.title, i.description, 
+       COALESCE(l.color, i.color) as color,
+       i.legend_id, l.name as legend_name,
+       i.geometry, i.created_at
+       FROM issues i 
+       LEFT JOIN legend l ON i.legend_id = l.id 
+       ORDER BY i.created_at DESC`
     )
-    .all<Issue>();
+    .all<Issue & { legend_name?: string }>();
 
   const issues = result.results || [];
 

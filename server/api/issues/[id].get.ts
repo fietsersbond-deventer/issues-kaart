@@ -12,10 +12,15 @@ export default defineEventHandler(async (event) => {
 
   const issue = await hubDatabase()
     .prepare(
-      "SELECT id, title, description, color, geometry, created_at FROM issues WHERE id = ?1"
+      `SELECT i.id, i.title, i.description, i.color, i.legend_id, 
+       l.name as legend_name, l.color as color,
+       i.geometry, i.created_at 
+       FROM issues i 
+       LEFT JOIN legend l ON i.legend_id = l.id 
+       WHERE i.id = ?1`
     )
     .bind(id)
-    .first<Issue>();
+    .first<Issue & { legend_name?: string; legend_color?: string }>();
 
   if (!issue) {
     throw createError({

@@ -3,9 +3,15 @@
     <v-navigation-drawer permanent>
       <v-list>
         <v-list-item
+          v-if="isAdmin"
           prepend-icon="mdi-account-group"
           title="Gebruikers"
           to="/admin/users"
+        />
+        <v-list-item
+          prepend-icon="mdi-palette"
+          title="Legenda"
+          to="/admin/legends"
         />
       </v-list>
     </v-navigation-drawer>
@@ -23,4 +29,5 @@ definePageMeta({
   title: "Beheer",
   // middleware: ["admin"],
 });
+const { isAdmin } = useRoles();
 </script>

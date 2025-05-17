@@ -1,15 +1,21 @@
 import type { Geometry } from "geojson";
-import type { Issue } from "../../database/schema";
 import { booleanValid } from "@turf/boolean-valid";
 
 export default defineEventHandler(async (event) => {
+  requireUserSession(event);
   const {
     title,
     description,
     color,
+    legend_id,
     geometry,
-  }: { title: string; description: string; color: string; geometry: Geometry } =
-    await readBody(event);
+  }: {
+    title: string;
+    description: string;
+    color?: string;
+    legend_id: number;
+    geometry: Geometry;
+  } = await readBody(event);
 
   if (!title || !description || !geometry) {
     throw createError({
@@ -35,9 +41,15 @@ export default defineEventHandler(async (event) => {
 
   const issue = await hubDatabase()
     .prepare(
-      "INSERT INTO issues (title, description, color, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, color, geometry, created_at"
+      "INSERT INTO issues (title, description, legend_id, color, geometry) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, title, description, legend_id, color, geometry, created_at"
     )
-    .bind(title, description, color || "#2196F3", JSON.stringify(geometry))
+    .bind(
+      title,
+      description,
+      legend_id,
+      color || "#2196F3",
+      JSON.stringify(geometry)
+    )
     .first();
 
   console.log("Inserted issue:", issue);

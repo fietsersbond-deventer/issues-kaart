@@ -4,14 +4,7 @@
     <v-breadcrumbs :items="breadcrumbs" />
     <v-spacer />
     <template v-if="status === 'authenticated'">
-      <v-btn
-        v-if="isAdmin"
-        to="/admin/users"
-        variant="text"
-        prepend-icon="mdi-cog"
-      >
-        Beheer
-      </v-btn>
+      <v-btn to="/admin" variant="text" prepend-icon="mdi-cog"> Beheer </v-btn>
       <v-btn variant="text" prepend-icon="mdi-logout" @click="handleLogout">
         Uitloggen
       </v-btn>
@@ -24,7 +17,6 @@
 
 <script lang="ts" setup>
 const { status, signOut } = useAuth();
-const { isAdmin } = useRoles();
 const { breadcrumbs } = useBreadcrumbs();
 
 async function handleLogout() {

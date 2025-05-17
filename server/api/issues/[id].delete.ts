@@ -1,4 +1,5 @@
 export default defineEventHandler(async (event) => {
+  requireUserSession(event);
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({
