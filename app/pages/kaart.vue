@@ -7,8 +7,15 @@
         </v-sheet>
       </v-container>
     </v-main>
-    <v-navigation-drawer location="right" width="400" app>
-      <NuxtPage />
+    <v-navigation-drawer location="right" width="400" app class="d-flex">
+      <div class="navigation-content">
+        <div class="main-content">
+          <NuxtPage />
+        </div>
+        <div class="legend-wrapper">
+          <MapLegend />
+        </div>
+      </div>
     </v-navigation-drawer>
   </v-layout>
 </template>
@@ -27,5 +34,25 @@ useEditableFeature().provide(reactiveFeature);
 <style>
 .leaflet-container {
   height: 100%;
+}
+
+.navigation-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 2;
+  overflow-y: auto;
+}
+
+.legend-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  background: white;
 }
 </style>
