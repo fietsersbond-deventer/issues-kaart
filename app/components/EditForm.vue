@@ -1,82 +1,106 @@
 <template>
-  <div>
-    <v-form
-      v-if="issue"
-      v-model="valid"
-      lazy-validation
-      @submit.prevent="onSubmit"
-    >
-      <v-card>
-        <v-card-text>
-          <v-text-field
-            v-model.trim="issue.title"
-            label="Titel"
-            :rules="[(v:string) => !!v || 'Titel is verplicht']"
-            required
-          />
+  <v-form
+    v-if="issue"
+    v-model="valid"
+    class="edit-form"
+    lazy-validation
+    @submit.prevent="onSubmit"
+  >
+    <v-card class="edit-form-card">
+      <v-card-title>
+        {{ issue.id ? "Issue bewerken" : "Nieuw Issue" }}
+      </v-card-title>
 
-          <div class="mb-4">
-            <label class="text-subtitle-1 mb-1">Beschrijving</label>
-            <QuillEditor
-              v-model:content="issue.description"
-              content-type="html"
-              :modules
-              style="min-height: 200px"
-            />
-            <div v-if="!issue.description" class="text-error text-caption mt-1">
-              Beschrijving is verplicht
-            </div>
-          </div>
+      <v-divider />
 
-          <v-select
-            v-model="issue.legend_id"
-            :items="legends"
-            item-title="name"
-            item-value="id"
-            label="Issue Type"
-            required
-          >
-            <template #selection="{ item }">
-              <div class="d-flex align-center">
-                <div
-                  class="me-2"
-                  style="width: 20px; height: 20px; border-radius: 4px"
-                  :style="{ backgroundColor: item.raw.color }"
-                />
-                {{ item.title }}
-              </div>
-            </template>
-            <template #item="{ item, props }">
-              <v-list-item
-                v-bind="props"
-                :title="item.raw.name"
-                :subtitle="item.raw.description"
-              >
-                <template #prepend>
-                  <div
-                    style="width: 20px; height: 20px; border-radius: 4px"
-                    :style="{ backgroundColor: item.raw.color }"
+      <v-card-text style="height: 100%">
+        <v-container fluid class="pa-0">
+          <v-row>
+            <v-col cols="12">
+              <v-text-field
+                v-model.trim="issue.title"
+                label="Titel"
+                :rules="[(v:string) => !!v || 'Titel is verplicht']"
+                required
+              />
+            </v-col>
+
+            <v-col cols="12">
+              <div class="mb-4">
+                <label class="text-subtitle-1 mb-1 d-block">Beschrijving</label>
+                <div class="quill-editor-container">
+                  <QuillEditor
+                    v-model:content="issue.description"
+                    content-type="html"
+                    :modules="modules"
+                    class="quill-editor"
                   />
-                </template>
-              </v-list-item>
-            </template>
-          </v-select>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn type="submit" color="primary">Opslaan</v-btn>
-          <v-btn color="secondary" @click="showDialog = false">Annuleren</v-btn>
-          <v-btn v-if="issue.id" color="error" @click="onDelete"
-            >Verwijderen</v-btn
-          >
-        </v-card-actions>
+                </div>
+                <div
+                  v-if="!issue.description"
+                  class="text-error text-caption mt-1"
+                >
+                  Beschrijving is verplicht
+                </div>
+              </div>
+            </v-col>
 
-        <!-- <pre v-if="!isProduction">{{ issue }}</pre> -->
-      </v-card>
-    </v-form>
-  </div>
+            <v-col cols="12">
+              <v-select
+                v-model="issue.legend_id"
+                :items="legends"
+                item-title="name"
+                item-value="id"
+                label="Issue Type"
+                required
+              >
+                <template #selection="{ item }">
+                  <div class="d-flex align-center">
+                    <div
+                      class="me-2"
+                      style="width: 20px; height: 20px; border-radius: 4px"
+                      :style="{ backgroundColor: item.raw.color }"
+                    />
+                    {{ item.title }}
+                  </div>
+                </template>
+                <template #item="{ item, props }">
+                  <v-list-item
+                    v-bind="props"
+                    :title="item.raw.name"
+                    :subtitle="item.raw.description"
+                  >
+                    <template #prepend>
+                      <div
+                        style="width: 20px; height: 20px; border-radius: 4px"
+                        :style="{ backgroundColor: item.raw.color }"
+                      />
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-select>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-card-text>
+
+      <v-divider />
+
+      <v-card-actions>
+        <v-spacer />
+        <v-btn type="submit" color="primary" variant="flat">Opslaan</v-btn>
+        <v-btn color="secondary" variant="flat" @click="showDialog = false"
+          >Annuleren</v-btn
+        >
+        <v-btn v-if="issue.id" color="error" variant="flat" @click="onDelete">
+          Verwijderen
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-form>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import type { Issue } from "~/types/Issue";
@@ -84,33 +108,28 @@ import { ImageDrop } from "quill-image-drop-module";
 import { imageCompressor } from "quill-image-compress";
 
 const valid = ref(true);
-
-const isProduction = useRuntimeConfig().isProduction;
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue>({ required: true });
 
 const modules = [
   { name: "imagedrop", module: ImageDrop },
-  // { name: "resize", module: ImageResize },
   {
     name: "compress",
     module: imageCompressor,
     options: {
-      quality: 0.7, // default
-      maxWidth: 1000, // default
-      maxHeight: 1000, // default
-      imageType: "image/jpeg", // default
-      debug: true, // default
-      suppressErrorLogging: false, // default
-      handleOnPaste: true, //default
-      insertIntoEditor: undefined, // default
+      quality: 0.7,
+      maxWidth: 1000,
+      maxHeight: 1000,
+      imageType: "image/jpeg",
+      debug: true,
+      suppressErrorLogging: false,
+      handleOnPaste: true,
+      insertIntoEditor: undefined,
     },
   },
 ];
 
 const { update, create, remove } = useIssueApi();
-
-// Get legends for the color selector
 const { getAll: getLegends } = useLegendApi();
 const legends = ref<Legend[]>([]);
 
@@ -119,15 +138,12 @@ onMounted(async () => {
 });
 
 const reactiveFeature = useEditableFeature().inject();
-const config = useRuntimeConfig();
 
 async function onSubmit() {
   if (issue.value && valid.value) {
     if (issue.value.id) {
-      // Update existing issue
       await update(issue.value.id, issue.value);
     } else {
-      // Create new issue
       const result = await create(issue.value);
       if (result.id) {
         showDialog.value = false;
@@ -161,4 +177,32 @@ watch(
 );
 </script>
 
-<style></style>
+<style>
+.edit-form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-form-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.quill-editor-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+.quill-editor {
+  height: 250px;
+}
+
+/* Force Quill editor to fit within container */
+:deep(.ql-container) {
+  height: calc(100% - 42px) !important; /* 42px is the toolbar height */
+}
+</style>

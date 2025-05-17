@@ -47,7 +47,12 @@
         <div v-else>Click the edit button to create a new issue</div>
       </template>
 
-      <v-dialog v-model="showEditDialog" max-width="800px">
+      <v-dialog
+        v-model="showEditDialog"
+        max-width="800px"
+        scrollable
+        :fullscreen="$vuetify.display.mobile"
+      >
         <EditForm
           v-model="issue"
           v-model:dialog="showEditDialog"
