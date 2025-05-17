@@ -48,7 +48,6 @@
     >
       <template #tooltip>
         <div>
-          <strong>{{ issue.id === selectedId ? "true" : "false" }}</strong>
           <strong>{{ issue.title }}</strong>
           <div v-if="issue.legend_name" class="text-caption">
             {{ issue.legend_name }}
