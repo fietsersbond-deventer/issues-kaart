@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="wrapper">
     <v-toolbar v-if="status === 'authenticated'">
       <Toolbar>
         <v-btn
@@ -108,4 +108,37 @@ if (!id) {
     issue.value = data;
   }
 }
+
+definePageMeta({
+  pageTransition: {
+    name: "page",
+  },
+});
 </script>
+
+<style>
+.wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+
+.page-enter-to,
+.page-leave-from {
+  opacity: 1;
+}
+</style>
