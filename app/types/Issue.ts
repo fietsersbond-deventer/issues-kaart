@@ -6,7 +6,7 @@ export type Issue = {
   description: string;
   legend_id: number | null;
   legend_name?: string; // Added from join
-  legend_color?: string; // Added from join
+  color?: string; // Added from join
   geometry: Point | Polygon | LineString;
   created_at?: Date;
 };

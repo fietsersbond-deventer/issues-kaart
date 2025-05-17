@@ -2,9 +2,9 @@
   <LMap
     v-if="layer"
     v-bind="$attrs"
-    v-model:bounds="bounds"
+    v-model:bounds="latLngBounds"
     :use-global-leaflet="true"
-    :options="{ editable: true }"
+    :options="{ editable: true, ...$attrs.options }"
     @ready="mapLoaded"
   >
     <template v-if="ready">
@@ -25,8 +25,17 @@ const mapPromise = deferred<Map>();
 const mapObject = shallowRef<Map | null>(null);
 useMap().provideMap(mapPromise.promise);
 
-const bounds = defineModel<IBoundsTuples | LatLngBounds>("bounds", {
+const bounds = defineModel<IBoundsTuples>("bounds", {
   required: true,
+});
+
+const latLngBounds = computed({
+  get: () => {
+    return bounds.value as LatLngBounds | IBoundsTuples;
+  },
+  set: (value) => {
+    bounds.value = parseBounds(value);
+  },
 });
 
 const props = defineProps<{
@@ -85,8 +94,8 @@ watch(
   [bounds, mapObject],
   () => {
     if (mapObject.value && bounds.value) {
-      const [[south, west], [north, east]] = parseBounds(bounds.value);
       if (!isBoundsTuples(bounds.value)) {
+        const [[south, west], [north, east]] = parseBounds(bounds.value);
         bounds.value = [
           [south, west],
           [north, east],

@@ -1,5 +1,5 @@
 <template>
-  <MapBase :base-layer="activeLayer" :bounds="bounds">
+  <MapBase v-model:bounds="bounds" :base-layer="activeLayer">
     <slot />
     <l-control
       v-if="baseLayers.length > 1"
@@ -16,13 +16,9 @@
   </MapBase>
 </template>
 <script setup lang="ts">
-import type { IBoundsTuples } from "~/types/IBounds";
 import type { ConfigLayer } from "~/types/LayerConfig";
 
-const bounds = defineModel<IBoundsTuples>("bounds", {
-  required: true,
-});
-
+const { bounds } = useMapBounds();
 const { baseLayers } = getConfig();
 
 const activeLayer = ref<ConfigLayer>(

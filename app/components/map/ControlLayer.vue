@@ -20,8 +20,8 @@
       <span class="map-layer-control__label">{{ otherLayer.name }}</span>
       <MapBase
         :base-layer="{ ...otherLayer, visible: true }"
-        :bounds="bounds"
-        :options="options"
+        :bounds
+        :options
         class="map-layer-control__map"
       />
     </v-card>
@@ -71,17 +71,13 @@
 </template>
 
 <script setup lang="ts">
-import type { PointTuple } from "leaflet";
 import type { ConfigLayer } from "~/types/LayerConfig";
 
 const activeLayer = defineModel<ConfigLayer>({ required: true });
 const layers = defineModel<ConfigLayer[]>("layers", { required: true });
 
+const { bounds } = useMapBounds();
 const expanded = ref(false);
-
-const { bounds } = defineProps<{
-  bounds: [PointTuple, PointTuple];
-}>();
 
 const display = computed(() => {
   if (layers.value.length === 1) return "SINGLE";
@@ -91,22 +87,17 @@ const display = computed(() => {
 
 watch(activeLayer, () => {
   expanded.value = false;
-  layers.value = layers.value.map((layer) => {
+  layers.value = layers.value.map((layer: ConfigLayer) => {
     layer.visible = layer.name === activeLayer.value.name;
     return layer;
   });
 });
 
 const otherLayer = computed(() => {
-  return layers.value.find(({ visible }) => !visible) as ConfigLayer;
+  return layers.value.find(
+    (layer: ConfigLayer) => !layer.visible
+  ) as ConfigLayer;
 });
-
-function onClickFirstLayer(layer: ConfigLayer) {
-  if (expanded.value) {
-    activeLayer.value = layer;
-  }
-  expanded.value = !expanded.value;
-}
 
 const expandedLayers = computed(() => {
   if (!expanded.value) return [];
@@ -115,7 +106,8 @@ const expandedLayers = computed(() => {
     new Set([
       activeLayer.value,
       ...layers.value.filter(
-        (layer) => !layer.visible && layer.name !== otherLayer.value!.name
+        (layer: ConfigLayer) =>
+          !layer.visible && layer.name !== otherLayer.value!.name
       ),
     ])
   );
@@ -127,6 +119,13 @@ const options = {
   doubleClickZoom: false,
   dragging: false,
 };
+
+function onClickFirstLayer(layer: ConfigLayer) {
+  if (expanded.value) {
+    activeLayer.value = layer;
+  }
+  expanded.value = !expanded.value;
+}
 
 function onClickOutside() {
   expanded.value = false;
@@ -153,6 +152,7 @@ function onClickOutside() {
 
 .map-layer-control .map-layer-control__label {
   position: absolute;
+  top: 0;
   right: 0;
   bottom: 0;
   left: 0;

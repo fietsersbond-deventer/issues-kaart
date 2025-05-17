@@ -1,9 +1,5 @@
 <template>
-  <MapContainer
-    v-model:zoom="zoom"
-    v-model:center="center"
-    v-model:bounds="bounds"
-  >
+  <MapContainer>
     <MapEditableFeatureLayer />
 
     <LMarker
@@ -74,18 +70,6 @@ import { LMarker, LPolyline, LPolygon } from "@vue-leaflet/vue-leaflet";
 import type { Issue } from "~/types/Issue";
 import cloneDeep from "lodash-es/cloneDeep";
 import { coordEach } from "@turf/meta";
-
-const bounds = ref<[[number, number], [number, number]]>([
-  [52.229059859924256, 6.04574203491211],
-  [52.30207457819167, 6.30941390991211],
-]);
-
-const center = ref<[number, number]>([
-  (bounds.value[0][0] + bounds.value[1][0]) / 2,
-  (bounds.value[0][1] + bounds.value[1][1]) / 2,
-]);
-
-const zoom = ref(8);
 
 const { issues } = useIssueApi();
 
