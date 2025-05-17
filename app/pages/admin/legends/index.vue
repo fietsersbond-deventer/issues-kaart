@@ -73,6 +73,9 @@
                 <v-color-picker
                   v-model="editedItem.color"
                   show-swatches
+                  hide-inputs
+                  hide-canvas
+                  hide-sliders
                   swatches-max-height="300px"
                 />
               </v-col>
