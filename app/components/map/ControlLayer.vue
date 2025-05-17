@@ -33,11 +33,11 @@
           handler: onClickOutside,
         }"
         class="map-layer-control"
-        @click="expanded = !expanded"
+        @click="onClickFirstLayer(otherLayer)"
       >
-        <span class="map-layer-control__label">{{ activeLayer.name }}</span>
+        <span class="map-layer-control__label">{{ otherLayer.name }}</span>
         <MapBase
-          :base-layer="activeLayer"
+          :base-layer="{ ...otherLayer, visible: true }"
           :bounds="bounds"
           :options="options"
           class="map-layer-control__map"
@@ -98,11 +98,27 @@ watch(activeLayer, () => {
 });
 
 const otherLayer = computed(() => {
-  return layers.value.find(({ visible }) => !visible);
+  return layers.value.find(({ visible }) => !visible) as ConfigLayer;
 });
 
+function onClickFirstLayer(layer: ConfigLayer) {
+  if (expanded.value) {
+    activeLayer.value = layer;
+  }
+  expanded.value = !expanded.value;
+}
+
 const expandedLayers = computed(() => {
-  return expanded.value ? layers.value.filter(({ visible }) => !visible) : [];
+  if (!expanded.value) return [];
+  // get all the invisible layers, but replace the first one with the activeLayer
+  return Array.from(
+    new Set([
+      activeLayer.value,
+      ...layers.value.filter(
+        (layer) => !layer.visible && layer.name !== otherLayer.value!.name
+      ),
+    ])
+  );
 });
 
 const options = {

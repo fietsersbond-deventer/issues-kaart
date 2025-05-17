@@ -13,6 +13,15 @@ export function getConfig(): {
         visible: true,
       },
       {
+        type: "wms",
+        name: "Luchtfoto",
+        url: "https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0",
+        layers: "Actueel_ortho25",
+        format: "image/jpeg",
+        attribution: '&copy; <a href="https://www.kadaster.nl">Kadaster</a>',
+        visible: false,
+      },
+      {
         type: "tile",
         name: "Fietskaart",
         // url: "https://{s}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png",
@@ -29,15 +38,6 @@ export function getConfig(): {
       //     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       //   visible: false,
       // },
-      {
-        type: "wms",
-        name: "Luchtfoto",
-        url: "https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0",
-        layers: "Actueel_ortho25",
-        format: "image/jpeg",
-        attribution: '&copy; <a href="https://www.kadaster.nl">Kadaster</a>',
-        visible: false,
-      },
     ],
   };
 }
