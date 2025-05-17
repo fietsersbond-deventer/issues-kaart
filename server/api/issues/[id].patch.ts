@@ -15,7 +15,6 @@ export default defineEventHandler(async (event) => {
   const updates: Partial<{
     title: string;
     description: string;
-    color: string;
     legend_id: number | null;
     geometry: Geometry;
   }> = await readBody(event);
@@ -65,11 +64,7 @@ export default defineEventHandler(async (event) => {
     values.push(updates.legend_id);
     paramCounter++;
   }
-  if (updates.color !== undefined) {
-    updateFields.push(`color = ?${paramCounter}`);
-    values.push(updates.color || "#2196F3");
-    paramCounter++;
-  }
+
   if (updates.geometry !== undefined) {
     updateFields.push(`geometry = ?${paramCounter}`);
     values.push(JSON.stringify(updates.geometry));
@@ -83,7 +78,7 @@ export default defineEventHandler(async (event) => {
     UPDATE issues 
     SET ${updateFields.join(", ")} 
     WHERE id = ?${paramCounter} 
-    RETURNING id, title, description, color, geometry, created_at
+    RETURNING id, title, description, legend_id, geometry, created_at
   `;
 
   const issue = await hubDatabase()

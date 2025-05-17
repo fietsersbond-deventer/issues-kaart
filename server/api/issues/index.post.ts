@@ -6,13 +6,11 @@ export default defineEventHandler(async (event) => {
   const {
     title,
     description,
-    color,
     legend_id,
     geometry,
   }: {
     title: string;
     description: string;
-    color?: string;
     legend_id: number;
     geometry: Geometry;
   } = await readBody(event);
@@ -41,13 +39,12 @@ export default defineEventHandler(async (event) => {
 
   const issue = await hubDatabase()
     .prepare(
-      "INSERT INTO issues (title, description, legend_id, color, geometry) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING id, title, description, legend_id, color, geometry, created_at"
+      "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, legend_id, geometry, created_at"
     )
     .bind(
       title,
       description,
       legend_id,
-      color || "#2196F3",
       JSON.stringify(geometry)
     )
     .first();

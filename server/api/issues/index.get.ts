@@ -1,10 +1,10 @@
 import type { Issue } from "../../database/schema";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
   const { results: issues } = await hubDatabase()
     .prepare(
-      `SELECT i.id, i.title, i.description, i.color, i.legend_id,
-       l.name as legend_name, l.color as color,
+      `SELECT i.id, i.title, i.description, i.legend_id,
+       l.name as legend_name, l.color,
        i.geometry, i.created_at 
        FROM issues i 
        LEFT JOIN legend l ON i.legend_id = l.id 

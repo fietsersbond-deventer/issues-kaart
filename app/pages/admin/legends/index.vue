@@ -11,137 +11,54 @@
 
     <v-row>
       <v-col cols="12">
-        <v-table>
-          <thead>
-            <tr>
-              <th>Kleur</th>
-              <th>Naam</th>
-              <th>Omschrijving</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in legends" :key="item.id">
-              <td>
-                <div
-                  class="color-preview"
-                  :style="{ backgroundColor: item.color }"
-                />
-              </td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.description }}</td>
-              <td>
-                <v-btn icon variant="text" size="small" @click="editItem(item)">
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
-                <v-btn
-                  icon
-                  variant="text"
-                  size="small"
-                  color="error"
-                  @click="confirmDelete(item)"
-                >
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+        <AdminLegendTable
+          :legends="legends"
+          :usage="legendUsage"
+          @edit="editItem"
+          @delete="confirmDelete"
+        />
       </v-col>
     </v-row>
 
-    <!-- Create/Edit Dialog -->
-    <v-dialog v-model="dialog" max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span>{{ formTitle }}</span>
-        </v-card-title>
+    <AdminLegendDialog v-model="dialog" :legend="editedLegend" @save="save" />
 
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field v-model="editedItem.name" label="Naam" required />
-              </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.description"
-                  label="Omschrijving"
-                />
-              </v-col>
-              <v-col cols="12">
-                <v-color-picker
-                  v-model="editedItem.color"
-                  show-swatches
-                  hide-inputs
-                  hide-canvas
-                  hide-sliders
-                  swatches-max-height="300px"
-                />
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" variant="text" @click="save"> Opslaan </v-btn>
-          <v-btn color="error" variant="text" @click="close"> Annuleren </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Delete Confirmation -->
-    <v-dialog v-model="dialogDelete" max-width="500px">
-      <v-card>
-        <v-card-title>Weet je zeker dat je dit wilt verwijderen?</v-card-title>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" variant="text" @click="deleteItem">Ja</v-btn>
-          <v-btn color="error" variant="text" @click="closeDelete">Nee</v-btn>
-          <v-spacer />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AdminLegendDeleteConfirmDialog
+      v-model="dialogDelete"
+      :legend="itemToDelete"
+      :error="deleteError"
+      :usage="legendUsage"
+      @confirm="deleteItem"
+    />
   </v-container>
 </template>
 
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
+import type { LegendUsage } from "~/composables/useLegendApi";
 
-const { getAll, create, update, remove } = useLegendApi();
+const { getAll, getUsage, create, update, remove } = useLegendApi();
 
 const legends = ref<Legend[]>([]);
+const legendUsage = ref<LegendUsage>({});
 const dialog = ref(false);
 const dialogDelete = ref(false);
-
-const defaultItem: Partial<Legend> = {
-  name: "",
-  description: "",
-  color: "#2196F3",
-};
-
-const editedIndex = ref(-1);
-const editedItem = ref<Partial<Legend>>({ ...defaultItem });
 const itemToDelete = ref<Legend | null>(null);
-
-const formTitle = computed(() => {
-  return editedIndex.value === -1
-    ? "Nieuw Legena Item"
-    : "Legend Item aanpassen";
-});
+const deleteError = ref<string>("");
+const editedLegend = ref<Legend | undefined>();
 
 onMounted(async () => {
-  legends.value = await getAll();
+  const [legendsList, usage] = await Promise.all([getAll(), getUsage()]);
+  legends.value = legendsList;
+  legendUsage.value = usage;
 });
 
 function editItem(item: Legend) {
-  editedIndex.value = legends.value.indexOf(item);
-  editedItem.value = { ...item };
+  editedLegend.value = item;
   dialog.value = true;
 }
 
 function confirmDelete(item: Legend) {
+  deleteError.value = "";
   itemToDelete.value = item;
   dialogDelete.value = true;
 }
@@ -154,53 +71,36 @@ async function deleteItem() {
     legends.value = legends.value.filter(
       (item) => item.id !== itemToDelete.value?.id
     );
-  } catch (error) {
-    // Handle error (show notification, etc.)
-    console.error("Failed to delete legend item:", error);
+    dialogDelete.value = false;
+    deleteError.value = "";
+    itemToDelete.value = null;
+  } catch (error: unknown) {
+    const e = error as { data?: { message?: string } };
+    deleteError.value =
+      e.data?.message || "Het verwijderen van het legenda item is mislukt";
   }
-  closeDelete();
 }
 
-function close() {
-  dialog.value = false;
-  nextTick(() => {
-    editedItem.value = { ...defaultItem };
-    editedIndex.value = -1;
-  });
-}
-
-function closeDelete() {
-  dialogDelete.value = false;
-  itemToDelete.value = null;
-}
-
-async function save() {
+async function save(legendItem: Partial<Legend>) {
   try {
-    if (editedIndex.value > -1) {
+    if (editedLegend.value) {
       // Updating
-      const updatedItem = await update(
-        legends.value[editedIndex.value].id,
-        editedItem.value
-      );
-      Object.assign(legends.value[editedIndex.value], updatedItem);
+      const updatedItem = await update(editedLegend.value.id, legendItem);
+      if (updatedItem) {
+        const index = legends.value.findIndex((l) => l.id === updatedItem.id);
+        if (index !== -1) {
+          legends.value[index] = updatedItem;
+        }
+      }
     } else {
       // Creating
-      const newItem = await create(editedItem.value);
+      const newItem = await create(legendItem);
       legends.value.push(newItem);
     }
-    close();
+    dialog.value = false;
+    editedLegend.value = undefined;
   } catch (error) {
-    // Handle error (show notification, etc.)
     console.error("Failed to save legend item:", error);
   }
 }
 </script>
-
-<style scoped>
-.color-preview {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-}
-</style>

@@ -7,32 +7,34 @@ export default defineEventHandler(async (event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: "Legend ID is required",
+      message: "Legenda ID is verplicht",
     });
   }
 
-  // Check if the legend is being used by any issues
-  const usageCheck = await hubDatabase()
-    .prepare("SELECT COUNT(*) as count FROM issues WHERE legend_id = ?")
+  // Check if there are any issues using this legend before trying to delete
+  const usedByIssues = await hubDatabase()
+    .prepare("SELECT id, title FROM issues WHERE legend_id = ?")
     .bind(id)
-    .first<{ count: number }>();
+    .all<{ id: number; title: string }>();
 
-  if (usageCheck && usageCheck.count > 0) {
+  if (usedByIssues.results && usedByIssues.results.length > 0) {
     throw createError({
       statusCode: 400,
-      message: "Cannot delete legend item that is in use by issues",
+      message: "Dit legenda item kan niet worden verwijderd omdat het in gebruik is",
+      data: { issues: usedByIssues.results }
     });
   }
 
+  // If no issues are using it, we can delete the legend
   const result = await hubDatabase()
-    .prepare("DELETE FROM legend WHERE id = ?")
+    .prepare("DELETE FROM legend WHERE id = ? RETURNING id")
     .bind(id)
-    .run();
+    .first<{ id: number }>();
 
   if (!result) {
     throw createError({
       statusCode: 404,
-      message: `Legend item with ID ${id} not found`,
+      message: `Legenda item met ID ${id} kon niet worden gevonden`,
     });
   }
 

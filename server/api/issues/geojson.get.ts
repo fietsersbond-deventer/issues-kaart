@@ -5,7 +5,7 @@ export default defineEventHandler(async () => {
   const result = await hubDatabase()
     .prepare(
       `SELECT i.id, i.title, i.description, 
-       COALESCE(l.color, i.color) as color,
+       l.color,
        i.legend_id, l.name as legend_name,
        i.geometry, i.created_at
        FROM issues i 
@@ -23,7 +23,7 @@ export default defineEventHandler(async () => {
       id: issue.id,
       title: issue.title,
       description: issue.description,
-      color: issue.color,
+      color: issue.color, // From legend
       created_at: issue.created_at,
     },
   }));

@@ -13,13 +13,14 @@ export type Legend = {
   description: string | null;
   color: string;
   created_at: Date;
+  usage_count: number;
+  used_by_issues: Array<{ id: number; title: string }>;
 };
 
 export type Issue = {
   id: number;
   title: string;
   description: string;
-  color: string;  // Will be removed in future migration
   legend_id: number | null;
   geometry: string; // GeoJSON stored as string
   created_at: Date;

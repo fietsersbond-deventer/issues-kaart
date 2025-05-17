@@ -126,6 +126,10 @@ You are a senior TypeScript programmer with experience in the NestJS framework a
   - style
 - Use the <script setup lang="ts"> syntax for components.
 - always destruct props in the setup function instead of using withDefaults.
+- use defineModel for v-model props.
+- Prevent large components by:
+  - Using subcomponents.
+  - Using slots.
 
 ### geojson
 

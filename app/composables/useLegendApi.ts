@@ -1,5 +1,10 @@
 import type { Legend } from "~~/server/database/schema";
 
+export type LegendUsage = Record<number, {
+  usage_count: number;
+  used_by_issues: Array<{ id: number; title: string }>;
+}>;
+
 export function useLegendApi() {
   const { token } = useAuth();
 
@@ -10,6 +15,13 @@ export function useLegendApi() {
 
   async function getAll() {
     return await $fetch<Legend[]>("/api/legends");
+  }
+
+  async function getUsage() {
+    const result = await $fetch<Record<string, { usage_count: number; used_by_issues: Array<{ id: number; title: string }> }>>("/api/admin/legends/usage", {
+      headers: headers.value,
+    });
+    return result as LegendUsage;
   }
 
   async function create(legend: Partial<Legend>) {
@@ -37,6 +49,7 @@ export function useLegendApi() {
 
   return {
     getAll,
+    getUsage,
     create,
     update,
     remove,
