@@ -30,4 +30,16 @@ definePageMeta({
   // middleware: ["admin"],
 });
 const { isAdmin } = useRoles();
+
+// Redirect to first available menu item when at root admin page
+const route = useRoute();
+const router = useRouter();
+
+onMounted(() => {
+  if (route.path === '/admin') {
+    // Navigate to users if admin, otherwise to legends
+    const firstPath = isAdmin ? '/admin/users' : '/admin/legends';
+    router.replace(firstPath);
+  }
+});
 </script>
