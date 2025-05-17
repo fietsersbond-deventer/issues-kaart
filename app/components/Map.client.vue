@@ -2,76 +2,80 @@
   <MapContainer>
     <MapEditableFeatureLayer />
 
-    <LMarker
+    <MapMarker
       v-for="issue in markers"
       :key="`marker-${issue.id}`"
       :lat-lng="toLatLng(issue)"
       :color="issue.color"
+      :selected="issue.id == selectedId"
       @click="navigateToIssue(issue)"
     >
-      <LTooltip :sticky="true">
+      <template #tooltip>
         <div>
           <strong>{{ issue.title }}</strong>
           <div v-if="issue.legend_name" class="text-caption">
             {{ issue.legend_name }}
           </div>
         </div>
-      </LTooltip>
-      <LIcon
-        :options="{ iconSize: [40, 40], iconAnchor: [20, 40] }"
-        class="marker-icon"
-      >
-        <VIcon
-          icon="mdi-map-marker"
-          :size="40"
-          :color="issue.color"
-          class="text-2xl"
-        /> </LIcon
-    ></LMarker>
+      </template>
+    </MapMarker>
 
-    <LPolygon
+    <MapPolygon
       v-for="issue in polygons"
       :key="`polygon-${issue.id}`"
-      :color="issue.color"
       :lat-lngs="toLatLng(issue)"
+      :color="issue.color"
+      :selected="issue.id == selectedId"
       @click="navigateToIssue(issue)"
     >
-      <LTooltip :sticky="true">
+      <template #tooltip>
         <div>
           <strong>{{ issue.title }}</strong>
           <div v-if="issue.legend_name" class="text-caption">
             {{ issue.legend_name }}
           </div>
         </div>
-      </LTooltip>
-    </LPolygon>
+      </template>
+    </MapPolygon>
 
-    <LPolyline
+    <MapPolyline
       v-for="issue in lines"
       :key="`line-${issue.id}`"
-      :color="issue.color"
       :lat-lngs="toLatLng(issue)"
+      :color="issue.color"
+      :selected="issue.id == selectedId"
       @click="navigateToIssue(issue)"
     >
-      <LTooltip :sticky="true">
+      <template #tooltip>
         <div>
+          <strong>{{ issue.id === selectedId ? "true" : "false" }}</strong>
           <strong>{{ issue.title }}</strong>
           <div v-if="issue.legend_name" class="text-caption">
             {{ issue.legend_name }}
           </div>
         </div>
-      </LTooltip>
-    </LPolyline>
+      </template>
+    </MapPolyline>
   </MapContainer>
 </template>
 
 <script setup lang="ts">
-import { LMarker, LPolyline, LPolygon } from "@vue-leaflet/vue-leaflet";
 import type { Issue } from "~/types/Issue";
 import cloneDeep from "lodash-es/cloneDeep";
 import { coordEach } from "@turf/meta";
+import MapMarker from "./map/MapMarker.vue";
+import MapPolygon from "./map/MapPolygon.vue";
+import MapPolyline from "./map/MapPolyline.vue";
 
 const { issues } = useIssueApi();
+const route = useRoute();
+const selectedId = computed(
+  () => parseInt(route.params.id as string) as number | null
+);
+
+watch(selectedId, (newId) => {
+  console.log("Selected ID changed:", newId);
+});
 
 const markers = computed(() => {
   return issues.value?.filter((issue) => issue.geometry.type === "Point") ?? [];
@@ -103,10 +107,3 @@ function toLatLng(issue: Issue) {
   return geometry.coordinates;
 }
 </script>
-
-<style>
-.leaflet-marker-icon {
-  background-color: transparent;
-  border: none;
-}
-</style>
