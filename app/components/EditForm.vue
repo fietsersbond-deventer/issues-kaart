@@ -32,6 +32,7 @@
                   <QuillEditor
                     v-model:content="issue.description"
                     content-type="html"
+                    :toolbar
                     :modules="modules"
                     class="quill-editor"
                   />
@@ -104,16 +105,22 @@
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import type { Issue } from "~/types/Issue";
-import { ImageDrop } from "quill-image-drop-module";
 import { imageCompressor } from "quill-image-compress";
 import type { Legend } from "~~/server/database/schema";
+import BlotFormatter from "quill-blot-formatter";
 
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue>({ required: true });
 
 const modules = [
-  { name: "imagedrop", module: ImageDrop },
+  {
+    name: "blotFormatter",
+    module: BlotFormatter,
+    options: {
+      /* options */
+    },
+  },
   {
     name: "compress",
     module: imageCompressor,
@@ -128,6 +135,15 @@ const modules = [
       insertIntoEditor: undefined,
     },
   },
+];
+
+const toolbar = [
+  [{ header: [1, 2, 3, 4, false] }],
+  ["bold", "italic"], // toggled buttons
+  ["link", "image"],
+
+  [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
+  [{ indent: "-1" }, { indent: "+1" }], // outdent/indent
 ];
 
 const { update, create, remove } = useIssueApi();

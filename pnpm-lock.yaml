@@ -101,18 +101,24 @@ importers:
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
+      quill-blot-formatter:
+        specifier: ^1.0.5
+        version: 1.0.5
       quill-image-compress:
         specifier: ^2.0.3
-        version: 2.0.3(quill@1.3.7)
+        version: 2.0.3
       quill-image-drop-module:
         specifier: ^1.0.3
         version: 1.0.3
       quill-image-resize-module:
         specifier: ^3.0.0
         version: 3.0.0
+      quill-image-uploader:
+        specifier: ^1.3.0
+        version: 1.3.0
       quill-paste-smart:
         specifier: ^2.0.0
-        version: 2.0.0(quill@1.3.7)
+        version: 2.0.0
       quill-table-ui:
         specifier: ^1.0.7
         version: 1.0.7
@@ -2849,6 +2855,10 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
 
+  deepmerge@2.2.1:
+    resolution: {integrity: sha512-R9hc1Xa/NOBi9WRVUWg19rl1UB7Tt4kuPd+thNJgFZoxXsTz7ncaPaeIm+40oSGuP33DfMb4sZt1QIGiJzC4EA==}
+    engines: {node: '>=0.10.0'}
+
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
@@ -4992,6 +5002,11 @@ packages:
   quickselect@2.0.0:
     resolution: {integrity: sha512-RKJ22hX8mHe3Y6wH/N3wCM6BWtjaxIyyUIkpHOvfFnxdI4yD4tBXEBKSbriGujF6jnSVkJrffuo6vxACiSSxIw==}
 
+  quill-blot-formatter@1.0.5:
+    resolution: {integrity: sha512-iVmuEdmMIpvERBnnDfosWul6VAVN6tqQRruUzAEwA9ZbQ/Ef7DTHGZDUR4KklXpxM+z50opFp6m1NhNdN6HJhw==}
+    peerDependencies:
+      quill: ^1.3.4
+
   quill-delta@3.6.3:
     resolution: {integrity: sha512-wdIGBlcX13tCHOXGMVnnTVFtGRLoP0imqxM696fIPwIf5ODIYUHIvHbZcyvGlZFiFhK5XzDC2lpjbxRhnM05Tg==}
     engines: {node: '>=0.10'}
@@ -5009,6 +5024,11 @@ packages:
 
   quill-image-resize-module@3.0.0:
     resolution: {integrity: sha512-1TZBnUxU/WIx5dPyVjQ9yN7C6mLZSp04HyWBEMqT320DIq4MW4JgzlOPDZX5ZpBM3bU6sacU4kTLUc8VgYQZYw==}
+
+  quill-image-uploader@1.3.0:
+    resolution: {integrity: sha512-vO43GEn93rGThje/MlotkQE9OV5nOKBZ4oKhn71L/EjrM/J2P/8iDDVd9GEwlsGsbskeJqPLopsSQ4HlVVIn6A==}
+    peerDependencies:
+      quill: ^1.3.7
 
   quill-paste-smart@2.0.0:
     resolution: {integrity: sha512-oLhzV5p0xx1xYoMYtViAE92PBMclY4DQVCvpBwAm49sCk3M+Y9q8+DnJMmaROOUCkv78BaggzHCiimCRHyYZ9w==}
@@ -9341,6 +9361,8 @@ snapshots:
 
   deep-is@0.1.4: {}
 
+  deepmerge@2.2.1: {}
+
   deepmerge@4.3.1: {}
 
   default-browser-id@5.0.0: {}
@@ -11739,6 +11761,10 @@ snapshots:
 
   quickselect@2.0.0: {}
 
+  quill-blot-formatter@1.0.5:
+    dependencies:
+      deepmerge: 2.2.1
+
   quill-delta@3.6.3:
     dependencies:
       deep-equal: 1.1.2
@@ -11751,9 +11777,7 @@ snapshots:
       lodash.clonedeep: 4.5.0
       lodash.isequal: 4.5.0
 
-  quill-image-compress@2.0.3(quill@1.3.7):
-    dependencies:
-      quill: 1.3.7
+  quill-image-compress@2.0.3: {}
 
   quill-image-drop-module@1.0.3:
     dependencies:
@@ -11765,10 +11789,11 @@ snapshots:
       quill: 1.3.7
       raw-loader: 0.5.1
 
-  quill-paste-smart@2.0.0(quill@1.3.7):
+  quill-image-uploader@1.3.0: {}
+
+  quill-paste-smart@2.0.0:
     dependencies:
       dompurify: 3.2.5
-      quill: 1.3.7
 
   quill-table-ui@1.0.7:
     dependencies:
