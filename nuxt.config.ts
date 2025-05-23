@@ -22,8 +22,8 @@ export default defineNuxtConfig({
   ],
   hub: {
     database: true,
+    blob: true,
     kv: false,
-    blob: false,
     cache: false,
   },
   auth: {
