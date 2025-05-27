@@ -1,31 +1,27 @@
 <template>
-  <MapBase v-model:bounds="bounds" :base-layer="activeLayer">
+  <MapBase :base-layer="currentLayer">
     <slot />
-    <l-control
-      v-if="baseLayers.length > 1"
-      position="bottomleft"
-      class="d-flex align-end"
-    >
+    <!-- <ol-control v-if="baseLayers.length > 1" position="bottom-left">
       <MapControlLayer
-        v-model="activeLayer"
-        v-model:layers="baseLayers"
-        :bounds="bounds"
+        v-model="currentLayer"
+        v-model:layers="availableLayers"
       />
-    </l-control>
-    <LControlScale position="bottomright" />
+    </ol-control> -->
   </MapBase>
 </template>
+
 <script setup lang="ts">
+import { ref } from "vue";
 import type { ConfigLayer } from "~/types/LayerConfig";
 
-const { bounds } = useMapBounds();
 const { baseLayers } = getConfig();
 
-const activeLayer = ref<ConfigLayer>(
+const availableLayers = ref(baseLayers);
+const currentLayer = ref<ConfigLayer>(
   baseLayers.find(({ visible }) => !!visible) || baseLayers[0]!
 );
 
-if (!activeLayer.value) {
+if (!currentLayer.value) {
   throw new Error("Geen laag beschikbaar in de configuratie");
 }
 </script>

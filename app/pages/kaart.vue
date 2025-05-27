@@ -32,10 +32,6 @@ useEditableFeature().provide(reactiveFeature);
 </script>
 
 <style>
-.leaflet-container {
-  height: 100%;
-}
-
 .navigation-content {
   display: flex;
   flex-direction: column;
@@ -54,5 +50,10 @@ useEditableFeature().provide(reactiveFeature);
   overflow: hidden;
   border-top: 1px solid rgba(0, 0, 0, 0.12);
   background: white;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
 }
 </style>
