@@ -1,117 +1,75 @@
 <template>
-  <LMap
-    v-if="layer"
-    v-bind="$attrs"
-    v-model:bounds="latLngBounds"
-    :use-global-leaflet="true"
-    :options="{ editable: true, ...$attrs.options }"
-    @ready="mapLoaded"
+  <Map.OlMap
+    :load-tiles-while-animating="true"
+    :load-tiles-while-interacting="true"
   >
-    <template v-if="ready">
-      <slot :map="mapPromise" />
-    </template>
-    <component :is="layerComponent" v-bind="layer" />
-  </LMap>
+    <Map.OlView
+      ref="viewRef"
+      :center="center"
+      :zoom="zoom"
+      :projection="projection"
+    />
+
+    <Layers.OlTileLayer>
+      <Sources.OlSourceXyz
+        v-if="baseLayer.type === 'xyz'"
+        :url="baseLayer.url"
+      />
+      <Sources.OlSourceTileWms
+        v-else-if="baseLayer.type === 'wms'"
+        :layers="baseLayer.layers"
+        :url="baseLayer.url"
+        :attributions="baseLayer.attributions"
+        :params="{}"
+      />
+      <Sources.OlSourceStadiaMaps
+        v-else-if="baseLayer.type === 'stadia'"
+        v-bind="baseLayer"
+      />
+    </Layers.OlTileLayer>
+  </Map.OlMap>
 </template>
+
 <script setup lang="ts">
-import { isBoundsTuples, type IBoundsTuples } from "~/types/IBounds";
-import { LMap, LTileLayer, LWmsTileLayer } from "@vue-leaflet/vue-leaflet";
-
-import type { LatLngBounds, Map } from "leaflet";
+// https://vue3openlayers.netlify.app/get-started.html
+import { ref, computed } from "vue";
+import { fromLonLat, transform } from "ol/proj";
+import type BaseEvent from "ol/events/Event";
 import type { ConfigLayer } from "~/types/LayerConfig";
-import LWMTSTileLayer from "./LWMTSTileLayer.vue";
+import type { Map as MapType, View } from "ol";
+import { Map, Layers, Sources } from "vue3-openlayers";
+import type { ObjectEvent } from "ol/Object";
 
-const mapPromise = deferred<Map>();
-const mapObject = shallowRef<Map | null>(null);
-useMap().provideMap(mapPromise.promise);
-
-const bounds = defineModel<IBoundsTuples>("bounds", {
-  required: true,
-});
-
-const latLngBounds = computed({
-  get: () => {
-    return bounds.value as LatLngBounds | IBoundsTuples;
-  },
-  set: (value) => {
-    bounds.value = parseBounds(value);
-  },
-});
-
-const props = defineProps<{
-  baseLayer?: ConfigLayer;
+const { baseLayer } = defineProps<{
+  baseLayer: ConfigLayer;
 }>();
 
-const ready = ref(false);
-const config = getConfig();
+const { center, zoom, projection, viewRef } = useMapState();
 
-const defaultBaseLayer = computed(() => {
-  return config.baseLayers.find((layer: ConfigLayer) => layer.visible);
-});
+const mapRef = ref<MapType>();
 
-const layer = computed(() => {
-  const layer = props.baseLayer || defaultBaseLayer.value;
-
-  if (!layer) {
-    const error = new Error("No baselayer available in the config");
-    throw error;
-  }
-
-  return layer;
-});
-
-const layerComponent = computed(() => {
-  const { type } = layer.value;
-  if (type === "tile") {
-    return LTileLayer;
-  } else if (type === "wms") {
-    return LWmsTileLayer;
-  } else if (type === "wmts") {
-    return LWMTSTileLayer;
-  }
-  throw new Error(`Invalid layer type ${type}`);
-});
-
-const resizeObserver = new ResizeObserver(() => {
-  if (mapObject.value) {
-    mapObject.value.invalidateSize();
-  }
-});
-
-onUnmounted(() => {
-  resizeObserver?.disconnect();
-});
-
-function mapLoaded(map: Map) {
-  mapPromise.resolve(map);
-  ready.value = true;
-  mapObject.value = map;
-  resizeObserver.observe(map.getContainer());
+function onCenterChange(event: BaseEvent) {
+  // Handle center changes
+  const view = event.target as View;
+  center.value = view.getCenter()!;
+  const newCenter = transform(view.getCenter()!, projection.value, "EPSG:4326");
+  center.value = newCenter;
 }
 
-// const fitted = ref(false);
-watch(
-  [bounds, mapObject],
-  () => {
-    if (mapObject.value && bounds.value) {
-      if (!isBoundsTuples(bounds.value)) {
-        const [[south, west], [north, east]] = parseBounds(bounds.value);
-        bounds.value = [
-          [south, west],
-          [north, east],
-        ];
-      }
-      // if (!fitted.value) {
-      mapObject.value.fitBounds(bounds.value);
-      // fitted.value = true;
-      // }
-    }
-  },
-  { immediate: true, deep: true }
-);
+function resolutionChanged(event: ObjectEvent) {
+  // currentResolution.value = event.target.getResolution();
+  zoom.value = event.target.getZoom();
+}
 
 defineExpose({
-  mapPromise,
-  mapObject,
+  mapRef,
+  viewRef,
 });
 </script>
+
+<style>
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+</style>
