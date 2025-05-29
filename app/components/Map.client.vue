@@ -73,26 +73,18 @@
 </template>
 
 <script setup lang="ts">
-import type TileLayer from "ol/layer/Tile";
-import { computed, ref, onMounted } from "vue";
+import { computed, ref } from "vue";
 import type { Issue } from "~/types/Issue";
-import type { Legend } from "~~/server/database/schema";
 import { register } from "ol/proj/proj4.js";
 import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 
 const { issues } = useIssueApi();
-const { getAll: getLegends } = useLegendApi();
 
 const center = ref([687858.9021986299, 6846820.48790154]);
 const zoom = ref(13);
 const projection = ref("EPSG:3857");
-
-const layerList = ref<TileLayer[]>([]);
-const lightLayer = ref<{ tileLayer: TileLayer } | null>(null);
-const luchtfotoLayer = ref<{ tileLayer: TileLayer } | null>(null);
-const fietskaartLayer = ref<{ tileLayer: TileLayer } | null>(null);
 
 proj4.defs(
   "EPSG:28992",
@@ -103,8 +95,6 @@ const rdProjection = new Projection({
   code: "EPSG:28992",
   extent: [-285401.92, 22598.08, 595401.92, 903401.92],
 });
-
-const legends = ref<Legend[]>([]);
 
 const markers = computed(() => {
   return issues.value?.filter((issue) => issue.geometry.type === "Point") ?? [];
@@ -149,20 +139,4 @@ function getPolygonFillColor(issue: Issue) {
   // Add alpha channel for fill transparency
   return color + "40"; // 40 is 25% opacity in hex
 }
-
-onMounted(async () => {
-  legends.value = await getLegends();
-
-  // Attach legend data to issues
-  if (issues.value) {
-    issues.value = issues.value.map((issue) => ({
-      ...issue,
-      legend: legends.value.find((l) => l.id === issue.legend_id),
-    }));
-  }
-
-  layerList.value = [lightLayer, luchtfotoLayer, fietskaartLayer]
-    .filter((layer): layer is NonNullable<typeof layer> => layer !== null)
-    .map((layer) => layer.tileLayer);
-});
 </script>
