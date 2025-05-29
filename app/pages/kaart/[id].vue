@@ -6,7 +6,7 @@
           v-if="status === 'authenticated'"
           :icon="!isEditing ? 'mdi-pencil' : 'mdi-pencil-remove'"
           variant="text"
-          @click="isEditing = !isEditing"
+          @click="toggleEditing()"
         />
         <v-btn
           v-if="isEditing"
@@ -14,7 +14,7 @@
           variant="text"
           @click="
             showEditDialog = !showEditDialog;
-            isEditing = false;
+            setEditing(false);
           "
         />
       </Toolbar>
@@ -28,8 +28,8 @@
           <EditForm
             v-model="issue"
             :is-new="false"
-            @save="isEditing = false"
-            @cancel="isEditing = false"
+            @save="setEditing(false)"
+            @cancel="setEditing(false)"
           />
         </template>
         <!-- eslint-disable-next-line vue/no-v-html -->
@@ -41,8 +41,8 @@
           <EditForm
             v-model="issue"
             :is-new="true"
-            @save="isEditing = false"
-            @cancel="isEditing = false"
+            @save="setEditing(false)"
+            @cancel="setEditing(false)"
           />
         </template>
         <div v-else>Klik op de edit knop om een nieuw issue toe te voegen</div>
@@ -72,7 +72,7 @@ const route = useRoute();
 const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
-const isEditing = ref(false);
+const { isEditing, setEditing, toggleEditing } = useIsEditing();
 
 const { get } = useIssueApi();
 const issue = ref<Issue | null>(null);
@@ -86,7 +86,7 @@ if (!id) {
   // Handle invalid id type
   navigateTo("/kaart");
 } else if (id === "new" || id === "undefined") {
-  isEditing.value = true;
+  setEditing(true);
   issue.value = {
     title: "",
     description: "",
