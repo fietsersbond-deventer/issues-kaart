@@ -15,7 +15,7 @@
       <ol-source-tile-wms
         url="https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0"
         layers="Actueel_ortho25"
-        attributions="&copy; <a href='https://www.kadaster.nl'>Kadaster</a>"
+        attributions='&copy; <a href="https://www.kadaster.nl">Kadaster</a>'
       />
     </ol-tile-layer>
 
@@ -32,7 +32,7 @@
     <ol-tile-layer ref="fietskaart" title="Fietskaart" :visible="false">
       <ol-source-xyz
         url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
-        attributions="&copy; <a href='http://opencyclemap.org'>OpenCycleMap</a>"
+        attributions='&copy; <a href="http://opencyclemap.org">OpenCycleMap</a>'
       />
     </ol-tile-layer>
 
@@ -77,13 +77,16 @@
       </ol-source-vector>
     </ol-vector-layer>
 
-    <ol-interaction-select @select="onFeatureSelect">
+    <ol-interaction-select 
+      @select="onFeatureSelect"
+    >
       <ol-style>
-        <ol-style-stroke color="green" :width="10" />
-        <ol-style-fill color="rgba(255,255,255,0.5)" />
-        <ol-style-circle :radius="7">
-          <ol-style-stroke color="white" :width="2" />
+        <ol-style-circle :radius="8">
+          <ol-style-fill :color="selectedFeatureColor" />
+          <ol-style-stroke color="black" :width="2" />
         </ol-style-circle>
+        <ol-style-stroke :color="'black'" :width="3" />
+        <ol-style-fill :color="selectedFeatureFillColor" />
       </ol-style>
     </ol-interaction-select>
 
@@ -101,6 +104,7 @@ import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
 import type { Feature } from "ol";
 import type { Geometry } from "ol/geom";
+// OpenLayers styles are handled through components
 
 const { issues } = useIssueApi();
 
@@ -170,6 +174,10 @@ function navigateToIssue(issue: Issue) {
   navigateTo(`/kaart/${issue.id}`);
 }
 
+// Selection style state
+const selectedFeatureColor = ref('#000000');
+const selectedFeatureFillColor = ref('rgba(0,0,0,0.25)');
+
 function onFeatureSelect(event: SelectEvent) {
   const selectedFeatures = event.selected;
   if (selectedFeatures && selectedFeatures.length > 0) {
@@ -179,9 +187,15 @@ function onFeatureSelect(event: SelectEvent) {
     if (issueId && issues.value) {
       const issue = issues.value.find((i) => i.id === issueId);
       if (issue) {
+        selectedFeatureColor.value = issue.color || '#000000';
+        selectedFeatureFillColor.value = getPolygonFillColor(issue);
         navigateToIssue(issue);
       }
     }
   }
 }
 </script>
+
+<style>
+/* Optional styles */
+</style>
