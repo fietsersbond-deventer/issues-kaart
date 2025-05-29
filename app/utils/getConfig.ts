@@ -10,7 +10,7 @@ export function getConfig(): {
         name: "licht",
         layer: "alidade_smooth",
         attributions: `© <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>, © <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a>, © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>`,
-        // visible: true,
+        visible: true,
       },
       {
         type: "wms",
@@ -27,7 +27,7 @@ export function getConfig(): {
         url: "https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",
         attributions:
           '&copy; <a href="http://opencyclemap.org">OpenCycleMap</a>',
-        visible: true,
+        // visible: true,
       },
       // {
       //   type: "tile",
