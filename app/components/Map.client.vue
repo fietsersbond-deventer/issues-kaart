@@ -46,8 +46,11 @@
           <ol-geom-point :coordinates="toPointCoords(issue)" />
           <ol-style>
             <ol-style-circle :radius="7">
-              <ol-style-fill :color="issue.color || '#000000'" />
-              <ol-style-stroke color="white" :width="2" />
+              <ol-style-fill :color="issue.color" />
+              <ol-style-stroke
+                :color="isSelected(issue) ? 'black' : 'white'"
+                :width="2"
+              />
             </ol-style-circle>
           </ol-style>
         </ol-feature>
@@ -59,7 +62,10 @@
         >
           <ol-geom-line-string :coordinates="toLineCoords(issue)" />
           <ol-style>
-            <ol-style-stroke :color="issue.color || '#000000'" :width="3" />
+            <ol-style-stroke
+              :color="issue.color"
+              :width="isSelected(issue) ? 6 : 3"
+            />
           </ol-style>
         </ol-feature>
 
@@ -70,25 +76,17 @@
         >
           <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
           <ol-style>
-            <ol-style-stroke :color="issue.color || '#000000'" :width="2" />
+            <ol-style-stroke
+              :color="isSelected(issue) ? 'black' : issue.color"
+              :width="2"
+            />
             <ol-style-fill :color="getPolygonFillColor(issue)" />
           </ol-style>
         </ol-feature>
       </ol-source-vector>
     </ol-vector-layer>
 
-    <ol-interaction-select 
-      @select="onFeatureSelect"
-    >
-      <ol-style>
-        <ol-style-circle :radius="8">
-          <ol-style-fill :color="selectedFeatureColor" />
-          <ol-style-stroke color="black" :width="2" />
-        </ol-style-circle>
-        <ol-style-stroke :color="'black'" :width="3" />
-        <ol-style-fill :color="selectedFeatureFillColor" />
-      </ol-style>
-    </ol-interaction-select>
+    <ol-interaction-select :condition="click" @select="onFeatureSelect" />
 
     <ol-layerswitcherimage-control :mouseover="true" />
   </ol-map>
@@ -104,9 +102,15 @@ import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
 import type { Feature } from "ol";
 import type { Geometry } from "ol/geom";
-// OpenLayers styles are handled through components
+import { click } from "ol/events/condition";
+import { useSelectedId } from "~/composables/useSelectedId";
 
 const { issues } = useIssueApi();
+
+const { selectedId } = useSelectedId();
+function isSelected(issue: Issue) {
+  return issue.id === selectedId.value;
+}
 
 const center = ref([687858.9021986299, 6846820.48790154]);
 const zoom = ref(13);
@@ -174,24 +178,14 @@ function navigateToIssue(issue: Issue) {
   navigateTo(`/kaart/${issue.id}`);
 }
 
-// Selection style state
-const selectedFeatureColor = ref('#000000');
-const selectedFeatureFillColor = ref('rgba(0,0,0,0.25)');
-
 function onFeatureSelect(event: SelectEvent) {
   const selectedFeatures = event.selected;
   if (selectedFeatures && selectedFeatures.length > 0) {
     const feature = selectedFeatures[0] as Feature<Geometry>;
     const properties = feature.getProperties();
     const issueId = properties.issueId;
-    if (issueId && issues.value) {
-      const issue = issues.value.find((i) => i.id === issueId);
-      if (issue) {
-        selectedFeatureColor.value = issue.color || '#000000';
-        selectedFeatureFillColor.value = getPolygonFillColor(issue);
-        navigateToIssue(issue);
-      }
-    }
+    selectedId.value = issueId;
+    navigateToIssue({ id: issueId } as Issue);
   }
 }
 </script>
