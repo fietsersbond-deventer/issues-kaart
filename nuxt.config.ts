@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   css: [
     "@/assets/css/main.css",
     "ol/ol.css",
-    "vue3-openlayers/dist/vue3-openlayers.css"
+    "vue3-openlayers/dist/vue3-openlayers.css",
   ],
   runtimeConfig: {
     public: {
