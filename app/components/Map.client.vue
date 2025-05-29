@@ -9,7 +9,7 @@
       @change:resolution="resolutionChanged"
     />
 
-    <ol-tile-layer ref="light" title="Licht">
+    <ol-tile-layer ref="light" title="Licht" :display-in-layer-switcher="false">
       <ol-source-stadia-maps layer="alidade_smooth" />
     </ol-tile-layer>
 
@@ -20,28 +20,27 @@
         attributions="&copy; <a href='https://www.kadaster.nl'>Kadaster</a>"
       />
     </ol-tile-layer>
+    <ol-tile-layer ref="lufolabels" title="Straatnamen" :visible="false">
+      <ol-source-wmts
+        url="https://service.pdok.nl/bzk/luchtfotolabels/wmts/v1_0"
+        layer="lufolabels"
+        :projection="rdProjection"
+        matrix-set="EPSG:28992"
+        format="image/png"
+      />
+    </ol-tile-layer>
 
     <ol-tile-layer ref="fietskaart" title="Fietskaart" :visible="false">
       <ol-source-xyz
         url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
         attributions="&copy; <a href='http://opencyclemap.org'>OpenCycleMap</a>"
       />
-
-      <ol-tile-layer ref="lufolabels" title="Lufolabels" :visible="false">
-        <ol-source-wmts
-          url="https://service.pdok.nl/bzk/luchtfotolabels/wmts/v1_0"
-          layer="lufolabels"
-          :projection="rdProjection"
-          matrix-set="EPSG:28992"
-          format="image/png"
-        />
-      </ol-tile-layer>
-
-      <ol-layerswitcherimage-control
-        :mouseover="true"
-        @onchange-check="onLayerChange"
-      />
     </ol-tile-layer>
+
+    <ol-layerswitcherimage-control
+      :mouseover="true"
+      @change:visible="onLayerChange"
+    />
   </ol-map>
 </template>
 
