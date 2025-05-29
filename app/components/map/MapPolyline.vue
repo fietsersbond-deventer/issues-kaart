@@ -1,75 +1,69 @@
 <template>
-  <LPolyline
-    :lat-lngs="latLngs"
-    :options="lineOptions"
-    :weight="5"
-    @ready="onReady"
-    @click="$emit('click')"
-  >
-    <LTooltip :sticky="true">
-      <slot name="tooltip" />
-    </LTooltip>
-  </LPolyline>
+  <ol-feature @click="onClick">
+    <ol-geom-line-string :coordinates="transformedCoords">
+      <ol-style :condition="true">
+        <ol-style-stroke :color="color" :width="selected ? 6 : 4" />
+      </ol-style>
+    </ol-geom-line-string>
+    <ol-overlay
+      v-if="showTooltip"
+      :position="tooltipPosition"
+      :offset="[0, -10]"
+    >
+      <div class="tooltip">
+        <slot name="tooltip" />
+      </div>
+    </ol-overlay>
+  </ol-feature>
 </template>
 
 <script setup lang="ts">
-import type { Polyline } from "leaflet";
-import { onUnmounted, watch } from "vue";
+import { ref, computed } from "vue";
+import { fromLonLat } from "ol/proj";
 
 const props = defineProps<{
-  latLngs: [number, number][];
+  coordinates: [number, number][]; // Array of coordinates for polyline
   color: string;
   selected?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: "click"): void;
 }>();
 
-const lineOptions = {
-  color: props.color,
-  weight: 3,
-  opacity: 1,
-};
+const showTooltip = ref(false);
 
-let svgPath: SVGPathElement | null = null;
+// Transform coordinates to EPSG:3857
+const transformedCoords = computed(() => {
+  return props.coordinates.map((coord) => fromLonLat(coord));
+});
 
-function setupSvgElement(line: Polyline) {
-  const path = line.getElement();
-  if (path instanceof SVGPathElement) {
-    svgPath = path;
-    updateClass();
+// Calculate center of line for tooltip
+const tooltipPosition = computed(() => {
+  if (!props.coordinates.length) {
+    return fromLonLat([0, 0]);
   }
+
+  // Use middle point of the line
+  const midIndex = Math.floor(props.coordinates.length / 2);
+  const coord = props.coordinates[midIndex];
+  return fromLonLat(coord || [0, 0]);
+});
+
+function onClick() {
+  emit("click");
 }
-
-function updateClass() {
-  if (!svgPath) return;
-
-  if (props.selected) {
-    svgPath.classList.add("line-selected");
-  } else {
-    svgPath.classList.remove("line-selected");
-  }
-}
-
-function onReady(line: Polyline) {
-  setupSvgElement(line);
-}
-
-watch(() => props.selected, updateClass);
 </script>
 
-<style>
-.line-selected {
-  filter: drop-shadow(0 0 8px currentColor)
-    drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
-}
-
-path {
-  transition: all 0.3s ease;
-}
-
-path:hover:not(.line-selected) {
-  filter: brightness(1.2);
+<style scoped>
+.tooltip {
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  max-width: 200px;
+  z-index: 1;
+  pointer-events: none;
 }
 </style>
