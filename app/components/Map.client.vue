@@ -5,8 +5,6 @@
       :center="center"
       :zoom="zoom"
       :projection="projection"
-      @change:center="centerChanged"
-      @change:resolution="resolutionChanged"
     />
 
     <ol-tile-layer ref="light" title="Licht" :display-in-layer-switcher="false">
@@ -20,6 +18,7 @@
         attributions="&copy; <a href='https://www.kadaster.nl'>Kadaster</a>"
       />
     </ol-tile-layer>
+
     <ol-tile-layer ref="lufolabels" title="Straatnamen" :visible="false">
       <ol-source-wmts
         url="https://service.pdok.nl/bzk/luchtfotolabels/wmts/v1_0"
@@ -37,33 +36,63 @@
       />
     </ol-tile-layer>
 
-    <ol-layerswitcherimage-control
-      :mouseover="true"
-      @change:visible="onLayerChange"
-    />
+    <ol-vector-layer>
+      <ol-source-vector>
+        <!-- Points -->
+        <ol-feature v-for="issue in markers" :key="`marker-${issue.id}`">
+          <ol-geom-point :coordinates="toPointCoords(issue)" />
+          <ol-style>
+            <ol-style-circle :radius="7">
+              <ol-style-fill :color="issue.color || '#000000'" />
+              <ol-style-stroke color="white" :width="2" />
+            </ol-style-circle>
+          </ol-style>
+        </ol-feature>
+
+        <!-- Lines -->
+        <ol-feature v-for="issue in lines" :key="`line-${issue.id}`">
+          <ol-geom-line-string :coordinates="toLineCoords(issue)" />
+          <ol-style>
+            <ol-style-stroke :color="issue.color || '#000000'" :width="3" />
+          </ol-style>
+        </ol-feature>
+
+        <!-- Polygons -->
+        <ol-feature v-for="issue in polygons" :key="`polygon-${issue.id}`">
+          <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
+          <ol-style>
+            <ol-style-stroke :color="issue.color || '#000000'" :width="2" />
+            <ol-style-fill :color="getPolygonFillColor(issue)" />
+          </ol-style>
+        </ol-feature>
+      </ol-source-vector>
+    </ol-vector-layer>
+
+    <ol-layerswitcherimage-control :mouseover="true" />
   </ol-map>
 </template>
 
 <script setup lang="ts">
 import type TileLayer from "ol/layer/Tile";
-import { computed } from "vue";
+import { computed, ref, onMounted } from "vue";
 import type { Issue } from "~/types/Issue";
+import type { Legend } from "~~/server/database/schema";
 import { register } from "ol/proj/proj4.js";
+import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 
 const { issues } = useIssueApi();
-const route = useRoute();
+const { getAll: getLegends } = useLegendApi();
 
-// const center = ref([6.04574203491211, 52.229059859924256]);
 const center = ref([687858.9021986299, 6846820.48790154]);
 const zoom = ref(13);
 const projection = ref("EPSG:3857");
 
 const layerList = ref<TileLayer[]>([]);
-const lightLayer = ref(null);
-const luchtfotoLayer = ref(null);
-const fietskaartLayer = ref(null);
+const lightLayer = ref<{ tileLayer: TileLayer } | null>(null);
+const luchtfotoLayer = ref<{ tileLayer: TileLayer } | null>(null);
+const fietskaartLayer = ref<{ tileLayer: TileLayer } | null>(null);
 
 proj4.defs(
   "EPSG:28992",
@@ -75,17 +104,7 @@ const rdProjection = new Projection({
   extent: [-285401.92, 22598.08, 595401.92, 903401.92],
 });
 
-onMounted(() => {
-  console.log("");
-  // @ts-ignore
-  layerList.value = [lightLayer, luchtfotoLayer, fietskaartLayer]
-    .filter((layer) => layer !== null)
-    .map((layer) => layer.tileLayer);
-});
-
-const selectedId = computed(
-  () => parseInt(route.params.id as string) as number | null
-);
+const legends = ref<Legend[]>([]);
 
 const markers = computed(() => {
   return issues.value?.filter((issue) => issue.geometry.type === "Point") ?? [];
@@ -103,30 +122,47 @@ const lines = computed(() => {
   );
 });
 
-function navigateToIssue(issue: Issue) {
-  navigateTo(`/kaart/${issue.id}`);
+function toPointCoords(issue: Issue) {
+  if (issue.geometry.type !== "Point") return [0, 0];
+  // Transform from EPSG:3857 to EPSG:4326
+  return transform(issue.geometry.coordinates, "EPSG:4326", "EPSG:3857");
 }
 
-const currentCenter = ref(center.value);
-const currentZoom = ref(zoom.value);
-const currentResolution = ref(0);
-
-function resolutionChanged(event) {
-  currentResolution.value = event.target.getResolution();
-  currentZoom.value = event.target.getZoom();
-}
-function centerChanged(event) {
-  currentCenter.value = event.target.getCenter();
+function toLineCoords(issue: Issue) {
+  if (issue.geometry.type !== "LineString") return [[0, 0]];
+  // Transform each coordinate from EPSG:3857 to EPSG:4326
+  return issue.geometry.coordinates.map((coord) =>
+    transform(coord, "EPSG:4326", "EPSG:3857")
+  );
 }
 
-function onLayerChange(event) {
-  const selectedLayer = event.target;
-  console.log("Selected layer:", event, selectedLayer);
-
-  // // Get all layers and update their visibility
-  // layerList.value.forEach((layer) => {
-  //   const layerId = layer.getProperties().id;
-  //   layer.setVisible(layerId === selectedId);
-  // });
+function toPolygonCoords(issue: Issue) {
+  if (issue.geometry.type !== "Polygon") return [[[0, 0]]];
+  // Transform each coordinate in each ring from EPSG:3857 to EPSG:4326
+  return issue.geometry.coordinates.map((ring) =>
+    ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857"))
+  );
 }
+
+function getPolygonFillColor(issue: Issue) {
+  const color = issue.color || "#000000";
+  // Add alpha channel for fill transparency
+  return color + "40"; // 40 is 25% opacity in hex
+}
+
+onMounted(async () => {
+  legends.value = await getLegends();
+
+  // Attach legend data to issues
+  if (issues.value) {
+    issues.value = issues.value.map((issue) => ({
+      ...issue,
+      legend: legends.value.find((l) => l.id === issue.legend_id),
+    }));
+  }
+
+  layerList.value = [lightLayer, luchtfotoLayer, fietskaartLayer]
+    .filter((layer): layer is NonNullable<typeof layer> => layer !== null)
+    .map((layer) => layer.tileLayer);
+});
 </script>
