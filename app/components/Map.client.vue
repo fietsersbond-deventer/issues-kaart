@@ -86,7 +86,15 @@
       </ol-source-vector>
     </ol-vector-layer>
 
-    <ol-interaction-select :condition="click" @select="onFeatureSelect" />
+    <ol-interaction-select :condition="click" @select="onFeatureSelect">
+      <ol-style>
+        <ol-style-circle>
+          <ol-style-stroke :color="'black'" :width="2" />
+        </ol-style-circle>
+      </ol-style>
+      <ol-style-stroke :color="selectedStrokeColor" :width="10" />
+      <ol-style-fill :color="getPolygonFillColor" />
+    </ol-interaction-select>
 
     <ol-layerswitcherimage-control :mouseover="true" />
   </ol-map>
@@ -111,6 +119,16 @@ const { selectedId } = useSelectedId();
 function isSelected(issue: Issue) {
   return issue.id === selectedId.value;
 }
+
+const selectedIssue = computed(() => {
+  return issues.value?.find((issue) => issue.id === selectedId.value);
+});
+
+const selectedStrokeColor = computed(() => {
+  return selectedIssue.value?.geometry.type === "Point"
+    ? "black"
+    : selectedIssue.value?.color || "black";
+});
 
 const center = ref([687858.9021986299, 6846820.48790154]);
 const zoom = ref(13);
