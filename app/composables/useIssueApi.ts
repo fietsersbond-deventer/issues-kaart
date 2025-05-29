@@ -15,7 +15,7 @@ export const useIssueApi = () => {
     refreshIssues();
   }
 
-  function get(id: number) {
+  function get(id: number | string) {
     return $fetch<Issue>(`/api/issues/${id}`, {
       method: "GET",
       headers: {
@@ -33,7 +33,7 @@ export const useIssueApi = () => {
     return issue;
   }
 
-  async function update(id: number, data: Partial<Issue>) {
+  async function update(id: number | string, data: Partial<Issue>) {
     const issue = await $fetch<Issue>(`/api/issues/${id}`, {
       method: "PATCH",
       headers: headers.value,
@@ -44,7 +44,7 @@ export const useIssueApi = () => {
     return issue;
   }
 
-  async function remove(id: number) {
+  async function remove(id: number | string) {
     const result = await $fetch<{ id: number }>(`/api/issues/${id}`, {
       method: "DELETE",
       headers: headers.value,
