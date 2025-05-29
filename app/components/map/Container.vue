@@ -1,17 +1,11 @@
 <template>
   <MapBase :base-layer="currentLayer">
     <slot />
-    <!-- <ol-control v-if="baseLayers.length > 1" position="bottom-left">
-      <MapControlLayer
-        v-model="currentLayer"
-        v-model:layers="availableLayers"
-      />
-    </ol-control> -->
+    <MapControlLayer v-model="currentLayer" v-model:layers="availableLayers" />
   </MapBase>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import type { ConfigLayer } from "~/types/LayerConfig";
 
 const { baseLayers } = getConfig();

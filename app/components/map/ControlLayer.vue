@@ -1,14 +1,9 @@
 <template>
-  <div class="d-flex">
+  <div ref="controlRef" class="d-flex">
     <!-- One Layer -->
     <v-card v-if="display === 'SINGLE'" class="map-layer-control">
       <span class="map-layer-control__label">{{ activeLayer.name }}</span>
-      <MapBase
-        :base-layer="activeLayer"
-        :bounds="bounds"
-        :options="options"
-        class="map-layer-control__map"
-      />
+      <MapBase :base-layer="activeLayer" class="map-layer-control__map" />
     </v-card>
 
     <!-- Two Layer -->
@@ -20,8 +15,6 @@
       <span class="map-layer-control__label">{{ otherLayer.name }}</span>
       <MapBase
         :base-layer="{ ...otherLayer, visible: true }"
-        :bounds
-        :options
         class="map-layer-control__map"
       />
     </v-card>
@@ -38,8 +31,6 @@
         <span class="map-layer-control__label">{{ otherLayer.name }}</span>
         <MapBase
           :base-layer="{ ...otherLayer, visible: true }"
-          :bounds="bounds"
-          :options="options"
           class="map-layer-control__map"
         />
       </v-card>
@@ -60,8 +51,6 @@
           <span class="map-layer-control__label">{{ layer.name }}</span>
           <MapBase
             :base-layer="{ ...layer, visible: true }"
-            :bounds="bounds"
-            :options="options"
             class="map-layer-control__map"
           />
         </v-card>
@@ -72,12 +61,28 @@
 
 <script setup lang="ts">
 import type { ConfigLayer } from "~/types/LayerConfig";
+import type Map from "ol/Map";
+import { Control } from "ol/control";
 
 const activeLayer = defineModel<ConfigLayer>({ required: true });
 const layers = defineModel<ConfigLayer[]>("layers", { required: true });
 
-const { bounds } = useMapBounds();
 const expanded = ref(false);
+
+const controlRef = ref<HTMLElement | null>(null);
+const map = inject<Map>("map");
+
+onMounted(() => {
+  const control = controlRef.value;
+  if (map && control) {
+    map.addControl(
+      new Control({
+        element: control,
+        target: map.getTargetElement(),
+      })
+    );
+  }
+});
 
 const display = computed(() => {
   if (layers.value.length === 1) return "SINGLE";
@@ -112,13 +117,6 @@ const expandedLayers = computed(() => {
     ])
   );
 });
-
-const options = {
-  attributionControl: false,
-  zoomControl: false,
-  doubleClickZoom: false,
-  dragging: false,
-};
 
 function onClickFirstLayer(layer: ConfigLayer) {
   if (expanded.value) {
