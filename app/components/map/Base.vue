@@ -4,7 +4,10 @@
     v-bind="$attrs"
     v-model:bounds="latLngBounds"
     :use-global-leaflet="true"
-    :options="{ editable: true, ...$attrs.options }"
+    :options="{
+      editable: true,
+      ...$attrs.options,
+    }"
     @ready="mapLoaded"
   >
     <template v-if="ready">

@@ -1,5 +1,5 @@
 <template>
-  <MapContainer>
+  <MapContainer :hide-controls="hideControls">
     <MapEditableFeatureLayer />
 
     <MapMarker
@@ -8,7 +8,7 @@
       :lat-lng="toLatLng(issue)"
       :color="issue.color"
       :selected="issue.id == selectedId"
-      @click="navigateToIssue(issue)"
+      @click="handleFeatureClick(issue)"
     >
       <template #tooltip>
         <div>
@@ -26,7 +26,7 @@
       :lat-lngs="toLatLng(issue)"
       :color="issue.color"
       :selected="issue.id == selectedId"
-      @click="navigateToIssue(issue)"
+      @click="handleFeatureClick(issue)"
     >
       <template #tooltip>
         <div>
@@ -44,7 +44,7 @@
       :lat-lngs="toLatLng(issue)"
       :color="issue.color"
       :selected="issue.id == selectedId"
-      @click="navigateToIssue(issue)"
+      @click="handleFeatureClick(issue)"
     >
       <template #tooltip>
         <div>
@@ -104,5 +104,12 @@ function toLatLng(issue: Issue) {
     coord[1] = lat!;
   });
   return geometry.coordinates;
+}
+
+const emit = defineEmits(["feature-clicked"]);
+
+function handleFeatureClick(issue: Issue) {
+  emit("feature-clicked");
+  navigateToIssue(issue);
 }
 </script>
