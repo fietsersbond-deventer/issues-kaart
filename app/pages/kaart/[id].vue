@@ -85,10 +85,9 @@ if (!id) {
 } else if (typeof id !== "string") {
   // Handle invalid id type
   navigateTo("/kaart");
-} else if (id === "new") {
+} else if (id === "new" || id === "undefined") {
   isEditing.value = true;
   issue.value = {
-    id: "",
     title: "",
     description: "",
     legend_id: null,
@@ -99,7 +98,7 @@ if (!id) {
   };
 } else {
   // Fetch existing item
-  const data = await get(id as string);
+  const data = await get(id);
   if (!data) {
     issue.value = null;
     // Handle issue not found

@@ -66,11 +66,7 @@
                   </div>
                 </template>
                 <template #item="{ item, props }">
-                  <v-list-item
-                    v-bind="props"
-                    :title="item.raw.name"
-                    :subtitle="item.raw.description"
-                  >
+                  <v-list-item v-bind="props" :title="item.raw.name">
                     <template #prepend>
                       <div
                         style="width: 20px; height: 20px; border-radius: 4px"
@@ -84,6 +80,8 @@
           </v-row>
         </v-container>
       </v-card-text>
+
+      <pre>{{ issue.geometry }}</pre>
 
       <v-divider />
 

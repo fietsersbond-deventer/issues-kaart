@@ -1,7 +1,7 @@
 <template>
   <ol-interaction-draw v-if="isDrawing" :type="drawType" @drawend="onDrawEnd" />
-  <ol-vector-layer v-if="feature">
-    <ol-source-vector>
+  <ol-vector-layer v-if="feature" :display-in-layer-switcher="false">
+    <ol-source-vector projection="EPSG:4326">
       <ol-feature>
         <component
           :is="featureComponent"
@@ -23,16 +23,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { toLonLat } from "ol/proj";
 import type { DrawEvent } from "ol/interaction/Draw";
 import type { Feature } from "ol";
 import type { Point, LineString, Polygon } from "ol/geom";
-import type {
-  Feature as GeoJSONFeature,
-  Point as GeoJSONPoint,
-  LineString as GeoJSONLineString,
-  Polygon as GeoJSONPolygon,
-} from "geojson";
+import { GeoJSON } from "ol/format";
 import { POLYGON, POINT, LINE } from "~/utils/ReactiveFeature";
 
 const eventBus = useMapEventBus().inject();
@@ -84,49 +78,15 @@ function startDrawing(type: string) {
   }
 }
 
-function createGeoJSON<
-  T extends GeoJSONPoint | GeoJSONLineString | GeoJSONPolygon
->(
-  type: "Point" | "LineString" | "Polygon",
-  coordinates: T["coordinates"]
-): GeoJSONFeature<T> {
-  return {
-    type: "Feature",
-    geometry: {
-      type,
-      coordinates,
-    },
-    properties: {},
-  };
-}
-
 function onDrawEnd(event: DrawEvent) {
   isDrawing.value = false;
   const drawnFeature = event.feature as Feature<Point | LineString | Polygon>;
-  const geometry = drawnFeature.getGeometry();
-  if (!geometry) return;
-
-  const geomType = drawType.value;
-
-  if (geomType === "Point") {
-    const point = geometry as Point;
-    const coords = toLonLat(point.getCoordinates());
-    editableFeature.setFeature(createGeoJSON("Point", coords), true);
-  } else if (geomType === "LineString") {
-    const line = geometry as LineString;
-    const coords = line.getCoordinates().map((coord) => toLonLat(coord));
-    editableFeature.setFeature(createGeoJSON("LineString", coords), true);
-  } else if (geomType === "Polygon") {
-    const poly = geometry as Polygon;
-    const coords = poly.getCoordinates();
-    if (coords.length && coords[0].length) {
-      const transformedCoords = [coords[0].map((coord) => toLonLat(coord))];
-      editableFeature.setFeature(
-        createGeoJSON("Polygon", transformedCoords),
-        true
-      );
-    }
-  }
+  const writer = new GeoJSON();
+  const geoJSON = writer.writeFeatureObject(drawnFeature, {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+  });
+  editableFeature.setFeature(geoJSON, true);
 }
 
 function onFeatureChange(event: {
@@ -136,27 +96,12 @@ function onFeatureChange(event: {
   const geometry = event.target.getGeometry();
   if (!geometry) return;
 
-  const geomType = drawType.value;
-
-  if (geomType === "Point") {
-    const point = geometry as Point;
-    const coords = toLonLat(point.getCoordinates());
-    editableFeature.setFeature(createGeoJSON("Point", coords), true);
-  } else if (geomType === "LineString") {
-    const line = geometry as LineString;
-    const coords = line.getCoordinates().map((coord) => toLonLat(coord));
-    editableFeature.setFeature(createGeoJSON("LineString", coords), true);
-  } else if (geomType === "Polygon") {
-    const poly = geometry as Polygon;
-    const coords = poly.getCoordinates();
-    if (coords.length && coords[0].length) {
-      const transformedCoords = [coords[0].map((coord) => toLonLat(coord))];
-      editableFeature.setFeature(
-        createGeoJSON("Polygon", transformedCoords),
-        true
-      );
-    }
-  }
+  const writer = new GeoJSON();
+  const geoJSON = writer.writeFeatureObject(event.target, {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+  });
+  editableFeature.setFeature(geoJSON, true);
 }
 
 eventBus.on("startPoint", () => startDrawing(POINT));
