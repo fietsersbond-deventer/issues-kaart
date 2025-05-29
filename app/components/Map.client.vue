@@ -7,6 +7,8 @@
       :projection="projection"
     />
 
+    <MapEditableFeatureLayer />
+
     <ol-tile-layer ref="light" title="Licht" :display-in-layer-switcher="false">
       <ol-source-stadia-maps layer="alidade_smooth" />
     </ol-tile-layer>
@@ -36,7 +38,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer>
+    <ol-vector-layer :display-in-layer-switcher="false">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"

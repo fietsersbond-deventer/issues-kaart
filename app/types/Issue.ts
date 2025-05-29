@@ -1,7 +1,7 @@
 import type { LineString, Point, Polygon } from "geojson";
 
 export type Issue = {
-  id: number;
+  id?: number;
   title: string;
   description: string;
   legend_id: number | null;
