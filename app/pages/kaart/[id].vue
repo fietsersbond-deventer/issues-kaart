@@ -66,18 +66,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Issue } from "~/types/Issue";
-
-const route = useRoute();
+const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
-
-const { get } = useIssueApi();
-const issue = ref<Issue | null>(null);
-
-const reactiveFeature = useEditableFeature().inject();
+const { issue } = useSelectedIssue();
 
 if (!id) {
   // Redirect to new item creation
@@ -87,24 +81,10 @@ if (!id) {
   navigateTo("/kaart");
 } else if (id === "new" || id === "undefined") {
   setEditing(true);
-  issue.value = {
-    title: "",
-    description: "",
-    legend_id: null,
-    geometry: reactiveFeature.feature.value?.geometry || {
-      type: "Point",
-      coordinates: [0, 0],
-    },
-  };
 } else {
-  // Fetch existing item
-  const data = await get(id);
-  if (!data) {
-    issue.value = null;
+  if (!issue.value) {
     // Handle issue not found
     navigateTo("/kaart");
-  } else {
-    issue.value = data;
   }
 }
 

@@ -22,6 +22,7 @@ export default defineNuxtConfig({
     "@sidebase/nuxt-auth",
     "nuxt-mdi",
     "vuetify-nuxt-module",
+    "@pinia/nuxt",
   ],
   hub: {
     database: true,
