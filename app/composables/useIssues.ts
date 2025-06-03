@@ -1,6 +1,8 @@
+import { defineStore } from "pinia";
+
 import type { Issue } from "@/types/Issue";
 
-export const useIssueApi = () => {
+export const useIssues = defineStore("issues", () => {
   const { token } = useAuth();
 
   const headers = computed(() => ({
@@ -60,4 +62,4 @@ export const useIssueApi = () => {
     update,
     remove,
   };
-};
+});
