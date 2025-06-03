@@ -1,3 +1,6 @@
+import morgan from "morgan";
+
 export default defineEventHandler(async (event) => {
-  console.log(getRequestURL(event).pathname);
+  const logger = morgan("tiny");
+  logger(event.node.req, event.node.res, function () {});
 });
