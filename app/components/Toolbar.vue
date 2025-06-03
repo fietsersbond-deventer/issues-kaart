@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex align-center">
-    <div class="d-flex align-center">
+    <div v-if="!selectedId" class="d-flex align-center">
       <v-btn
         v-for="tool in drawingTools"
         :key="tool.type"
@@ -23,6 +23,8 @@
 <script lang="ts" setup>
 const eventBus = useMapEventBus().inject();
 const activeDrawingTool = ref<string | null>(null);
+
+const { selectedId } = useSelectedIssue();
 
 const drawingTools = [
   { type: "point", icon: "mdi-vector-point", label: "Teken punt" },
