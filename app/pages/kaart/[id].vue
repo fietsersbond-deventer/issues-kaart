@@ -71,7 +71,7 @@ const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
-const { issue } = useSelectedIssue();
+const { issue } = storeToRefs(useSelectedIssue());
 
 if (!id) {
   // Redirect to new item creation

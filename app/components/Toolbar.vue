@@ -24,7 +24,7 @@
 const eventBus = useMapEventBus().inject();
 const activeDrawingTool = ref<string | null>(null);
 
-const { selectedId } = useSelectedIssue();
+const { selectedId } = storeToRefs(useSelectedIssue());
 
 const drawingTools = [
   { type: "point", icon: "mdi-vector-point", label: "Teken punt" },

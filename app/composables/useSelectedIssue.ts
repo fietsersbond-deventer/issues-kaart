@@ -1,7 +1,7 @@
 import { useRoute } from "#app";
 import type { Issue } from "~/types/Issue";
 
-export function useSelectedIssue() {
+export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
 
   const { issues } = storeToRefs(useIssues());
@@ -24,13 +24,13 @@ export function useSelectedIssue() {
     [selectedId, issues],
     ([id, issues]) => {
       if (id === null || id === undefined) {
-        issue.value = newIssue;
+        issue.value = { ...newIssue };
         return;
       }
       if (issues) {
         issue.value = issues.find((issue) => issue.id === id) || null;
       } else {
-        issue.value = newIssue;
+        issue.value = { ...newIssue };
       }
     },
     { immediate: true }
@@ -59,4 +59,4 @@ export function useSelectedIssue() {
     selectedId,
     issue,
   };
-}
+});
