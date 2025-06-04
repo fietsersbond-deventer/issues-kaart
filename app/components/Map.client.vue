@@ -86,21 +86,16 @@
           </ol-style>
         </ol-feature>
 
-        <ol-interaction-snap v-if="modifyEnabled" />
-
         <!-- editor -->
         <ol-interaction-modify
           v-if="modifyEnabled"
           :features="selectedFeatures"
           @modifyend="onModifyEnd"
         >
-          <ol-style>
-            <ol-style-circle :radius="7">
-              <ol-style-stroke :color="'white'" :width="2" />
-            </ol-style-circle>
-          </ol-style> </ol-interaction-modify
-      ></ol-source-vector>
-    </ol-vector-layer>
+          ></ol-interaction-modify
+        >
+      </ol-source-vector></ol-vector-layer
+    >
 
     <InteractionSelect :condition="click" :style @select="onFeatureSelect" />
 
@@ -125,16 +120,6 @@ import { click } from "ol/events/condition";
 import InteractionSelect from "./InteractionSelect.vue";
 
 const { issues } = storeToRefs(useIssues());
-
-// const vectorLayer = ref(null);
-// watch(vectorLayer, (value) => {
-//   if (!value) return;
-//   const vectorLayer = value.vectorLayer;
-//   console.log("Vector layer changed:", vectorLayer);
-//   if (vectorLayer) {
-//     vectorLayer.setStyle(style);
-//   }
-// });
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: Issue) {
