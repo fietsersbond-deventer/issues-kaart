@@ -12,28 +12,25 @@
           v-if="isEditing"
           icon="mdi-fullscreen"
           variant="text"
-          @click="
-            showEditDialog = !showEditDialog;
-            setEditing(false);
-          "
+          @click="showEditDialog = !showEditDialog"
         />
       </Toolbar>
     </v-toolbar>
 
     <div v-if="issue" class="pa-4">
       <template v-if="issue.id">
-        <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
-
-        <template v-if="isEditing">
-          <EditForm
-            v-model="issue"
-            :is-new="false"
-            @save="setEditing(false)"
-            @cancel="setEditing(false)"
-          />
+        <EditForm
+          v-if="isEditing"
+          v-model="issue"
+          :is-new="false"
+          @save="setEditing(false)"
+          @cancel="setEditing(false)"
+        />
+        <template v-else>
+          <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div v-html="issue.description" />
         </template>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-else v-html="issue.description" />
       </template>
       <template v-else>
         <h2 class="text-h5 mb-4">Nieuw project</h2>
