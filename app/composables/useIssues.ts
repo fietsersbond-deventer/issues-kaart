@@ -10,8 +10,15 @@ export const useIssues = defineStore("issues", () => {
     Authorization: `Bearer ${token.value?.replace("Bearer ", "")}`,
   }));
 
-  const { data: issues, refresh: refreshIssues } =
-    useFetch<Issue[]>("/api/issues");
+  const issues = ref<Issue[]>([]);
+
+  const { data, refresh: refreshIssues } = useFetch<Issue[]>("/api/issues");
+
+  watch(data, (newData) => {
+    if (newData) {
+      issues.value = newData;
+    }
+  });
 
   function refresh() {
     refreshIssues();

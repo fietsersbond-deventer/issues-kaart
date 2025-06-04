@@ -7,6 +7,22 @@
     @submit.prevent="onSubmit"
   >
     <v-card class="edit-form-card">
+      <v-card-actions>
+        <v-spacer />
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!isModified"
+          variant="flat"
+          >Opslaan</v-btn
+        >
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
+        <v-btn v-if="issue.id" color="error" variant="flat" @click="onDelete">
+          Verwijderen
+        </v-btn>
+      </v-card-actions>
       <v-card-text style="height: 100%">
         <v-container fluid class="pa-0">
           <v-row>
@@ -74,9 +90,6 @@
         </v-container>
         <!-- <pre>{{ issue.geometry }}</pre> -->
       </v-card-text>
-
-      <v-divider />
-
       <v-card-actions>
         <v-spacer />
         <v-btn
