@@ -7,7 +7,7 @@
       :projection="projection"
     />
 
-    <MapAddFeature />
+    <MapAddFeature ref="addFeature" />
 
     <ol-tile-layer ref="light" title="Licht" :display-in-layer-switcher="false">
       <ol-source-stadia-maps layer="alidade_smooth" />
@@ -97,7 +97,12 @@
       </ol-source-vector></ol-vector-layer
     >
 
-    <InteractionSelect :condition="click" :style @select="onFeatureSelect" />
+    <InteractionSelect
+      v-if="!isDrawing"
+      :condition="click"
+      :style
+      @select="onFeatureSelect"
+    />
 
     <ol-layerswitcherimage-control :mouseover="true" />
   </ol-map>
@@ -129,6 +134,12 @@ function isSelected(issue: Issue) {
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {
   return isEditing.value && selectedIssue.value;
+});
+
+const addFeature = ref(null);
+const isDrawing = computed(() => {
+  // @ts-expect-error - isDrawing is a property of the addFeature component
+  return addFeature.value?.isDrawing || false;
 });
 
 const center = ref([687858.9021986299, 6846820.48790154]);
@@ -184,7 +195,7 @@ const rdProjection = new Projection({
 const markers = computed(() => {
   return (
     issues.value?.filter(
-      (issue): issue is Issue => issue.geometry.type === "Point"
+      (issue): issue is Issue => issue.geometry?.type === "Point"
     ) ?? []
   );
 });
@@ -192,7 +203,7 @@ const markers = computed(() => {
 const polygons = computed(() => {
   return (
     issues.value?.filter(
-      (issue): issue is Issue => issue.geometry.type === "Polygon"
+      (issue): issue is Issue => issue.geometry?.type === "Polygon"
     ) ?? []
   );
 });
@@ -200,7 +211,7 @@ const polygons = computed(() => {
 const lines = computed(() => {
   return (
     issues.value?.filter(
-      (issue): issue is Issue => issue.geometry.type === "LineString"
+      (issue): issue is Issue => issue.geometry?.type === "LineString"
     ) ?? []
   );
 });
