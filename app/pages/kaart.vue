@@ -26,9 +26,6 @@ definePageMeta({
 });
 
 useMapEventBus().provide();
-
-const reactiveFeature = new ReactiveFeature();
-useEditableFeature().provide(reactiveFeature);
 </script>
 
 <style>

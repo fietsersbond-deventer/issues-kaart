@@ -1,5 +1,5 @@
 <template>
-  <ol-map ref="map">
+  <ol-map ref="mapRef">
     <ol-view
       ref="view"
       :center="center"
@@ -7,7 +7,7 @@
       :projection="projection"
     />
 
-    <MapEditableFeatureLayer />
+    <MapAddFeature />
 
     <ol-tile-layer ref="light" title="Licht" :display-in-layer-switcher="false">
       <ol-source-stadia-maps layer="alidade_smooth" />
@@ -38,7 +38,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer :display-in-layer-switcher="false">
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -85,18 +85,20 @@
             <ol-style-fill :color="getPolygonFillColor(issue)" />
           </ol-style>
         </ol-feature>
-      </ol-source-vector>
+
+        <ol-interaction-snap v-if="modifyEnabled" />
+
+        <!-- editor -->
+        <ol-interaction-modify
+          v-if="modifyEnabled"
+          :features="selectedFeatures"
+          @modifyend="onModifyEnd"
+        >
+          <ol-style :override-style-function="style" /> </ol-interaction-modify
+      ></ol-source-vector>
     </ol-vector-layer>
 
-    <ol-interaction-select :condition="click" @select="onFeatureSelect">
-      <ol-style>
-        <ol-style-circle>
-          <ol-style-stroke :color="'black'" :width="2" />
-        </ol-style-circle>
-      </ol-style>
-      <ol-style-stroke :color="selectedStrokeColor" :width="10" />
-      <ol-style-fill :color="getPolygonFillColor" />
-    </ol-interaction-select>
+    <InteractionSelect :condition="click" :style @select="onFeatureSelect" />
 
     <ol-layerswitcherimage-control :mouseover="true" />
   </ol-map>
@@ -110,31 +112,75 @@ import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
-import type { Feature } from "ol";
-import type { Geometry } from "ol/geom";
+import { Collection, type Feature } from "ol";
+import type { ModifyEvent } from "ol/interaction/Modify";
+import { GeoJSON } from "ol/format";
+import type { LineString, Point, Polygon } from "ol/geom";
+import { Style, Circle, Fill, Stroke } from "ol/style";
 import { click } from "ol/events/condition";
-import { useSelectedId } from "~/composables/useSelectedId";
+import InteractionSelect from "./InteractionSelect.vue";
 
-const { issues } = useIssueApi();
+const { issues } = storeToRefs(useIssues());
 
-const { selectedId } = useSelectedId();
+// const vectorLayer = ref(null);
+// watch(vectorLayer, (value) => {
+//   if (!value) return;
+//   const vectorLayer = value.vectorLayer;
+//   console.log("Vector layer changed:", vectorLayer);
+//   if (vectorLayer) {
+//     vectorLayer.setStyle(style);
+//   }
+// });
+
+const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: Issue) {
   return issue.id === selectedId.value;
 }
 
-const selectedIssue = computed(() => {
-  return issues.value?.find((issue) => issue.id === selectedId.value);
-});
-
-const selectedStrokeColor = computed(() => {
-  return selectedIssue.value?.geometry.type === "Point"
-    ? "black"
-    : selectedIssue.value?.color || "black";
+const { isEditing } = useIsEditing();
+const modifyEnabled = computed(() => {
+  return isEditing.value && selectedIssue.value;
 });
 
 const center = ref([687858.9021986299, 6846820.48790154]);
 const zoom = ref(13);
 const projection = ref("EPSG:3857");
+
+function style(feature: Feature) {
+  const properties = feature.getProperties();
+  const issueId = properties.issueId;
+  const issue = issues.value?.find((i) => i.id === issueId);
+  if (!issue) return;
+
+  if (feature.getGeometry()!.getType() === "Point") {
+    return new Style({
+      image: new Circle({
+        radius: 7,
+        fill: new Fill({ color: issue.color }),
+        stroke: new Stroke({
+          color: isSelected(issue) ? "black" : "white",
+          width: 2,
+        }),
+      }),
+    });
+  } else if (feature.getGeometry()!.getType() === "LineString") {
+    return new Style({
+      stroke: new Stroke({
+        color: issue.color,
+        width: isSelected(issue) ? 6 : 3,
+      }),
+    });
+  } else
+    return new Style({
+      stroke: new Stroke({
+        color: isSelected(issue) ? "black" : issue.color,
+        width: 2,
+      }),
+      fill: new Fill({
+        color: getPolygonFillColor(issue),
+      }),
+    });
+}
 
 proj4.defs(
   "EPSG:28992",
@@ -198,15 +244,46 @@ function navigateToIssue(issue: Issue) {
   navigateTo(`/kaart/${issue.id}`);
 }
 
+const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
+  new Collection()
+);
+
 function onFeatureSelect(event: SelectEvent) {
-  const selectedFeatures = event.selected;
-  if (selectedFeatures && selectedFeatures.length > 0) {
-    const feature = selectedFeatures[0] as Feature<Geometry>;
+  const selected = event.selected;
+  if (selected && selected.length > 0) {
+    const feature = selected[0] as Feature<Point | LineString | Polygon>;
     const properties = feature.getProperties();
     const issueId = properties.issueId;
-    selectedId.value = issueId;
-    navigateToIssue({ id: issueId } as Issue);
+    if (issueId === selectedId.value) {
+      selectedFeatures.value.push(feature);
+      return;
+    } else {
+      selectedId.value = issueId;
+      navigateToIssue({ id: issueId } as Issue);
+    }
+  } else {
+    selectedFeatures.value.clear();
   }
+}
+
+watch(selectedFeatures, (newFeatures) => {
+  console.log("Selected features changed:", newFeatures);
+});
+
+function onModifyEnd(event: ModifyEvent) {
+  console.log("Modify end event:", event.features);
+  const writer = new GeoJSON();
+  const feature = event.features.item(0);
+  if (!feature) {
+    console.warn("No feature modified");
+    return;
+  }
+  const geoJSON = writer.writeFeatureObject(feature, {
+    dataProjection: "EPSG:4326",
+    featureProjection: "EPSG:3857",
+  });
+  // @ts-ignore
+  selectedIssue.value!.geometry = geoJSON.geometry;
 }
 </script>
 
