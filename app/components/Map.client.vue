@@ -94,7 +94,11 @@
           :features="selectedFeatures"
           @modifyend="onModifyEnd"
         >
-          <ol-style :override-style-function="style" /> </ol-interaction-modify
+          <ol-style>
+            <ol-style-circle :radius="7">
+              <ol-style-stroke :color="'white'" :width="2" />
+            </ol-style-circle>
+          </ol-style> </ol-interaction-modify
       ></ol-source-vector>
     </ol-vector-layer>
 
@@ -266,9 +270,13 @@ function onFeatureSelect(event: SelectEvent) {
   }
 }
 
-watch(selectedFeatures, (newFeatures) => {
-  console.log("Selected features changed:", newFeatures);
-});
+watch(
+  selectedFeatures,
+  (newFeatures) => {
+    console.log("Selected features changed:", newFeatures.getArray().length);
+  },
+  { deep: true }
+);
 
 function onModifyEnd(event: ModifyEvent) {
   console.log("Modify end event:", event.features);
