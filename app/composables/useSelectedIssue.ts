@@ -11,6 +11,20 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
 
   const issue = ref<Issue | null>(null);
 
+  watch(
+    () => route.params.id,
+    (newId) => {
+      if (newId === "new") {
+        selectedId.value = null;
+        isEditing.value = true;
+        return;
+      }
+      selectedId.value = +(newId ?? 0) || null;
+      isEditing.value = false;
+    },
+    { immediate: true }
+  );
+
   const newIssue: Issue = {
     title: "",
     description: "",
@@ -21,38 +35,28 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     },
   };
   watch(
-    [selectedId, issues],
-    ([id, issues]) => {
-      if (id === null || id === undefined) {
+    selectedId,
+    (id) => {
+      if (id === null) {
         issue.value = { ...newIssue };
+        issues.value?.push(issue.value);
         return;
       }
       if (issues) {
-        issue.value = issues.find((issue) => issue.id === id) || null;
-      } else {
-        issue.value = { ...newIssue };
+        // remove any issues that do not have an id
+        issues.value = issues.value?.filter((issue) => issue.id);
+        issue.value = issues.value?.find((issue) => issue.id === id) || null;
       }
     },
     { immediate: true }
   );
 
   watch(
-    () => route.params.id,
-    (newId) => {
-      if (
-        newId === undefined ||
-        newId === null ||
-        newId === "new" ||
-        Array.isArray(newId)
-      ) {
-        selectedId.value = null;
-        isEditing.value = true;
-        return;
-      }
-      selectedId.value = +newId;
-      isEditing.value = false;
+    issues,
+    () => {
+      console.log("Issues updated:", issues.value);
     },
-    { immediate: true }
+    { deep: true }
   );
 
   return {

@@ -33,7 +33,6 @@
         </template>
       </template>
       <template v-else>
-        <h2 class="text-h5 mb-4">Nieuw project</h2>
         <template v-if="isEditing">
           <EditForm
             v-model="issue"
