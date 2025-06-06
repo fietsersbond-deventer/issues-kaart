@@ -51,14 +51,6 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     { immediate: true }
   );
 
-  watch(
-    issues,
-    () => {
-      console.log("Issues updated:", issues.value);
-    },
-    { deep: true }
-  );
-
   return {
     selectedId,
     issue,
