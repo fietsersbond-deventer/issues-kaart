@@ -5,7 +5,11 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
   ssr: false,
-  css: ["@/assets/css/main.css", "leaflet/dist/leaflet.css"],
+  css: [
+    "@/assets/css/main.css",
+    "ol/ol.css",
+    "vue3-openlayers/dist/vue3-openlayers.css",
+  ],
   runtimeConfig: {
     public: {
       tinymceApiKey: "", // Add your TinyMCE API key in .env file
@@ -16,9 +20,9 @@ export default defineNuxtConfig({
     "@nuxthub/core",
     "@nuxt/eslint",
     "@sidebase/nuxt-auth",
-    "@nuxtjs/leaflet",
     "nuxt-mdi",
     "vuetify-nuxt-module",
+    "@pinia/nuxt",
   ],
   hub: {
     database: true,

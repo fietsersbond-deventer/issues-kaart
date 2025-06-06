@@ -1,75 +1,68 @@
 <template>
-  <LMarker
-    :lat-lng="latLng"
-    :class="['marker-layer', { 'marker-selected': selected }]"
-    @click="$emit('click')"
-    @ready="onReady"
-  >
-    <LTooltip :sticky="true">
-      <slot name="tooltip" />
-    </LTooltip>
-    <LIcon
-      :options="{ iconSize: [40, 40], iconAnchor: [20, 40] }"
-      :class="['marker-icon', { 'marker-selected': selected }]"
+  <ol-feature @click="onClick">
+    <ol-geom-point :coordinates="transformedCoords">
+      <ol-style :condition="true">
+        <ol-style-icon
+          :src="markerUrl"
+          :scale="selected ? 1.2 : 1"
+          :color="color"
+          :anchor="[0.5, 1]"
+        />
+      </ol-style>
+    </ol-geom-point>
+    <ol-overlay
+      v-if="showTooltip"
+      :position="transformedCoords"
+      :offset="[0, -20]"
     >
-      <VIcon icon="mdi-map-marker" :size="40" :color="color" class="text-2xl" />
-    </LIcon>
-  </LMarker>
+      <div class="tooltip">
+        <slot name="tooltip" />
+      </div>
+    </ol-overlay>
+  </ol-feature>
 </template>
 
 <script setup lang="ts">
-import { LMarker } from "@vue-leaflet/vue-leaflet";
-import type { Marker } from "leaflet";
+import { ref, computed } from "vue";
+import { fromLonLat } from "ol/proj";
 
 const props = defineProps<{
-  latLng: [number, number];
+  coordinates: [number, number];
   color: string;
   selected?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: "click"): void;
 }>();
-let path: HTMLElement | undefined = undefined;
 
-function setupSvgElement(marker: Marker) {
-  path = marker.getElement();
-  updateClass();
+const showTooltip = ref(false);
+const markerUrl =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(`
+  <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
+  </svg>
+`);
+
+const transformedCoords = computed(() => {
+  return fromLonLat(props.coordinates);
+});
+
+function onClick() {
+  emit("click");
 }
-
-function updateClass() {
-  if (!path) return;
-
-  if (props.selected) {
-    path.classList.add("line-selected");
-  } else {
-    path.classList.remove("line-selected");
-  }
-}
-
-function onReady(line: Marker) {
-  setupSvgElement(line);
-}
-
-watch(() => props.selected, updateClass);
 </script>
 
-<style>
-.leaflet-marker-icon,
-.marker-icon {
-  background-color: transparent;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.marker-selected {
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8))
-    drop-shadow(0 0 15px var(--v-theme-primary));
-  transform: scale(1.15);
-}
-
-.marker-icon:hover:not(.marker-selected) {
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.4));
+<style scoped>
+.tooltip {
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  max-width: 200px;
+  z-index: 1;
+  pointer-events: none;
 }
 </style>
