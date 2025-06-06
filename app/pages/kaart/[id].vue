@@ -6,43 +6,39 @@
           v-if="status === 'authenticated'"
           :icon="!isEditing ? 'mdi-pencil' : 'mdi-pencil-remove'"
           variant="text"
-          @click="isEditing = !isEditing"
+          @click="toggleEditing()"
         />
         <v-btn
           v-if="isEditing"
           icon="mdi-fullscreen"
           variant="text"
-          @click="
-            showEditDialog = !showEditDialog;
-            isEditing = false;
-          "
+          @click="showEditDialog = !showEditDialog"
         />
       </Toolbar>
     </v-toolbar>
 
     <div v-if="issue" class="pa-4">
       <template v-if="issue.id">
-        <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
-
-        <template v-if="isEditing">
-          <EditForm
-            v-model="issue"
-            :is-new="false"
-            @save="isEditing = false"
-            @cancel="isEditing = false"
-          />
+        <EditForm
+          v-if="isEditing"
+          v-model="issue"
+          :is-new="false"
+          @save="setEditing(false)"
+          @cancel="setEditing(false)"
+        />
+        <template v-else>
+          <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div v-html="issue.description" />
         </template>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-else v-html="issue.description" />
       </template>
       <template v-else>
-        <h2 class="text-h5 mb-4">Nieuw project</h2>
         <template v-if="isEditing">
           <EditForm
             v-model="issue"
             :is-new="true"
-            @save="isEditing = false"
-            @cancel="isEditing = false"
+            @save="setEditing(false)"
+            @cancel="setEditing(false)"
           />
         </template>
         <div v-else>Klik op de edit knop om een nieuw issue toe te voegen</div>
@@ -66,18 +62,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Issue } from "~/types/Issue";
-
-const route = useRoute();
+const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
-const isEditing = ref(false);
-
-const { get } = useIssueApi();
-const issue = ref<Issue | null>(null);
-
-const reactiveFeature = useEditableFeature().inject();
+const { isEditing, setEditing, toggleEditing } = useIsEditing();
+const { issue } = storeToRefs(useSelectedIssue());
 
 if (!id) {
   // Redirect to new item creation
@@ -85,27 +75,12 @@ if (!id) {
 } else if (typeof id !== "string") {
   // Handle invalid id type
   navigateTo("/kaart");
-} else if (id === "new") {
-  isEditing.value = true;
-  issue.value = {
-    id: "",
-    title: "",
-    description: "",
-    legend_id: null,
-    geometry: reactiveFeature.feature.value?.geometry || {
-      type: "Point",
-      coordinates: [0, 0],
-    },
-  };
+} else if (id === "new" || id === "undefined") {
+  setEditing(true);
 } else {
-  // Fetch existing item
-  const data = await get(id as string);
-  if (!data) {
-    issue.value = null;
+  if (!issue.value) {
     // Handle issue not found
     navigateTo("/kaart");
-  } else {
-    issue.value = data;
   }
 }
 

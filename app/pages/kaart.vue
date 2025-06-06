@@ -36,17 +36,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-
 definePageMeta({
   title: "Kaart",
 });
 
 useMapEventBus().provide();
-
-const reactiveFeature = new ReactiveFeature();
-useEditableFeature().provide(reactiveFeature);
-
 const drawer = ref(true);
 const isMobile = ref(false);
 

@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
 const { getAll: getLegends } = useLegendApi();
-const { issues } = useIssueApi();
+const { issues } = storeToRefs(useIssues());
 
 const legends = ref<Legend[]>([]);
 

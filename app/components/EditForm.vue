@@ -7,12 +7,22 @@
     @submit.prevent="onSubmit"
   >
     <v-card class="edit-form-card">
-      <v-card-title>
-        {{ issue.id ? "Issue bewerken" : "Nieuw Issue" }}
-      </v-card-title>
-
-      <v-divider />
-
+      <v-card-actions>
+        <v-spacer />
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!isModified"
+          variant="flat"
+          >Opslaan</v-btn
+        >
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
+        <v-btn v-if="issue.id" color="error" variant="flat" @click="onDelete">
+          Verwijderen
+        </v-btn>
+      </v-card-actions>
       <v-card-text style="height: 100%">
         <v-container fluid class="pa-0">
           <v-row>
@@ -27,7 +37,6 @@
 
             <v-col cols="12">
               <div class="mb-4">
-                <label class="text-subtitle-1 mb-1 d-block">Beschrijving</label>
                 <div class="quill-editor-container">
                   <QuillEditor
                     v-model:content="issue.description"
@@ -66,11 +75,7 @@
                   </div>
                 </template>
                 <template #item="{ item, props }">
-                  <v-list-item
-                    v-bind="props"
-                    :title="item.raw.name"
-                    :subtitle="item.raw.description"
-                  >
+                  <v-list-item v-bind="props" :title="item.raw.name">
                     <template #prepend>
                       <div
                         style="width: 20px; height: 20px; border-radius: 4px"
@@ -83,14 +88,18 @@
             </v-col>
           </v-row>
         </v-container>
+        <!-- <pre>{{ issue.geometry }}</pre> -->
       </v-card-text>
-
-      <v-divider />
-
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" variant="flat">Opslaan</v-btn>
-        <v-btn color="secondary" variant="flat" @click="showDialog = false"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!isModified"
+          variant="flat"
+          >Opslaan</v-btn
+        >
+        <v-btn color="secondary" variant="flat" @click="onCancel"
           >Annuleren</v-btn
         >
         <v-btn v-if="issue.id" color="error" variant="flat" @click="onDelete">
@@ -112,6 +121,24 @@ import BlotFormatter from "quill-blot-formatter";
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue>({ required: true });
+
+const oldValue = { ...issue.value };
+const isModified = computed(() => {
+  return JSON.stringify(issue.value) !== JSON.stringify(oldValue);
+});
+// onBeforeUnmount(() => {
+//   if (isModified.value) {
+//     if (
+//       confirm(
+//         "Er zijn wijzigingen die niet zijn opgeslagen. Weet je zeker dat je wilt sluiten?"
+//       )
+//     ) {
+//       showDialog.value = false;
+//       isEditing.value = false;
+//       return;
+//     }
+//   }
+// });
 
 const modules = [
   {
@@ -146,15 +173,14 @@ const toolbar = [
   [{ indent: "-1" }, { indent: "+1" }], // outdent/indent
 ];
 
-const { update, create, remove } = useIssueApi();
+const { update, create, remove } = useIssues();
 const { getAll: getLegends } = useLegendApi();
 const legends = ref<Legend[]>([]);
+const { isEditing } = useIsEditing();
 
 onMounted(async () => {
   legends.value = await getLegends();
 });
-
-const reactiveFeature = useEditableFeature().inject();
 
 async function onSubmit() {
   if (issue.value && valid.value) {
@@ -168,7 +194,14 @@ async function onSubmit() {
       }
     }
   }
+  isEditing.value = false;
   showDialog.value = false;
+}
+
+function onCancel() {
+  issue.value = { ...oldValue };
+  showDialog.value = false;
+  isEditing.value = false;
 }
 
 async function onDelete() {
@@ -182,16 +215,6 @@ async function onDelete() {
     }
   }
 }
-
-watch(
-  reactiveFeature.feature,
-  (newValue) => {
-    if (issue.value && newValue) {
-      issue.value.geometry = newValue?.geometry;
-    }
-  },
-  { immediate: true, deep: true }
-);
 </script>
 
 <style>
