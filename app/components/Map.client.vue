@@ -9,7 +9,7 @@
 
     <MapAddFeature ref="addFeature" />
 
-    <ol-layerswitcherimage-control />
+    <ol-layerswitcherimage-control :mouseover="true" />
 
     <ol-tile-layer ref="light" title="Licht" :visible="true" :base-layer="true">
       <ol-source-stadia-maps layer="alidade_smooth" />
@@ -17,7 +17,7 @@
 
     <ol-tile-layer
       ref="fietskaart"
-      title="Fietskaart"
+      title="Fiets"
       :visible="false"
       :base-layer="true"
     >
@@ -29,7 +29,7 @@
 
     <ol-tile-layer
       ref="luchtfoto"
-      title="Luchtfoto"
+      title="Foto"
       :visible="false"
       :base-layer="true"
     >
@@ -42,7 +42,12 @@
       />
     </ol-tile-layer>
 
-    <ol-tile-layer ref="lufolabels" title="Straatnamen" :visible="false">
+    <ol-tile-layer
+      ref="lufolabels"
+      title="Straatnamen"
+      :visible="false"
+      :display-in-layer-switcher="false"
+    >
       <ol-source-wmts
         ref="lufolabels-source"
         url="https://service.pdok.nl/bzk/luchtfotolabels/wmts/v1_0"
@@ -50,6 +55,7 @@
         :projection="rdProjection"
         matrix-set="EPSG:28992"
         format="image/png"
+        :display-in-layer-switcher="false"
         :preview="getPreview('/preview-lufolabels.png')"
       />
     </ol-tile-layer>
@@ -137,6 +143,7 @@ import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke } from "ol/style";
 import { click } from "ol/events/condition";
 import InteractionSelect from "./InteractionSelect.vue";
+import type TileLayer from "ol/layer/Tile";
 
 const { issues } = storeToRefs(useIssues());
 
@@ -151,19 +158,30 @@ function getPreview(url: string) {
   };
 }
 
+// preview images for layers
 const lufolabelsSource = useTemplateRef("lufolabels-source");
 const luchtfotoSource = useTemplateRef("luchtfoto-source");
 
+const luchtfotoIsVisible = ref(false);
+
 watch(luchtfotoSource, (luchtfotoSource) => {
-  if (luchtfotoSource.layer)
-    luchtfotoSource.layer.getPreview = getPreview("/preview-luchtfoto.png");
+  if (luchtfotoSource.layer) {
+    const layer = luchtfotoSource.layer as TileLayer;
+    layer.getPreview = getPreview("/preview-luchtfoto.png");
+    layer.on("change:visible", () => {
+      luchtfotoIsVisible.value = layer.getVisible();
+    });
+  }
 });
 
 watch(lufolabelsSource, (lufolabelsSource) => {
-  if (lufolabelsSource.tileLayer)
-    lufolabelsSource.tileLayer.getPreview = getPreview(
-      "/preview-lufolabels.png"
-    );
+  if (lufolabelsSource.tileLayer) {
+    const layer = lufolabelsSource.tileLayer as TileLayer;
+    layer.getPreview = getPreview("/preview-lufolabels.png");
+    watch(luchtfotoIsVisible, (isVisible) => {
+      layer.setVisible(isVisible);
+    });
+  }
 });
 
 const { isEditing } = useIsEditing();
