@@ -9,27 +9,36 @@
 
     <MapAddFeature ref="addFeature" />
 
-        <ol-layerswitcherimage-control />
-
+    <ol-layerswitcherimage-control />
 
     <ol-tile-layer ref="light" title="Licht" :visible="true" :base-layer="true">
       <ol-source-stadia-maps layer="alidade_smooth" />
     </ol-tile-layer>
 
-    <ol-tile-layer ref="luchtfoto" title="Luchtfoto" :visible="false" :base-layer="true">
+    <ol-tile-layer
+      ref="fietskaart"
+      title="Fietskaart"
+      :visible="false"
+      :base-layer="true"
+    >
+      <ol-source-xyz
+        url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
+        attributions='&copy; <a href="http://opencyclemap.org">OpenCycleMap</a>'
+      />
+    </ol-tile-layer>
+
+    <ol-tile-layer
+      ref="luchtfoto"
+      title="Luchtfoto"
+      :visible="false"
+      :base-layer="true"
+    >
       <ol-source-tile-wms
-      ref="luchtfoto-source" 
+        ref="luchtfoto-source"
         url="https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0"
         layers="Actueel_ortho25"
         attributions='&copy; <a href="https://www.kadaster.nl">Kadaster</a>'
         :preview="getPreview('/preview-luchtfoto.png')"
-      />
-    </ol-tile-layer>
-
-    <ol-tile-layer ref="fietskaart" title="Fietskaart" :visible="false" :base-layer="true">
-      <ol-source-xyz
-        url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
-        attributions='&copy; <a href="http://opencyclemap.org">OpenCycleMap</a>'
       />
     </ol-tile-layer>
 
@@ -110,7 +119,6 @@
       :style
       @select="onFeatureSelect"
     />
-
   </ol-map>
 </template>
 
@@ -138,29 +146,25 @@ function isSelected(issue: Issue) {
 }
 
 function getPreview(url: string) {
-  return function(latlon, zoom) {
-    console.log("getPreview called with:", latlon, zoom);
-    return url;
+  return function () {
+    return [url];
   };
 }
 
-const lufolabelsSource = ref(null);
-const luchtfotoSource = ref(null);
-watch(
-  [lufolabelsSource, luchtfotoSource],
-  ([lufolabels, luchtfoto]) => {
-    if (lufolabels) {
-      console.log({lufolabels})
-      // lufolabels.setPreview(getPreview("/preview-lufolabels.png"));
-    }
-    if (luchtfoto) {
-      console.log({luchtfoto})
-      // luchtfoto.setVisible(false);
-    }
-  },
-  { immediate: true }
-);
+const lufolabelsSource = useTemplateRef("lufolabels-source");
+const luchtfotoSource = useTemplateRef("luchtfoto-source");
 
+watch(luchtfotoSource, (luchtfotoSource) => {
+  if (luchtfotoSource.layer)
+    luchtfotoSource.layer.getPreview = getPreview("/preview-luchtfoto.png");
+});
+
+watch(lufolabelsSource, (lufolabelsSource) => {
+  if (lufolabelsSource.tileLayer)
+    lufolabelsSource.tileLayer.getPreview = getPreview(
+      "/preview-lufolabels.png"
+    );
+});
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {
