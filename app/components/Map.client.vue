@@ -260,6 +260,7 @@ function onFeatureSelect(event: SelectEvent) {
     } else {
       selectedId.value = issueId;
       navigateToIssue({ id: issueId } as Issue);
+      emit("feature-clicked");
     }
   } else {
     selectedFeatures.value.clear();
@@ -289,6 +290,8 @@ function onModifyEnd(event: ModifyEvent) {
   // @ts-ignore
   selectedIssue.value!.geometry = geoJSON.geometry;
 }
+
+const emit = defineEmits(["feature-clicked"]);
 </script>
 
 <style>

@@ -41,15 +41,8 @@ export default defineEventHandler(async (event) => {
     .prepare(
       "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, legend_id, geometry, created_at"
     )
-    .bind(
-      title,
-      description,
-      legend_id,
-      JSON.stringify(geometry)
-    )
+    .bind(title, description, legend_id, JSON.stringify(geometry))
     .first();
-
-  console.log("Inserted issue:", issue);
 
   if (!issue) {
     throw createError({
