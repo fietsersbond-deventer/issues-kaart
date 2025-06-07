@@ -36,6 +36,12 @@
 import type { Legend } from "~~/server/database/schema";
 import type { LegendUsage } from "~/composables/useLegendApi";
 
+definePageMeta({
+  title: "Legenda",
+  // middleware: ["admin"],
+});
+
+
 const { getAll, getUsage, create, update, remove } = useLegendApi();
 
 const legends = ref<Legend[]>([]);

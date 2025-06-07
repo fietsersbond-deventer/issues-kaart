@@ -69,6 +69,16 @@ const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue } = storeToRefs(useSelectedIssue());
 
+// Set the page title dynamically based on the issue
+useHead(() => ({
+  title: issue.value?.title ? `${issue.value.title} - Fietsersbond` : 'Nieuw Issue - Fietsersbond'
+}));
+
+// Update route meta for breadcrumbs
+watch(() => issue.value?.title, (newTitle) => {
+  route.meta.title = newTitle || 'Nieuw Issue';
+}, { immediate: true });
+
 if (!id) {
   // Redirect to new item creation
   navigateTo("/kaart");
@@ -88,6 +98,7 @@ definePageMeta({
   pageTransition: {
     name: "page",
   },
+  title: "Kaart",
 });
 </script>
 
