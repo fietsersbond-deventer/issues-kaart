@@ -119,7 +119,7 @@
       </ol-source-vector></ol-vector-layer
     >
 
-    <InteractionSelect
+    <ol-interaction-select
       v-if="!isDrawing"
       :condition="click"
       :style
@@ -142,7 +142,6 @@ import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke } from "ol/style";
 import { click } from "ol/events/condition";
-import InteractionSelect from "./InteractionSelect.vue";
 import type TileLayer from "ol/layer/Tile";
 
 const { issues } = storeToRefs(useIssues());
