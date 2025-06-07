@@ -113,9 +113,9 @@
           v-if="modifyEnabled"
           :features="selectedFeatures"
           @modifyend="onModifyEnd"
-        >
-          ></ol-interaction-modify
-        >
+        />
+          
+        
       </ol-source-vector></ol-vector-layer
     >
 
