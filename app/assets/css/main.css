@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Primary font stack using Inter with system font fallbacks */
+  --font-family-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* Colors */
+  --color-text: #333333;
+  --color-text-light: #666666;
+  --color-link: #E94E1B;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-family-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6,
+.text-h1, .text-h2, .text-h3, .text-h4, .text-h5, .text-h6 {
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.text-h1, h1 { font-size: 2.5rem; }
+.text-h2, h2 { font-size: 2rem; }
+.text-h3, h3 { font-size: 1.75rem; }
+.text-h4, h4 { font-size: 1.5rem; }
+.text-h5, h5 { font-size: 1.25rem; }
+.text-h6, h6 { font-size: 1.1rem; }
+
+/* Links */
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Paragraph text */
+p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Vuetify overrides */
+.v-application {
+  font-family: var(--font-family-primary) !important;
+  line-height: 1.5;
+}
+
+.v-toolbar-title {
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+}
+
+/* Button text */
+.v-btn {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Form inputs */
+.v-field__input,
+.v-text-field input {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+/* Lists */
+.v-list-item-title {
+  font-weight: 500;
+}
+
+.v-list-item-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+}

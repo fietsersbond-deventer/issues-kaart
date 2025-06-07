@@ -10,7 +10,11 @@ export default defineNuxtConfig({
       link: [{ rel: "icon", type: "image/jpeg", href: "/fietsersbond.jpeg" }],
     },
   },
-  css: ["ol/ol.css", "vue3-openlayers/dist/vue3-openlayers.css"],
+  css: [
+    "@/assets/css/main.css",
+    "ol/ol.css",
+    "vue3-openlayers/dist/vue3-openlayers.css"
+  ],
   runtimeConfig: {
     public: {
       tinymceApiKey: "", // Add your TinyMCE API key in .env file
