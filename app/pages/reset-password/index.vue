@@ -64,6 +64,8 @@ definePageMeta({
   title: "Wachtwoord herstellen",
 });
 
+const {adminName} = useRuntimeConfig().public;
+
 const email = ref("");
 const error = ref("");
 const success = ref("");
@@ -80,7 +82,7 @@ async function handleSubmit() {
       body: { email: email.value },
     });
     success.value =
-      "Als dit e-mailadres bij ons bekend is, ontvang je binnen enkele minuten een e-mail met instructies om je wachtwoord te resetten.";
+      `Als dit e-mailadres bij ons bekend is, ontvang je binnen enkele minuten een e-mail met instructies om je wachtwoord te resetten. Neem anders contact op met ${adminName}`;
     email.value = "";
   } catch (e) {
     console.error(e);

@@ -1,5 +1,5 @@
 <template>
-  <v-form @submit.prevent="handleSubmit">
+  <v-form v-model="validForm" @submit.prevent="handleSubmit">
     <v-text-field
       v-model="form.username"
       label="Gebruikersnaam"
@@ -17,12 +17,11 @@
       item-value="name"
       required
     />
-    <PasswordInput
+    <NewPassword
       v-if="!editMode"
       v-model="form.password"
       label="Wachtwoord"
       :disabled="loading"
-      @strength-change="handlePasswordStrength"
     />
     <v-card-actions>
       <v-spacer />
@@ -30,7 +29,7 @@
         :loading="loading"
         color="primary"
         type="submit"
-        :disabled="!isValid"
+        :disabled="!validForm"
       >
         {{ editMode ? 'Opslaan' : 'Toevoegen' }}
       </v-btn>
@@ -42,6 +41,8 @@
 <script setup lang="ts">
 import type { User } from '~/types/User';
 import { useRoles } from '~/composables/useRoles';
+
+const validForm = ref(true);
 
 const props = defineProps<{
   user?: Pick<User, 'id' | 'username' | 'name' | 'role'>;
@@ -71,19 +72,9 @@ const form = ref({
 
 const isPasswordValid = ref(false);
 
-const isValid = computed(() => {
-  if (editMode.value) {
-    return !!form.value.username;
-  }
-  return !!form.value.username && !!form.value.password && isPasswordValid.value;
-});
-
-function handlePasswordStrength(strength: { score: number; isStrong: boolean }) {
-  isPasswordValid.value = strength.isStrong;
-}
 
 function handleSubmit() {
-  if (!isValid.value) return;
+  if (!validForm.value) return;
 
   emit('submit', {
     username: form.value.username,

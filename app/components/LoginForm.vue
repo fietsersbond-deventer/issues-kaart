@@ -17,7 +17,6 @@
       v-model="password"
       label="Wachtwoord"
       :disabled="isLoading"
-      disable-strength-check
     />
 
     <v-btn
