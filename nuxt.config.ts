@@ -17,7 +17,7 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      tinymceApiKey: "", // Add your TinyMCE API key in .env file
+      adminName: process.env.ADMIN_NAME || "Admin",
     },
     isProduction: process.env.NODE_ENV === "production",
   },

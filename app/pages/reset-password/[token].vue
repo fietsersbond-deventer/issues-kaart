@@ -14,7 +14,7 @@
                   {{ error }}
                 </v-alert>
 
-                <PasswordInput
+                <NewPassword
                   v-model="password"
                   label="Nieuw wachtwoord"
                   :disabled="isLoading"
