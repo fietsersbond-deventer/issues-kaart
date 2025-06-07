@@ -1,7 +1,11 @@
 <template>
   <v-app-bar color="surface-variant">
     <v-app-bar-title>Deventer Fietsersbond projecten</v-app-bar-title>
-    <v-breadcrumbs :items="breadcrumbs" />
+    <v-breadcrumbs :items="breadcrumbs">
+      <template #divider>
+        <v-icon>mdi-chevron-right</v-icon>
+      </template>
+      </v-breadcrumbs>  
     <v-spacer />
     <template v-if="status === 'authenticated'">
       <v-btn to="/kaart/new" variant="text" prepend-icon="mdi-plus-circle"> 
