@@ -27,19 +27,20 @@
 <script setup lang="ts">
 definePageMeta({
   title: "Beheer",
+  navTitle: "Beheer",
   // middleware: ["admin"],
+  
+  // Add middleware to handle redirects from /admin
+  middleware: [
+    function (to) {
+      if (to.path === '/admin') {
+        const { isAdmin } = useRoles();
+        return isAdmin.value ? '/admin/users' : '/admin/legends';
+      }
+    }
+  ]
 });
 const { isAdmin } = useRoles();
 
-// Redirect to first available menu item when at root admin page
-const route = useRoute();
-const router = useRouter();
-
-onMounted(() => {
-  if (route.path === '/admin') {
-    // Navigate to users if admin, otherwise to legends
-    const firstPath = isAdmin ? '/admin/users' : '/admin/legends';
-    router.replace(firstPath);
-  }
-});
+// All redirects are now handled by the middleware
 </script>
