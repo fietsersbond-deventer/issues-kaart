@@ -56,13 +56,11 @@
                       </v-btn>
                     </div>
                     <div class="text-caption text-medium-emphasis">
-                      Verloopt: {{ formatExpiryDate(user.reset_token_expires_at) }}
+                      Verloopt:
+                      {{ formatExpiryDate(user.reset_token_expires_at) }}
                     </div>
                   </div>
                 </template>
-                <span v-else class="text-caption text-medium-emphasis">
-                  Geen actieve reset link
-                </span>
               </td>
               <td>
                 <v-btn
