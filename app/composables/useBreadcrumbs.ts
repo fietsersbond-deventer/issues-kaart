@@ -1,6 +1,3 @@
-import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-
 export const useBreadcrumbs = () => {
   const route = useRoute();
   const router = useRouter();

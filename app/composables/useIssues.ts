@@ -14,7 +14,7 @@ export const useIssues = defineStore("issues", () => {
 
   const { data, refresh: refreshIssues } = useFetch<Issue[]>("/api/issues");
 
-  watch(data, (newData) => {
+  watch(data, (newData: Issue[] | null) => {
     if (newData) {
       issues.value = newData;
     }

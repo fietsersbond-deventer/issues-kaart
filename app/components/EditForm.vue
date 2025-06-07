@@ -122,9 +122,31 @@ const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue>({ required: true });
 
+// Draft management
+const { saveDraft, getDraft, deleteDraft } = useIssueDrafts();
+
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
   return JSON.stringify(issue.value) !== JSON.stringify(oldValue);
+});
+
+// Watch for changes and automatically save draft
+watch(() => issue.value, (newValue) => {
+  if (isModified.value && newValue) {
+    saveDraft(newValue);
+  }
+}, { deep: true });
+
+// Load draft if exists
+onMounted(() => {
+  const draft = getDraft(issue.value);
+  if (draft) {
+    if (confirm('Er is een concept gevonden voor dit item. Wil je deze herstellen?')) {
+      issue.value = draft;
+    } else {
+      deleteDraft(issue.value);
+    }
+  }
 });
 // onBeforeUnmount(() => {
 //   if (isModified.value) {
@@ -184,18 +206,47 @@ onMounted(async () => {
 
 async function onSubmit() {
   if (issue.value && valid.value) {
-    if (issue.value.id) {
-      await update(issue.value.id, issue.value);
-    } else {
-      const result = await create(issue.value);
-      if (result.id) {
-        showDialog.value = false;
-        return navigateTo(`/kaart/${result.id}`);
+    try {
+      if (issue.value.id) {
+        await update(issue.value.id, issue.value);
+        deleteDraft(issue.value);
+      } else {
+        const result = await create(issue.value);
+        if (result.id) {
+          deleteDraft(issue.value);
+          showDialog.value = false;
+          return navigateTo(`/kaart/${result.id}`);
+        }
       }
+    } catch (error) {
+      console.error('Failed to save:', error);
+      // On error, save as draft
+      saveDraft(issue.value);
+      alert('Er is een fout opgetreden bij het opslaan. Je wijzigingen zijn opgeslagen als concept.');
+      return;
     }
   }
   isEditing.value = false;
   showDialog.value = false;
+}
+
+// Add beforeunload handler for modified warning
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
+// Clean up when component unmounts
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
+
+// Handle beforeunload event
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isModified.value) {
+    // Show confirmation dialog
+    e.preventDefault();
+    e.returnValue = '';
+  }
 }
 
 function onCancel() {

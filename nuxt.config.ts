@@ -28,6 +28,7 @@ export default defineNuxtConfig({
     "nuxt-mdi",
     "vuetify-nuxt-module",
     "@pinia/nuxt",
+    "@vueuse/nuxt",
   ],
   hub: {
     database: true,
