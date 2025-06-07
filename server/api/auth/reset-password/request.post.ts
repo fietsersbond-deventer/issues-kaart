@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
   // Generate reset token
   const token = generateToken();
   const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
+  expiresAt.setDate(expiresAt.getDate() + 1); // Token expires in 24 hours
 
   // Store reset token
   await db
