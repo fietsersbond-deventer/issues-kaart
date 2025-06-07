@@ -19,6 +19,7 @@
               <th>Gebruikersnaam</th>
               <th>Naam</th>
               <th>Rol</th>
+              <th v-if="hasActiveResetTokens">Wachtwoord reset link</th>
               <th>Acties</th>
             </tr>
           </thead>
@@ -27,6 +28,35 @@
               <td>{{ user.username }}</td>
               <td>{{ user.name || "-" }}</td>
               <td>{{ user.role }}</td>
+              <td v-if="hasActiveResetTokens">
+                <template
+                  v-if="user.reset_token && user.reset_token_expires_at"
+                >
+                  <div class="d-flex align-center">
+                    <span
+                      class="text-caption text-truncate"
+                      style="max-width: 200px"
+                    >
+                      link
+                    </span>
+                    <v-btn
+                      icon="mdi-content-copy"
+                      variant="text"
+                      color="primary"
+                      size="small"
+                      class="ml-2"
+                      @click="copyResetLink(user)"
+                    >
+                      <v-tooltip activator="parent" location="top">
+                        Kopieer reset link
+                      </v-tooltip>
+                    </v-btn>
+                  </div>
+                </template>
+                <span v-else class="text-caption text-medium-emphasis">
+                  Geen actieve reset link
+                </span>
+              </td>
               <td>
                 <v-btn
                   icon="mdi-pencil"
@@ -108,7 +138,6 @@ definePageMeta({
 });
 
 const { users, create, update, remove } = useUsersApi();
-
 const showNewUserDialog = ref(false);
 const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
@@ -117,6 +146,43 @@ const deleteUser = ref<{ id: number; username: string } | null>(null);
 const editedUser = ref<Pick<User, "id" | "username" | "name" | "role"> | null>(
   null
 );
+
+const hasActiveResetTokens = computed(() => {
+  return (
+    users.value?.some(
+      (user) => user.reset_token && user.reset_token_expires_at
+    ) ?? false
+  );
+});
+
+const runtimeConfig = useRuntimeConfig();
+const appUrl = runtimeConfig.public.appUrl || window.location.origin;
+const { showSuccess, showError } = useSnackbar();
+
+function getResetLink(user: User): string {
+  if (!user.reset_token) return "";
+  return `${appUrl}/reset-password/${user.reset_token}`;
+}
+
+function formatExpiryDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleString("nl-NL", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+async function copyResetLink(user: User) {
+  const link = getResetLink(user);
+  if (!link) return;
+
+  try {
+    await navigator.clipboard.writeText(link);
+    showSuccess("Reset link is gekopieerd naar het klembord");
+  } catch (err) {
+    console.error("Failed to copy link:", err);
+    showError("Kon de reset link niet kopiëren");
+  }
+}
 
 function editUser(user: User) {
   editedUser.value = {

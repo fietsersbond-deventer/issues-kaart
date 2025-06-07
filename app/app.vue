@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { useSnackbar } from '~/composables/useSnackbar';
+
 useSeoMeta({
   title: "Fietsersbond Deventer - Projecten",
   description: "Projecten op de kaart",
 });
+
+const { snackbar } = useSnackbar();
 </script>
 
 <template>
@@ -21,6 +25,14 @@ useSeoMeta({
         </NuxtErrorBoundary>
 
         <NuxtPage />
+
+        <v-snackbar
+          v-model="snackbar.show"
+          :color="snackbar.color"
+          :timeout="3000"
+        >
+          {{ snackbar.text }}
+        </v-snackbar>
       </v-main>
     </v-app>
   </NuxtLayout>
