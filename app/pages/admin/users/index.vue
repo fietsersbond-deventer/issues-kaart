@@ -32,25 +32,32 @@
                 <template
                   v-if="user.reset_token && user.reset_token_expires_at"
                 >
-                  <div class="d-flex align-center">
-                    <span
-                      class="text-caption text-truncate"
-                      style="max-width: 200px"
-                    >
-                      link
-                    </span>
-                    <v-btn
-                      icon="mdi-content-copy"
-                      variant="text"
-                      color="primary"
-                      size="small"
-                      class="ml-2"
-                      @click="copyResetLink(user)"
-                    >
-                      <v-tooltip activator="parent" location="top">
-                        Kopieer reset link
-                      </v-tooltip>
-                    </v-btn>
+                  <div>
+                    <div class="d-flex align-center">
+                      <span
+                        class="text-caption text-truncate"
+                        style="max-width: 200px"
+                        :title="getResetLink(user)"
+                      >
+                        {{ getResetLink(user) }}
+                      </span>
+                      <v-btn
+                        :icon="true"
+                        variant="text"
+                        color="primary"
+                        size="small"
+                        class="ml-2"
+                        @click="copyResetLink(user)"
+                      >
+                        <v-icon>mdi-content-copy</v-icon>
+                        <v-tooltip activator="parent" location="top">
+                          Kopieer reset link
+                        </v-tooltip>
+                      </v-btn>
+                    </div>
+                    <div class="text-caption text-medium-emphasis">
+                      Verloopt: {{ formatExpiryDate(user.reset_token_expires_at) }}
+                    </div>
                   </div>
                 </template>
                 <span v-else class="text-caption text-medium-emphasis">
