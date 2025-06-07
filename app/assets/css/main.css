@@ -86,3 +86,28 @@ p {
   font-size: 0.875rem;
   color: var(--color-text-light);
 }
+
+/* Breadcrumbs styling */
+.v-breadcrumbs {
+  padding: 0 12px;
+}
+
+.v-breadcrumbs-item {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--v-theme-primary);
+  opacity: 0.87;
+  transition: opacity 0.2s ease;
+}
+
+.v-breadcrumbs-item--disabled {
+  color: var(--v-theme-on-surface);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.v-breadcrumbs-divider {
+  color: var(--v-theme-on-surface);
+  opacity: 0.5;
+  margin: 0 4px;
+}
