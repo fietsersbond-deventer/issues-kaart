@@ -13,6 +13,8 @@
       width="400"
       app
       class="d-flex"
+      disable-route-watcher
+      persistent
       :temporary="isMobile"
       :scrim="isMobile"
     >
@@ -27,7 +29,7 @@
     </v-navigation-drawer>
     <v-btn
       v-if="isMobile"
-      icon="mdi-menu"
+      :icon="drawer ? 'mdi-arrow-left' : 'mdi-menu'"
       style="position: absolute; top: 16px; right: 16px; z-index: 6001"
       class="open-drawer-btn"
       @click="drawer = !drawer"
