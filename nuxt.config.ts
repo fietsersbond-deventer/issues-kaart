@@ -13,7 +13,7 @@ export default defineNuxtConfig({
   css: [
     "ol/ol.css",
     "vue3-openlayers/dist/vue3-openlayers.css",
-    "@/assets/css/main.css"  // Make sure our CSS is last to take precedence
+    "@/assets/css/main.css", // Make sure our CSS is last to take precedence
   ],
   runtimeConfig: {
     public: {
@@ -53,6 +53,10 @@ export default defineNuxtConfig({
         signOut: { path: "/logout", method: "post" },
         signUp: { path: "/register", method: "post" },
         getSession: { path: "/session", method: "get" },
+      },
+      refresh: {
+        isEnabled: true,
+        endpoint: { path: "/refresh", method: "post" },
       },
     },
   },
