@@ -185,6 +185,7 @@ watch([view, issues], () => {
     const bbox = getIssuesBbox(issues.value);
     view.value.fit(bbox, {
       padding: [50, 50, 50, 50],
+      maxZoom: 14,
     });
   }
 });
