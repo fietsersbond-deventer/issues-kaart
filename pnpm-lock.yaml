@@ -23,7 +23,13 @@ importers:
       '@sidebase/nuxt-auth':
         specifier: ^0.10.1
         version: 0.10.1(@netlify/blobs@8.2.0)(magicast@0.3.5)(next-auth@4.21.1(next@13.5.11(@babel/core@7.27.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@turf/bbox':
+        specifier: ^7.2.0
+        version: 7.2.0
       '@turf/boolean-valid':
+        specifier: ^7.2.0
+        version: 7.2.0
+      '@turf/helpers':
         specifier: ^7.2.0
         version: 7.2.0
       '@turf/invariant':

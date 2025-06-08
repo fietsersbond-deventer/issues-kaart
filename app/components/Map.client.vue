@@ -113,11 +113,8 @@
           v-if="modifyEnabled"
           :features="selectedFeatures"
           @modifyend="onModifyEnd"
-        />
-          
-        
-      </ol-source-vector></ol-vector-layer
-    >
+        /> </ol-source-vector
+    ></ol-vector-layer>
 
     <ol-interaction-select
       v-if="!isDrawing"
@@ -129,7 +126,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import type { Issue } from "~/types/Issue";
 import { register } from "ol/proj/proj4.js";
 import { transform } from "ol/proj";
@@ -179,6 +175,16 @@ watch(lufolabelsSource, (lufolabelsSource) => {
     layer.getPreview = getPreview("/preview-lufolabels.png");
     watch(luchtfotoIsVisible, (isVisible) => {
       layer.setVisible(isVisible);
+    });
+  }
+});
+
+const view = useTemplateRef("view");
+watch([view, issues], () => {
+  if (view.value && issues.value.length > 0) {
+    const bbox = getIssuesBbox(issues.value);
+    view.value.fit(bbox, {
+      padding: [50, 50, 50, 50],
     });
   }
 });
