@@ -183,7 +183,6 @@ const view = useTemplateRef("view");
 const firstLoad = ref(true);
 watch([view, issues], () => {
   if (!firstLoad.value) return;
-  firstLoad.value = false;
   if (view.value && issues.value.length > 0) {
     const bbox = getIssuesBbox(issues.value);
     if (!bbox) return;
@@ -191,6 +190,7 @@ watch([view, issues], () => {
       padding: [50, 50, 50, 50],
       maxZoom: 14,
     });
+    firstLoad.value = false;
   }
 });
 
