@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { testPassword } from "~~/server/utils/testPassword";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -14,7 +15,15 @@ export default defineEventHandler(async (event) => {
   if (!username || !password) {
     throw createError({
       statusCode: 400,
-      message: "Username and password are required",
+      message: "Gebruikersnaam en wachtwoord zijn verplicht",
+    });
+  }
+
+  const { isStrong } = testPassword(password);
+  if (!isStrong) {
+    throw createError({
+      statusCode: 400,
+      message: "Wachtwoord is niet sterk genoeg",
     });
   }
 

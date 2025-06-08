@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { testPassword } from "~~/server/utils/testPassword";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -15,10 +16,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (password.length < 8) {
+  const { isStrong } = testPassword(password);
+
+  if (!isStrong) {
     throw createError({
       statusCode: 400,
-      message: "Password must be at least 8 characters long",
+      message: "Wachtwoord is niet sterk genoeg",
     });
   }
 
