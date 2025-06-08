@@ -183,6 +183,7 @@ const view = useTemplateRef("view");
 watch([view, issues], () => {
   if (view.value && issues.value.length > 0) {
     const bbox = getIssuesBbox(issues.value);
+    if (!bbox) return;
     view.value.fit(bbox, {
       padding: [50, 50, 50, 50],
       maxZoom: 14,
