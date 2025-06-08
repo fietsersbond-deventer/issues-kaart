@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import type { User } from "~~/server/database/schema";
-import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../../utils/tokenUtils";
 
 export default defineEventHandler(async (event) => {
   const db = hubDatabase();
@@ -28,11 +31,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  console.log("Attempting login for username:", username);
-  console.log("Retrieved password hash:", user.password_hash);
-
   const isValidPassword = await bcrypt.compare(password, user.password_hash);
-  console.log("Password comparison result:", isValidPassword);
 
   if (!isValidPassword) {
     console.log("Invalid password for username:", username);
@@ -46,7 +45,7 @@ export default defineEventHandler(async (event) => {
     // Create access token and refresh token
     const [accessToken, refreshToken] = await Promise.all([
       generateAccessToken(user),
-      generateRefreshToken(user.id)
+      generateRefreshToken(user.id),
     ]);
 
     return {

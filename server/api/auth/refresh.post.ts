@@ -1,4 +1,7 @@
-import { generateAccessToken, verifyRefreshToken } from "../../utils/tokenUtils";
+import {
+  generateAccessToken,
+  verifyRefreshToken,
+} from "../../utils/tokenUtils";
 
 export default defineEventHandler(async (event) => {
   const { refreshToken } = await readBody(event);
@@ -13,9 +16,11 @@ export default defineEventHandler(async (event) => {
   try {
     const user = await verifyRefreshToken(refreshToken);
     const accessToken = await generateAccessToken(user);
+    const newRefreshToken = await generateRefreshToken(user.id);
 
     return {
       token: accessToken,
+      refreshToken: newRefreshToken,
       user: {
         id: user.id,
         username: user.username,
@@ -23,7 +28,7 @@ export default defineEventHandler(async (event) => {
         role: user.role,
       },
     };
-  } catch (error) {
+  } catch {
     throw createError({
       statusCode: 401,
       message: "Ongeldige refresh token",
