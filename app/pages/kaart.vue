@@ -15,8 +15,8 @@
       class="d-flex"
       disable-route-watcher
       persistent
-      :temporary="isMobile"
-      :scrim="isMobile"
+      :temporary="mobile"
+      :scrim="mobile"
     >
       <div class="navigation-content">
         <div class="main-content">
@@ -42,8 +42,7 @@
                     Zoek een locatie met de zoekbalk linksboven
                   </li>
                   <li class="mb-2">
-                    Bekijk de legenda onderaan dit paneel om te zien wat de
-                    kleuren betekenen
+                    Bekijk de legenda om te zien wat de kleuren betekenen
                   </li>
                 </ul>
               </v-card>
@@ -51,13 +50,10 @@
           </template>
           <NuxtPage />
         </div>
-        <div class="legend-wrapper">
-          <MapLegend />
-        </div>
       </div>
     </v-navigation-drawer>
     <v-btn
-      v-if="isMobile"
+      v-if="mobile"
       :icon="drawer ? 'mdi-arrow-left' : 'mdi-menu'"
       style="position: absolute; top: 16px; right: 16px; z-index: 6001"
       class="open-drawer-btn"
@@ -74,24 +70,18 @@ definePageMeta({
 const route = useRoute();
 useMapEventBus().provide();
 const drawer = ref(true);
-const isMobile = ref(false);
+const { mobile } = useDisplay();
 
-function checkScreen() {
-  isMobile.value = window.innerWidth < 900;
-  if (isMobile.value) drawer.value = false;
-  else drawer.value = true;
-}
-
-onMounted(() => {
-  checkScreen();
-  window.addEventListener("resize", checkScreen);
-});
-onUnmounted(() => {
-  window.removeEventListener("resize", checkScreen);
+watchEffect(() => {
+  if (mobile.value) {
+    drawer.value = false;
+  } else {
+    drawer.value = true;
+  }
 });
 
 function onFeatureClicked() {
-  if (isMobile.value) drawer.value = true;
+  if (mobile.value) drawer.value = true;
 }
 </script>
 
@@ -111,14 +101,6 @@ function onFeatureClicked() {
 .main-content {
   flex: 2;
   overflow-y: auto;
-}
-
-.legend-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  background: white;
 }
 
 .open-drawer-btn {

@@ -1,7 +1,6 @@
 <template>
   <div class="legend-container">
     <v-list density="compact" class="legend-list pa-0">
-      <v-list-subheader class="py-1 text-caption">Legenda</v-list-subheader>
       <v-list-item
         v-for="item in visibleLegends"
         :key="item.id"
