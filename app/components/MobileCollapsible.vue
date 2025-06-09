@@ -7,7 +7,11 @@
   <!-- Mobile view -->
   <div v-else class="mobile-view">
     <v-expansion-panels v-model="panelModel">
-      <v-expansion-panel>
+      <v-expansion-panel
+        :expand-icon="icon"
+        collapse-icon="mdi-chevron-down"
+        :value="0"
+      >
         <v-expansion-panel-title>{{ title }}</v-expansion-panel-title>
         <v-expansion-panel-text eager>
           <slot />
@@ -20,6 +24,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   title: string;
+  icon?: string;
   defaultExpanded?: boolean;
 }>();
 
