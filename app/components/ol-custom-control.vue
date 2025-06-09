@@ -1,7 +1,7 @@
 <template>
   <div
     ref="controlRef"
-    :class="['ol-control', 'ol-unselectable', props.position]"
+    :class="['ol-positioning', 'ol-unselectable', props.position]"
   >
     <slot />
   </div>
@@ -46,24 +46,24 @@ defineExpose({
 </script>
 
 <style>
-.ol-control {
+.ol-positioning {
   position: absolute;
   background-color: transparent;
   pointer-events: auto;
   padding: 0;
 }
 
-.ol-control.top-left {
+.ol-positioning.top-left {
   top: 0.5em;
   left: 0.5em;
 }
 
-.ol-control.top-right {
+.ol-positioning.top-right {
   top: 0.5em;
   right: 0.5em;
 }
 
-.ol-control.bottom-left {
+.ol-positioning.bottom-left {
   bottom: 0.5em;
   left: 0.5em;
 }
