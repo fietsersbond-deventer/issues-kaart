@@ -11,8 +11,10 @@
     <MapAddFeature ref="addFeature" />
 
     <ol-layerswitcherimage-control :mouseover="true" />
-    <OlCustomControl position="bottom-right">
-      <MapLegend />
+    <OlCustomControl position="bottom-left">
+      <MobileCollapsible title="Legenda" icon="mdi-map-legend">
+        <MapLegend />
+      </MobileCollapsible>
     </OlCustomControl>
 
     <ol-tile-layer ref="light" title="Licht" :visible="true" :base-layer="true">
