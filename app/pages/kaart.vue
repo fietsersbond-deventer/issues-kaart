@@ -42,17 +42,13 @@
                     Zoek een locatie met de zoekbalk linksboven
                   </li>
                   <li class="mb-2">
-                    Bekijk de legenda onderaan dit paneel om te zien wat de
-                    kleuren betekenen
+                    Bekijk de legenda om te zien wat de kleuren betekenen
                   </li>
                 </ul>
               </v-card>
             </div>
           </template>
           <NuxtPage />
-        </div>
-        <div class="legend-wrapper">
-          <MapLegend />
         </div>
       </div>
     </v-navigation-drawer>
@@ -111,14 +107,6 @@ function onFeatureClicked() {
 .main-content {
   flex: 2;
   overflow-y: auto;
-}
-
-.legend-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  background: white;
 }
 
 .open-drawer-btn {

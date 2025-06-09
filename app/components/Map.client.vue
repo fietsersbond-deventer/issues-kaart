@@ -11,6 +11,9 @@
     <MapAddFeature ref="addFeature" />
 
     <ol-layerswitcherimage-control :mouseover="true" />
+    <OlCustomControl position="bottom-right">
+      <MapLegend />
+    </OlCustomControl>
 
     <ol-tile-layer ref="light" title="Licht" :visible="true" :base-layer="true">
       <ol-source-stadia-maps layer="alidade_smooth" />
