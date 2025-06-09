@@ -38,26 +38,44 @@ function getUniqueKey(feature: Feature<Polygon>) {
   return feature.geometry;
 }
 
+let currentController: AbortController | null = null;
+
 async function search(text: string, cb) {
-  const features = await fetch(
-    `https://photon.komoot.io/api/?lat=52.2511467&lon=6.1574997&q=${encodeURIComponent(
-      text
-    )}`
-  ).then((response) =>
-    response.json().then((data) => {
-      return data.features;
-    })
-  );
+  // Abort previous request if it exists
+  if (currentController) {
+    currentController.abort();
+  }
 
-  // unique features based on geometry
-  const results: Map<string, Feature<Polygon>> = new Map(
-    features.map((f: Feature<Polygon>) => {
-      const key = getUniqueKey(f);
-      return [key, f];
-    })
-  );
+  // Create new controller for this request
+  currentController = new AbortController();
 
-  cb(Array.from(results.values()));
+  try {
+    const features = await fetch(
+      `https://photon.komoot.io/api/?lat=52.2511467&lon=6.1574997&q=${encodeURIComponent(
+        text
+      )}`,
+      { signal: currentController.signal }
+    ).then((response) =>
+      response.json().then((data) => {
+        return data.features;
+      })
+    );
+
+    // unique features based on geometry
+    const results: Map<string, Feature<Polygon>> = new Map(
+      features.map((f: Feature<Polygon>) => {
+        const key = getUniqueKey(f);
+        return [key, f];
+      })
+    );
+
+    cb(Array.from(results.values()));
+  } catch (error: unknown) {
+    // If the error is due to abort, we don't need to do anything
+    if (error instanceof Error && error.name === "AbortError") return;
+    // Otherwise pass an empty array to callback
+    cb([]);
+  }
 }
 </script>
 
