@@ -4,7 +4,7 @@ import { featureCollection } from "@turf/helpers";
 import type { BBox } from "geojson";
 import { fromLonLat } from "ol/proj";
 
-function transformBboxToOpenLayers(bbox: BBox): BBox {
+export function transformBboxToOpenLayers(bbox: BBox): BBox {
   const [minX, minY, maxX, maxY] = bbox;
   // Convert to OpenLayers coordinates
   const min = fromLonLat([minX, minY]);

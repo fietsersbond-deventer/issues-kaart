@@ -10,7 +10,7 @@
     <v-navigation-drawer
       v-model="drawer"
       location="right"
-      width="400"
+      width="600"
       app
       class="d-flex"
       disable-route-watcher
