@@ -7,6 +7,7 @@
       :projection="projection"
     />
 
+    <MapSearch @selected="onSearchSelected" />
     <MapAddFeature ref="addFeature" />
 
     <ol-layerswitcherimage-control :mouseover="true" />
@@ -139,6 +140,9 @@ import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke } from "ol/style";
 import { click } from "ol/events/condition";
 import type TileLayer from "ol/layer/Tile";
+import type { BBox } from "geojson";
+import { easeOut } from "ol/easing";
+import type { FitOptions } from "ol/View";
 
 const { issues } = storeToRefs(useIssues());
 
@@ -179,6 +183,25 @@ watch(lufolabelsSource, (lufolabelsSource) => {
   }
 });
 
+function setBbox(
+  bbox: BBox,
+  options: FitOptions = {
+    padding: [50, 50, 50, 50],
+  }
+) {
+  if (!view.value) return;
+  view.value.fit(bbox, options);
+}
+
+function onSearchSelected(bbox: BBox) {
+  setBbox(bbox, {
+    padding: [50, 50, 50, 50],
+    maxZoom: 17,
+    easing: easeOut,
+    duration: 1000,
+  });
+}
+
 const view = useTemplateRef("view");
 const firstLoad = ref(true);
 watch([view, issues], () => {
@@ -186,10 +209,7 @@ watch([view, issues], () => {
   if (view.value && issues.value.length > 0) {
     const bbox = getIssuesBbox(issues.value);
     if (!bbox) return;
-    view.value.fit(bbox, {
-      padding: [50, 50, 50, 50],
-      maxZoom: 14,
-    });
+    setBbox(bbox);
     firstLoad.value = false;
   }
 });
@@ -330,16 +350,7 @@ function onFeatureSelect(event: SelectEvent) {
   }
 }
 
-watch(
-  selectedFeatures,
-  (newFeatures) => {
-    console.log("Selected features changed:", newFeatures.getArray().length);
-  },
-  { deep: true }
-);
-
 function onModifyEnd(event: ModifyEvent) {
-  console.log("Modify end event:", event.features);
   const writer = new GeoJSON();
   const feature = event.features.item(0);
   if (!feature) {
