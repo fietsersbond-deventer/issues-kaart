@@ -190,7 +190,6 @@ function setBbox(
   }
 ) {
   if (!view.value) return;
-  console.log("Setting bbox:", bbox, view.value);
   view.value.fit(bbox, options);
 }
 
@@ -351,16 +350,7 @@ function onFeatureSelect(event: SelectEvent) {
   }
 }
 
-watch(
-  selectedFeatures,
-  (newFeatures) => {
-    console.log("Selected features changed:", newFeatures.getArray().length);
-  },
-  { deep: true }
-);
-
 function onModifyEnd(event: ModifyEvent) {
-  console.log("Modify end event:", event.features);
   const writer = new GeoJSON();
   const feature = event.features.item(0);
   if (!feature) {
