@@ -12,9 +12,11 @@
 
     <ol-layerswitcherimage-control :mouseover="true" />
     <OlCustomControl position="bottom-left">
-      <MobileCollapsible title="Legenda" icon="mdi-map-legend">
-        <MapLegend />
-      </MobileCollapsible>
+      <SizeCalculator v-model="legendSize">
+        <MobileCollapsible title="Legenda" icon="mdi-map-legend">
+          <MapLegend />
+        </MobileCollapsible>
+      </SizeCalculator>
     </OlCustomControl>
 
     <ol-tile-layer ref="light" title="Licht" :visible="true" :base-layer="true">
@@ -149,6 +151,11 @@ import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
 
+interface Size {
+  width: number;
+  height: number;
+}
+
 const { issues } = storeToRefs(useIssues());
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
@@ -188,19 +195,30 @@ watch(lufolabelsSource, (lufolabelsSource) => {
   }
 });
 
-function setBbox(
-  bbox: BBox,
-  options: FitOptions = {
-    padding: [50, 50, 50, 50],
-  }
-) {
+const defaultPadding = [50, 50, 50, 50]; // [top, right, bottom, left]
+const currentPadding = ref(defaultPadding);
+
+const legendSize = ref<Size>({ width: 0, height: 0 });
+
+// Update padding when size changes
+watch(legendSize, async () => {
+  currentPadding.value = [
+    50, // top
+    50, // right
+    legendSize.value.height + 20, // bottom
+    legendSize.value.width + 20, // left
+  ];
+});
+
+function setBbox(bbox: BBox, options: FitOptions = {}) {
   if (!view.value) return;
-  view.value.fit(bbox, options);
+  const padding = options.padding || currentPadding.value;
+  view.value.fit(bbox, { ...options, padding });
 }
 
 function onSearchSelected(bbox: BBox) {
   setBbox(bbox, {
-    padding: [50, 50, 50, 50],
+    padding: currentPadding.value,
     maxZoom: 17,
     easing: easeOut,
     duration: 1000,

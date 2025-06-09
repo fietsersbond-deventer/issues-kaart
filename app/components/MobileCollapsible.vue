@@ -22,19 +22,21 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+const panelModel = defineModel<boolean>({
+  required: false,
+});
+
+defineProps<{
   title: string;
   icon?: string;
-  defaultExpanded?: boolean;
 }>();
 
 const { mobile } = useDisplay();
-const panelModel = ref(props.defaultExpanded ? 0 : null);
 
 // Reset expanded state when switching to desktop
 watch(mobile, (isMobile) => {
   if (!isMobile) {
-    panelModel.value = null;
+    panelModel.value = false;
   }
 });
 </script>
