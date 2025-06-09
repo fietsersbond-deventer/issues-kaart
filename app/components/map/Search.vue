@@ -34,22 +34,12 @@ function getTitle(feature: Feature) {
 `;
 }
 
-/** Prevent same feature to be drawn twice: test equality
- * @param {} f1 First feature to compare
- * @param {} f2 Second feature to compare
- * @return {boolean}
- * @api
- */
-function equalFeatures(f1: Feature<Polygon>, f2: Feature<Polygon>) {
-  return (
-    getTitle(f1) === getTitle(f2) &&
-    f1.geometry.coordinates[0] === f2.geometry.coordinates[0] &&
-    f1.geometry.coordinates[1] === f2.geometry.coordinates[1]
-  );
+function getUniqueKey(feature: Feature<Polygon>) {
+  return feature.geometry;
 }
 
 async function search(text: string, cb) {
-  const results = await fetch(
+  const features = await fetch(
     `https://photon.komoot.io/api/?lat=52.2511467&lon=6.1574997&q=${encodeURIComponent(
       text
     )}`
@@ -58,7 +48,16 @@ async function search(text: string, cb) {
       return data.features;
     })
   );
-  cb(results);
+
+  // unique features based on geometry
+  const results: Map<string, Feature<Polygon>> = new Map(
+    features.map((f: Feature<Polygon>) => {
+      const key = getUniqueKey(f);
+      return [key, f];
+    })
+  );
+
+  cb(Array.from(results.values()));
 }
 </script>
 
