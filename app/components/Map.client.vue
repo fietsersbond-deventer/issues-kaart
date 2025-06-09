@@ -7,7 +7,7 @@
       :projection="projection"
     />
 
-    <MapSearch @selected="setBbox" />
+    <MapSearch @selected="onSearchSelected" />
     <MapAddFeature ref="addFeature" />
 
     <ol-layerswitcherimage-control :mouseover="true" />
@@ -141,6 +141,8 @@ import { Style, Circle, Fill, Stroke } from "ol/style";
 import { click } from "ol/events/condition";
 import type TileLayer from "ol/layer/Tile";
 import type { BBox } from "geojson";
+import { easeOut } from "ol/easing";
+import type { FitOptions } from "ol/View";
 
 const { issues } = storeToRefs(useIssues());
 
@@ -181,12 +183,23 @@ watch(lufolabelsSource, (lufolabelsSource) => {
   }
 });
 
-function setBbox(bbox: BBox) {
-  if (!view.value) return;
-  console.log("Setting bbox:", bbox);
-  view.value.fit(bbox, {
+function setBbox(
+  bbox: BBox,
+  options: FitOptions = {
     padding: [50, 50, 50, 50],
-    maxZoom: 14,
+  }
+) {
+  if (!view.value) return;
+  console.log("Setting bbox:", bbox, view.value);
+  view.value.fit(bbox, options);
+}
+
+function onSearchSelected(bbox: BBox) {
+  setBbox(bbox, {
+    padding: [50, 50, 50, 50],
+    maxZoom: 17,
+    easing: easeOut,
+    duration: 1000,
   });
 }
 

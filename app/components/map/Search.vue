@@ -11,14 +11,16 @@
 <script lang="ts" setup>
 import type { SearchEvent } from "ol-ext";
 import { transformBboxToOpenLayers } from "~/utils/getIssuesBbox";
-import type { BBox, Feature } from "geojson";
+import type { BBox, Feature, Polygon } from "geojson";
 
 const emit = defineEmits<{
   selected: [data: BBox];
 }>();
 
 function select(e: SearchEvent) {
-  const boundingBox = transformBboxToOpenLayers(e.search.properties.extent);
+  // swap coordinates to match OpenLayers format
+  const [west, north, east, south] = e.search.properties.extent;
+  const boundingBox = transformBboxToOpenLayers([west, south, east, north]);
   emit("selected", boundingBox);
 }
 
@@ -30,6 +32,20 @@ function getTitle(feature: Feature) {
     ${p.type == "street" ? `${p.postcode || ""} ${p.city || ""}` : p.type}
 </i>
 `;
+}
+
+/** Prevent same feature to be drawn twice: test equality
+ * @param {} f1 First feature to compare
+ * @param {} f2 Second feature to compare
+ * @return {boolean}
+ * @api
+ */
+function equalFeatures(f1: Feature<Polygon>, f2: Feature<Polygon>) {
+  return (
+    getTitle(f1) === getTitle(f2) &&
+    f1.geometry.coordinates[0] === f2.geometry.coordinates[0] &&
+    f1.geometry.coordinates[1] === f2.geometry.coordinates[1]
+  );
 }
 
 async function search(text: string, cb) {
