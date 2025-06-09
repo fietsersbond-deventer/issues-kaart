@@ -58,11 +58,20 @@ async function search(
   // Create new controller for this request
   currentController = new AbortController();
 
+  const params = new URLSearchParams({
+    q: text,
+    limit: "10",
+    // bias the search to Deventer
+    lat: "52.2511467",
+    lon: "6.1574997",
+    zoom: "14",
+    location_bias_scale: "0.4",
+  });
+
   try {
     const features: Feature<Polygon>[] = await fetch(
-      `https://photon.komoot.io/api/?lat=52.2511467&lon=6.1574997&q=${encodeURIComponent(
-        text
-      )}`,
+      // https://github.com/komoot/photon
+      `https://photon.komoot.io/api/?${params.toString()}&layer=street&layer=locality`,
       { signal: currentController.signal }
     ).then((response) =>
       response.json().then((data) => {
