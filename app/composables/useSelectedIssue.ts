@@ -1,5 +1,5 @@
 import { useRoute } from "#app";
-import type { Issue } from "~/types/Issue";
+import { isExistingIssue, type Issue, type NewIssue } from "~/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
@@ -25,14 +25,10 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     { immediate: true }
   );
 
-  const newIssue: Issue = {
+  const newIssue: NewIssue = {
     title: "",
     description: "",
     legend_id: null,
-    geometry: {
-      type: "Point",
-      coordinates: [0, 0],
-    },
   };
   watch(
     selectedId,
@@ -44,8 +40,11 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
       }
       if (issues) {
         // remove any issues that do not have an id
-        issues.value = issues.value?.filter((issue) => issue.id);
-        issue.value = issues.value?.find((issue) => issue.id === id) || null;
+        issues.value = issues.value?.filter((issue) => isExistingIssue(issue));
+        issue.value =
+          issues.value?.find(
+            (issue) => isExistingIssue(issue) && issue.id === id
+          ) || null;
       }
     },
     { immediate: true }
