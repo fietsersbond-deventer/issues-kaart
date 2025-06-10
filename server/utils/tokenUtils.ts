@@ -4,7 +4,7 @@ import type { User } from "../database/schema";
 
 const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 const REFRESH_TOKEN_EXPIRY = '30d'; // 30 days
-const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
+const ACCESS_TOKEN_EXPIRY = '4h'; // 4 hours
 
 export async function generateAccessToken(user: Omit<User, 'password_hash' | 'created_at'>) {
   if (!JWT_SECRET) {
