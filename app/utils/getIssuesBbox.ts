@@ -1,4 +1,4 @@
-import type { Issue } from "~/types/Issue";
+import { isExistingIssue, type Issue } from "~/types/Issue";
 import bbox from "@turf/bbox";
 import { featureCollection } from "@turf/helpers";
 import type { BBox } from "geojson";
@@ -13,14 +13,14 @@ export function transformBboxToOpenLayers(bbox: BBox): BBox {
 }
 
 export function getIssuesBbox(issues: Issue[]): BBox | undefined {
-  const existingIssies = issues.filter((issue) => issue.id);
-  if (existingIssies.length === 0) return undefined;
+  const existingIssues = issues.filter((issue) => isExistingIssue(issue));
+  if (existingIssues.length === 0) return undefined;
 
   // Create a feature collection from the geometries
-  const features = existingIssies.map((issue) => ({
+  const features = existingIssues.map((issue) => ({
     type: "Feature" as const,
     properties: {},
-    geometry: issue.geometry,
+    geometry: issue.geometry!,
   }));
   const collection = featureCollection(features);
   return transformBboxToOpenLayers(bbox(collection));

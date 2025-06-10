@@ -12,14 +12,19 @@
         <v-btn
           type="submit"
           color="primary"
-          :disabled="!isModified"
+          :disabled="!canSubmit"
           variant="flat"
           >Opslaan</v-btn
         >
         <v-btn color="secondary" variant="flat" @click="onCancel"
           >Annuleren</v-btn
         >
-        <v-btn v-if="issue.id" color="error" variant="flat" @click="onDelete">
+        <v-btn
+          v-if="'id' in issue"
+          color="error"
+          variant="flat"
+          @click="onDelete"
+        >
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -62,6 +67,7 @@
                 item-title="name"
                 item-value="id"
                 label="Issue Type"
+                :rules="[(v) => !!v || 'Legenda is verplicht']"
                 required
               >
                 <template #selection="{ item }">
@@ -86,6 +92,23 @@
                 </template>
               </v-select>
             </v-col>
+
+            <!-- Hidden geometry validation field -->
+            <v-col cols="12" style="display: none">
+              <v-text-field
+                v-model="geometryValidation"
+                :rules="geometryRules"
+                required
+              />
+            </v-col>
+
+            <!-- Geometry validation message -->
+            <v-col v-if="!issue.geometry" cols="12">
+              <v-alert type="warning" variant="tonal" class="mb-0">
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen
+                bovenin de kaart.
+              </v-alert>
+            </v-col>
           </v-row>
         </v-container>
         <!-- <pre>{{ issue.geometry }}</pre> -->
@@ -95,14 +118,19 @@
         <v-btn
           type="submit"
           color="primary"
-          :disabled="!isModified"
+          :disabled="!canSubmit"
           variant="flat"
           >Opslaan</v-btn
         >
         <v-btn color="secondary" variant="flat" @click="onCancel"
           >Annuleren</v-btn
         >
-        <v-btn v-if="issue.id" color="error" variant="flat" @click="onDelete">
+        <v-btn
+          v-if="isExistingIssue(issue)"
+          color="error"
+          variant="flat"
+          @click="onDelete"
+        >
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -113,7 +141,7 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import type { Issue } from "~/types/Issue";
+import { isExistingIssue, type Issue } from "~/types/Issue";
 import { imageCompressor } from "quill-image-compress";
 import type { Legend } from "~~/server/database/schema";
 import BlotFormatter from "quill-blot-formatter";
@@ -126,19 +154,23 @@ const oldValue = { ...issue.value };
 const isModified = computed(() => {
   return JSON.stringify(issue.value) !== JSON.stringify(oldValue);
 });
-// onBeforeUnmount(() => {
-//   if (isModified.value) {
-//     if (
-//       confirm(
-//         "Er zijn wijzigingen die niet zijn opgeslagen. Weet je zeker dat je wilt sluiten?"
-//       )
-//     ) {
-//       showDialog.value = false;
-//       isEditing.value = false;
-//       return;
-//     }
-//   }
-// });
+
+// Geometry validation using Vuetify rules system
+const geometryValidation = computed({
+  get: () => (issue.value?.geometry ? "valid" : ""),
+  set: () => {}, // No-op setter since this is read-only
+});
+
+const geometryRules = [
+  (_v: string) =>
+    !!issue.value?.geometry ||
+    "Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de kaart.",
+];
+
+// Only enable submit if form is valid (includes geometry validation) AND has modifications
+const canSubmit = computed(() => {
+  return valid.value && isModified.value;
+});
 
 const modules = [
   {
@@ -184,11 +216,11 @@ onMounted(async () => {
 
 async function onSubmit() {
   if (issue.value && valid.value) {
-    if (issue.value.id) {
+    if (isExistingIssue(issue.value)) {
       await update(issue.value.id, issue.value);
     } else {
       const result = await create(issue.value);
-      if (result.id) {
+      if (isExistingIssue(result)) {
         showDialog.value = false;
         return navigateTo(`/kaart/${result.id}`);
       }
@@ -205,7 +237,7 @@ function onCancel() {
 }
 
 async function onDelete() {
-  if (issue.value?.id) {
+  if (isExistingIssue(issue.value)) {
     if (
       confirm(`Weet je zeker dat je '${issue.value.title}' wilt verwijderen?`)
     ) {
