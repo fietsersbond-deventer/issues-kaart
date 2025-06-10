@@ -230,7 +230,7 @@ const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
 
 // Use the map bounds composable to track bounding box changes
-useMapBounds(mapRef);
+// useMapBounds(mapRef);
 
 watch([view, issues], () => {
   if (!firstLoad.value) return;
