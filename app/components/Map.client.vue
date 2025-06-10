@@ -226,7 +226,12 @@ function onSearchSelected(bbox: BBox) {
 }
 
 const view = useTemplateRef("view");
+const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
+
+// Use the map bounds composable to track bounding box changes
+useMapBounds(mapRef);
+
 watch([view, issues], () => {
   if (!firstLoad.value) return;
   if (view.value && issues.value.length > 0) {
