@@ -26,6 +26,12 @@ const emit = defineEmits<{
 function select(e: SearchEvent) {
   // The search result is now a SearchResult object with boundingBox property
   const result = e.search as SearchResult;
+
+  // Don't navigate if it's the "no results" message
+  if (result.type === "no-results") {
+    return;
+  }
+
   const boundingBox = transformBboxToOpenLayers(result.boundingBox);
   emit("selected", boundingBox);
 }
@@ -44,6 +50,26 @@ const { search: performSearch, isSearching } =
 
 async function search(text: string, cb: (features: SearchResult[]) => void) {
   const results = await performSearch(text);
+
+  if (results.length === 0) {
+    // Show "no results found" message
+    cb([
+      {
+        id: "no-results",
+        name: "Geen resultaten gevonden",
+        displayName: `Geen resultaten gevonden`,
+        type: "no-results",
+        boundingBox: [0, 0, 0, 0] as BBox,
+        coordinates: [0, 0] as [number, number],
+        properties: {
+          name: "Geen resultaten gevonden",
+          type: "no-results",
+          extent: [0, 0, 0, 0],
+        },
+      },
+    ]);
+    return;
+  }
 
   // Convert SearchResult objects to the format expected by ol-search-control
   const features = results.map((result: SearchResult) => ({
