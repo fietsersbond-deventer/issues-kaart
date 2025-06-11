@@ -11,92 +11,84 @@
 <script lang="ts" setup>
 import type { SearchEvent } from "ol-ext";
 import { transformBboxToOpenLayers } from "~/utils/getIssuesBbox";
-import type { BBox, Feature, Polygon } from "geojson";
+import type { BBox } from "geojson";
+import {
+  PhotonSearchProvider,
+  NominatimSearchProvider,
+  type SearchResult,
+  useLocationSearch,
+} from "~/composables/useLocationSearch";
 
 const emit = defineEmits<{
   selected: [data: BBox];
 }>();
 
 function select(e: SearchEvent) {
-  // swap coordinates to match OpenLayers format
-  const [west, north, east, south] = e.search.properties.extent;
-  const boundingBox = transformBboxToOpenLayers([west, south, east, north]);
+  // The search result is now a SearchResult object with boundingBox property
+  const result = e.search as SearchResult;
+
+  // Don't navigate if it's the "no results" message
+  if (result.type === "no-results") {
+    return;
+  }
+
+  const boundingBox = transformBboxToOpenLayers(result.boundingBox);
   emit("selected", boundingBox);
 }
 
-function getTitle(feature: Feature) {
-  if (!feature.properties) return "";
-  const p = feature.properties!;
-  return `${p.name} ${p.street || ""} ${p.housenumber || ""} 
-    <i>
-    ${p.type == "street" ? `${p.postcode || ""} ${p.city || ""}` : p.type}
-</i>
-`;
+function getTitle(feature: SearchResult) {
+  return searchProvider.getTitle(feature);
 }
 
-function getUniqueKey(feature: Feature<Polygon>) {
-  return {
-    name: feature.properties?.name || "",
-    type: feature.properties?.type || "",
-    city: feature.properties?.city || "",
-  };
-}
+// Choose which search provider to use:
+// To switch to Nominatim, uncomment the next line and comment out the Photon line
+const searchProvider = new NominatimSearchProvider();
+// const searchProvider = new PhotonSearchProvider(); // Current: Photon
 
-let currentController: AbortController | null = null;
-const isSearching = ref(false);
+const { search: performSearch, isSearching } =
+  useLocationSearch(searchProvider);
 
-async function search(
-  text: string,
-  cb: (features: Feature<Polygon>[]) => void
-) {
-  // Abort previous request if it exists
-  if (currentController) {
-    currentController.abort();
-  }
-
-  isSearching.value = true;
-  // Create new controller for this request
-  currentController = new AbortController();
-
-  const params = new URLSearchParams({
-    q: text,
-    limit: "10",
-    // bias the search to Deventer
-    lat: "52.2511467",
-    lon: "6.1574997",
-    zoom: "14",
-    location_bias_scale: "0.4",
-  });
-
-  try {
-    const features: Feature<Polygon>[] = await fetch(
-      // https://github.com/komoot/photon
-      `https://photon.komoot.io/api/?${params.toString()}&layer=street&layer=locality`,
-      { signal: currentController.signal }
-    ).then((response) =>
-      response.json().then((data) => {
-        return data.features.filter((f) => !!f.properties.extent);
-      })
-    );
-
-    // unique features
-    const results: Map<string, Feature<Polygon>> = new Map();
-    features.forEach((f: Feature<Polygon>) => {
-      const key = getUniqueKey(f);
-      results.set(JSON.stringify(key), f);
-    });
-
-    console.debug("keys", results.keys());
-
-    cb(Array.from(results.values()));
-  } catch (error: unknown) {
-    // If the error is due to abort, we don't need to do anything
-    if (error instanceof Error && error.name === "AbortError") return;
-    // Otherwise pass an empty array to callback
+async function search(text: string, cb: (features: SearchResult[]) => void) {
+  // If the search text is empty or just whitespace, return empty results
+  if (!text || text.trim().length === 0) {
     cb([]);
-  } finally {
-    isSearching.value = false;
+    return;
   }
+
+  const results = await performSearch(text);
+
+  if (results.length === 0) {
+    // Show "no results found" message
+    cb([
+      {
+        id: "no-results",
+        name: "Geen resultaten gevonden",
+        displayName: `Geen resultaten`,
+        type: "no-results",
+        boundingBox: [0, 0, 0, 0] as BBox,
+        coordinates: [0, 0] as [number, number],
+        properties: {
+          name: "Geen resultaten gevonden",
+          type: "no-results",
+          extent: [0, 0, 0, 0],
+        },
+      },
+    ]);
+    return;
+  }
+
+  // Convert SearchResult objects to the format expected by ol-search-control
+  const features = results.map((result: SearchResult) => ({
+    ...result,
+    // Add any additional properties that ol-search-control might expect
+    properties: {
+      name: result.name,
+      type: result.type,
+      extent: result.boundingBox,
+    },
+  }));
+
+  cb(features);
 }
 </script>
 
