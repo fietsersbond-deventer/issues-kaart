@@ -49,6 +49,12 @@ const { search: performSearch, isSearching } =
   useLocationSearch(searchProvider);
 
 async function search(text: string, cb: (features: SearchResult[]) => void) {
+  // If the search text is empty or just whitespace, return empty results
+  if (!text || text.trim().length === 0) {
+    cb([]);
+    return;
+  }
+
   const results = await performSearch(text);
 
   if (results.length === 0) {
@@ -57,7 +63,7 @@ async function search(text: string, cb: (features: SearchResult[]) => void) {
       {
         id: "no-results",
         name: "Geen resultaten gevonden",
-        displayName: `Geen resultaten gevonden`,
+        displayName: `Geen resultaten`,
         type: "no-results",
         boundingBox: [0, 0, 0, 0] as BBox,
         coordinates: [0, 0] as [number, number],
