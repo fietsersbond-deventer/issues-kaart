@@ -25,6 +25,7 @@ interface NominatimResult {
   type?: string;
   class?: string;
   boundingbox: [string, string, string, string];
+  address_rank?: number;
   address?: {
     road?: string;
     house_number?: string;
@@ -51,6 +52,7 @@ export interface SearchResult {
   type: string;
   boundingBox: BBox;
   coordinates: [number, number];
+  addressRank?: number; // Lower values are more important
   // Store raw result for more reliable deduplication
   raw?: NominatimResult;
 }
@@ -154,16 +156,15 @@ export class NominatimSearchProvider implements SearchProvider {
     const params = new URLSearchParams({
       q: query,
       format: "json",
-      limit: "20", // Increased limit for better partial matching
+      limit: "20",
       addressdetails: "1",
-      bounded: "1", // Re-enabled bounded search
-      viewbox: "5.5,51.8,6.8,52.7", // Expanded area around Deventer for better coverage
+      bounded: "1",
+      viewbox: "6.0,52.1,6.3,52.4", // Focused area around Deventer
       lat: this.biasLat,
       lon: this.biasLon,
       countrycodes: "nl", // Restrict to Netherlands
       "accept-language": "nl,en", // Prefer Dutch, fallback to English
       extratags: "1", // Include additional tags for better context
-      dedupe: "0", // Disable Nominatim's deduplication to get more results
     });
 
     const response = await fetch(`${this.baseUrl}?${params.toString()}`, {
@@ -191,6 +192,7 @@ export class NominatimSearchProvider implements SearchProvider {
           type: item.type || item.class || "",
           boundingBox: [west, south, east, north] as BBox,
           coordinates: [Number(item.lon), Number(item.lat)] as [number, number],
+          addressRank: item.address_rank,
           raw: item, // Include raw result for better deduplication
         };
       });
@@ -322,22 +324,40 @@ function removeDuplicates(results: SearchResult[]): SearchResult[] {
     }
   });
 
-  // Sort results by preference and limit to 5 results max for partial matching
+  // Sort results by proximity to Deventer, then by preference
   return finalResults
     .sort((a, b) => {
-      // Prefer squares/places over street segments
+      // First priority: distance to Deventer (closer is better)
+      const deventerCoords = [6.1574997, 52.2511467]; // Deventer coordinates
+      const aDistance = calculateDistance(a.coordinates, deventerCoords);
+      const bDistance = calculateDistance(b.coordinates, deventerCoords);
+
+      // If one result is significantly closer (>5km difference), prioritize it
+      const distanceDiff = Math.abs(aDistance - bDistance);
+      if (distanceDiff > 5) {
+        return aDistance - bDistance; // Closer first
+      }
+
+      // Second priority: address_rank (lower is more important)
+      const aRank = a.addressRank ?? 99; // Default to high rank if missing
+      const bRank = b.addressRank ?? 99; // Default to high rank if missing
+      if (aRank !== bRank) {
+        return aRank - bRank; // Lower rank first
+      }
+
+      // Third priority: prefer squares/places over street segments
       const aIsPlace = a.type === "square" || a.type === "place";
       const bIsPlace = b.type === "square" || b.type === "place";
 
       if (aIsPlace && !bIsPlace) return -1;
       if (!aIsPlace && bIsPlace) return 1;
 
-      // If both same type, prefer larger areas (more complete)
+      // Fourth priority: if both same type and similar distance, prefer larger areas (more complete)
       const aArea = calculateBoundingBoxArea(a.boundingBox);
       const bArea = calculateBoundingBoxArea(b.boundingBox);
       return bArea - aArea;
     })
-    .slice(0, 5); // Increase to 5 results for better partial matching
+    .slice(0, 10); // Limit to maximum 10 results
 }
 
 /**
@@ -352,7 +372,10 @@ function createAddressKey(result: SearchResult): string {
 
   // Use the most specific available address components
   const road = address.road?.toLowerCase().trim() || "";
-  const city = (address.city || address.town || address.village || address.municipality)?.toLowerCase().trim() || "";
+  const city =
+    (address.city || address.town || address.village || address.municipality)
+      ?.toLowerCase()
+      .trim() || "";
 
   // For streets, use road + city combination (ignore postcode for partial matching)
   if (road) {
@@ -399,4 +422,30 @@ function selectBestResult(group: SearchResult[]): SearchResult {
 function calculateBoundingBoxArea(bbox: BBox): number {
   const [west, south, east, north] = bbox;
   return (east - west) * (north - south);
+}
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ * Returns distance in kilometers
+ */
+function calculateDistance(
+  coord1: [number, number],
+  coord2: [number, number]
+): number {
+  const [lon1, lat1] = coord1;
+  const [lon2, lat2] = coord2;
+
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in kilometers
 }
