@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom'
 // Mock the global window for JSDOM
 beforeAll(() => {
   const dom = new JSDOM()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.window = dom.window as any
   global.document = dom.window.document
 })
@@ -164,14 +165,17 @@ describe('HTML Sanitization Security Tests', () => {
     })
 
     it('should handle null input', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(sanitizeHtml(null as any)).toBe('')
     })
 
     it('should handle undefined input', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(sanitizeHtml(undefined as any)).toBe('')
     })
 
     it('should handle non-string input', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(sanitizeHtml(123 as any)).toBe('')
     })
 
