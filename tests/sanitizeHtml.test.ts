@@ -54,7 +54,7 @@ describe('HTML Sanitization Security Tests', () => {
     it('should remove dangerous event attributes', () => {
       const input = '<img src="x" onerror="alert(\'XSS\')" onload="alert(\'XSS2\')">'
       const result = sanitizeHtml(input)
-      expect(result).toContain('<img src="x">')
+      expect(result).toContain('<img src="x" />')
       expect(result).not.toContain('onerror')
       expect(result).not.toContain('onload')
       expect(result).not.toContain('alert')
@@ -210,7 +210,7 @@ describe('HTML Sanitization Security Tests', () => {
       expect(result).toContain('<strong>Bold text</strong>')
       expect(result).toContain('<em>Italic text</em>')
       expect(result).toContain('<a href="https://example.com">Link</a>')
-      expect(result).toContain('<img src="https://example.com/image.jpg" alt="Image">')
+      expect(result).toContain('<img src="https://example.com/image.jpg" alt="Image" />')
       expect(result).toContain('<ol><li>Ordered list item</li></ol>')
       expect(result).toContain('<ul><li>Unordered list item</li></ul>')
       expect(result).toContain('<blockquote>Indented content</blockquote>')

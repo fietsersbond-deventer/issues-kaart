@@ -1,9 +1,4 @@
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
-
-// Create a JSDOM window and DOMPurify instance for server-side usage
-const { window } = new JSDOM('');
-const purify = DOMPurify(window);
+import sanitizeHtmlLib from 'sanitize-html';
 
 /**
  * Sanitizes HTML content based on the allowed elements from the Quill editor configuration.
@@ -13,14 +8,16 @@ const purify = DOMPurify(window);
  * - Links and images
  * - Ordered lists, bullet lists, and check lists
  * - Indentation (using blockquote for indent)
+ * 
+ * Uses sanitize-html which is a well-established library for HTML sanitization.
  */
 export function sanitizeHtml(html: string): string {
   if (!html || typeof html !== 'string') {
     return '';
   }
 
-  return purify.sanitize(html, {
-    ALLOWED_TAGS: [
+  return sanitizeHtmlLib(html, {
+    allowedTags: [
       // Headers
       'h1', 'h2', 'h3', 'h4',
       // Text formatting
@@ -36,22 +33,19 @@ export function sanitizeHtml(html: string): string {
       // Quill may also use span for certain formatting
       'span'
     ],
-    ALLOWED_ATTR: [
+    allowedAttributes: {
       // Link attributes
-      'href', 'target', 'rel',
+      'a': ['href', 'target', 'rel'],
       // Image attributes
-      'src', 'alt', 'width', 'height',
+      'img': ['src', 'alt', 'width', 'height'],
       // General attributes that Quill might use
-      'class'
-    ],
-    // Only allow safe protocols
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
-    // Remove any scripts or dangerous content
-    FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'textarea', 'select', 'button', 'iframe', 'svg', 'math'],
-    FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onchange', 'onsubmit'],
-    // Keep relative URLs as they are
-    KEEP_CONTENT: true,
-    // Remove any HTML comments
-    ALLOW_DATA_ATTR: false
+      '*': ['class']
+    },
+    // Only allow safe protocols for URLs
+    allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+    // Don't allow self-closing tags to be unclosed (HTML format, not XHTML)
+    selfClosing: ['img', 'br'],
+    // Tags to totally discard, removing them and their content
+    disallowedTagsMode: 'discard'
   });
 }
