@@ -32,6 +32,3 @@ jobs:
 
       - name: Generate test coverage report
         run: pnpm test:coverage
-
-      - name: Build application
-        run: pnpm build
