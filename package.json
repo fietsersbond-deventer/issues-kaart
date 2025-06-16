@@ -9,7 +9,10 @@
     "deploy": "npx nuxthub deploy",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@auth/core": "^0.39.1",
@@ -31,6 +34,7 @@
     "@zxcvbn-ts/language-common": "^3.0.4",
     "@zxcvbn-ts/language-en": "^3.0.2",
     "bcryptjs": "^3.0.2",
+    "dompurify": "^3.2.6",
     "geojson": "^0.5.0",
     "jose": "^6.0.11",
     "lodash": "^4.17.21",
@@ -53,8 +57,12 @@
     "@nuxt/eslint-config": "^1.4.1",
     "@types/ejs": "^3.1.5",
     "@types/proj4": "^2.5.6",
+    "@vitest/ui": "^3.2.3",
     "eslint": "^9.28.0",
+    "happy-dom": "^18.0.1",
+    "tsx": "^4.20.3",
     "vite-plugin-vuetify": "^2.1.1",
+    "vitest": "^3.2.3",
     "vue-tsc": "^2.2.10",
     "vuetify": "^3.8.8",
     "wrangler": "4.14.4"
