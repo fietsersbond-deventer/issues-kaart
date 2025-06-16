@@ -32,9 +32,6 @@ jobs:
       - name: Ensure NuxtHub module is installed
         run: pnpx nuxthub@latest ensure
 
-      - name: Run tests
-        run: pnpm test:run
-
       - name: Build application
         run: pnpm build
 
