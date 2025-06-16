@@ -1,6 +1,7 @@
 import type { Geometry } from "geojson";
 import type { Issue } from "../../database/schema";
 import { booleanValid } from "@turf/boolean-valid";
+import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -25,6 +26,11 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       message: "No valid fields to update",
     });
+  }
+
+  // Sanitize HTML content if description is being updated
+  if (updates.description !== undefined) {
+    updates.description = sanitizeHtml(updates.description);
   }
 
   // Validate GeoJSON if it's being updated
