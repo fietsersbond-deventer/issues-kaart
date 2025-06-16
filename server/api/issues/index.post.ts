@@ -1,5 +1,6 @@
 import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
+import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -22,6 +23,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Sanitize HTML content
+  const sanitizedDescription = sanitizeHtml(description);
+
   // Validate GeoJSON
   try {
     if (!booleanValid(geometry)) {
@@ -41,7 +45,7 @@ export default defineEventHandler(async (event) => {
     .prepare(
       "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, legend_id, geometry, created_at"
     )
-    .bind(title, description, legend_id, JSON.stringify(geometry))
+    .bind(title, sanitizedDescription, legend_id, JSON.stringify(geometry))
     .first();
 
   if (!issue) {
