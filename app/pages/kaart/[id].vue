@@ -29,7 +29,7 @@
         <template v-else>
           <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div v-html="issue.description" />
+          <div class="ql-editor" v-html="issue.description" />
         </template>
       </template>
       <template v-else>
@@ -71,13 +71,19 @@ const { issue } = storeToRefs(useSelectedIssue());
 
 // Set the page title dynamically based on the issue
 useHead(() => ({
-  title: issue.value?.title ? `${issue.value.title} - Fietsersbond` : 'Nieuw Issue - Fietsersbond'
+  title: issue.value?.title
+    ? `${issue.value.title} - Fietsersbond`
+    : "Nieuw Issue - Fietsersbond",
 }));
 
 // Update route meta for breadcrumbs
-watch(() => issue.value?.title, (newTitle) => {
-  route.meta.title = newTitle || 'Nieuw Issue';
-}, { immediate: true });
+watch(
+  () => issue.value?.title,
+  (newTitle) => {
+    route.meta.title = newTitle || "Nieuw Issue";
+  },
+  { immediate: true }
+);
 
 if (!id) {
   // Redirect to new item creation
