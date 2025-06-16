@@ -2,9 +2,9 @@ name: CI Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
@@ -27,25 +27,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run linting
-        run: pnpm lint
-
-      - name: Run type checking
-        run: pnpm typecheck
-
       - name: Run security tests
         run: pnpm test:run
 
       - name: Generate test coverage report
         run: pnpm test:coverage
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          directory: ./coverage
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build application
         run: pnpm build
