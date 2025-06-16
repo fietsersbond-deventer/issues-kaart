@@ -1,9 +1,9 @@
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
 
-// Create a DOMPurify instance using JSDOM for server-side usage
-const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Window & typeof globalThis);
+// Create a JSDOM window and DOMPurify instance for server-side usage
+const { window } = new JSDOM('');
+const purify = DOMPurify(window);
 
 /**
  * Sanitizes HTML content based on the allowed elements from the Quill editor configuration.
