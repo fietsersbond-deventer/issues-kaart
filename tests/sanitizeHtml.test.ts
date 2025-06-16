@@ -1,15 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { JSDOM } from 'jsdom'
+import { describe, it, expect } from 'vitest'
 
-// Mock the global window for JSDOM
-beforeAll(() => {
-  const dom = new JSDOM()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  global.window = dom.window as any
-  global.document = dom.window.document
-})
-
-// Import after setting up the DOM
+// Import the sanitizeHtml function
 const { sanitizeHtml } = await import('../server/utils/sanitizeHtml')
 
 describe('HTML Sanitization Security Tests', () => {
