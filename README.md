@@ -67,6 +67,133 @@ NUXT_PUBLIC_LOCATION_BOUNDS_NORTH=52.293
 
 **Tip:** Zorg ervoor dat je bounding box niet te groot is (anders wordt de kaart te ver uitgezoomd) maar ook niet te klein (anders worden zoekresultaten te beperkt).
 
+## NuxtHub Setup
+
+Deze applicatie is gebouwd voor [NuxtHub](https://hub.nuxt.com) en maakt gebruik van Cloudflare's edge platform voor hosting, database en andere services.
+
+### Vereisten
+
+- Een [Cloudflare](https://cloudflare.com) account
+- [Node.js](https://nodejs.org) (versie 18 of hoger)
+- [pnpm](https://pnpm.io) package manager
+
+### Stap 1: Project Setup
+
+1. **Clone het project en installeer dependencies:**
+
+   ```bash
+   git clone <repository-url>
+   cd fietsersbond
+   pnpm install
+   ```
+
+2. **Maak een NuxtHub account:**
+   - Ga naar [hub.nuxt.com](https://hub.nuxt.com)
+   - Log in met je GitHub account
+   - Verbind je Cloudflare account
+
+### Stap 2: Database Setup
+
+Deze applicatie gebruikt Cloudflare D1 (SQLite) database via NuxtHub:
+
+1. **Database wordt automatisch aangemaakt** bij eerste deployment
+2. **Lokale development:** Database wordt automatisch ge-seed met test data
+3. **Productie:** Voer database migraties handmatig uit via NuxtHub Admin
+
+### Stap 3: Omgevingsvariabelen
+
+1. **Maak een `.env` bestand** (kopieer van `.env.example`):
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configureer de vereiste variabelen:**
+
+   ```bash
+   # Locatie configuratie (pas aan voor jouw gebied)
+   NUXT_PUBLIC_LOCATION_NAME=JouwStad
+   NUXT_PUBLIC_LOCATION_BOUNDS_WEST=6.11
+   NUXT_PUBLIC_LOCATION_BOUNDS_SOUTH=52.237
+   NUXT_PUBLIC_LOCATION_BOUNDS_EAST=6.224
+   NUXT_PUBLIC_LOCATION_BOUNDS_NORTH=52.293
+
+   # Admin configuratie
+   NUXT_PUBLIC_ADMIN_NAME=Beheerder
+
+   # Authentication (wordt automatisch gegenereerd bij deployment)
+   NUXT_SESSION_PASSWORD=<wordt-automatisch-gegenereerd>
+   NUXT_JWT_SECRET=<wordt-automatisch-gegenereerd>
+   ```
+
+### Stap 4: Deployment
+
+1. **Eerste deployment:**
+
+   ```bash
+   npx nuxthub deploy
+   ```
+
+2. **Stel omgevingsvariabelen in via NuxtHub Admin:**
+
+   - Ga naar [admin.hub.nuxt.com](https://admin.hub.nuxt.com)
+   - Selecteer je project
+   - Ga naar "Environment Variables"
+   - Voeg je locatie configuratie toe
+
+3. **Database migraties uitvoeren:**
+   - In NuxtHub Admin, ga naar "Database"
+   - Voer de migraties uit als ze niet automatisch zijn uitgevoerd
+
+### Stap 5: Eerste Admin Account
+
+1. **Registreer de eerste admin:** Na deployment kun je je registreren via `/register`
+2. **Bevorder tot admin:** Via de NuxtHub Admin database interface, update de `role` kolom naar `"admin"`
+
+### Optionele Services
+
+#### Email (Postmark)
+
+Voor wachtwoord reset functionaliteit:
+
+```bash
+NUXT_POSTMARK_API_KEY=je-postmark-api-key
+NUXT_EMAIL_FROM=noreply@joudomein.nl
+NUXT_ADMIN_EMAIL=admin@joudomein.nl
+```
+
+### Lokale Development vs Productie
+
+**Lokale development:**
+
+- Gebruikt lokale SQLite database
+- Automatische database seeding
+- Hot-reload voor development
+
+**Productie (NuxtHub):**
+
+- Cloudflare D1 database
+- Edge deployment wereldwijd
+- Automatische HTTPS
+- Built-in analytics en monitoring
+
+### Troubleshooting
+
+**Database problemen:**
+
+- Check database status in NuxtHub Admin
+- Voer migraties handmatig uit indien nodig
+
+**Deployment problemen:**
+
+- Controleer build logs in NuxtHub Admin
+- Zorg dat alle environment variables correct zijn ingesteld
+
+**Performance:**
+
+- Monitor via NuxtHub Analytics
+- Database queries worden automatisch geoptimaliseerd door Cloudflare
+
 ## Development Server
 
 Start de development server op `http://localhost:3000`:
