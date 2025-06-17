@@ -102,6 +102,9 @@ Deze applicatie gebruikt Cloudflare D1 (SQLite) database via NuxtHub:
    # Authentication (wordt automatisch gegenereerd bij deployment)
    NUXT_SESSION_PASSWORD=<wordt-automatisch-gegenereerd>
    NUXT_JWT_SECRET=<wordt-automatisch-gegenereerd>
+
+   # Eerste Admin Account
+   NUXT_ADMIN_EMAIL=admin@joudomein.nl
    ```
 
 ### Stap 4: Deployment
@@ -118,17 +121,41 @@ Deze applicatie gebruikt Cloudflare D1 (SQLite) database via NuxtHub:
    - Selecteer je project
    - Ga naar "Environment Variables"
    - Voeg je locatie configuratie toe
+   - **Belangrijk:** Voeg ook je admin account configuratie toe:
+     ```bash
+     NUXT_ADMIN_EMAIL=admin@joudomein.nl
+     ```
 
 3. **Database migraties uitvoeren:**
    - In NuxtHub Admin, ga naar "Database"
    - Voer de migraties uit als ze niet automatisch zijn uitgevoerd
 
-### Stap 5: Eerste Admin Account
+### Stap 5: Automatische Admin Account Aanmaak
 
-1. **Registreer de eerste admin:** Na deployment kun je je registreren via `/register`
-2. **Bevorder tot admin:** Via de NuxtHub Admin database interface, update de `role` kolom naar `"admin"`
+Het systeem kan automatisch een eerste admin account aanmaken bij deployment:
 
-### Optionele Services
+1. **Configureer admin account variabelen:**
+
+   Voeg de volgende variabelen toe via NuxtHub Admin (Environment Variables):
+
+   ```bash
+   NUXT_ADMIN_EMAIL=admin@jouwdomein.nl
+   ```
+
+   **Note:** De naam van de admin wordt automatisch overgenomen van `NUXT_PUBLIC_ADMIN_NAME`.
+
+2. **Automatische aanmaak:**
+
+   - Het systeem controleert bij elke start of er al admin accounts bestaan
+   - Als er geen admin bestaat, wordt er een account aangemaakt met bovenstaande gegevens
+
+3. **Eerste inlog:**
+
+- Gebruik 'Wachtwoord vergeten?' op de inlogpagina om een wachtwoord in te stellen voor de nieuwe admin account.
+
+### Extra Services
+
+Om wachtwoord reset functionaliteit te ondersteunen is een Postmark account nodig voor e-mail notificaties.
 
 #### Email (Postmark)
 
