@@ -4,10 +4,15 @@ import { featureCollection } from "@turf/helpers";
 import type { BBox } from "geojson";
 import { fromLonLat } from "ol/proj";
 
-// Minimum bounding box to prevent excessive zoom-in
-const MIN_BBOX: BBox = [
-  6.1109776821179045, 52.23674680068737, 6.224405294943567, 52.29330327072566,
-];
+function getMinBbox(): BBox {
+  const config = useRuntimeConfig().public;
+  return [
+    config.locationMinBbox.west,
+    config.locationMinBbox.south,
+    config.locationMinBbox.east,
+    config.locationMinBbox.north,
+  ];
+}
 
 export function transformBboxToOpenLayers(bbox: BBox): BBox {
   const [minX, minY, maxX, maxY] = bbox;
@@ -50,7 +55,7 @@ export function getIssuesBbox(issues: Issue[]): BBox | undefined {
   const issuesBbox = bbox(collection);
 
   // Extend the minimum bbox to include all issues
-  const expandedBbox = extendMinimumBbox(issuesBbox, MIN_BBOX);
+  const expandedBbox = extendMinimumBbox(issuesBbox, getMinBbox());
 
   return transformBboxToOpenLayers(expandedBbox);
 }

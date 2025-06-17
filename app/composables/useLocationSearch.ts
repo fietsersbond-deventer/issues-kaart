@@ -1,5 +1,15 @@
 import type { BBox, Feature, Polygon } from "geojson";
 
+/**
+ * Calculate center coordinates from bounding box
+ */
+function calculateCenterFromBounds(bounds: { west: number; south: number; east: number; north: number }) {
+  return {
+    lat: (bounds.south + bounds.north) / 2,
+    lon: (bounds.west + bounds.east) / 2,
+  };
+}
+
 interface PhotonProperties {
   osm_type?: string;
   osm_id?: string;
@@ -67,8 +77,15 @@ export interface SearchProvider {
  */
 export class PhotonSearchProvider implements SearchProvider {
   private readonly baseUrl = "https://photon.komoot.io/api/";
-  private readonly biasLat = "52.2511467"; // Deventer
-  private readonly biasLon = "6.1574997"; // Deventer
+  private readonly biasLat: string;
+  private readonly biasLon: string;
+
+  constructor() {
+    const config = useRuntimeConfig().public;
+    const center = calculateCenterFromBounds(config.locationBounds);
+    this.biasLat = center.lat.toString();
+    this.biasLon = center.lon.toString();
+  }
 
   async search(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
     const params = new URLSearchParams({
@@ -149,8 +166,17 @@ export class PhotonSearchProvider implements SearchProvider {
  */
 export class NominatimSearchProvider implements SearchProvider {
   private readonly baseUrl = "https://nominatim.openstreetmap.org/search";
-  private readonly biasLat = "52.2511467"; // Deventer
-  private readonly biasLon = "6.1574997"; // Deventer
+  private readonly biasLat: string;
+  private readonly biasLon: string;
+  private readonly viewbox: string;
+
+  constructor() {
+    const config = useRuntimeConfig().public;
+    const center = calculateCenterFromBounds(config.locationBounds);
+    this.biasLat = center.lat.toString();
+    this.biasLon = center.lon.toString();
+    this.viewbox = `${config.locationBounds.west},${config.locationBounds.south},${config.locationBounds.east},${config.locationBounds.north}`;
+  }
 
   async search(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
     const params = new URLSearchParams({
@@ -159,7 +185,7 @@ export class NominatimSearchProvider implements SearchProvider {
       limit: "20",
       addressdetails: "1",
       bounded: "1",
-      viewbox: "6.0,52.1,6.3,52.4", // Focused area around Deventer
+      viewbox: this.viewbox, // Focused area around configured location
       lat: this.biasLat,
       lon: this.biasLon,
       countrycodes: "nl", // Restrict to Netherlands
@@ -327,10 +353,12 @@ function removeDuplicates(results: SearchResult[]): SearchResult[] {
   // Sort results by proximity to Deventer, then by preference
   return finalResults
     .sort((a, b) => {
-      // First priority: distance to Deventer (closer is better)
-      const deventerCoords = [6.1574997, 52.2511467]; // Deventer coordinates
-      const aDistance = calculateDistance(a.coordinates, deventerCoords);
-      const bDistance = calculateDistance(b.coordinates, deventerCoords);
+      // First priority: distance to location center (closer is better)
+      const config = useRuntimeConfig().public;
+      const center = calculateCenterFromBounds(config.locationBounds);
+      const centerCoords: [number, number] = [center.lon, center.lat];
+      const aDistance = calculateDistance(a.coordinates, centerCoords);
+      const bDistance = calculateDistance(b.coordinates, centerCoords);
 
       // If one result is significantly closer (>5km difference), prioritize it
       const distanceDiff = Math.abs(aDistance - bDistance);
