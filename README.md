@@ -28,35 +28,44 @@ Deze applicatie is locatie-onafhankelijk en kan geconfigureerd worden voor elk g
 
 ```bash
 # Locatie Naam (wordt getoond in de UI)
-LOCATION_NAME=JouwStadNaam
+NUXT_PUBLIC_LOCATION_NAME=JouwStadNaam
 
-# Locatie Zoekgebied (voor het beperken van zoekresultaten tot interessegebied)
-LOCATION_BOUNDS_WEST=6.0
-LOCATION_BOUNDS_SOUTH=52.1
-LOCATION_BOUNDS_EAST=6.3
-LOCATION_BOUNDS_NORTH=52.4
-
-# Minimale Bounding Box (voorkomt excessief inzoomen als er geen issues zijn)
-LOCATION_MIN_BBOX_WEST=6.1109776821179045
-LOCATION_MIN_BBOX_SOUTH=52.23674680068737
-LOCATION_MIN_BBOX_EAST=6.224405294943567
-LOCATION_MIN_BBOX_NORTH=52.29330327072566
+# Locatie Bounds (definieert het interessegebied voor zoekopdrachten en standaard kaartweergave)
+NUXT_PUBLIC_LOCATION_BOUNDS_WEST=6.11
+NUXT_PUBLIC_LOCATION_BOUNDS_SOUTH=52.237
+NUXT_PUBLIC_LOCATION_BOUNDS_EAST=6.224
+NUXT_PUBLIC_LOCATION_BOUNDS_NORTH=52.293
 ```
 
 **Configuratie Parameters:**
 
-- `LOCATION_NAME`: De naam die wordt getoond in de applicatie UI (bijv. "Amsterdam", "Rotterdam")
-- `LOCATION_BOUNDS_*`: Definieert de bounding box voor zoekresultaten om te focussen op jouw interessegebied
-- `LOCATION_MIN_BBOX_*`: Minimale bounding box om excessief inzoomen te voorkomen wanneer er geen issues aanwezig zijn
+- `NUXT_PUBLIC_LOCATION_NAME`: De naam die wordt getoond in de applicatie UI (bijv. "Amsterdam", "Rotterdam")
+- `NUXT_PUBLIC_LOCATION_BOUNDS_*`: Definieert de bounding box voor je interessegebied. Deze wordt gebruikt voor:
+  - Het beperken van zoekresultaten tot jouw gebied
+  - Het berekenen van het kaartcentrum (automatisch uit deze bounds)
+  - De standaard weergave wanneer er geen issues zijn
 
-**Notitie:** Het kaartcentrum wordt automatisch berekend vanuit de `LOCATION_BOUNDS_*` waarden.
+**Notitie:** Het kaartcentrum wordt automatisch berekend vanuit de `NUXT_PUBLIC_LOCATION_BOUNDS_*` waarden.
 
 **Je Coördinaten Vinden:**
 
-1. Ga naar [OpenStreetMap](https://www.openstreetmap.org/)
-2. Navigeer naar je gewenste locatie
-3. Klik rechts en selecteer "Toon adres" om coördinaten te krijgen
-4. Definieer bounds die jouw interessegebied omvatten voor `LOCATION_BOUNDS_*`
+1. **Voor bounding box coördinaten** - Gebruik [Bounding Box Tool](http://bboxfinder.com/):
+
+   - Ga naar http://bboxfinder.com/
+   - Zoom naar je gewenste gebied
+   - Teken een rechthoek rond je interessegebied
+   - Kopieer de coördinaten (in het formaat: west,south,east,north)
+
+2. **Alternatief** - Gebruik [OpenStreetMap](https://www.openstreetmap.org/):
+
+   - Navigeer naar je gewenste locatie
+   - Klik rechts en selecteer "Toon adres" om coördinaten te krijgen
+   - Bepaal handmatig de grenzen van je interessegebied
+
+3. **Voor Nederlandse gemeenten** - Gebruik [PDOK Locatieserver](https://www.pdok.nl/introductie/-/article/pdok-locatieserver):
+   - Zoek je gemeente op om automatisch de bounding box te krijgen
+
+**Tip:** Zorg ervoor dat je bounding box niet te groot is (anders wordt de kaart te ver uitgezoomd) maar ook niet te klein (anders worden zoekresultaten te beperkt).
 
 ## Development Server
 
@@ -87,4 +96,3 @@ npx nuxthub deploy
 Vervolgens kun je je server logs, analytics en meer bekijken in de [NuxtHub Admin](https://admin.hub.nuxt.com).
 
 Je kunt ook deployen met [Cloudflare Pages CI](https://hub.nuxt.com/docs/getting-started/deploy#cloudflare-pages-ci).
-

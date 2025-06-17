@@ -1,15 +1,5 @@
 import type { BBox, Feature, Polygon } from "geojson";
 
-/**
- * Calculate center coordinates from bounding box
- */
-function calculateCenterFromBounds(bounds: { west: number; south: number; east: number; north: number }) {
-  return {
-    lat: (bounds.south + bounds.north) / 2,
-    lon: (bounds.west + bounds.east) / 2,
-  };
-}
-
 interface PhotonProperties {
   osm_type?: string;
   osm_id?: string;
@@ -81,8 +71,7 @@ export class PhotonSearchProvider implements SearchProvider {
   private readonly biasLon: string;
 
   constructor() {
-    const config = useRuntimeConfig().public;
-    const center = calculateCenterFromBounds(config.locationBounds);
+    const { center } = useMapView();
     this.biasLat = center.lat.toString();
     this.biasLon = center.lon.toString();
   }
@@ -171,11 +160,10 @@ export class NominatimSearchProvider implements SearchProvider {
   private readonly viewbox: string;
 
   constructor() {
-    const config = useRuntimeConfig().public;
-    const center = calculateCenterFromBounds(config.locationBounds);
+    const { bounds, center } = useMapView();
     this.biasLat = center.lat.toString();
     this.biasLon = center.lon.toString();
-    this.viewbox = `${config.locationBounds.west},${config.locationBounds.south},${config.locationBounds.east},${config.locationBounds.north}`;
+    this.viewbox = `${bounds.west},${bounds.south},${bounds.east},${bounds.north}`;
   }
 
   async search(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
@@ -350,12 +338,11 @@ function removeDuplicates(results: SearchResult[]): SearchResult[] {
     }
   });
 
-  // Sort results by proximity to Deventer, then by preference
+  // Sort results by proximity to location center, then by preference
   return finalResults
     .sort((a, b) => {
       // First priority: distance to location center (closer is better)
-      const config = useRuntimeConfig().public;
-      const center = calculateCenterFromBounds(config.locationBounds);
+      const { center } = useMapView();
       const centerCoords: [number, number] = [center.lon, center.lat];
       const aDistance = calculateDistance(a.coordinates, centerCoords);
       const bDistance = calculateDistance(b.coordinates, centerCoords);
