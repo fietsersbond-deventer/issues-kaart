@@ -17,7 +17,14 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      adminName: process.env.ADMIN_NAME || "Admin",
+      adminName: "Admin",
+      locationName: "Deventer",
+      locationBounds: {
+        west: 6.11,
+        south: 52.237,
+        east: 6.224,
+        north: 52.293,
+      },
     },
     isProduction: process.env.NODE_ENV === "production",
   },

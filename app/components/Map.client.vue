@@ -253,7 +253,11 @@ const isDrawing = computed(() => {
   return addFeature.value?.isDrawing || false;
 });
 
-const center = ref([687858.9021986299, 6846820.48790154]);
+const { center: mapCenter } = useMapView();
+const center = computed(() => {
+  // Convert WGS84 coordinates to EPSG:3857 (Web Mercator)
+  return transform([mapCenter.lon, mapCenter.lat], "EPSG:4326", "EPSG:3857");
+});
 const zoom = ref(13);
 const projection = ref("EPSG:3857");
 

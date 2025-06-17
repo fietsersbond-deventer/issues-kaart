@@ -1,6 +1,6 @@
 <template>
   <div class="pa-4">
-    <h1 class="text-h4 mb-4">Welkom bij de Fietsersbond Deventer</h1>
+    <h1 class="text-h4 mb-4">Welkom bij de Fietsersbond {{ locationName }}</h1>
     <v-card variant="flat" class="mb-4 pa-4">
       <p class="text-body-1 mb-4">
         Deze kaart toont alle punten waar we ons mee bezig houden.
@@ -13,12 +13,9 @@
           Klik op een punt op de kaart om de details te bekijken
         </li>
         <li class="mb-2">
-          Gebruik de zoomknoppen of scroll met je muis om in en uit te
-          zoomen
+          Gebruik de zoomknoppen of scroll met je muis om in en uit te zoomen
         </li>
-        <li class="mb-2">
-          Zoek een locatie met de zoekbalk linksboven
-        </li>
+        <li class="mb-2">Zoek een locatie met de zoekbalk linksboven</li>
         <li class="mb-2">
           Bekijk de legenda om te zien wat de kleuren betekenen
         </li>
@@ -26,3 +23,7 @@
     </v-card>
   </div>
 </template>
+
+<script setup lang="ts">
+const { locationName } = useRuntimeConfig().public;
+</script>
