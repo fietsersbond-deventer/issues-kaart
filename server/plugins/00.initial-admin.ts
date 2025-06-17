@@ -71,39 +71,6 @@ export default defineNitroPlugin(async (nitroApp) => {
         console.log(
           `✅ Created initial admin account: ${result.username} (ID: ${result.id})`
         );
-        console.log(`   Name: ${result.name}`);
-        console.log(`   Role: ${result.role}`);
-
-        // Create password reset token so admin can set their password
-        try {
-          const resetToken = randomBytes(32).toString("hex");
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 7); // Token expires in 7 days
-
-          await db
-            .prepare(
-              "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?1, ?2, ?3)"
-            )
-            .bind(result.id, resetToken, expiresAt.toISOString())
-            .run();
-
-          const appUrl =
-            process.env.NUXT_PUBLIC_APP_URL || "http://localhost:3000";
-          console.log(`🔑 Password reset token created for ${adminEmail}`);
-          console.log(`   Reset URL: ${appUrl}/reset-password/${resetToken}`);
-          console.log(`   Token expires: ${expiresAt.toISOString()}`);
-          console.log(
-            "📧 Admin should use this reset link to set their password on first login"
-          );
-        } catch (tokenError) {
-          console.error(
-            "⚠️  Failed to create password reset token:",
-            tokenError
-          );
-          console.log(
-            "   Admin can use the 'Forgot Password' feature to reset their password"
-          );
-        }
       } else {
         console.error("❌ Failed to create initial admin account");
       }
