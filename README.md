@@ -1,24 +1,4 @@
-# NuxtHub Starter Template
-
-Deze starter laat je binnen enkele seconden beginnen met [NuxtHub](https://hub.nuxt.com).
-
-- [Documentatie](https://hub.nuxt.com)
-
-## Functies
-
-- Afbeelding upload met [`hubBlob()`](http://hub.nuxt.com/docs/storage/blob)
-- Chat berichten opslaan met [`hubDatabase()`](http://hub.nuxt.com/docs/storage/database)
-- Server redirects opslaan met [`hubKV()`](http://hub.nuxt.com/docs/storage/kv)
-- Cache een API response met [`cachedEventHandler()`](https://hub.nuxt.com/docs/server/cache)
-- Genereer de API documentatie met Scalar binnen de [NuxtHub Admin](https://admin.hub.nuxt.com)
-
-## Setup
-
-Zorg ervoor dat je de dependencies installeert met [pnpm](https://pnpm.io).
-
-```bash
-pnpm install
-```
+# Fietsersbond Projecten overzicht
 
 ## Configuratie
 
@@ -44,8 +24,6 @@ NUXT_PUBLIC_LOCATION_BOUNDS_NORTH=52.293
   - Het beperken van zoekresultaten tot jouw gebied
   - Het berekenen van het kaartcentrum (automatisch uit deze bounds)
   - De standaard weergave wanneer er geen issues zijn
-
-**Notitie:** Het kaartcentrum wordt automatisch berekend vanuit de `NUXT_PUBLIC_LOCATION_BOUNDS_*` waarden.
 
 **Je Coördinaten Vinden:**
 
