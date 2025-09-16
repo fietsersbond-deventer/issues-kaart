@@ -62,10 +62,7 @@ function getUsageText(item: Legend) {
   if (!item?.id) return "";
   const count = props.usage[item.id]?.usage_count;
   if (!count) return "";
-  const titles = props.usage[item.id]?.used_by_issues
-    .map((issue) => `"${issue.title}"`)
-    .join(", ");
-  return `Dit legenda item wordt gebruikt door ${titles}`;
+  return `Dit legenda item wordt gebruikt`;
 }
 </script>
 
