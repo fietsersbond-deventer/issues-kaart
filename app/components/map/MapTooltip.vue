@@ -31,6 +31,12 @@ function onMouseOver(event: SelectEvent) {
     const feature = hovered[0] as Feature<Point | LineString | Polygon>;
     const properties = feature.getProperties();
     tooltipContent.value = properties.title || "Geen titel";
+
+    // Change map cursor to pointer
+    if (map) {
+      map.getTargetElement().style.cursor = "pointer";
+    }
+
     // Use event.mapBrowserEvent to get pointer pixel
     const evt: MapBrowserEvent = event.mapBrowserEvent;
     if (evt) {
@@ -46,8 +52,17 @@ function onMouseOver(event: SelectEvent) {
     }
   } else {
     tooltipContent.value = null;
+
+    // Reset map cursor to default
+    if (map) {
+      map.getTargetElement().style.cursor = "";
+    }
   }
 }
 </script>
 
-<style></style>
+<style>
+.tooltip {
+  cursor: pointer;
+}
+</style>
