@@ -142,6 +142,6 @@ p {
 }
 
 /* bij de layerswitcher verschijnt ineens een .ol-counter. disable */
-.ol-control.ol-layerswitcher .ol-counter {
+.ol-control.ol-layerswitcher-image .ol-counter {
   display: none !important;
 }
