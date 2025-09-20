@@ -26,7 +26,6 @@ const tooltipPosition = ref<number[]>([0, 0]);
 const selectConditions = inject("ol-selectconditions");
 const pointerMove = selectConditions.pointerMove;
 function onMouseOver(event: SelectEvent) {
-  console.log("hover", event);
   const hovered = event.selected;
   if (hovered && hovered.length > 0) {
     const feature = hovered[0] as Feature<Point | LineString | Polygon>;
@@ -45,6 +44,8 @@ function onMouseOver(event: SelectEvent) {
         tooltipPosition.value = map.getCoordinateFromPixel(centeredPixel);
       }
     }
+  } else {
+    tooltipContent.value = null;
   }
 }
 </script>
