@@ -10,7 +10,7 @@
     <MapSearch @selected="onSearchSelected" />
     <MapAddFeature ref="addFeature" />
 
-    <ol-layerswitcherimage-control :mouseover="true" />
+    <ol-layerswitcherimage-control :collapsed="false" />
     <OlCustomControl position="bottom-left">
       <SizeCalculator v-model="legendSize">
         <MobileCollapsible title="Legenda" icon="mdi-map-legend">
