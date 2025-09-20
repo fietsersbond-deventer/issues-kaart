@@ -447,7 +447,7 @@ const emit = defineEmits(["feature-clicked"]);
   display: none !important;
 }
 
-:deep(.ol-control.ol-layerswitcher .ol-counter) {
+:deep(.ol-control.ol-layerswitcher-image .ol-counter) {
   display: none !important;
 }
 </style>
