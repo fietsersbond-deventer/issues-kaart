@@ -124,6 +124,14 @@
         /> </ol-source-vector
     ></ol-vector-layer>
 
+    <ol-interaction-select :condition="pointerMove" @select="onMouseOver" />
+
+    <ol-overlay v-if="tooltipContent" :position="tooltipPosition">
+      <div class="tooltip">
+        {{ tooltipContent }}
+      </div>
+    </ol-overlay>
+
     <ol-interaction-select
       v-if="!isDrawing"
       :condition="click"
@@ -378,6 +386,31 @@ function onFeatureSelect(event: SelectEvent) {
   }
 }
 
+const extent = inject("ol-extent");
+const tooltipContent = ref<string | null>(null);
+const tooltipPosition = ref<number[]>([0, 0]);
+const selectConditions = inject("ol-selectconditions");
+const pointerMove = selectConditions.pointerMove;
+function onMouseOver(event: SelectEvent) {
+  console.log("hover", event);
+  const hovered = event.selected;
+  if (hovered && hovered.length > 0) {
+    const feature = hovered[0] as Feature<Point | LineString | Polygon>;
+    const properties = feature.getProperties();
+    tooltipContent.value = properties.title;
+    tooltipPosition.value = extent.getCenter(
+      feature.getGeometry()!.getExtent()
+    );
+    const issueId = properties.issueId;
+    const issue = issues.value?.find((i) => i.id === issueId);
+    if (issue) {
+      tooltipContent.value = issue.title || "Geen titel";
+    }
+  } else {
+    tooltipContent.value = null;
+  }
+}
+
 function onModifyEnd(event: ModifyEvent) {
   const writer = new GeoJSON();
   const feature = event.features.item(0);
@@ -397,5 +430,12 @@ const emit = defineEmits(["feature-clicked"]);
 </script>
 
 <style>
-/* Optional styles */
+.tooltip {
+  background-color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem; /* rounded */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
+  border: 1px solid #d1d5db; /* gray-300 */
+  white-space: nowrap;
+}
 </style>
