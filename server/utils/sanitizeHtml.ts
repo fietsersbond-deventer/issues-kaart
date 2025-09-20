@@ -52,7 +52,7 @@ export function sanitizeHtml(html: string): string {
       "*": ["class"],
     },
     // Only allow safe protocols for URLs
-    allowedSchemes: ["http", "https", "mailto", "tel"],
+    allowedSchemes: ["http", "https", "mailto", "tel", "data"],
     // Don't allow self-closing tags to be unclosed (HTML format, not XHTML)
     selfClosing: ["img", "br"],
     // Tags to totally discard, removing them and their content
