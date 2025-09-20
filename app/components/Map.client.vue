@@ -441,4 +441,13 @@ const emit = defineEmits(["feature-clicked"]);
   border: 1px solid #d1d5db; /* gray-300 */
   white-space: nowrap;
 }
+
+/* Ensure the ol-counter is hidden in the layer switcher */
+:deep(.ol-counter) {
+  display: none !important;
+}
+
+:deep(.ol-control.ol-layerswitcher .ol-counter) {
+  display: none !important;
+}
 </style>
