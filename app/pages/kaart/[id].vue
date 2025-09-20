@@ -27,7 +27,7 @@
           @cancel="setEditing(false)"
         />
         <template v-else>
-          <h2 class="text-h5 mb-4">{{ issue.title }}</h2>
+          <h1 class="mb-4">{{ issue.title }}</h1>
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ql-editor" v-html="issue.description" />
         </template>
