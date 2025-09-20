@@ -85,6 +85,7 @@ watch(
   { immediate: true }
 );
 
+// Handle route logic
 if (!id) {
   // Redirect to new item creation
   navigateTo("/kaart");
@@ -94,10 +95,9 @@ if (!id) {
 } else if (id === "new" || id === "undefined") {
   setEditing(true);
 } else {
-  if (!issue.value) {
-    // Handle issue not found
-    navigateTo("/kaart");
-  }
+  // For valid IDs, let the component load and handle missing issues in the template
+  // Don't immediately redirect if issue.value is null - it might just be loading
+  console.log("Loading issue with ID:", id);
 }
 
 definePageMeta({
