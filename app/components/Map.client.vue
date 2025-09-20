@@ -73,7 +73,7 @@
         <ol-feature
           v-for="issue in markers"
           :key="`marker-${issue.id}`"
-          :properties="{ issueId: issue.id }"
+          :properties="{ issueId: issue.id, title: issue.title }"
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
           <ol-style>
@@ -90,7 +90,7 @@
         <ol-feature
           v-for="issue in lines"
           :key="`line-${issue.id}`"
-          :properties="{ issueId: issue.id }"
+          :properties="{ issueId: issue.id, title: issue.title }"
         >
           <ol-geom-line-string :coordinates="toLineCoords(issue)" />
           <ol-style>
@@ -104,7 +104,7 @@
         <ol-feature
           v-for="issue in polygons"
           :key="`polygon-${issue.id}`"
-          :properties="{ issueId: issue.id }"
+          :properties="{ issueId: issue.id, title: issue.title }"
         >
           <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
           <ol-style>
@@ -124,6 +124,8 @@
         /> </ol-source-vector
     ></ol-vector-layer>
 
+    <MapTooltip :is-drawing />
+
     <ol-interaction-select
       v-if="!isDrawing"
       :condition="click"
@@ -140,7 +142,7 @@ import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
-import { Collection, type Feature } from "ol";
+import { type MapBrowserEvent, Collection, type Feature } from "ol";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
@@ -378,6 +380,40 @@ function onFeatureSelect(event: SelectEvent) {
   }
 }
 
+const tooltipContent = ref<string | null>(null);
+const tooltipPosition = ref<number[]>([0, 0]);
+const selectConditions = inject("ol-selectconditions");
+const pointerMove = selectConditions.pointerMove;
+function onMouseOver(event: SelectEvent) {
+  const hovered = event.selected;
+  if (hovered && hovered.length > 0) {
+    const feature = hovered[0] as Feature<Point | LineString | Polygon>;
+    const properties = feature.getProperties();
+    console.log({ properties });
+    const issueId = properties.issueId;
+    const issue = issues.value?.find((i) => i.id === issueId);
+    if (issue) {
+      tooltipContent.value = issue.title || "Geen titel";
+      // Use event.mapBrowserEvent to get pointer pixel
+      const evt: MapBrowserEvent = (event as any).mapBrowserEvent;
+      if (evt) {
+        const map = mapRef.value?.map;
+        if (map) {
+          const { pixel } = evt;
+          // Center tooltip above pointer: offset horizontally and vertically
+          const tooltipWidth = tooltipContent.value
+            ? tooltipContent.value.length * 8
+            : 120; // estimate, px
+          const centeredPixel = [pixel[0]! - tooltipWidth / 2, pixel[1]! - 70];
+          tooltipPosition.value = map.getCoordinateFromPixel(centeredPixel);
+        }
+      }
+    }
+  } else {
+    tooltipContent.value = null;
+  }
+}
+
 function onModifyEnd(event: ModifyEvent) {
   const writer = new GeoJSON();
   const feature = event.features.item(0);
@@ -397,5 +433,12 @@ const emit = defineEmits(["feature-clicked"]);
 </script>
 
 <style>
-/* Optional styles */
+.tooltip {
+  background-color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem; /* rounded */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
+  border: 1px solid #d1d5db; /* gray-300 */
+  white-space: nowrap;
+}
 </style>

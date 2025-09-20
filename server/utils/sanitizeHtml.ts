@@ -51,11 +51,29 @@ export function sanitizeHtml(html: string): string {
       // General attributes that Quill might use
       "*": ["class"],
     },
-    // Only allow safe protocols for URLs
-    allowedSchemes: ["http", "https", "mailto", "tel", "data"],
-    // Don't allow self-closing tags to be unclosed (HTML format, not XHTML)
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    allowedSchemesByTag: {
+      img: ["http", "https", "data"],
+    },
+    allowProtocolRelative: false,
     selfClosing: ["img", "br"],
-    // Tags to totally discard, removing them and their content
     disallowedTagsMode: "discard",
+    transformTags: {
+      img: function (tagName, attribs) {
+        if (
+          attribs.src &&
+          attribs.src.startsWith("data:") &&
+          !/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i.test(attribs.src)
+        ) {
+          // Remove src if not a valid image data url
+          const { src, ...rest } = attribs;
+          return {
+            tagName: "img",
+            attribs: rest,
+          };
+        }
+        return { tagName, attribs };
+      },
+    },
   });
 }
