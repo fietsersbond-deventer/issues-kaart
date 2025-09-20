@@ -141,7 +141,7 @@ p {
   margin: 0 4px;
 }
 
-// bij de layerswitcher verschijnt ineens een .ol-counter. disable
+/* bij de layerswitcher verschijnt ineens een .ol-counter. disable */
 .ol-counter {
   display: none !important;
 }
