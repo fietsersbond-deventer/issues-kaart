@@ -170,9 +170,13 @@ async function deleteUserConfirmed() {
   try {
     await remove(deleteIssue.value.id);
     showDeleteDialog.value = false;
+    snackbar.showSuccess(`Issue "${deleteIssue.value.title}" is verwijderd!`);
     deleteIssue.value = null;
   } catch (error) {
     console.error("Error deleting user:", error);
+    snackbar.showError(
+      "Er is een fout opgetreden bij het verwijderen van het issue."
+    );
   } finally {
     loading.value = false;
   }
