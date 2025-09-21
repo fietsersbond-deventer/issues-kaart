@@ -34,6 +34,7 @@ export default defineNuxtConfig({
     blob: false,
     kv: false,
     cache: false,
+    workers: true,
   },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
@@ -63,6 +64,7 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       openAPI: true,
+      websocket: true,
     },
   },
   devtools: { enabled: true },
