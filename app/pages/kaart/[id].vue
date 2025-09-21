@@ -91,6 +91,15 @@ if (!id || typeof id !== "string") {
   setEditing(true);
 }
 
+const { notifyEditing } = useIssueLocks();
+
+watch(isEditing, (newVal) => {
+  if (id && +id) {
+    console.log("Notifying editing status for issue", id, newVal);
+    notifyEditing(+id, newVal);
+  }
+});
+
 // watch([issue, id], ([newIssue, newId]) => {
 //   if (newId && newId !== "new" && newIssue === undefined) {
 //     // If the issue was not found, redirect to the main map page

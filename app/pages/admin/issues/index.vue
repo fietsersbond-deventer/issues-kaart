@@ -49,25 +49,35 @@
           </template>
 
           <template #item.actions="{ item }">
-            <v-btn variant="text" size="small" icon :to="`/kaart/${item.id}`">
-              <v-icon>mdi-map</v-icon>
-              <v-tooltip activator="parent" location="top">
-                Toon in de kaart
-              </v-tooltip>
-            </v-btn>
-            <v-btn
-              icon="mdi-delete"
-              variant="text"
-              color="error"
-              size="small"
-              @click="confirmDelete(item)"
-            >
-              <v-icon>mdi-delete</v-icon>
-              <v-tooltip activator="parent" location="top">
-                Verwijder issue
-              </v-tooltip>
-            </v-btn></template
-          >
+            <div v-if="editingUsers[item.id]">
+              <span>{{ editingUsers[item.id] }} is bezig met bewerken</span>
+            </div>
+            <div v-else>
+              <v-btn
+                icon="mdi-pencil"
+                variant="text"
+                size="small"
+                @click="() => notifyEditing(item.id, true)"
+              >
+                <v-icon>mdi-pencil</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Bewerken
+                </v-tooltip>
+              </v-btn>
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                size="small"
+                @click="confirmDelete(item)"
+              >
+                <v-icon>mdi-delete</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Verwijder issue
+                </v-tooltip>
+              </v-btn>
+            </div>
+          </template>
         </v-data-table>
       </v-card-text>
     </v-card>
@@ -95,6 +105,8 @@
 <script setup lang="ts">
 import { isExistingIssue, type Issue } from "~/types/Issue";
 import type { Legend } from "~/types/Legend";
+import { ref, watch } from "vue";
+import { useIssueLocks } from "~/composables/useIssueLocks";
 
 definePageMeta({
   title: "Gebruikers",
@@ -156,6 +168,8 @@ async function deleteUserConfirmed() {
 }
 
 async function updateIssue(issue: Issue) {
+  if (!isExistingIssue(issue)) return;
+
   try {
     await update(issue.id, issue);
     snackbar.showSuccess(`Issue "${issue.title}" is bijgewerkt!`);
@@ -166,6 +180,14 @@ async function updateIssue(issue: Issue) {
     );
   }
 }
+
+const { editingUsers, notifyEditing } = useIssueLocks();
+
+watch(wsData, (data) => {
+  if (data?.type === "editing-status") {
+    editingUsers.value = data.payload;
+  }
+});
 </script>
 
 <style>
