@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex align-center">
-    <div v-if="!selectedId" class="d-flex align-center">
+    <div v-if="!selectedId || isEditing" class="d-flex align-center">
       <v-btn
         v-for="tool in drawingTools"
         :key="tool.type"
@@ -24,7 +24,8 @@
 const eventBus = useMapEventBus().inject();
 const activeDrawingTool = ref<string | null>(null);
 
-const { selectedId } = storeToRefs(useSelectedIssue());
+const { selectedId, issue } = storeToRefs(useSelectedIssue());
+const { isEditing } = useIsEditing();
 
 const drawingTools = [
   { type: "point", icon: "mdi-vector-point", label: "Teken punt" },
@@ -34,6 +35,13 @@ const drawingTools = [
 
 function startDrawing(tool: string) {
   if (!eventBus) return;
+
+  if (selectedId.value) {
+    if (confirm("Wil je de huidige vorm vervangen?") === false) {
+      return;
+    }
+    issue.value.geometry = null;
+  }
 
   // If clicking the same tool, deactivate it
   if (activeDrawingTool.value === tool) {
