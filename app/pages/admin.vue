@@ -9,6 +9,11 @@
           to="/admin/users"
         />
         <v-list-item
+          prepend-icon="mdi-file-document"
+          title="Issues"
+          to="/admin/issues"
+        />
+        <v-list-item
           prepend-icon="mdi-palette"
           title="Legenda"
           to="/admin/legends"
@@ -29,16 +34,16 @@ definePageMeta({
   title: "Beheer",
   navTitle: "Beheer",
   // middleware: ["admin"],
-  
+
   // Add middleware to handle redirects from /admin
   middleware: [
     function (to) {
-      if (to.path === '/admin') {
+      if (to.path === "/admin") {
         const { isAdmin } = useRoles();
-        return isAdmin.value ? '/admin/users' : '/admin/legends';
+        return isAdmin.value ? "/admin/users" : "/admin/legends";
       }
-    }
-  ]
+    },
+  ],
 });
 const { isAdmin } = useRoles();
 
