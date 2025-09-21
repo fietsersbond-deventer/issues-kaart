@@ -15,7 +15,7 @@
         />
         <v-list-item
           prepend-icon="mdi-palette"
-          title="Legenda"
+          title="Categorieën"
           to="/admin/legends"
         />
       </v-list>
