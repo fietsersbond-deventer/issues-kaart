@@ -22,13 +22,39 @@
           </template>
 
           <template #item.legend_name="{ item }">
-            <div class="d-flex align-center" style="gap: 8px">
-              <div
-                class="color-preview"
-                :style="{ backgroundColor: item.color }"
-              />
-              <div>{{ item.legend_name || "Onbekend" }}</div>
-            </div>
+            <v-select
+              v-model="item.legend_name"
+              :items="availableLegends"
+              item-value="name"
+              item-title="name"
+              dense
+              hide-details
+              @update:model-value="updateIssue(item)"
+            >
+              <template #selection="{ item: legend }">
+                <div class="d-flex align-center" style="gap: 8px">
+                  <div
+                    class="color-preview"
+                    :style="{ backgroundColor: legend.raw.color }"
+                  />
+                  <span>{{ legend.raw.name }}</span>
+                </div>
+              </template>
+
+              <template #item="{ props: itemProps, item: legend }">
+                <v-list-item
+                  v-bind="itemProps"
+                  :subtitle="legend.raw.description"
+                >
+                  <template #prepend>
+                    <div
+                      class="color-preview mr-2"
+                      :style="{ backgroundColor: legend.raw.color }"
+                    />
+                  </template>
+                </v-list-item>
+              </template>
+            </v-select>
           </template>
 
           <template #item.created_at="{ item }">
@@ -42,14 +68,25 @@
           </template>
 
           <template #item.actions="{ item }">
+            <v-btn variant="text" size="small" icon :to="`/kaart/${item.id}`">
+              <v-icon>mdi-map</v-icon>
+              <v-tooltip activator="parent" location="top">
+                Toon in de kaart
+              </v-tooltip>
+            </v-btn>
             <v-btn
               icon="mdi-delete"
               variant="text"
               color="error"
               size="small"
               @click="confirmDelete(item)"
-            />
-          </template>
+            >
+              <v-icon>mdi-delete</v-icon>
+              <v-tooltip activator="parent" location="top">
+                Verwijder issue
+              </v-tooltip>
+            </v-btn></template
+          >
         </v-data-table>
       </v-card-text>
     </v-card>
@@ -76,6 +113,7 @@
 
 <script setup lang="ts">
 import { isExistingIssue, type Issue } from "~/types/Issue";
+import type { Legend } from "~/types/Legend";
 
 definePageMeta({
   title: "Gebruikers",
@@ -88,6 +126,7 @@ const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteIssue = ref<Issue | null>(null);
 const snackbar = useSnackbar();
+const { data: availableLegends } = useFetch<Legend[]>("/api/legends");
 
 const existingIssues = computed(
   () => issues.value.filter((issue) => isExistingIssue(issue)) || []
@@ -106,7 +145,7 @@ function confirmDelete(issue: Issue) {
 }
 
 async function deleteUserConfirmed() {
-  if (!deleteIssue.value) return;
+  if (!deleteIssue.value || !isExistingIssue(deleteIssue.value)) return;
 
   loading.value = true;
   try {
@@ -126,15 +165,17 @@ async function updateIssue(issue: Issue) {
     snackbar.showSuccess(`Issue "${issue.title}" is bijgewerkt!`);
   } catch (error) {
     console.error("Error updating issue:", error);
-    snackbar.showError("Er is een fout opgetreden bij het bijwerken van het issue.");
+    snackbar.showError(
+      "Er is een fout opgetreden bij het bijwerken van het issue."
+    );
   }
 }
 </script>
 
 <style>
 .color-preview {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
 }
 </style>
