@@ -1,7 +1,7 @@
 export type Legend = {
   id: string;
-  label: string;
-  color?: string;
-  icon?: string;
-  description?: string;
+  name: string;
+  color: string;
+  description: string;
+  created_at: string;
 };

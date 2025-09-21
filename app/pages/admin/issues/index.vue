@@ -1,15 +1,23 @@
+<!-- eslint-disable vue/valid-v-slot -->
 <template>
   <div>
     <v-card class="mb-4">
-      <v-card-title class="d-flex align-center">
-        <span>Issues</span>
+      <v-card-title class="d-flex align-center" style="gap: 16px">
+        <v-text-field
+          v-model="search"
+          label="Zoek"
+          dense
+          hide-details
+          clearable
+        />
       </v-card-title>
       <v-card-text>
         <v-data-table
           :headers="headers"
-          :items="existingIssues"
+          :items="filteredIssues"
           item-value="id"
           class="elevation-1"
+          density="compact"
           :loading="!issues.length"
         >
           <template #item.title="{ item }">
@@ -131,6 +139,17 @@ const { data: availableLegends } = useFetch<Legend[]>("/api/legends");
 const existingIssues = computed(
   () => issues.value.filter((issue) => isExistingIssue(issue)) || []
 );
+
+const search = ref("");
+
+const filteredIssues = computed(() => {
+  return existingIssues.value.filter(
+    (issue) =>
+      !search.value ||
+      issue.title.toLowerCase().includes(search.value.toLowerCase()) ||
+      issue.legend_name?.toLowerCase().includes(search.value.toLowerCase())
+  );
+});
 
 const headers = [
   { title: "Titel", value: "title", sortable: true },

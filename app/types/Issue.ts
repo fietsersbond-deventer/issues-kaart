@@ -10,7 +10,7 @@ export type ExistingIssue = {
   legend_name?: string; // Added from join
   color?: string; // Added from join
   geometry: Point | Polygon | LineString;
-  created_at?: Date;
+  created_at: Date;
 };
 
 export type NewIssue = Optional<
