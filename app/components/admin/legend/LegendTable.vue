@@ -66,7 +66,7 @@ function getUsageText(item: Legend) {
 }
 </script>
 
-<style scoped>
+<style>
 .color-preview {
   width: 24px;
   height: 24px;
