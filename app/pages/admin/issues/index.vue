@@ -12,8 +12,17 @@
           class="elevation-1"
           :loading="!issues.length"
         >
+          <template #item.title="{ item }">
+            <v-text-field
+              v-model="item.title"
+              dense
+              hide-details
+              @change="updateIssue(item)"
+            />
+          </template>
+
           <template #item.legend_name="{ item }">
-            <div class="d-flex align-center" style="gap: 8px;">
+            <div class="d-flex align-center" style="gap: 8px">
               <div
                 class="color-preview"
                 :style="{ backgroundColor: item.color }"
@@ -73,11 +82,12 @@ definePageMeta({
 });
 
 const issuesStore = useIssues();
-const { remove } = issuesStore;
+const { remove, update } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteIssue = ref<Issue | null>(null);
+const snackbar = useSnackbar();
 
 const existingIssues = computed(
   () => issues.value.filter((issue) => isExistingIssue(issue)) || []
@@ -107,6 +117,16 @@ async function deleteUserConfirmed() {
     console.error("Error deleting user:", error);
   } finally {
     loading.value = false;
+  }
+}
+
+async function updateIssue(issue: Issue) {
+  try {
+    await update(issue.id, { title: issue.title });
+    snackbar.showSuccess(`Issue "${issue.title}" is bijgewerkt!`);
+  } catch (error) {
+    console.error("Error updating issue:", error);
+    snackbar.showError("Er is een fout opgetreden bij het bijwerken van het issue.");
   }
 }
 </script>
