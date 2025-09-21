@@ -14,11 +14,17 @@ export const useIssues = defineStore("issues", () => {
 
   const { data, refresh: refreshIssues } = useFetch<Issue[]>("/api/issues");
 
-  watch(data, (newData) => {
-    if (newData) {
-      issues.value = newData;
-    }
-  });
+  watch(
+    data,
+    (newData) => {
+      if (newData) {
+        issues.value = newData;
+      } else {
+        issues.value = [];
+      }
+    },
+    { immediate: true }
+  );
 
   function refresh() {
     refreshIssues();
