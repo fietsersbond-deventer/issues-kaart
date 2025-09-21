@@ -10,7 +10,7 @@
         />
         <v-list-item
           prepend-icon="mdi-file-document"
-          title="Issues"
+          title="Onderwerpen"
           to="/admin/issues"
         />
         <v-list-item

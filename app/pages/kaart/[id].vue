@@ -41,7 +41,9 @@
             @cancel="setEditing(false)"
           />
         </template>
-        <div v-else>Klik op de edit knop om een nieuw issue toe te voegen</div>
+        <div v-else>
+          Klik op de edit knop om een nieuw onderwerp toe te voegen
+        </div>
       </template>
 
       <v-dialog
@@ -73,14 +75,14 @@ const { issue } = storeToRefs(useSelectedIssue());
 useHead(() => ({
   title: issue.value?.title
     ? `${issue.value.title} - Fietsersbond`
-    : "Nieuw Issue - Fietsersbond",
+    : "Nieuw onderwerp - Fietsersbond",
 }));
 
 // Update route meta for breadcrumbs
 watch(
   () => issue.value?.title,
   (newTitle) => {
-    route.meta.title = newTitle || "Nieuw Issue";
+    route.meta.title = newTitle || "Nieuw onderwerp";
   },
   { immediate: true }
 );
