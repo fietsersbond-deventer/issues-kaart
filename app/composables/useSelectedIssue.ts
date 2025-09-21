@@ -50,6 +50,22 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     { immediate: true }
   );
 
+  // Also watch for changes in the issues array and update selected issue
+  watch(
+    issues,
+    () => {
+      if (selectedId.value !== null && issues.value) {
+        const foundIssue = issues.value.find(
+          (issue) => isExistingIssue(issue) && issue.id === selectedId.value
+        );
+        if (foundIssue) {
+          issue.value = foundIssue;
+        }
+      }
+    },
+    { immediate: true }
+  );
+
   return {
     selectedId,
     issue,
