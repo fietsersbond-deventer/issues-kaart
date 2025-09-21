@@ -85,20 +85,18 @@ watch(
   { immediate: true }
 );
 
-if (!id) {
-  // Redirect to new item creation
+if (!id || typeof id !== "string") {
   navigateTo("/kaart");
-} else if (typeof id !== "string") {
-  // Handle invalid id type
-  navigateTo("/kaart");
-} else if (id === "new" || id === "undefined") {
+} else if (id === "new") {
   setEditing(true);
-} else {
-  if (!issue.value) {
-    // Handle issue not found
-    navigateTo("/kaart");
-  }
 }
+
+// watch([issue, id], ([newIssue, newId]) => {
+//   if (newId && newId !== "new" && newIssue === undefined) {
+//     // If the issue was not found, redirect to the main map page
+//     navigateTo("/kaart");
+//   }
+// });
 
 definePageMeta({
   title: "Kaart",
