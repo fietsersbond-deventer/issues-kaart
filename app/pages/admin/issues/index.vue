@@ -5,38 +5,43 @@
         <span>Issues</span>
       </v-card-title>
       <v-card-text>
-        <v-table>
-          <thead>
-            <tr>
-              <th>Titel</th>
-              <th>Kleur</th>
-              <th>Status</th>
-              <th>Acties</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="issue in issues" :key="issue.id">
-              <td>{{ issue.title }}</td>
-              <td>
-                <div
-                  class="color-preview"
-                  :style="{ backgroundColor: issue.color }"
-                />
-              </td>
+        <v-data-table
+          :headers="headers"
+          :items="existingIssues"
+          item-value="id"
+          class="elevation-1"
+          :loading="!issues.length"
+        >
+          <template #item.legend_name="{ item }">
+            <div class="d-flex align-center" style="gap: 8px;">
+              <div
+                class="color-preview"
+                :style="{ backgroundColor: item.color }"
+              />
+              <div>{{ item.legend_name || "Onbekend" }}</div>
+            </div>
+          </template>
 
-              <td>{{ issue.legend_name }}</td>
-              <td>
-                <v-btn
-                  icon="mdi-delete"
-                  variant="text"
-                  color="error"
-                  size="small"
-                  @click="confirmDelete(issue)"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+          <template #item.created_at="{ item }">
+            {{
+              new Date(item.created_at).toLocaleDateString("nl-NL", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              })
+            }}
+          </template>
+
+          <template #item.actions="{ item }">
+            <v-btn
+              icon="mdi-delete"
+              variant="text"
+              color="error"
+              size="small"
+              @click="confirmDelete(item)"
+            />
+          </template>
+        </v-data-table>
       </v-card-text>
     </v-card>
 
@@ -61,52 +66,31 @@
 </template>
 
 <script setup lang="ts">
-import type { Issue } from "~/types/Issue";
-import type { User } from "~/types/User";
+import { isExistingIssue, type Issue } from "~/types/Issue";
 
 definePageMeta({
   title: "Gebruikers",
 });
 
-const { issues, update, remove } = useIssues();
-const showEditDialog = ref(false);
+const issuesStore = useIssues();
+const { remove } = issuesStore;
+const { issues } = storeToRefs(issuesStore);
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteIssue = ref<Issue | null>(null);
 
-const runtimeConfig = useRuntimeConfig();
-const { showSuccess, showError } = useSnackbar();
+const existingIssues = computed(
+  () => issues.value.filter((issue) => isExistingIssue(issue)) || []
+);
 
-function editUser(user: User) {
-  editedUser.value = {
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    role: user.role,
-  };
-  showEditDialog.value = true;
-}
+const headers = [
+  { title: "Titel", value: "title", sortable: true },
+  { title: "Type", value: "legend_name", sortable: true },
+  { title: "Datum", value: "created_at", sortable: true },
+  { title: "Acties", value: "actions", sortable: false },
+];
 
-async function updateUser(data: {
-  username: string;
-  name: string | null;
-  role: string;
-}) {
-  if (!editedUser.value) return;
-
-  loading.value = true;
-  try {
-    await update(editedUser.value.id, data);
-    showEditDialog.value = false;
-    editedUser.value = null;
-  } catch (error) {
-    console.error("Error updating user:", error);
-  } finally {
-    loading.value = false;
-  }
-}
-
-function confirmDelete(issue: { id: number; title: string }) {
+function confirmDelete(issue: Issue) {
   deleteIssue.value = issue;
   showDeleteDialog.value = true;
 }
@@ -126,3 +110,11 @@ async function deleteUserConfirmed() {
   }
 }
 </script>
+
+<style>
+.color-preview {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+</style>
