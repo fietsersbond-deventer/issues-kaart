@@ -30,39 +30,12 @@
           </template>
 
           <template #item.legend_name="{ item }">
-            <v-select
-              v-model="item.legend_name"
-              :items="availableLegends"
-              item-value="name"
-              item-title="name"
-              dense
-              hide-details
+            <CategorySelect
+              v-if="availableLegends"
+              v-model="item.legend_id"
+              :legends="availableLegends"
               @update:model-value="updateIssue(item)"
-            >
-              <template #selection="{ item: legend }">
-                <div class="d-flex align-center" style="gap: 8px">
-                  <div
-                    class="color-preview"
-                    :style="{ backgroundColor: legend.raw.color }"
-                  />
-                  <span>{{ legend.raw.name }}</span>
-                </div>
-              </template>
-
-              <template #item="{ props: itemProps, item: legend }">
-                <v-list-item
-                  v-bind="itemProps"
-                  :subtitle="legend.raw.description"
-                >
-                  <template #prepend>
-                    <div
-                      class="color-preview mr-2"
-                      :style="{ backgroundColor: legend.raw.color }"
-                    />
-                  </template>
-                </v-list-item>
-              </template>
-            </v-select>
+            />
           </template>
 
           <template #item.created_at="{ item }">
@@ -152,8 +125,8 @@ const filteredIssues = computed(() => {
 });
 
 const headers = [
-  { title: "Titel", value: "title", sortable: true },
-  { title: "Type", value: "legend_name", sortable: true },
+  { title: "Titel", value: "title", sortable: true, width: "50%" },
+  { title: "Categorie", value: "legend_name", sortable: true },
   { title: "Datum", value: "created_at", sortable: true },
   { title: "Acties", value: "actions", sortable: false },
 ];
@@ -184,7 +157,7 @@ async function deleteUserConfirmed() {
 
 async function updateIssue(issue: Issue) {
   try {
-    await update(issue.id, { title: issue.title });
+    await update(issue.id, issue);
     snackbar.showSuccess(`Issue "${issue.title}" is bijgewerkt!`);
   } catch (error) {
     console.error("Error updating issue:", error);

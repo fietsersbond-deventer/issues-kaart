@@ -61,36 +61,11 @@
             </v-col>
 
             <v-col cols="12">
-              <v-select
+              <CategorySelect
                 v-model="issue.legend_id"
-                :items="legends"
-                item-title="name"
-                item-value="id"
-                label="Issue Type"
-                :rules="[(v) => !!v || 'Legenda is verplicht']"
-                required
-              >
-                <template #selection="{ item }">
-                  <div class="d-flex align-center">
-                    <div
-                      class="me-2"
-                      style="width: 20px; height: 20px; border-radius: 4px"
-                      :style="{ backgroundColor: item.raw.color }"
-                    />
-                    {{ item.title }}
-                  </div>
-                </template>
-                <template #item="{ item, props }">
-                  <v-list-item v-bind="props" :title="item.raw.name">
-                    <template #prepend>
-                      <div
-                        style="width: 20px; height: 20px; border-radius: 4px"
-                        :style="{ backgroundColor: item.raw.color }"
-                      />
-                    </template>
-                  </v-list-item>
-                </template>
-              </v-select>
+                :legends="legends"
+                label="Categorie"
+              />
             </v-col>
 
             <!-- Hidden geometry validation field -->
