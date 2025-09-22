@@ -16,6 +16,10 @@ export default defineWebSocketHandler({
     peer.subscribe("lockIssue");
     peer.subscribe("unlockIssue");
 
+    // Ensure the peer subscribes to the 'editing-status' event
+    peer.subscribe("editing-status");
+    console.log(`[peer] Subscribed to 'editing-status': ${peer.toString()}`);
+
     peer.send(
       JSON.stringify({ type: "editing-status", payload: editingStatus })
     );
