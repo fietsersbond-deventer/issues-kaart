@@ -1,5 +1,9 @@
 <template>
   <div class="d-flex align-center">
+    <div class="d-flex align-center">
+      <slot />
+    </div>
+    <v-divider v-if="$slots.default" vertical class="mx-2" />
     <div v-if="!selectedId || isEditing" class="d-flex align-center">
       <v-btn
         v-for="tool in drawingTools"
@@ -10,12 +14,6 @@
         :aria-label="tool.label"
         @click="startDrawing(tool.type)"
       />
-    </div>
-
-    <v-divider v-if="$slots.default" vertical class="mx-2" />
-
-    <div class="d-flex align-center">
-      <slot />
     </div>
   </div>
 </template>
