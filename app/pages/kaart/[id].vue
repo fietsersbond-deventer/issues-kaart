@@ -2,7 +2,6 @@
   <div class="wrapper">
     <v-toolbar v-if="status === 'authenticated'">
       <Toolbar>
-        locked: {{ editingUsers }}
         <v-btn
           v-if="status === 'authenticated'"
           :icon="!isEditing ? 'mdi-pencil' : 'mdi-pencil-remove'"
@@ -69,7 +68,6 @@ const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue } = storeToRefs(useSelectedIssue());
-const { editingUsers } = storeToRefs(useIssueLocks());
 
 // Set the page title dynamically based on the issue
 useHead(() => ({
