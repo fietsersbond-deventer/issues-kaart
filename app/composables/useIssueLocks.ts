@@ -82,18 +82,35 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     }
   }
 
-  const isLockedByOther = computed(() => {
-    if (!selectedId.value) return false;
-    const editingUser = editingUsers.value[selectedId.value];
+  function isLocked(issueId: number) {
+    const editingUser = editingUsers.value[issueId];
     if (editingUser !== undefined && editingUser.username !== userName.value) {
       return editingUser.username;
     }
     return false;
+  }
+
+  const locks = computed(() => {
+    const locks: Record<string, string> = {};
+    for (const id in editingUsers.value) {
+      const user = editingUsers.value[id];
+      if (user && user.username !== userName.value) {
+        locks[id] = user.username;
+      }
+    }
+    return locks;
+  });
+
+  const isLockedByOther = computed(() => {
+    if (!selectedId.value) return false;
+    return isLocked(selectedId.value);
   });
 
   return {
     editingUsers,
     notifyEditing,
     isLockedByOther,
+    isLocked,
+    locks,
   };
 });

@@ -25,7 +25,10 @@
               v-model="item.title"
               dense
               hide-details
+              :disabled="!!locks[item.id]"
               @change="updateIssue(item)"
+              @focus="notifyEditing(item.id, true)"
+              @blur="notifyEditing(item.id, false)"
             />
           </template>
 
@@ -34,7 +37,10 @@
               v-if="availableLegends"
               v-model="item.legend_id"
               :legends="availableLegends"
+              :disabled="!!locks[item.id]"
               @update:model-value="updateIssue(item)"
+              @focus="notifyEditing(item.id, true)"
+              @blur="notifyEditing(item.id, false)"
             />
           </template>
 
@@ -49,34 +55,31 @@
           </template>
 
           <template #item.actions="{ item }">
-            <div v-if="editingUsers[item.id]">
-              <span>{{ editingUsers[item.id] }} is bezig met bewerken</span>
-            </div>
-            <div v-else>
-              <v-btn
-                icon="mdi-pencil"
-                variant="text"
-                size="small"
-                @click="() => notifyEditing(item.id, true)"
-              >
-                <v-icon>mdi-pencil</v-icon>
-                <v-tooltip activator="parent" location="top">
-                  Bewerken
-                </v-tooltip>
-              </v-btn>
-              <v-btn
-                icon="mdi-delete"
-                variant="text"
-                color="error"
-                size="small"
-                @click="confirmDelete(item)"
-              >
-                <v-icon>mdi-delete</v-icon>
-                <v-tooltip activator="parent" location="top">
-                  Verwijder issue
-                </v-tooltip>
-              </v-btn>
-            </div>
+            <v-btn
+              v-if="locks[item.id]"
+              icon
+              variant="text"
+              color="warning"
+              size="small"
+            >
+              <v-icon color="warning" icon="mdi-lock" />
+              <v-tooltip activator="parent" location="top">
+                {{ locks[item.id] }}
+              </v-tooltip>
+            </v-btn>
+            <v-btn
+              v-else
+              icon="mdi-delete"
+              variant="text"
+              color="error"
+              size="small"
+              @click="confirmDelete(item)"
+            >
+              <v-icon>mdi-delete</v-icon>
+              <v-tooltip activator="parent" location="top">
+                Verwijder issue
+              </v-tooltip>
+            </v-btn>
           </template>
         </v-data-table>
       </v-card-text>
@@ -105,16 +108,20 @@
 <script setup lang="ts">
 import { isExistingIssue, type Issue } from "~/types/Issue";
 import type { Legend } from "~/types/Legend";
-import { ref, watch } from "vue";
-import { useIssueLocks } from "~/composables/useIssueLocks";
 
 definePageMeta({
   title: "Gebruikers",
+  middleware: ["sidebase-auth"],
 });
 
 const issuesStore = useIssues();
 const { remove, update } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
+
+const locksStore = useIssueLocks();
+const { notifyEditing } = locksStore;
+const { locks } = storeToRefs(locksStore);
+
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteIssue = ref<Issue | null>(null);
@@ -180,14 +187,6 @@ async function updateIssue(issue: Issue) {
     );
   }
 }
-
-const { editingUsers, notifyEditing } = useIssueLocks();
-
-watch(wsData, (data) => {
-  if (data?.type === "editing-status") {
-    editingUsers.value = data.payload;
-  }
-});
 </script>
 
 <style>
