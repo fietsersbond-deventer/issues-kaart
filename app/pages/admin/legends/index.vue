@@ -38,7 +38,7 @@ import type { LegendUsage } from "~/composables/useLegendApi";
 
 definePageMeta({
   title: "Legenda",
-  // middleware: ["admin"],
+  middleware: ["sidebase-auth"],
 });
 
 const { getAll, getUsage, create, update, remove } = useLegendApi();
