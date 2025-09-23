@@ -140,6 +140,13 @@ import type { User } from "~/types/User";
 
 definePageMeta({
   title: "Gebruikers",
+  middleware: [
+    "sidebase-auth",
+    function (to) {
+      const { isAdmin } = useRoles();
+      return isAdmin.value ? to : "/admin";
+    },
+  ],
 });
 
 const { users, create, update, remove } = useUsersApi();
