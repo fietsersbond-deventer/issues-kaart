@@ -33,14 +33,14 @@
 definePageMeta({
   title: "Beheer",
   navTitle: "Beheer",
-  // middleware: ["admin"],
 
   // Add middleware to handle redirects from /admin
   middleware: [
+    "sidebase-auth",
     function (to) {
       if (to.path === "/admin") {
         const { isAdmin } = useRoles();
-        return isAdmin.value ? "/admin/users" : "/admin/legends";
+        return isAdmin.value ? "/admin/users" : "/admin/issues";
       }
     },
   ],
