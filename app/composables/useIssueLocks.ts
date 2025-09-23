@@ -10,8 +10,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   const { selectedId } = storeToRefs(useSelectedIssue());
 
   // Extract the user's name from the authentication context
-  const { data } = useAuth();
-  const username = data.value?.name || "Onbekend";
+  const { data: authData } = useAuth();
 
   const { data: wsData, send: wsSend } = useWebSocket(websocketUrl, {
     autoReconnect: true,
@@ -26,30 +25,32 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     },
   });
 
-  const editingUsers = ref<Record<number, string>>({});
+  const userName = computed(() => authData.value?.name || "Onbekend");
+
+  const editingUsers = ref<Record<string, { peer: string; username: string }>>(
+    {}
+  );
 
   watch(
-    [selectedId, isEditing],
-    ([newSelectedId, newIsEditing], [oldSelectedId, oldIsEditing]) => {
-      console.log(
-        "Selected ID changed from",
-        oldSelectedId,
-        "to",
-        newSelectedId
-      );
-      console.log("Is editing changed from", oldIsEditing, "to", newIsEditing);
-      if (oldSelectedId && oldSelectedId !== newSelectedId && oldIsEditing) {
-        notifyEditing(+oldSelectedId, false);
-      }
-      if (newSelectedId) {
-        notifyEditing(+newSelectedId, newIsEditing);
+    selectedId,
+    (_newId, oldId) => {
+      if (oldId && isEditing.value) notifyEditing(oldId, false);
+    },
+    { immediate: true }
+  );
+
+  watch(
+    isEditing,
+    (newIsEditing, oldIsEditing) => {
+      if (oldIsEditing !== newIsEditing) {
+        notifyEditing(selectedId.value!, newIsEditing);
       }
     },
     { immediate: true }
   );
 
   watch(wsData, (data) => {
-    console.log("WebSocket message received:", data);
+    console.debug("WebSocket message received:", data);
     try {
       const message = JSON.parse(data as string);
       if (message.type === "editing-status") {
@@ -61,12 +62,13 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   });
 
   function notifyEditing(issueId: number, isEditing: boolean) {
+    console.debug("notifyEditing", { issueId, isEditing });
     if (isEditing) {
       wsSend(
         JSON.stringify({
           type: "lockIssue",
           issueId,
-          username,
+          username: userName.value,
         })
       );
     } else {
@@ -74,20 +76,24 @@ export const useIssueLocks = defineStore("issueLocks", () => {
         JSON.stringify({
           type: "unlockIssue",
           issueId,
-          username,
+          username: userName.value,
         })
       );
     }
   }
 
-  function isLocked(issueId: number): boolean {
-    console.log("Current editing users:", editingUsers.value);
-    return editingUsers.value[issueId] !== undefined;
-  }
+  const isLockedByOther = computed(() => {
+    if (!selectedId.value) return false;
+    const editingUser = editingUsers.value[selectedId.value];
+    if (editingUser !== undefined && editingUser.username !== userName.value) {
+      return editingUser.username;
+    }
+    return false;
+  });
 
   return {
     editingUsers,
     notifyEditing,
-    isLocked,
+    isLockedByOther,
   };
 });
