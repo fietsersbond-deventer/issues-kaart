@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-dynamic-delete */
 import type { WebSocketPeer } from "#nitro";
 import { defineWebSocketHandler } from "#nitro";
 
@@ -6,7 +7,7 @@ type PeerInfo = {
   peer: string;
   username: string | undefined;
 };
-const editingStatus: Record<number, PeerInfo | undefined> = {};
+const editingStatus: Record<string, PeerInfo | undefined> = {};
 
 export default defineWebSocketHandler({
   open(peer: WebSocketPeer) {
@@ -33,14 +34,18 @@ export default defineWebSocketHandler({
       if (data.type === "lockIssue" || data.type === "unlockIssue") {
         const { issueId, username } = data;
         const isEditing = data.type === "lockIssue";
-        console.log(
-          `Editing status update: Issue ID ${issueId}, isEditing: ${isEditing}, username: ${username}`
-        );
+
+        if (editingStatus[Number(issueId)]) {
+          if (editingStatus[Number(issueId)]!.peer !== peer.toString()) {
+            console.log("Peer is not the editor:", peer.toString());
+            return;
+          }
+        }
 
         if (isEditing) {
-          editingStatus[issueId] = { peer: peer.toString(), username };
+          editingStatus[Number(issueId)] = { peer: peer.toString(), username };
         } else {
-          editingStatus[issueId] = undefined;
+          delete editingStatus[Number(issueId)];
         }
 
         // Broadcast the updated editing status to all peers
@@ -69,8 +74,8 @@ export default defineWebSocketHandler({
     setTimeout(() => {
       // Remove all entries associated with the disconnected peer
       Object.keys(editingStatus).forEach((issueId) => {
-        if (editingStatus[+issueId]?.peer === peer.toString()) {
-          editingStatus[+issueId] = undefined;
+        if (editingStatus[issueId]?.peer === peer.toString()) {
+          delete editingStatus[issueId];
         }
       });
 

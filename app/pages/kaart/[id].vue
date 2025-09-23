@@ -2,18 +2,33 @@
   <div class="wrapper">
     <v-toolbar v-if="status === 'authenticated'">
       <Toolbar>
-        <v-btn
-          v-if="status === 'authenticated'"
-          :icon="!isEditing ? 'mdi-pencil' : 'mdi-pencil-remove'"
-          variant="text"
-          @click="toggleEditing()"
-        />
-        <v-btn
-          v-if="isEditing"
-          icon="mdi-fullscreen"
-          variant="text"
-          @click="showEditDialog = !showEditDialog"
-        />
+        <template v-if="!isEditing">
+          <v-btn v-if="!!isLockedByOther" variant="text" color="warning">
+            <v-icon>mdi-lock-outline</v-icon>
+            <v-tooltip activator="parent" location="top">
+              Dit issue wordt momenteel bewerkt door {{ isLockedByOther }}
+            </v-tooltip>
+          </v-btn>
+
+          <v-btn
+            v-else
+            icon="mdi-pencil"
+            variant="text"
+            @click="toggleEditing()"
+          />
+        </template>
+        <template v-else>
+          <v-btn
+            icon="mdi-pencil-remove"
+            variant="text"
+            @click="toggleEditing()"
+          />
+          <v-btn
+            icon="mdi-fullscreen"
+            variant="text"
+            @click="showEditDialog = !showEditDialog"
+          />
+        </template>
       </Toolbar>
     </v-toolbar>
 
@@ -68,6 +83,7 @@ const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue } = storeToRefs(useSelectedIssue());
+const { isLockedByOther } = storeToRefs(useIssueLocks());
 
 // Set the page title dynamically based on the issue
 useHead(() => ({
