@@ -162,12 +162,14 @@ async function deleteUserConfirmed() {
   try {
     await remove(deleteIssue.value.id);
     showDeleteDialog.value = false;
-    snackbar.showSuccess(`Issue "${deleteIssue.value.title}" is verwijderd!`);
+    snackbar.showSuccess(
+      `Onderwerp "${deleteIssue.value.title}" is verwijderd!`
+    );
     deleteIssue.value = null;
   } catch (error) {
-    console.error("Error deleting user:", error);
+    console.error("Error deleting issue:", error);
     snackbar.showError(
-      "Er is een fout opgetreden bij het verwijderen van het issue."
+      "Er is een fout opgetreden bij het verwijderen van het onderwerp."
     );
   } finally {
     loading.value = false;
@@ -179,11 +181,11 @@ async function updateIssue(issue: Issue) {
 
   try {
     await update(issue.id, issue);
-    snackbar.showSuccess(`Issue "${issue.title}" is bijgewerkt!`);
+    snackbar.showSuccess(`Onderwerp "${issue.title}" is bijgewerkt`);
   } catch (error) {
     console.error("Error updating issue:", error);
     snackbar.showError(
-      "Er is een fout opgetreden bij het bijwerken van het issue."
+      "Er is een fout opgetreden bij het bijwerken van het onderwerp."
     );
   }
 }
