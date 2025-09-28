@@ -2,9 +2,11 @@ import type { Geometry } from "geojson";
 import type { Issue } from "../../database/schema";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
+import { getEmitter } from "~~/server/utils/getEmitter";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
+  const eventEmitter = getEmitter();
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({
@@ -98,6 +100,8 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found`,
     });
   }
+
+  eventEmitter.emit("issue:modified", issue);
 
   return issue;
 });
