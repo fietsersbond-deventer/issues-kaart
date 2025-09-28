@@ -34,7 +34,7 @@ export default defineNuxtConfig({
     blob: false,
     kv: false,
     cache: false,
-    workers: true,
+    // workers: true,
   },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
