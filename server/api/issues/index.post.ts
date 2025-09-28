@@ -1,9 +1,12 @@
 import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
+import { getEmitter } from "~~/server/utils/getEmitter";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
+
+  const eventEmitter = getEmitter();
   const {
     title,
     description,
@@ -54,6 +57,8 @@ export default defineEventHandler(async (event) => {
       message: "Failed to create issue: No result returned",
     });
   }
+
+  eventEmitter.emit("issue:created", issue);
 
   return issue;
 });
