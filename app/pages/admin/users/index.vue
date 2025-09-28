@@ -142,9 +142,9 @@ definePageMeta({
   title: "Gebruikers",
   middleware: [
     "sidebase-auth",
-    function (to) {
+    function () {
       const { isAdmin } = useRoles();
-      return isAdmin.value ? to : "/admin";
+      return isAdmin.value || "/admin";
     },
   ],
 });
