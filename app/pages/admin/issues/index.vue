@@ -25,7 +25,10 @@
               v-model="item.title"
               dense
               hide-details
+              :disabled="!!locks[item.id]"
               @change="updateIssue(item)"
+              @focus="notifyEditing(item.id, true)"
+              @blur="notifyEditing(item.id, false)"
             />
           </template>
 
@@ -34,7 +37,10 @@
               v-if="availableLegends"
               v-model="item.legend_id"
               :legends="availableLegends"
+              :disabled="!!locks[item.id]"
               @update:model-value="updateIssue(item)"
+              @focus="notifyEditing(item.id, true)"
+              @blur="notifyEditing(item.id, false)"
             />
           </template>
 
@@ -49,13 +55,20 @@
           </template>
 
           <template #item.actions="{ item }">
-            <v-btn variant="text" size="small" icon :to="`/kaart/${item.id}`">
-              <v-icon>mdi-map</v-icon>
+            <v-btn
+              v-if="locks[item.id]"
+              icon
+              variant="text"
+              color="warning"
+              size="small"
+            >
+              <v-icon color="warning" icon="mdi-lock" />
               <v-tooltip activator="parent" location="top">
-                Toon in de kaart
+                {{ locks[item.id] }}
               </v-tooltip>
             </v-btn>
             <v-btn
+              v-else
               icon="mdi-delete"
               variant="text"
               color="error"
@@ -66,8 +79,8 @@
               <v-tooltip activator="parent" location="top">
                 Verwijder issue
               </v-tooltip>
-            </v-btn></template
-          >
+            </v-btn>
+          </template>
         </v-data-table>
       </v-card-text>
     </v-card>
@@ -98,11 +111,17 @@ import type { Legend } from "~/types/Legend";
 
 definePageMeta({
   title: "Gebruikers",
+  middleware: ["sidebase-auth"],
 });
 
 const issuesStore = useIssues();
 const { remove, update } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
+
+const locksStore = useIssueLocks();
+const { notifyEditing } = locksStore;
+const { locks } = storeToRefs(locksStore);
+
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteIssue = ref<Issue | null>(null);
@@ -143,12 +162,14 @@ async function deleteUserConfirmed() {
   try {
     await remove(deleteIssue.value.id);
     showDeleteDialog.value = false;
-    snackbar.showSuccess(`Issue "${deleteIssue.value.title}" is verwijderd!`);
+    snackbar.showSuccess(
+      `Onderwerp "${deleteIssue.value.title}" is verwijderd!`
+    );
     deleteIssue.value = null;
   } catch (error) {
-    console.error("Error deleting user:", error);
+    console.error("Error deleting issue:", error);
     snackbar.showError(
-      "Er is een fout opgetreden bij het verwijderen van het issue."
+      "Er is een fout opgetreden bij het verwijderen van het onderwerp."
     );
   } finally {
     loading.value = false;
@@ -156,13 +177,15 @@ async function deleteUserConfirmed() {
 }
 
 async function updateIssue(issue: Issue) {
+  if (!isExistingIssue(issue)) return;
+
   try {
     await update(issue.id, issue);
-    snackbar.showSuccess(`Issue "${issue.title}" is bijgewerkt!`);
+    snackbar.showSuccess(`Onderwerp "${issue.title}" is bijgewerkt`);
   } catch (error) {
     console.error("Error updating issue:", error);
     snackbar.showError(
-      "Er is een fout opgetreden bij het bijwerken van het issue."
+      "Er is een fout opgetreden bij het bijwerken van het onderwerp."
     );
   }
 }

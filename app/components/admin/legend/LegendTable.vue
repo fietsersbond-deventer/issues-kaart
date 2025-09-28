@@ -42,7 +42,7 @@
 
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
-import type { LegendUsage } from "~/composables/useLegendApi";
+import type { LegendUsage } from "~/composables/useLegends";
 
 const props = defineProps<{
   legends: Legend[];

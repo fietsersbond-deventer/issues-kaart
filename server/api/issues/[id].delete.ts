@@ -1,4 +1,8 @@
+import { getEmitter } from "~~/server/utils/getEmitter";
+
 export default defineEventHandler(async (event) => {
+  const emitter = getEmitter();
+
   requireUserSession(event);
   const id = getRouterParam(event, "id");
   if (!id) {
@@ -19,6 +23,8 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found`,
     });
   }
+
+  emitter.emit("issue:deleted", Number(id));
 
   return result;
 });
