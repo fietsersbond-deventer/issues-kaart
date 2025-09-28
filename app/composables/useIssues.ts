@@ -28,11 +28,19 @@ export const useIssues = defineStore("issues", () => {
 
   const { data, refresh: refreshIssues } = useFetch<Issue[]>("/api/issues");
 
+  const { legends } = storeToRefs(useLegends());
+
   watch(wsData, (data) => {
     const issue = (JSON.parse(data as string) as any).payload as ExistingIssue;
     if (issue.geometry && typeof issue.geometry === "string") {
       issue.geometry = JSON.parse(issue.geometry);
     }
+    const legend = legends.value?.find((l) => l.id === issue.legend_id);
+    if (legend) {
+      issue.legend_name = legend.name;
+      issue.color = legend.color;
+    }
+
     switch ((JSON.parse(data as string) as any).type) {
       case "issue-created":
         issues.value.push(issue);
