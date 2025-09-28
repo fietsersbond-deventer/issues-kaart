@@ -118,7 +118,6 @@ import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import { isExistingIssue, type Issue } from "~/types/Issue";
 import { imageCompressor } from "quill-image-compress";
-import type { Legend } from "~~/server/database/schema";
 import BlotFormatter from "quill-blot-formatter";
 
 const valid = ref(true);
@@ -181,13 +180,8 @@ const toolbar = [
 ];
 
 const { update, create, remove } = useIssues();
-const { getAll: getLegends } = useLegendApi();
-const legends = ref<Legend[]>([]);
+const { legends } = storeToRefs(useLegends());
 const { isEditing } = useIsEditing();
-
-onMounted(async () => {
-  legends.value = await getLegends();
-});
 
 async function onSubmit() {
   if (issue.value && valid.value) {

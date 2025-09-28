@@ -34,16 +34,16 @@
 
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
-import type { LegendUsage } from "~/composables/useLegendApi";
+import type { LegendUsage } from "~/composables/useLegends";
 
 definePageMeta({
   title: "Legenda",
   middleware: ["sidebase-auth"],
 });
 
-const { getAll, getUsage, create, update, remove } = useLegendApi();
+const { getUsage, create, update, remove } = useLegends();
 
-const legends = ref<Legend[]>([]);
+const { legends } = storeToRefs(useLegends());
 const legendUsage = ref<LegendUsage>({});
 const dialog = ref(false);
 const dialogDelete = ref(false);
@@ -52,9 +52,7 @@ const deleteError = ref<string>("");
 const editedLegend = ref<Legend | undefined>();
 
 onMounted(async () => {
-  const [legendsList, usage] = await Promise.all([getAll(), getUsage()]);
-  legends.value = legendsList;
-  legendUsage.value = usage;
+  legendUsage.value = await getUsage();
 });
 
 function editItem(item: Legend) {

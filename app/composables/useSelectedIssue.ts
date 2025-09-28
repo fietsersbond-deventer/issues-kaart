@@ -63,7 +63,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         }
       }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
   );
 
   return {

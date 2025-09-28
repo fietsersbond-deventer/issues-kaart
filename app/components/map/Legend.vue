@@ -31,11 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Legend } from "~~/server/database/schema";
-const { getAll: getLegends } = useLegendApi();
+const { legends } = storeToRefs(useLegends());
 const { issues } = storeToRefs(useIssues());
-
-const legends = ref<Legend[]>([]);
 
 // Only show legends that are actually used in the map
 const visibleLegends = computed(() => {
@@ -44,11 +41,7 @@ const visibleLegends = computed(() => {
       ?.map((issue) => issue.legend_id)
       .filter((id): id is number => id != null) || []
   );
-  return legends.value.filter((legend) => usedLegendIds.has(legend.id));
-});
-
-onMounted(async () => {
-  legends.value = await getLegends();
+  return legends.value?.filter((legend) => usedLegendIds.has(legend.id)) ?? [];
 });
 </script>
 
