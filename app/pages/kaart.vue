@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
 definePageMeta({
-  title: "Kaart",
+  title: "kaart",
 });
 
 useMapEventBus().provide();
