@@ -4,6 +4,6 @@
 
 <script setup lang="ts">
 definePageMeta({
-  title: "Welkom - Kaart",
+  title: "Welkom",
 });
 </script>
