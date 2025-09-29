@@ -117,7 +117,7 @@ if (!id || typeof id !== "string") {
 // });
 
 definePageMeta({
-  title: "Kaart",
+  title: "kaart",
 });
 </script>
 
