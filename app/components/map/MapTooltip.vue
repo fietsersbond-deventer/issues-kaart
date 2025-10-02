@@ -65,4 +65,13 @@ function onMouseOver(event: SelectEvent) {
 .tooltip {
   cursor: pointer;
 }
+
+.tooltip {
+  background-color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem; /* rounded */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
+  border: 1px solid #d1d5db; /* gray-300 */
+  white-space: nowrap;
+}
 </style>

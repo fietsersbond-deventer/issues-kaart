@@ -1,12 +1,27 @@
 <template>
   <v-app-bar>
-    <v-img src="/fietsersbond-logo.svg" alt="Fietsersbond" max-height="40" />
-    <v-breadcrumbs :items="breadcrumbs">
-      <template #divider>
-        <v-icon>mdi-chevron-right</v-icon>
-      </template>
-    </v-breadcrumbs>
+    <NuxtLink to="/" class="d-flex align-center">
+      <img
+        src="/fietsersbond-logo.webp"
+        alt="Fietsersbond"
+        max-height="40"
+        class="ml-4"
+      />
+      <div class="header-link ml-3">Fietsersbond Deventer onderwerpen</div>
+    </NuxtLink>
     <v-spacer />
+    <v-btn
+      v-tooltip:top="'Deventer Fietsersbond'"
+      href="https://deventer.fietsersbond.nl/"
+      variant="text"
+      icon="mdi-home"
+    />
+    <v-btn
+      v-tooltip:top="'Contact'"
+      href="https://deventer.fietsersbond.nl/contact/contact-met-de-afdeling/"
+      variant="text"
+      icon="mdi-email"
+    />
     <template v-if="status === 'authenticated'">
       <v-btn
         v-tooltip:top="'Nieuw onderwerp toevoegen'"
@@ -38,8 +53,9 @@
 </template>
 
 <script lang="ts" setup>
+import { NuxtLink } from "#components";
+
 const { status, signOut } = useAuth();
-const { breadcrumbs } = useBreadcrumbs();
 
 async function handleLogout() {
   await signOut({ callbackUrl: "/" });
@@ -47,8 +63,10 @@ async function handleLogout() {
 </script>
 
 <style>
-.v-breadcrumbs-item {
-  font-size: 1.5rem;
+.header-link {
+  /* font-size: 1.5rem; */
   font-weight: 700;
+  display: inline-block;
+  color: black;
 }
 </style>

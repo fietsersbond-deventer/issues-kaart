@@ -77,7 +77,7 @@
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
           <ol-style>
-            <ol-style-circle :radius="7">
+            <ol-style-circle :radius="8">
               <ol-style-fill :color="issue.color" />
               <ol-style-stroke
                 :color="isSelected(issue) ? 'black' : 'white'"
@@ -268,7 +268,7 @@ function style(feature: Feature) {
   if (feature.getGeometry()!.getType() === "Point") {
     return new Style({
       image: new Circle({
-        radius: 7,
+        radius: 8,
         fill: new Fill({ color: issue.color }),
         stroke: new Stroke({
           color: isSelected(issue) ? "black" : "white",
@@ -380,40 +380,6 @@ function onFeatureSelect(event: SelectEvent) {
   }
 }
 
-const tooltipContent = ref<string | null>(null);
-const tooltipPosition = ref<number[]>([0, 0]);
-const selectConditions = inject("ol-selectconditions");
-const pointerMove = selectConditions.pointerMove;
-function onMouseOver(event: SelectEvent) {
-  const hovered = event.selected;
-  if (hovered && hovered.length > 0) {
-    const feature = hovered[0] as Feature<Point | LineString | Polygon>;
-    const properties = feature.getProperties();
-    console.log({ properties });
-    const issueId = properties.issueId;
-    const issue = issues.value?.find((i) => i.id === issueId);
-    if (issue) {
-      tooltipContent.value = issue.title || "Geen titel";
-      // Use event.mapBrowserEvent to get pointer pixel
-      const evt: MapBrowserEvent = (event as any).mapBrowserEvent;
-      if (evt) {
-        const map = mapRef.value?.map;
-        if (map) {
-          const { pixel } = evt;
-          // Center tooltip above pointer: offset horizontally and vertically
-          const tooltipWidth = tooltipContent.value
-            ? tooltipContent.value.length * 8
-            : 120; // estimate, px
-          const centeredPixel = [pixel[0]! - tooltipWidth / 2, pixel[1]! - 70];
-          tooltipPosition.value = map.getCoordinateFromPixel(centeredPixel);
-        }
-      }
-    }
-  } else {
-    tooltipContent.value = null;
-  }
-}
-
 function onModifyEnd(event: ModifyEvent) {
   const writer = new GeoJSON();
   const feature = event.features.item(0);
@@ -433,15 +399,6 @@ const emit = defineEmits(["feature-clicked"]);
 </script>
 
 <style>
-.tooltip {
-  background-color: white;
-  padding: 0.5rem;
-  border-radius: 0.375rem; /* rounded */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
-  border: 1px solid #d1d5db; /* gray-300 */
-  white-space: nowrap;
-}
-
 /* Ensure the ol-counter is hidden in the layer switcher */
 :deep(.ol-counter) {
   display: none !important;

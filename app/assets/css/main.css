@@ -117,7 +117,7 @@ p {
 }
 
 /* Breadcrumbs styling */
-.v-breadcrumbs {
+/* .v-breadcrumbs {
   padding: 0 12px;
 }
 
@@ -139,7 +139,7 @@ p {
   color: var(--v-theme-on-surface);
   opacity: 0.5;
   margin: 0 4px;
-}
+} */
 
 /* bij de layerswitcher verschijnt ineens een .ol-counter. disable */
 .ol-control.ol-layerswitcher-image .ol-counter {
