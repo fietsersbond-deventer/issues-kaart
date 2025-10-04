@@ -1,5 +1,8 @@
 <template>
-  <ol-map ref="mapRef">
+  <ol-map
+    ref="mapRef"
+    :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
+  >
     <ol-view
       ref="view"
       :center="center"
@@ -10,8 +13,8 @@
     <MapSearch @selected="onSearchSelected" />
     <MapAddFeature ref="addFeature" />
 
-    <ol-layerswitcherimage-control :collapsed="false" />
-    <OlCustomControl position="bottom-left">
+    <ol-layerswitcherimage-control v-if="!isMapVerySmall" :collapsed="false" />
+    <OlCustomControl v-if="!isMapSmall" position="bottom-left">
       <SizeCalculator v-model="legendSize">
         <MobileCollapsible title="Legenda" icon="mdi-map-legend">
           <MapLegend />
@@ -231,6 +234,30 @@ const view = useTemplateRef("view");
 const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
 
+// Setup resize observer to handle container size changes
+const { mapHeight, setupResizeObserver, recenterOnSelectedIssue } =
+  useMapResize(mapRef);
+
+// Track map size to hide controls at different thresholds
+const isMapVerySmall = computed(() => mapHeight.value < 300);
+const isMapSmall = computed(() => mapHeight.value < 400);
+
+const { mobile } = useDisplay();
+
+// In mobile mode, always recenter when selected issue changes
+watch(selectedIssue, () => {
+  if (mobile.value && selectedIssue.value?.geometry) {
+    recenterOnSelectedIssue();
+  }
+});
+
+onMounted(() => {
+  const cleanup = setupResizeObserver();
+  if (cleanup) {
+    onUnmounted(cleanup);
+  }
+});
+
 // Use the map bounds composable to track bounding box changes
 // useMapBounds(mapRef);
 
@@ -405,6 +432,15 @@ const emit = defineEmits(["feature-clicked"]);
 }
 
 :deep(.ol-control.ol-layerswitcher-image .ol-counter) {
+  display: none !important;
+}
+</style>
+
+<style>
+/* Hide attribution when map is small - using global style */
+.map-small .ol-attribution,
+.map-small .ol-attribution.ol-uncollapsible,
+.map-small .ol-control.ol-attribution {
   display: none !important;
 }
 </style>

@@ -3,6 +3,7 @@ export interface BottomSheetOptions {
   minHeight?: number;
   maxHeight?: number;
   snapPoints?: number[];
+  snapThreshold?: number;
 }
 
 export function useBottomSheet(options: BottomSheetOptions = {}) {
@@ -11,6 +12,7 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
     minHeight = 10,
     maxHeight = 75,
     snapPoints = [30, 75],
+    snapThreshold = 10, // Only snap if within 10% of a snap point
   } = options;
 
   const sheetHeight = ref(defaultHeight);
@@ -86,7 +88,13 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
       return currentDistance < closestDistance ? snapPoint : closest;
     });
 
-    sheetHeight.value = closestSnap;
+    const distanceToClosest = Math.abs(sheetHeight.value - closestSnap);
+
+    // Only snap if within threshold
+    if (distanceToClosest <= snapThreshold) {
+      sheetHeight.value = closestSnap;
+    }
+    // Otherwise, keep the current height (no snapping)
   }
 
   function setHeight(height: number) {
