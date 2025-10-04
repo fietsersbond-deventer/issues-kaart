@@ -1,11 +1,10 @@
 <template>
-  <v-layout class="rounded rounded-md border" height="100%">
-    <v-main class="d-flex align-center justify-center" height="100%" fluid>
-      <v-container class="fill-height">
-        <v-sheet color="surface-light" class="fill-height d-flex" width="100%">
-          <Map class="flex-grow-1" @feature-clicked="onFeatureClicked" />
-        </v-sheet>
-      </v-container>
+  <v-layout class="rounded rounded-md border map-layout">
+    <v-main
+      class="map-main"
+      :style="mobile ? { height: `${100 - sheetHeight}%` } : {}"
+    >
+      <Map class="fill-height" @feature-clicked="onFeatureClicked" />
     </v-main>
 
     <div
@@ -76,14 +75,32 @@ function onFeatureClicked() {
 }
 </script>
 
-<style>
+<style scoped>
+.map-layout {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-main {
+  width: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  transition: height 0.3s ease;
+  position: relative;
+}
+
+.map-main :deep(.v-main__wrap) {
+  padding: 0 !important;
+}
+
 .leaflet-container {
   height: 100%;
   display: block;
 }
 
 .bottom-sheet {
-  position: fixed;
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
@@ -93,6 +110,7 @@ function onFeatureClicked() {
   border-top-right-radius: 16px;
   overflow: hidden;
   z-index: 6001;
+  transition: height 0.1s ease-out;
 }
 
 .drag-handle {
