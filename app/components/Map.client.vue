@@ -247,6 +247,18 @@ const isMapVerySmall = computed(
 );
 const isMapSmall = computed(() => mapHeight.value > 0 && mapHeight.value < 450);
 
+// Debug logging to check if mapHeight is updating
+watch(mapHeight, (height) => {
+  console.log(
+    "Map height changed:",
+    height,
+    "isMapVerySmall:",
+    isMapVerySmall.value,
+    "isMapSmall:",
+    isMapSmall.value
+  );
+});
+
 // In mobile mode, always recenter when selected issue changes
 watch(selectedIssue, () => {
   if (mobile.value && selectedIssue.value?.geometry) {
