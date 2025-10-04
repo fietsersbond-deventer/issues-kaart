@@ -4,6 +4,7 @@ export interface BottomSheetOptions {
   maxHeight?: number;
   snapPoints?: number[];
   snapThreshold?: number;
+  autoScrollToTop?: boolean;
 }
 
 export function useBottomSheet(options: BottomSheetOptions = {}) {
@@ -13,12 +14,33 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
     maxHeight = 75,
     snapPoints = [30, 75],
     snapThreshold = 10, // Only snap if within 10% of a snap point
+    autoScrollToTop = true, // Auto scroll to top when selected issue changes
   } = options;
 
   const sheetHeight = ref(defaultHeight);
   const startY = ref(0);
   const initialHeight = ref(0);
   const isDragging = ref(false);
+  const sheetContentRef = ref<HTMLElement | null>(null);
+
+  const { selectedId } = storeToRefs(useSelectedIssue());
+  const { mobile } = useDisplay();
+
+  // Scroll to top when selected issue changes in mobile mode
+  if (autoScrollToTop) {
+    watch(selectedId, () => {
+      scrollToTop();
+    });
+  }
+
+  function scrollToTop(behavior: ScrollBehavior = 'smooth') {
+    if (mobile.value && sheetContentRef.value) {
+      sheetContentRef.value.scrollTo({
+        top: 0,
+        behavior,
+      });
+    }
+  }
 
   // Touch event handlers
   function startDrag(event: TouchEvent) {
@@ -107,11 +129,13 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
 
   return {
     sheetHeight,
+    sheetContentRef,
     startDrag,
     onDrag,
     endDrag,
     startDragMouse,
     setHeight,
     reset,
+    scrollToTop,
   };
 }
