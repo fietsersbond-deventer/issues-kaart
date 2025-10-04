@@ -21,7 +21,7 @@
       >
         <div class="drag-indicator" />
       </div>
-      <div class="sheet-content">
+      <div ref="sheetContentRef" class="sheet-content">
         <NuxtPage />
       </div>
     </div>
@@ -54,13 +54,19 @@ useMapEventBus().provide();
 const drawer = ref(true);
 const { mobile } = useDisplay();
 
-const { sheetHeight, startDrag, onDrag, endDrag, startDragMouse } =
-  useBottomSheet({
-    defaultHeight: 30,
-    minHeight: 10,
-    maxHeight: 75,
-    snapPoints: [30, 75],
-  });
+const { 
+  sheetHeight, 
+  sheetContentRef, 
+  startDrag, 
+  onDrag, 
+  endDrag, 
+  startDragMouse 
+} = useBottomSheet({
+  defaultHeight: 30,
+  minHeight: 10,
+  maxHeight: 75,
+  snapPoints: [30, 75],
+});
 
 watchEffect(() => {
   if (mobile.value) {
