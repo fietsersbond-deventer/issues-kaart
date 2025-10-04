@@ -18,14 +18,9 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     if (geometry.type === "Point") {
-      // Center on point
       const center = transform(geometry.coordinates, "EPSG:4326", "EPSG:3857");
-      mapView.animate({
-        center,
-        duration: 300,
-      });
+      mapView.animate({ center, duration: 300 });
     } else if (geometry.type === "LineString" || geometry.type === "Polygon") {
-      // Fit to extent
       const format = new GeoJSON();
       const feature = format.readFeature(
         { type: "Feature", geometry, properties: {} },
@@ -36,8 +31,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
 
       const geom = feature.getGeometry();
       if (geom) {
-        const extent = geom.getExtent();
-        mapView.fit(extent, {
+        mapView.fit(geom.getExtent(), {
           padding: [50, 50, 50, 50],
           duration: 300,
         });
@@ -45,39 +39,42 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
     }
   }
 
-  function setupResizeObserver() {
-    if (!mapRef.value?.map) return;
+  // Setup resize observer on mount
+  onMounted(() => {
+    nextTick(() => {
+      const mapComponent = unref(mapRef);
+      if (!mapComponent) return;
 
-    const mapContainer = mapRef.value.map.getTargetElement();
-    if (!mapContainer) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapContainer = (mapComponent as any).$el as HTMLElement;
+      if (!mapContainer) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        mapHeight.value = entry.contentRect.height;
-        mapWidth.value = entry.contentRect.width;
-      }
-
-      if (mapRef.value?.map) {
-        mapRef.value.map.updateSize();
-
-        // Recenter on selected issue if any
-        if (selectedIssue.value?.geometry) {
-          recenterOnSelectedIssue();
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          mapHeight.value = entry.contentRect.height;
+          mapWidth.value = entry.contentRect.width;
         }
-      }
+
+        if (mapRef.value?.map) {
+          mapRef.value.map.updateSize();
+
+          if (selectedIssue.value?.geometry) {
+            recenterOnSelectedIssue();
+          }
+        }
+      });
+
+      resizeObserver.observe(mapContainer);
+
+      onUnmounted(() => {
+        resizeObserver.disconnect();
+      });
     });
-
-    resizeObserver.observe(mapContainer);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }
+  });
 
   return {
-    mapHeight: readonly(mapHeight),
-    mapWidth: readonly(mapWidth),
+    mapHeight,
+    mapWidth,
     recenterOnSelectedIssue,
-    setupResizeObserver,
   };
 }

@@ -235,41 +235,20 @@ const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
 
 // Setup resize observer to handle container size changes
-const { mapHeight, setupResizeObserver, recenterOnSelectedIssue } =
-  useMapResize(mapRef);
+const { mapHeight, recenterOnSelectedIssue } = useMapResize(mapRef);
 
 const { mobile } = useDisplay();
 
 // Hide controls based on actual map height (available space for the map)
-// When bottom sheet expands, map gets smaller, so we hide controls
 const isMapVerySmall = computed(
   () => mapHeight.value > 0 && mapHeight.value < 350
 );
 const isMapSmall = computed(() => mapHeight.value > 0 && mapHeight.value < 450);
 
-// Debug logging to check if mapHeight is updating
-watch(mapHeight, (height) => {
-  console.log(
-    "Map height changed:",
-    height,
-    "isMapVerySmall:",
-    isMapVerySmall.value,
-    "isMapSmall:",
-    isMapSmall.value
-  );
-});
-
 // In mobile mode, always recenter when selected issue changes
 watch(selectedIssue, () => {
   if (mobile.value && selectedIssue.value?.geometry) {
     recenterOnSelectedIssue();
-  }
-});
-
-onMounted(() => {
-  const cleanup = setupResizeObserver();
-  if (cleanup) {
-    onUnmounted(cleanup);
   }
 });
 
