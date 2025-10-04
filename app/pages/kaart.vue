@@ -13,10 +13,10 @@
       class="bottom-sheet"
       :style="{ height: `${sheetHeight}%` }"
     >
-      <div 
-        class="drag-handle" 
-        @touchstart="startDrag" 
-        @touchmove="onDrag" 
+      <div
+        class="drag-handle"
+        @touchstart="startDrag"
+        @touchmove="onDrag"
         @touchend="endDrag"
         @mousedown="startDragMouse"
       >
@@ -54,15 +54,18 @@ definePageMeta({
 useMapEventBus().provide();
 const drawer = ref(true);
 const { mobile } = useDisplay();
-const sheetHeight = ref(30); // Default height as a percentage to show the first part of the content
-const startY = ref(0);
-const initialHeight = ref(0);
-const isDragging = ref(false);
+
+const { sheetHeight, startDrag, onDrag, endDrag, startDragMouse } =
+  useBottomSheet({
+    defaultHeight: 30,
+    minHeight: 10,
+    maxHeight: 75,
+    snapPoints: [30, 75],
+  });
 
 watchEffect(() => {
   if (mobile.value) {
     drawer.value = false;
-    sheetHeight.value = 30; // Default height for the bottom sheet in percentage
   } else {
     drawer.value = true;
   }
@@ -70,69 +73,6 @@ watchEffect(() => {
 
 function onFeatureClicked() {
   if (mobile.value) drawer.value = true;
-}
-
-// Touch event handlers
-function startDrag(event: TouchEvent) {
-  event.preventDefault();
-  if (event.touches[0]) {
-    startY.value = event.touches[0].clientY;
-    initialHeight.value = sheetHeight.value;
-  }
-}
-
-function onDrag(event: TouchEvent) {
-  event.preventDefault();
-  if (event.touches[0]) {
-    const deltaY = startY.value - event.touches[0].clientY;
-    const deltaPercentage = (deltaY / window.innerHeight) * 100;
-    sheetHeight.value = Math.min(
-      Math.max(initialHeight.value + deltaPercentage, 10),
-      75
-    );
-  }
-}
-
-// Mouse event handlers
-function startDragMouse(event: MouseEvent) {
-  event.preventDefault();
-  isDragging.value = true;
-  startY.value = event.clientY;
-  initialHeight.value = sheetHeight.value;
-  
-  document.addEventListener('mousemove', onDragMouse);
-  document.addEventListener('mouseup', endDragMouse);
-}
-
-function onDragMouse(event: MouseEvent) {
-  if (!isDragging.value) return;
-  
-  const deltaY = startY.value - event.clientY;
-  const deltaPercentage = (deltaY / window.innerHeight) * 100;
-  sheetHeight.value = Math.min(
-    Math.max(initialHeight.value + deltaPercentage, 10),
-    75
-  );
-}
-
-function endDragMouse() {
-  isDragging.value = false;
-  document.removeEventListener('mousemove', onDragMouse);
-  document.removeEventListener('mouseup', endDragMouse);
-  snapToHeight();
-}
-
-function endDrag() {
-  snapToHeight();
-}
-
-function snapToHeight() {
-  // Optional: Snap to predefined heights
-  if (sheetHeight.value < 33) {
-    sheetHeight.value = 30; // Snap to default height
-  } else if (sheetHeight.value > 50) {
-    sheetHeight.value = 75; // Snap to maximum height
-  }
 }
 </script>
 
