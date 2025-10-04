@@ -75,8 +75,8 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
   }
 
   return {
-    mapHeight,
-    mapWidth,
+    mapHeight: readonly(mapHeight),
+    mapWidth: readonly(mapWidth),
     recenterOnSelectedIssue,
     setupResizeObserver,
   };
