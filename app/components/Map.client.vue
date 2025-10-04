@@ -99,7 +99,7 @@
           <ol-style>
             <ol-style-stroke
               :color="issue.color"
-              :width="isSelected(issue) ? (mobile ? 8 : 6) : (mobile ? 5 : 3)"
+              :width="isSelected(issue) ? (mobile ? 8 : 6) : mobile ? 5 : 3"
             />
           </ol-style>
         </ol-feature>
