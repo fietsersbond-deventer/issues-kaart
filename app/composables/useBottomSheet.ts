@@ -33,7 +33,7 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
     });
   }
 
-  function scrollToTop(behavior: ScrollBehavior = 'smooth') {
+  function scrollToTop(behavior: ScrollBehavior = "smooth") {
     if (mobile.value && sheetContentRef.value) {
       sheetContentRef.value.scrollTo({
         top: 0,

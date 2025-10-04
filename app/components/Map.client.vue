@@ -242,7 +242,9 @@ const { mobile } = useDisplay();
 
 // Hide controls based on actual map height (available space for the map)
 // When bottom sheet expands, map gets smaller, so we hide controls
-const isMapVerySmall = computed(() => mapHeight.value > 0 && mapHeight.value < 350);
+const isMapVerySmall = computed(
+  () => mapHeight.value > 0 && mapHeight.value < 350
+);
 const isMapSmall = computed(() => mapHeight.value > 0 && mapHeight.value < 450);
 
 // In mobile mode, always recenter when selected issue changes
