@@ -51,8 +51,8 @@ definePageMeta({
 });
 
 useMapEventBus().provide();
-const drawer = ref(true);
 const { mobile } = useDisplay();
+const drawer = ref(!mobile.value);
 
 const {
   sheetHeight,
@@ -68,12 +68,8 @@ const {
   snapPoints: [30, 75],
 });
 
-watchEffect(() => {
-  if (mobile.value) {
-    drawer.value = false;
-  } else {
-    drawer.value = true;
-  }
+watch(mobile, (isMobile) => {
+  drawer.value = !isMobile;
 });
 
 function onFeatureClicked() {
@@ -115,8 +111,9 @@ function onFeatureClicked() {
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   overflow: hidden;
-  z-index: 6001;
+  z-index: 6001 !important;
   transition: height 0.1s ease-out;
+  will-change: height;
 }
 
 .drag-handle {
