@@ -80,7 +80,7 @@
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
           <ol-style>
-            <ol-style-circle :radius="8">
+            <ol-style-circle :radius="mobile ? 10 : 8">
               <ol-style-fill :color="issue.color" />
               <ol-style-stroke
                 :color="isSelected(issue) ? 'black' : 'white'"
@@ -99,7 +99,7 @@
           <ol-style>
             <ol-style-stroke
               :color="issue.color"
-              :width="isSelected(issue) ? 6 : 3"
+              :width="isSelected(issue) ? (mobile ? 8 : 6) : (mobile ? 5 : 3)"
             />
           </ol-style>
         </ol-feature>
@@ -132,6 +132,7 @@
     <ol-interaction-select
       v-if="!isDrawing"
       :condition="click"
+      :hit-tolerance="mobile ? 15 : 5"
       :style
       @select="onFeatureSelect"
     />
