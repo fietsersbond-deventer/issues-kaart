@@ -40,6 +40,8 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
     });
   });
 
+  let resizeObserver: ResizeObserver | null = null;
+
   // Setup resize observer on mount
   onMounted(() => {
     nextTick(() => {
@@ -50,7 +52,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
       const mapContainer = (mapComponent as any).$el as HTMLElement;
       if (!mapContainer) return;
 
-      const resizeObserver = new ResizeObserver((entries) => {
+      resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           mapHeight.value = entry.contentRect.height;
           mapWidth.value = entry.contentRect.width;
@@ -66,11 +68,14 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
       });
 
       resizeObserver.observe(mapContainer);
-
-      onUnmounted(() => {
-        resizeObserver.disconnect();
-      });
     });
+  });
+
+  onUnmounted(() => {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
   });
 
   return {
