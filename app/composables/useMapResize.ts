@@ -1,43 +1,44 @@
 import type { Map as OLMap } from "ol";
 import type { Ref } from "vue";
 import { transform } from "ol/proj";
-import { GeoJSON } from "ol/format";
+import centroid from "@turf/centroid";
+import type { Geometry } from "geojson";
 
 export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
   const { issue: selectedIssue } = storeToRefs(useSelectedIssue());
   const mapHeight = ref(0);
   const mapWidth = ref(0);
+  const targetCenter = ref<number[] | null>(null);
 
-  async function recenterOnSelectedIssue() {
-    if (!mapRef.value?.map || !selectedIssue.value?.geometry) return;
+  function recenterOnSelectedIssue() {
+    if (!selectedIssue.value?.geometry) return;
 
-    const mapView = mapRef.value.map.getView();
-    const geometry = selectedIssue.value.geometry;
+    const geometry = selectedIssue.value.geometry as Geometry;
 
-    // Small delay to ensure resize is complete
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Use Turf to calculate the centroid
+    const centerPoint = centroid(geometry);
 
-    if (geometry.type === "Point") {
-      const center = transform(geometry.coordinates, "EPSG:4326", "EPSG:3857");
-      mapView.animate({ center, duration: 300 });
-    } else if (geometry.type === "LineString" || geometry.type === "Polygon") {
-      const format = new GeoJSON();
-      const feature = format.readFeature(
-        { type: "Feature", geometry, properties: {} },
-        { dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" }
-      );
+    // Transform from EPSG:4326 (GeoJSON) to EPSG:3857 (map projection)
+    const newCenter = transform(
+      centerPoint.geometry.coordinates,
+      "EPSG:4326",
+      "EPSG:3857"
+    );
 
-      if (Array.isArray(feature)) return;
-
-      const geom = feature.getGeometry();
-      if (geom) {
-        mapView.fit(geom.getExtent(), {
-          padding: [50, 50, 50, 50],
-          duration: 300,
-        });
-      }
-    }
+    // Store the target center to trigger animation
+    targetCenter.value = newCenter;
   }
+
+  // Watch for target center changes and animate to it
+  watch(targetCenter, (newTarget) => {
+    if (!newTarget || !mapRef.value?.map) return;
+
+    const view = mapRef.value.map.getView();
+    view.animate({
+      center: newTarget,
+      duration: 300,
+    });
+  });
 
   // Setup resize observer on mount
   onMounted(() => {

@@ -235,23 +235,7 @@ const view = useTemplateRef("view");
 const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
 
-// Setup resize observer to handle container size changes
-const { mapHeight, recenterOnSelectedIssue } = useMapResize(mapRef);
-
 const { mobile } = useDisplay();
-
-// Hide controls based on actual map height (available space for the map)
-const isMapVerySmall = computed(
-  () => mapHeight.value > 0 && mapHeight.value < 350
-);
-const isMapSmall = computed(() => mapHeight.value > 0 && mapHeight.value < 450);
-
-// In mobile mode, always recenter when selected issue changes
-watch(selectedIssue, () => {
-  if (mobile.value && selectedIssue.value?.geometry) {
-    recenterOnSelectedIssue();
-  }
-});
 
 // Use the map bounds composable to track bounding box changes
 // useMapBounds(mapRef);
@@ -280,6 +264,22 @@ const isDrawing = computed(() => {
 const center = ref([687858.9021986299, 6846820.48790154]);
 const zoom = ref(13);
 const projection = ref("EPSG:3857");
+
+// Setup resize observer to handle container size changes
+const { mapHeight, recenterOnSelectedIssue } = useMapResize(mapRef);
+
+// Hide controls based on actual map height (available space for the map)
+const isMapVerySmall = computed(
+  () => mapHeight.value > 0 && mapHeight.value < 350
+);
+const isMapSmall = computed(() => mapHeight.value > 0 && mapHeight.value < 450);
+
+// In mobile mode, always recenter when selected issue changes
+watch(selectedIssue, () => {
+  if (mobile.value && selectedIssue.value?.geometry) {
+    recenterOnSelectedIssue();
+  }
+});
 
 function style(feature: Feature) {
   const properties = feature.getProperties();
