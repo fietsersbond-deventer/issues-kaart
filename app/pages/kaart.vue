@@ -54,13 +54,13 @@ useMapEventBus().provide();
 const drawer = ref(true);
 const { mobile } = useDisplay();
 
-const { 
-  sheetHeight, 
-  sheetContentRef, 
-  startDrag, 
-  onDrag, 
-  endDrag, 
-  startDragMouse 
+const {
+  sheetHeight,
+  sheetContentRef,
+  startDrag,
+  onDrag,
+  endDrag,
+  startDragMouse,
 } = useBottomSheet({
   defaultHeight: 30,
   minHeight: 10,
