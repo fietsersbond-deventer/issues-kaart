@@ -1,7 +1,5 @@
 <template>
   <div>
-    <ol-interaction-select :condition="pointerMove" @select="onMouseOver" />
-
     <ol-overlay
       v-if="tooltipContent && !isDrawing"
       :position="tooltipPosition"
@@ -16,10 +14,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject } from "vue";
-import type { Feature, Map, MapBrowserEvent } from "ol";
+import { ref, inject, onMounted, onUnmounted } from "vue";
+import type { Feature, Map } from "ol";
+import type { MapBrowserEvent } from "ol/MapBrowserEvent";
 import type { LineString, Point, Polygon } from "ol/geom";
-import type { SelectEvent } from "ol/interaction/Select";
 
 defineProps<{
   isDrawing: boolean;
@@ -30,46 +28,45 @@ const map: Map | undefined = inject("map");
 const tooltipContent = ref<string | null>(null);
 const tooltipImage = ref<string | null>(null);
 const tooltipPosition = ref<number[]>([0, 0]);
-const selectConditions = inject("ol-selectconditions");
-const pointerMove = selectConditions.pointerMove;
-function onMouseOver(event: SelectEvent) {
-  const hovered = event.selected;
-  if (hovered && hovered.length > 0) {
-    const feature = hovered[0] as Feature<Point | LineString | Polygon>;
-    const properties = feature.getProperties();
-    tooltipContent.value = properties.title || "Geen titel";
-    // Extract data URL image and set thumbnail
-    const desc = (properties.description as string) || "";
-    const imgMatch = desc.match(/<img[^>]+src=["'](data:[^"']+)["']/i);
-    tooltipImage.value =
-      imgMatch && typeof imgMatch[1] === "string" ? imgMatch[1] : null;
 
-    // Change map cursor to pointer
-    if (map) {
+let pointerListener: ((evt: MapBrowserEvent<PointerEvent>) => void) | null =
+  null;
+
+onMounted(() => {
+  if (!map) return;
+  pointerListener = (evt: MapBrowserEvent<PointerEvent>) => {
+    const pixel = evt.pixel;
+    const features = map.getFeaturesAtPixel(pixel);
+    if (features && features.length > 0) {
+      const feature = features[0] as Feature<Point | LineString | Polygon>;
+      const properties = feature.getProperties();
+      tooltipContent.value = properties.title || "Geen titel";
+      // Extract data URL image and set thumbnail
+      const desc = (properties.description as string) || "";
+      const imgMatch = desc.match(/<img[^>]+src=["'](data:[^"']+)["']/i);
+      tooltipImage.value =
+        imgMatch && typeof imgMatch[1] === "string" ? imgMatch[1] : null;
       map.getTargetElement().style.cursor = "pointer";
-    }
-
-    // Use event.mapBrowserEvent to get pointer pixel
-    const evt: MapBrowserEvent = event.mapBrowserEvent;
-    if (evt) {
-      if (map) {
-        const { pixel } = evt;
-        // Use pointer pixel with a small vertical offset for correct placement
-        const verticalOffset = 15; // px above pointer
+      // Always position above pointer
+      if (typeof pixel[0] === "number" && typeof pixel[1] === "number") {
+        const verticalOffset = 15;
         const pointerPixel = [pixel[0], pixel[1] - verticalOffset];
         tooltipPosition.value = map.getCoordinateFromPixel(pointerPixel);
       }
-    }
-  } else {
-    tooltipContent.value = null;
-    tooltipImage.value = null;
-
-    // Reset map cursor to default
-    if (map) {
+    } else {
+      tooltipContent.value = null;
+      tooltipImage.value = null;
       map.getTargetElement().style.cursor = "";
     }
+  };
+  map.on("pointermove", pointerListener);
+});
+
+onUnmounted(() => {
+  if (map && pointerListener) {
+    map.un("pointermove", pointerListener);
   }
-}
+});
 </script>
 
 <style>
