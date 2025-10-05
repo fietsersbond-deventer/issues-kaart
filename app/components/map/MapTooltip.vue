@@ -36,7 +36,7 @@ onMounted(() => {
   if (!map) return;
   pointerListener = (evt: MapBrowserEvent<PointerEvent>) => {
     const pixel = evt.pixel;
-    const features = map.getFeaturesAtPixel(pixel);
+    const features = map.getFeaturesAtPixel(pixel, { hitTolerance: 3 });
     if (features && features.length > 0) {
       const feature = features[0] as Feature<Point | LineString | Polygon>;
       const properties = feature.getProperties();
