@@ -19,7 +19,7 @@ import type { Feature, Map } from "ol";
 import type { MapBrowserEvent } from "ol/MapBrowserEvent";
 import type { LineString, Point, Polygon } from "ol/geom";
 
-defineProps<{
+const { isDrawing } = defineProps<{
   isDrawing: boolean;
 }>();
 
@@ -35,6 +35,13 @@ let pointerListener: ((evt: MapBrowserEvent<PointerEvent>) => void) | null =
 onMounted(() => {
   if (!map) return;
   pointerListener = (evt: MapBrowserEvent<PointerEvent>) => {
+    // Don't show tooltip or change cursor when drawing/editing
+    if (isDrawing) {
+      tooltipContent.value = null;
+      tooltipImage.value = null;
+      return;
+    }
+
     const pixel = evt.pixel;
     const features = map.getFeaturesAtPixel(pixel, { hitTolerance: 3 });
     if (features && features.length > 0) {
