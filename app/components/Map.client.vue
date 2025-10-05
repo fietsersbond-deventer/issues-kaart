@@ -76,7 +76,7 @@
         <ol-feature
           v-for="issue in markers"
           :key="`marker-${issue.id}`"
-          :properties="{ issueId: issue.id, title: issue.title }"
+          :properties="getFeatureProperties(issue)"
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
           <ol-style>
@@ -93,7 +93,7 @@
         <ol-feature
           v-for="issue in lines"
           :key="`line-${issue.id}`"
-          :properties="{ issueId: issue.id, title: issue.title }"
+          :properties="getFeatureProperties(issue)"
         >
           <ol-geom-line-string :coordinates="toLineCoords(issue)" />
           <ol-style>
@@ -107,7 +107,7 @@
         <ol-feature
           v-for="issue in polygons"
           :key="`polygon-${issue.id}`"
-          :properties="{ issueId: issue.id, title: issue.title }"
+          :properties="getFeatureProperties(issue)"
         >
           <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
           <ol-style>
@@ -146,7 +146,7 @@ import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
-import { type MapBrowserEvent, Collection, type Feature } from "ol";
+import { Collection, type Feature } from "ol";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
@@ -173,6 +173,14 @@ function getPreview(url: string) {
   return function () {
     return [url];
   };
+}
+
+/**
+ * Returns the properties object for any OpenLayers feature, with type safety.
+ */
+function getFeatureProperties(issue: Issue) {
+  const { geometry, ...props } = issue;
+  return props;
 }
 
 // preview images for layers
@@ -283,7 +291,7 @@ watch(selectedIssue, () => {
 
 function style(feature: Feature) {
   const properties = feature.getProperties();
-  const issueId = properties.issueId;
+  const issueId = properties.id;
   const issue = issues.value?.find((i) => i.id === issueId);
   if (!issue) return;
 
@@ -388,7 +396,7 @@ function onFeatureSelect(event: SelectEvent) {
   if (selected && selected.length > 0) {
     const feature = selected[0] as Feature<Point | LineString | Polygon>;
     const properties = feature.getProperties();
-    const issueId = properties.issueId;
+    const issueId = properties.id;
     if (issueId === selectedId.value) {
       selectedFeatures.value.push(feature);
       return;
