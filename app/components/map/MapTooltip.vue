@@ -7,7 +7,7 @@
     >
       <div class="tooltip">
         <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
-        {{ tooltipContent }}
+        <span class="tooltip-title">{{ tooltipContent }}</span>
       </div>
     </ol-overlay>
   </div>
@@ -79,21 +79,27 @@ onUnmounted(() => {
 <style>
 .tooltip {
   cursor: pointer;
-}
-
-.tooltip {
   background-color: white;
   padding: 0.5rem;
   border-radius: 0.375rem; /* rounded */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
   border: 1px solid #d1d5db; /* gray-300 */
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 12em;
 }
 
 .tooltip-img {
   max-width: 100px;
   max-height: 100px;
   display: block;
-  margin-bottom: 0.5rem;
+  margin: 0 auto 0.5rem auto;
+  text-align: center;
+}
+
+.tooltip-title {
+  display: block;
+  max-width: 10em;
+  word-break: break-word;
+  margin: 0 auto;
 }
 </style>
