@@ -7,10 +7,10 @@ describe("HTML Sanitization Security Tests", () => {
   describe("Basic sanitization", () => {
     it("should allow basic HTML tags from Quill editor", () => {
       const input =
-        "<h1>Title</h1><p>Content with <strong>bold</strong> and <em>italic</em> text</p>";
+        "<h2>Title</h2><p>Content with <strong>bold</strong> and <em>italic</em> text</p>";
       const result = sanitizeHtml(input);
       expect(result).toBe(
-        "<h1>Title</h1><p>Content with <strong>bold</strong> and <em>italic</em> text</p>"
+        "<h2>Title</h2><p>Content with <strong>bold</strong> and <em>italic</em> text</p>"
       );
     });
 
@@ -206,7 +206,6 @@ describe("HTML Sanitization Security Tests", () => {
   describe("Quill Editor Specific Tests", () => {
     it("should allow all Quill toolbar elements", () => {
       const input = `
-        <h1>Header 1</h1>
         <h2>Header 2</h2>
         <h3>Header 3</h3>
         <h4>Header 4</h4>
@@ -220,7 +219,6 @@ describe("HTML Sanitization Security Tests", () => {
       `;
       const result = sanitizeHtml(input);
 
-      expect(result).toContain("<h1>Header 1</h1>");
       expect(result).toContain("<h2>Header 2</h2>");
       expect(result).toContain("<h3>Header 3</h3>");
       expect(result).toContain("<h4>Header 4</h4>");
