@@ -19,7 +19,6 @@ export function sanitizeHtml(html: string): string {
   return sanitizeHtmlLib(html, {
     allowedTags: [
       // Headers
-      "h1",
       "h2",
       "h3",
       "h4",
