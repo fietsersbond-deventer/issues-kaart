@@ -9,6 +9,8 @@
   --color-text: #333333;
   --color-text-light: #666666;
   --color-link: #e94e1b;
+
+  --fietersbond-geel: rgb(255, 213, 3);
 }
 
 /* Base styles */
@@ -43,7 +45,10 @@ h6,
 
 .text-h1,
 h1 {
-  font-size: 2.5rem;
+  font-size: 2.1rem;
+  background-color: var(--fietersbond-geel);
+  padding: 0.2em;
+  width: 100%;
 }
 .text-h2,
 h2 {
@@ -144,4 +149,27 @@ p {
 /* bij de layerswitcher verschijnt ineens een .ol-counter. disable */
 .ol-control.ol-layerswitcher-image .ol-counter {
   display: none !important;
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.4em !important;
+  }
+  h2 {
+    font-size: 1.25em !important;
+  }
+  h3 {
+    font-size: 1.15em !important;
+  }
+  h4 {
+    font-size: 1.1em !important;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    margin-top: 0.7em;
+    margin-bottom: 0.5em;
+  }
 }
