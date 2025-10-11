@@ -19,7 +19,7 @@
   "dependencies": {
     "@auth/core": "^0.39.1",
     "@nuxt/eslint": "^1.4.1",
-    "@nuxthub/core": "^0.8.27",
+    "@nuxthub/core": "^0.9.0",
     "@pinia/nuxt": "0.11.0",
     "@sidebase/nuxt-auth": "^0.10.1",
     "@turf/bbox": "^7.2.0",
