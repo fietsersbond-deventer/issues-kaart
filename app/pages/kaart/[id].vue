@@ -43,9 +43,14 @@
         />
         <template v-else>
           <h1 class="mb-4">{{ issue.title }}</h1>
-          <v-chip variant="flat" size="small" :color="issue.color">{{
-            issue.legend_name
-          }}</v-chip>
+          <v-chip
+            :style="{ marginLeft: '12px' }"
+            label
+            variant="flat"
+            size="small"
+            :color="issue.color"
+            >{{ issue.legend_name }}</v-chip
+          >
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ql-editor" v-html="issue.description" />
         </template>
