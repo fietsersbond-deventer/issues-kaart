@@ -1,5 +1,6 @@
 <template>
   <v-app-bar class="navbar">
+    <div class="navbar-ellipse" />
     <NuxtLink to="/" class="d-flex align-center logo">
       <img
         src="/fietsersbond-logo.webp"
@@ -80,5 +81,37 @@ async function handleLogout() {
 
 .navbar {
   background-color: rgb(255, 213, 3) !important;
+}
+
+.navbar-ellipse {
+  position: absolute;
+  left: 69%;
+  top: -30px;
+  transform: translateX(-50%) translateY(-100px);
+  width: 66vw;
+  height: 200px;
+  background: url("/ellipse.svg") no-repeat center top;
+  background-size: cover;
+  z-index: 0;
+  opacity: 0;
+  animation: ellipse-drop 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.4s
+    forwards;
+}
+
+@keyframes ellipse-drop {
+  from {
+    transform: translateX(-50%) translateY(-100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar-ellipse {
+    display: none;
+  }
 }
 </style>
