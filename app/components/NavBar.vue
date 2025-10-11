@@ -70,6 +70,7 @@ async function handleLogout() {
   font-weight: 700;
   display: inline-block;
   color: black;
+  line-height: 1;
 }
 
 .logo {
