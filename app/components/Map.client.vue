@@ -277,10 +277,21 @@ const projection = ref("EPSG:3857");
 const { mapHeight, recenterOnSelectedIssue } = useMapResize(mapRef);
 
 // Hide controls based on actual map height (available space for the map)
-const isMapVerySmall = computed(
-  () => mapHeight.value > 0 && mapHeight.value < 350
-);
-const isMapSmall = computed(() => mapHeight.value > 0 && mapHeight.value < 450);
+const isMapVerySmall = computed(() => {
+  if (mobile.value) {
+    // On mobile, use relative size based on available screen percentage
+    return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.35;
+  }
+  return false;
+});
+
+const isMapSmall = computed(() => {
+  if (mobile.value) {
+    // On mobile, use relative size based on available screen percentage
+    return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.45;
+  }
+  return false;
+});
 
 // In mobile mode, always recenter when selected issue changes
 watch(selectedIssue, () => {
