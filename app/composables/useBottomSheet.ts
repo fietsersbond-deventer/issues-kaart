@@ -29,7 +29,9 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
   // Scroll to top when selected issue changes in mobile mode
   if (autoScrollToTop) {
     watch(selectedId, () => {
-      scrollToTop();
+      nextTick(() => {
+        scrollToTop();
+      });
     });
   }
 
