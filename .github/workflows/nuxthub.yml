@@ -35,8 +35,14 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      - name: Deploy to NuxtHub
+      - name: Deploy to NuxtHub pages
         uses: nuxt-hub/action@v1
-        id: deploy
+        id: deploy-pages
         with:
           project-key: fietsersbond-ka-xqjv
+
+      - name: Deploy to NuxtHub worker
+        uses: nuxt-hub/action@v1
+        id: deploy-worker
+        with:
+          project-key: fietsersbond-on-rb23
