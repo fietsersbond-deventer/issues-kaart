@@ -30,10 +30,10 @@ const {
   endDrag,
   startDragMouse,
 } = useBottomSheet({
-  defaultHeight: 30,
-  minHeight: 10,
+  defaultHeight: 50,
+  minHeight: 20,
   maxHeight: 75,
-  snapPoints: [30, 75],
+  snapPoints: [40, 75],
 });
 </script>
 
