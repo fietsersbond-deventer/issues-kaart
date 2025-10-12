@@ -5,7 +5,7 @@ let db: Database.Database | null = null;
 
 export function getDb() {
   if (!db) {
-    const dbPath = path.resolve(__dirname, "../database/fietsersbond.db");
+    const dbPath = process.env.NUXT_DB_PATH;
     db = new Database(dbPath);
   }
   return db;

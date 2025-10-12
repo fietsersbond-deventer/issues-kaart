@@ -1,4 +1,4 @@
-import sqlite3 from "sqlite3";
+import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 
@@ -13,67 +13,76 @@ const MIGRATIONS_DIR = path.resolve(
 const QUERIES_DIR = path.resolve(process.cwd(), "server/database/queries");
 
 export function runMigrations() {
-  const db = new sqlite3.Database(DB_PATH);
-  db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS ${MIGRATION_TABLE} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        filename TEXT UNIQUE,
-        applied_at TEXT DEFAULT CURRENT_TIMESTAMP
-      )`);
+  console.log("--- Migration Runner ---");
+  console.log(`DB Path: ${DB_PATH}`);
+  console.log(`Migrations Dir: ${MIGRATIONS_DIR}`);
+  console.log(`Queries Dir: ${QUERIES_DIR}`);
 
-    db.all(
-      `SELECT filename FROM ${MIGRATION_TABLE}`,
-      (err, rows: { filename: string }[]) => {
-        if (err) throw err;
-        const applied = new Set(rows.map((row) => row.filename));
+  const db = new Database(DB_PATH);
+  db.exec(`CREATE TABLE IF NOT EXISTS ${MIGRATION_TABLE} (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE,
+    applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`);
 
-        const migrationFiles = fs
-          .readdirSync(MIGRATIONS_DIR)
-          .filter((f) => f.endsWith(".sql"))
-          .sort();
-        const queryFiles = fs.existsSync(QUERIES_DIR)
-          ? fs
-              .readdirSync(QUERIES_DIR)
-              .filter((f) => f.endsWith(".sql"))
-              .sort()
-          : [];
-        const allFiles = [
-          ...migrationFiles.map((f) => path.join(MIGRATIONS_DIR, f)),
-          ...queryFiles.map((f) => path.join(QUERIES_DIR, f)),
-        ];
+  const appliedRows = db
+    .prepare(`SELECT name FROM ${MIGRATION_TABLE}`)
+    .all() as Array<{ name: string }>;
+  const applied = new Set(appliedRows.map((row) => row.name));
 
-        let pending = allFiles.length;
-        if (pending === 0) db.close();
+  const migrationFiles = fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  const queryFiles = fs.existsSync(QUERIES_DIR)
+    ? fs
+        .readdirSync(QUERIES_DIR)
+        .filter((f) => f.endsWith(".sql"))
+        .sort()
+    : [];
+  const allFiles = [
+    ...migrationFiles.map((f) => path.join(MIGRATIONS_DIR, f)),
+    ...queryFiles.map((f) => path.join(QUERIES_DIR, f)),
+  ];
 
-        for (const file of allFiles) {
-          const filename = path.basename(file);
-          if (applied.has(filename)) {
-            if (--pending === 0) db.close();
-            continue;
-          }
-          const sql = fs.readFileSync(file, "utf8");
-          db.exec(sql, (err) => {
-            if (err) {
-              console.error(`Migration failed: ${filename}`);
-              db.close();
-              throw err;
-            }
-            db.run(
-              `INSERT INTO ${MIGRATION_TABLE} (filename) VALUES (?)`,
-              filename,
-              (err) => {
-                if (err) {
-                  console.error(`Failed to record migration: ${filename}`);
-                  db.close();
-                  throw err;
-                }
-                console.log(`Migration applied: ${filename}`);
-                if (--pending === 0) db.close();
-              }
-            );
-          });
-        }
-      }
-    );
-  });
+  console.log(`Found ${allFiles.length} migration/query files.`);
+  if (allFiles.length) {
+    allFiles.forEach((file) => {
+      console.log(`  - ${file}`);
+    });
+  }
+
+  let appliedCount = 0;
+  let skippedCount = 0;
+  for (const file of allFiles) {
+    let name = path.basename(file);
+    if (name.endsWith('.sql')) {
+      name = name.slice(0, -4);
+    }
+    if (applied.has(name)) {
+      console.log(`Skipped (already applied): ${name}`);
+      skippedCount++;
+      continue;
+    }
+    const sql = fs.readFileSync(file, "utf8");
+    try {
+      db.exec(sql);
+      db.prepare(`INSERT INTO ${MIGRATION_TABLE} (name) VALUES (?)`).run(
+        name
+      );
+      console.log(`Migration applied: ${name}`);
+      appliedCount++;
+    } catch (err) {
+      console.error(`Migration failed: ${name}`);
+      db.close();
+      throw err;
+    }
+  }
+  db.close();
+  console.log(`--- Migration Summary ---`);
+  console.log(`Applied: ${appliedCount}`);
+  console.log(`Skipped: ${skippedCount}`);
+  console.log(`Total: ${allFiles.length}`);
 }
+
+runMigrations();
