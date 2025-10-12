@@ -3,6 +3,7 @@ import type { Issue } from "../../database/schema";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 import { getEmitter } from "~~/server/utils/getEmitter";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -89,10 +90,8 @@ export default defineEventHandler(async (event) => {
     RETURNING id, title, description, legend_id, geometry, created_at
   `;
 
-  const issue = await hubDatabase()
-    .prepare(updateQuery)
-    .bind(...values)
-    .first<Issue>();
+  const db = getDb();
+  const issue = db.prepare(updateQuery).get(...values) as Issue | undefined;
 
   if (!issue) {
     throw createError({

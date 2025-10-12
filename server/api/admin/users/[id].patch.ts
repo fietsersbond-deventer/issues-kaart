@@ -1,4 +1,5 @@
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireAdminSession(event);
@@ -20,15 +21,22 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
+  const db = getDb();
 
   try {
-    const user = await db
+    const user = db
       .prepare(
         "UPDATE users SET username = ?, name = ?, role = ? WHERE id = ? RETURNING id, username, name, role, created_at"
       )
-      .bind(username, name || null, role, id)
-      .first();
+      .get(username, name || null, role, id) as
+      | {
+          id: number;
+          username: string;
+          name: string;
+          role: string;
+          created_at: string;
+        }
+      | undefined;
 
     if (!user) {
       throw createError({

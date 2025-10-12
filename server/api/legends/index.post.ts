@@ -1,5 +1,6 @@
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -13,12 +14,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const legend = await hubDatabase()
+  const db = getDb();
+  const legend = db
     .prepare(
-      "INSERT INTO legend (name, description, color) VALUES (?1, ?2, ?3) RETURNING id, name, description, color, created_at"
+      "INSERT INTO legend (name, description, color) VALUES (?, ?, ?) RETURNING id, name, description, color, created_at"
     )
-    .bind(name, description || null, color)
-    .first<Legend>();
+    .get(name, description || null, color) as Legend | undefined;
 
   if (!legend) {
     throw createError({

@@ -1,4 +1,5 @@
 import type { Issue } from "../../database/schema";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -10,17 +11,17 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const issue = await hubDatabase()
+  const db = getDb();
+  const issue = db
     .prepare(
       `SELECT i.id, i.title, i.description, i.legend_id, 
-       l.name as legend_name, l.color,
-       i.geometry, i.created_at 
-       FROM issues i 
-       LEFT JOIN legend l ON i.legend_id = l.id 
-       WHERE i.id = ?1`
+     l.name as legend_name, l.color,
+     i.geometry, i.created_at 
+     FROM issues i 
+     LEFT JOIN legend l ON i.legend_id = l.id 
+     WHERE i.id = ?`
     )
-    .bind(id)
-    .first<Issue & { legend_name?: string; legend_color?: string }>();
+    .get(id) as (Issue & { legend_name?: string; color?: string }) | undefined;
 
   if (!issue) {
     throw createError({

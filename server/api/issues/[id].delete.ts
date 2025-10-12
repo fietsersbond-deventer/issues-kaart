@@ -1,8 +1,8 @@
 import { getEmitter } from "~~/server/utils/getEmitter";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   const emitter = getEmitter();
-
   requireUserSession(event);
   const id = getRouterParam(event, "id");
   if (!id) {
@@ -12,10 +12,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const result = await hubDatabase()
-    .prepare("DELETE FROM issues WHERE id = ?1 RETURNING id")
-    .bind(id)
-    .first<{ id: string }>();
+  const db = getDb();
+  const deleteStmt = db.prepare("DELETE FROM issues WHERE id = ? RETURNING id");
+  const result = deleteStmt.get(id);
 
   if (!result) {
     throw createError({
@@ -25,6 +24,5 @@ export default defineEventHandler(async (event) => {
   }
 
   emitter.emit("issue:deleted", Number(id));
-
   return result;
 });

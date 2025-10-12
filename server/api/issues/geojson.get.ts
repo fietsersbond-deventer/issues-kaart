@@ -1,20 +1,20 @@
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { Issue } from "../../database/schema";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async () => {
-  const result = await hubDatabase()
+  const db = getDb();
+  const issues = db
     .prepare(
       `SELECT i.id, i.title, i.description, 
-       l.color,
-       i.legend_id, l.name as legend_name,
-       i.geometry, i.created_at
-       FROM issues i 
-       LEFT JOIN legend l ON i.legend_id = l.id 
-       ORDER BY i.created_at DESC`
+     l.color,
+     i.legend_id, l.name as legend_name,
+     i.geometry, i.created_at
+     FROM issues i 
+     LEFT JOIN legend l ON i.legend_id = l.id 
+     ORDER BY i.created_at DESC`
     )
-    .all<Issue & { legend_name?: string }>();
-
-  const issues = result.results || [];
+    .all() as Array<Issue & { legend_name?: string; color?: string }>;
 
   const features: Feature[] = issues.map((issue: Issue) => ({
     type: "Feature",

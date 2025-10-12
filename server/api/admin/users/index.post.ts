@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
 import { testPassword } from "~~/server/utils/testPassword";
+import { getDb } from "~~/server/utils/db";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -27,16 +28,23 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
+  const db = getDb();
   const passwordHash = hashPassword(password);
 
   try {
-    const user = await db
+    const user = db
       .prepare(
-        "INSERT INTO users (username, password_hash, name, role) VALUES (?1, ?2, ?3, ?4) RETURNING id, username, name, role, created_at"
+        "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?) RETURNING id, username, name, role, created_at"
       )
-      .bind(username, passwordHash, name || null, role)
-      .first();
+      .get(username, passwordHash, name || null, role) as
+      | {
+          id: number;
+          username: string;
+          name: string;
+          role: string;
+          created_at: string;
+        }
+      | undefined;
 
     return user;
   } catch (error) {

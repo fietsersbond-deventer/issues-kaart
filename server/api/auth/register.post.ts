@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { User } from "~~/server/database/schema";
+import { getDb } from "~~/server/utils/db";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -22,12 +23,19 @@ export default defineEventHandler(async (event) => {
     console.log("Hash length:", passwordHash.length);
 
     // Ensure the hash is properly encoded
-    const user: User | null = await hubDatabase()
+    const db = getDb();
+    const user = db
       .prepare(
-        "INSERT INTO users (username, password_hash) VALUES (?1, ?2) RETURNING id, username, password_hash, created_at"
+        "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING id, username, password_hash, created_at"
       )
-      .bind(username, passwordHash)
-      .first();
+      .get(username, passwordHash) as User | undefined;
+
+    if (!user) {
+      throw createError({
+        statusCode: 500,
+        message: "Failed to create user",
+      });
+    }
 
     // Verify the stored hash matches what we generated
     console.log("Stored hash:", user.password_hash);

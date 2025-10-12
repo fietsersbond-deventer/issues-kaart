@@ -1,5 +1,6 @@
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -46,14 +47,14 @@ export default defineEventHandler(async (event) => {
   // Add the ID as the last parameter
   values.push(id);
 
-  const legend = await hubDatabase()
+  const db = getDb();
+  const legend = db
     .prepare(
       `UPDATE legend SET ${updateFields.join(
         ", "
       )} WHERE id = ?${paramCounter} RETURNING id, name, description, color, created_at`
     )
-    .bind(...values)
-    .first<Legend>();
+    .get(...values) as Legend | undefined;
 
   if (!legend) {
     throw createError({

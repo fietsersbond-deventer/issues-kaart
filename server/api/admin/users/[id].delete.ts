@@ -1,4 +1,5 @@
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireAdminSession(event);
@@ -12,10 +13,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
+  const db = getDb();
 
   try {
-    await db.prepare("DELETE FROM users WHERE id = ?").bind(id).run();
+    db.prepare("DELETE FROM users WHERE id = ?").run(id);
 
     return { success: true };
   } catch {

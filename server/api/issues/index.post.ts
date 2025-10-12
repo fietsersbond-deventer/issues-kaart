@@ -2,6 +2,7 @@ import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 import { getEmitter } from "~~/server/utils/getEmitter";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -44,12 +45,21 @@ export default defineEventHandler(async (event) => {
     throw error;
   }
 
-  const issue = await hubDatabase()
+  const db = getDb();
+  const issue = db
     .prepare(
-      "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, legend_id, geometry, created_at"
+      "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?, ?, ?, ?) RETURNING id, title, description, legend_id, geometry, created_at"
     )
-    .bind(title, sanitizedDescription, legend_id, JSON.stringify(geometry))
-    .first();
+    .get(title, sanitizedDescription, legend_id, JSON.stringify(geometry)) as
+    | {
+        id: number;
+        title: string;
+        description: string;
+        legend_id: number;
+        geometry: string;
+        created_at: string;
+      }
+    | undefined;
 
   if (!issue) {
     throw createError({
