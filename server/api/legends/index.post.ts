@@ -15,18 +15,19 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
-  const legend = db
-    .prepare(
-      "INSERT INTO legend (name, description, color) VALUES (?, ?, ?) RETURNING id, name, description, color, created_at"
-    )
-    .get(name, description || null, color) as Legend | undefined;
-
-  if (!legend) {
+  const insertStmt = db.prepare(
+    "INSERT INTO legend (name, description, color) VALUES (?, ?, ?)"
+  );
+  const result = insertStmt.run(name, description || null, color);
+  const selectStmt = db.prepare(
+    "SELECT id, name, description, color, created_at FROM legend WHERE id = ?"
+  );
+  const row = selectStmt.get(result.lastInsertRowid);
+  if (!row) {
     throw createError({
       statusCode: 500,
-      message: "Failed to create legend item",
+      message: "Failed to fetch created legend item",
     });
   }
-
-  return legend;
+  return row as unknown as Legend;
 });
