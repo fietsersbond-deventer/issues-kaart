@@ -26,42 +26,43 @@ export default defineEventHandler(async (event) => {
   // Build the SQL update statement dynamically based on provided fields
   const updateFields: string[] = [];
   const values: (string | null)[] = [];
-  let paramCounter = 1;
 
   if (updates.name !== undefined) {
-    updateFields.push(`name = ?${paramCounter}`);
+    updateFields.push(`name = ?`);
     values.push(updates.name);
-    paramCounter++;
   }
   if (updates.description !== undefined) {
-    updateFields.push(`description = ?${paramCounter}`);
+    updateFields.push(`description = ?`);
     values.push(updates.description);
-    paramCounter++;
   }
   if (updates.color !== undefined) {
-    updateFields.push(`color = ?${paramCounter}`);
+    updateFields.push(`color = ?`);
     values.push(updates.color);
-    paramCounter++;
   }
 
   // Add the ID as the last parameter
   values.push(id);
 
   const db = getDb();
-  const legend = db
-    .prepare(
-      `UPDATE legend SET ${updateFields.join(
-        ", "
-      )} WHERE id = ?${paramCounter} RETURNING id, name, description, color, created_at`
-    )
-    .get(...values) as Legend | undefined;
-
-  if (!legend) {
+  const updateStmt = db.prepare(
+    `UPDATE legend SET ${updateFields.join(", ")} WHERE id = ?`
+  );
+  const result = updateStmt.run(...values);
+  if (result.changes === 0) {
     throw createError({
       statusCode: 404,
-      message: `Legend item with ID ${id} not found`,
+      message: `Legend item with ID ${id} not found or not updated`,
     });
   }
-
-  return legend;
+  const selectStmt = db.prepare(
+    "SELECT id, name, description, color, created_at FROM legend WHERE id = ?"
+  );
+  const row = selectStmt.get(id);
+  if (!row) {
+    throw createError({
+      statusCode: 404,
+      message: `Legend item with ID ${id} not found after update`,
+    });
+  }
+  return row as unknown as Legend;
 });

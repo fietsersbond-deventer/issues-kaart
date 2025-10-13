@@ -46,29 +46,25 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
-  const issue = db
-    .prepare(
-      "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?, ?, ?, ?) RETURNING id, title, description, legend_id, geometry, created_at"
-    )
-    .get(title, sanitizedDescription, legend_id, JSON.stringify(geometry)) as
-    | {
-        id: number;
-        title: string;
-        description: string;
-        legend_id: number;
-        geometry: string;
-        created_at: string;
-      }
-    | undefined;
-
-  if (!issue) {
+  const insertStmt = db.prepare(
+    "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?, ?, ?, ?)"
+  );
+  const result = insertStmt.run(
+    title,
+    sanitizedDescription,
+    legend_id,
+    JSON.stringify(geometry)
+  );
+  const selectStmt = db.prepare(
+    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?"
+  );
+  const row = selectStmt.get(result.lastInsertRowid);
+  if (!row) {
     throw createError({
       statusCode: 500,
-      message: "Failed to create issue: No result returned",
+      message: "Failed to fetch created issue",
     });
   }
-
-  eventEmitter.emit("issue:created", issue);
-
-  return issue;
+  eventEmitter.emit("issue:created", row);
+  return row;
 });

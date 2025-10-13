@@ -1,18 +1,21 @@
 import * as jose from "jose";
 import { randomBytes } from "crypto";
 import type { User } from "../database/schema";
+import { getDb } from "./db";
 
 const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
-const REFRESH_TOKEN_EXPIRY = '30d'; // 30 days
-const ACCESS_TOKEN_EXPIRY = '4h'; // 4 hours
+// const REFRESH_TOKEN_EXPIRY = "30d"; // 30 days
+const ACCESS_TOKEN_EXPIRY = "4h"; // 4 hours
 
-export async function generateAccessToken(user: Omit<User, 'password_hash' | 'created_at'>) {
+export function generateAccessToken(
+  user: Omit<User, "password_hash" | "created_at">
+) {
   if (!JWT_SECRET) {
     throw new Error("JWT geheim is niet geconfigureerd");
   }
 
   const secret = new TextEncoder().encode(JWT_SECRET);
-  return await new jose.SignJWT({
+  return new jose.SignJWT({
     id: user.id,
     username: user.username,
     name: user.name,
@@ -23,63 +26,59 @@ export async function generateAccessToken(user: Omit<User, 'password_hash' | 'cr
     .sign(secret);
 }
 
-export async function generateRefreshToken(userId: number): Promise<string> {
-  const token = randomBytes(40).toString('hex');
-  const db = hubDatabase();
-  
+export function generateRefreshToken(userId: number): string {
+  const token = randomBytes(40).toString("hex");
+  const db = getDb();
+
   // Set expiry date to 30 days from now
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);
 
-  await db
-    .prepare(
-      "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?1, ?2, ?3)"
-    )
-    .bind(userId, token, expiresAt.toISOString())
-    .run();
+  db.prepare(
+    "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)"
+  ).run(userId, token, expiresAt.toISOString());
 
   return token;
 }
 
-export async function verifyRefreshToken(token: string) {
-  const db = hubDatabase();
-  
+export function verifyRefreshToken(token: string) {
+  const db = getDb();
+
   // Get refresh token and associated user
-  const result = await db
+  const result = db
     .prepare(
       `SELECT rt.*, u.* FROM refresh_tokens rt 
-       JOIN users u ON u.id = rt.user_id 
-       WHERE rt.token = ?1 AND rt.expires_at > datetime('now')`
+     JOIN users u ON u.id = rt.user_id 
+     WHERE rt.token = ? AND rt.expires_at > datetime('now')`
     )
-    .bind(token)
-    .first<any>();
+    .get(token);
 
   if (!result) {
-    throw new Error('Ongeldige of verlopen refresh token');
+    throw new Error("Ongeldige of verlopen refresh token");
   }
 
-  const user: Omit<User, 'password_hash' | 'created_at'> = {
-    id: result.user_id,
-    username: result.username,
-    name: result.name,
-    role: result.role,
+  const user: Omit<User, "password_hash" | "created_at"> = {
+    id: typeof result.user_id === "number" ? result.user_id : 0,
+    username:
+      typeof result.username === "string"
+        ? result.username
+        : String(result.username ?? ""),
+    name: typeof result.name === "string" ? result.name : null,
+    role:
+      typeof result.role === "string"
+        ? result.role
+        : String(result.role ?? "user"),
   };
 
   return user;
 }
 
-export async function revokeRefreshToken(token: string) {
-  const db = hubDatabase();
-  await db
-    .prepare("DELETE FROM refresh_tokens WHERE token = ?")
-    .bind(token)
-    .run();
+export function revokeRefreshToken(token: string) {
+  const db = getDb();
+  db.prepare("DELETE FROM refresh_tokens WHERE token = ?").run(token);
 }
 
-export async function revokeAllUserRefreshTokens(userId: number) {
-  const db = hubDatabase();
-  await db
-    .prepare("DELETE FROM refresh_tokens WHERE user_id = ?")
-    .bind(userId)
-    .run();
+export function revokeAllUserRefreshTokens(userId: number) {
+  const db = getDb();
+  db.prepare("DELETE FROM refresh_tokens WHERE user_id = ?").run(userId);
 }

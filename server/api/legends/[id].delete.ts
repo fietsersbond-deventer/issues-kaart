@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const db = getDb();
   const usedByIssues = db
     .prepare("SELECT id, title FROM issues WHERE legend_id = ?")
-    .all(id) as Array<{ id: number; title: string }>;
+    .all(id) as { id: number; title: string }[];
 
   if (usedByIssues.length > 0) {
     throw createError({
@@ -28,16 +28,12 @@ export default defineEventHandler(async (event) => {
   }
 
   // If no issues are using it, we can delete the legend
-  const result = db
-    .prepare("DELETE FROM legend WHERE id = ? RETURNING id")
-    .get(id) as { id: number } | undefined;
-
-  if (!result) {
+  const result = db.prepare("DELETE FROM legend WHERE id = ?").run(id);
+  if (result.changes === 0) {
     throw createError({
       statusCode: 404,
       message: `Legenda item met ID ${id} kon niet worden gevonden`,
     });
   }
-
   return { success: true };
 });

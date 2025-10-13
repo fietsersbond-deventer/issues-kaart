@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 import fs from "fs";
 import path from "path";
 
@@ -12,13 +12,14 @@ const MIGRATIONS_DIR = path.resolve(
 );
 const QUERIES_DIR = path.resolve(process.cwd(), "server/database/queries");
 
-export function runMigrations() {
+function runMigrations() {
   console.log("--- Migration Runner ---");
   console.log(`DB Path: ${DB_PATH}`);
   console.log(`Migrations Dir: ${MIGRATIONS_DIR}`);
   console.log(`Queries Dir: ${QUERIES_DIR}`);
 
-  const db = new Database(DB_PATH);
+  const db = new DatabaseSync(DB_PATH);
+
   db.exec(`CREATE TABLE IF NOT EXISTS ${MIGRATION_TABLE} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE,
@@ -27,7 +28,7 @@ export function runMigrations() {
 
   const appliedRows = db
     .prepare(`SELECT name FROM ${MIGRATION_TABLE}`)
-    .all() as Array<{ name: string }>;
+    .all() as { name: string }[];
   const applied = new Set(appliedRows.map((row) => row.name));
 
   const migrationFiles = fs
@@ -56,7 +57,7 @@ export function runMigrations() {
   let skippedCount = 0;
   for (const file of allFiles) {
     let name = path.basename(file);
-    if (name.endsWith('.sql')) {
+    if (name.endsWith(".sql")) {
       name = name.slice(0, -4);
     }
     if (applied.has(name)) {
@@ -67,9 +68,7 @@ export function runMigrations() {
     const sql = fs.readFileSync(file, "utf8");
     try {
       db.exec(sql);
-      db.prepare(`INSERT INTO ${MIGRATION_TABLE} (name) VALUES (?)`).run(
-        name
-      );
+      db.prepare(`INSERT INTO ${MIGRATION_TABLE} (name) VALUES (?)`).run(name);
       console.log(`Migration applied: ${name}`);
       appliedCount++;
     } catch (err) {

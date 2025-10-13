@@ -21,6 +21,9 @@ export default defineNuxtConfig({
     },
     isProduction: process.env.NODE_ENV === "production",
   },
+  content: {
+    experimental: { sqliteConnector: "native" },
+  },
   modules: [
     "@nuxt/eslint",
     "@sidebase/nuxt-auth",

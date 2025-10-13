@@ -1,4 +1,4 @@
-import type { Issue } from "../../database/schema";
+// import type { Issue } from "../../database/schema";
 import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
-  const issue = db
+  const row = db
     .prepare(
       `SELECT i.id, i.title, i.description, i.legend_id, 
      l.name as legend_name, l.color,
@@ -21,17 +21,16 @@ export default defineEventHandler(async (event) => {
      LEFT JOIN legend l ON i.legend_id = l.id 
      WHERE i.id = ?`
     )
-    .get(id) as (Issue & { legend_name?: string; color?: string }) | undefined;
-
-  if (!issue) {
+    .get(id);
+  if (!row) {
     throw createError({
       statusCode: 404,
       message: `Issue with ID ${id} not found`,
     });
   }
-
   return {
-    ...issue,
-    geometry: JSON.parse(issue.geometry),
-  } as Issue;
+    ...row,
+    geometry:
+      typeof row.geometry === "string" ? JSON.parse(row.geometry) : null,
+  };
 });

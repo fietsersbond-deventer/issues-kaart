@@ -22,32 +22,31 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
-
   try {
-    const user = db
-      .prepare(
-        "UPDATE users SET username = ?, name = ?, role = ? WHERE id = ? RETURNING id, username, name, role, created_at"
-      )
-      .get(username, name || null, role, id) as
-      | {
-          id: number;
-          username: string;
-          name: string;
-          role: string;
-          created_at: string;
-        }
-      | undefined;
-
-    if (!user) {
+    const updateResult = db
+      .prepare("UPDATE users SET username = ?, name = ?, role = ? WHERE id = ?")
+      .run(username, name || null, role, id);
+    if (updateResult.changes === 0) {
       throw createError({
         statusCode: 404,
         message: "User not found",
       });
     }
-
+    const user = db
+      .prepare(
+        "SELECT id, username, name, role, created_at FROM users WHERE id = ?"
+      )
+      .get(id);
+    if (!user) {
+      throw new Error("User not found after update");
+    }
     return user;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("unique constraint")) {
+    if (
+      error instanceof Error &&
+      error.message &&
+      error.message.includes("unique constraint")
+    ) {
       throw createError({
         statusCode: 409,
         message: "Username already exists",

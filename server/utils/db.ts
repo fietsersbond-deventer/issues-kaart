@@ -1,12 +1,12 @@
-import Database from "better-sqlite3";
-import path from "path";
+import { DatabaseSync } from "node:sqlite";
 
-let db: Database.Database | null = null;
+let db: DatabaseSync | null = null;
 
-export function getDb() {
+export function getDb(): DatabaseSync {
   if (!db) {
-    const dbPath = process.env.NUXT_DB_PATH;
-    db = new Database(dbPath);
+    const dbPath =
+      process.env.NUXT_DB_PATH || "server/database/fietsersbond.db";
+    db = new DatabaseSync(dbPath);
   }
   return db;
 }

@@ -13,16 +13,13 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
-  const deleteStmt = db.prepare("DELETE FROM issues WHERE id = ? RETURNING id");
-  const result = deleteStmt.get(id);
-
-  if (!result) {
+  const result = db.prepare("DELETE FROM issues WHERE id = ?").run(id);
+  if (result.changes === 0) {
     throw createError({
       statusCode: 404,
       message: `Issue with ID ${id} not found`,
     });
   }
-
   emitter.emit("issue:deleted", Number(id));
-  return result;
+  return { id };
 });

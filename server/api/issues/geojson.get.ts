@@ -1,5 +1,4 @@
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import type { Issue } from "../../database/schema";
 import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async () => {
@@ -14,19 +13,28 @@ export default defineEventHandler(async () => {
      LEFT JOIN legend l ON i.legend_id = l.id 
      ORDER BY i.created_at DESC`
     )
-    .all() as Array<Issue & { legend_name?: string; color?: string }>;
+    .all();
 
-  const features: Feature[] = issues.map((issue: Issue) => ({
-    type: "Feature",
-    geometry: JSON.parse(issue.geometry) as Geometry,
-    properties: {
-      id: issue.id,
-      title: issue.title,
-      description: issue.description,
-      color: issue.color, // From legend
-      created_at: issue.created_at,
-    },
-  }));
+  const features = issues
+    .map((issue) => {
+      const geometry =
+        typeof issue.geometry === "string"
+          ? (JSON.parse(issue.geometry) as Geometry)
+          : undefined;
+      if (!geometry) return null;
+      return {
+        type: "Feature",
+        geometry,
+        properties: {
+          id: issue.id as number,
+          title: issue.title as string,
+          description: issue.description as string,
+          color: issue.color as string,
+          created_at: issue.created_at as string,
+        },
+      } as Feature;
+    })
+    .filter(Boolean) as Feature[];
 
   const featureCollection: FeatureCollection = {
     type: "FeatureCollection",

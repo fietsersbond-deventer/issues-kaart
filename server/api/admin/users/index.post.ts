@@ -32,20 +32,17 @@ export default defineEventHandler(async (event) => {
   const passwordHash = hashPassword(password);
 
   try {
-    const user = db
-      .prepare(
-        "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?) RETURNING id, username, name, role, created_at"
-      )
-      .get(username, passwordHash, name || null, role) as
-      | {
-          id: number;
-          username: string;
-          name: string;
-          role: string;
-          created_at: string;
-        }
-      | undefined;
-
+    const insertStmt = db.prepare(
+      "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)"
+    );
+    const result = insertStmt.run(username, passwordHash, name || null, role);
+    const selectStmt = db.prepare(
+      "SELECT id, username, name, role, created_at FROM users WHERE id = ?"
+    );
+    const user = selectStmt.get(result.lastInsertRowid);
+    if (!user) {
+      throw new Error("User not found after insert");
+    }
     return user;
   } catch (error) {
     if (error instanceof Error && error.message.includes("unique constraint")) {

@@ -24,11 +24,17 @@ export default defineEventHandler(async (event) => {
 
     // Ensure the hash is properly encoded
     const db = getDb();
-    const user = db
-      .prepare(
-        "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING id, username, password_hash, created_at"
-      )
-      .get(username, passwordHash) as User | undefined;
+    // Insert user
+    const insertStmt = db.prepare(
+      "INSERT INTO users (username, password_hash) VALUES (?, ?)"
+    );
+    const result = insertStmt.run(username, passwordHash);
+
+    // Fetch user
+    const selectStmt = db.prepare(
+      "SELECT id, username, password_hash, created_at FROM users WHERE id = ?"
+    );
+    const user = selectStmt.get(result.lastInsertRowid);
 
     if (!user) {
       throw createError({
@@ -39,18 +45,19 @@ export default defineEventHandler(async (event) => {
 
     // Verify the stored hash matches what we generated
     console.log("Stored hash:", user.password_hash);
-    console.log("Stored hash length:", user.password_hash.length);
-
-    // Test verification immediately after creation
-    const verifyHash = await bcrypt.compare(password, user.password_hash);
-    console.log("Immediate verify result:", verifyHash);
+    if (typeof user.password_hash === "string") {
+      console.log("Stored hash length:", user.password_hash.length);
+      // Test verification immediately after creation
+      const verifyHash = await bcrypt.compare(password, user.password_hash);
+      console.log("Immediate verify result:", verifyHash);
+    }
 
     return {
       id: user.id,
       username: user.username,
       created_at: user.created_at,
     };
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Error && error.message.includes("unique constraint")) {
       throw createError({
         statusCode: 409,

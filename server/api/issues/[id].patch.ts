@@ -91,16 +91,26 @@ export default defineEventHandler(async (event) => {
   `;
 
   const db = getDb();
-  const issue = db.prepare(updateQuery).get(...values) as Issue | undefined;
-
-  if (!issue) {
+  const updateStmt = db.prepare(
+    `UPDATE issues SET ${updateFields.join(", ")} WHERE id = ?`
+  );
+  const result = updateStmt.run(...values);
+  if (result.changes === 0) {
     throw createError({
       statusCode: 404,
-      message: `Issue with ID ${id} not found`,
+      message: `Issue with ID ${id} not found or not updated`,
     });
   }
-
-  eventEmitter.emit("issue:modified", issue);
-
-  return issue;
+  const selectStmt = db.prepare(
+    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?"
+  );
+  const row = selectStmt.get(id);
+  if (!row) {
+    throw createError({
+      statusCode: 404,
+      message: `Issue with ID ${id} not found after update`,
+    });
+  }
+  eventEmitter.emit("issue:modified", row);
+  return row;
 });
