@@ -23,4 +23,7 @@ rsync -avz --exclude='node_modules' .output/server/ "$DEPLOYMENT_TARGET/server/"
 rsync -avz .output/public/ "$DEPLOYMENT_TARGET/public/"
 rsync -avz .output/nitro.json "$DEPLOYMENT_TARGET/nitro.json"
 
-echo "Deployment complete."
+echo "Restarting PM2 on remote..."
+ssh "${DEPLOYMENT_TARGET%%:*}" "/home/fietsersbond/.nvm/versions/node/v22.20.0/bin/pm2 restart fietsersbond"
+
+echo "Deployment and restart complete."
