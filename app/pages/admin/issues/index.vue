@@ -67,21 +67,34 @@
                 {{ locks[item.id] }}
               </v-tooltip>
             </v-btn>
-            <v-btn
-              v-else
-              icon="mdi-delete"
-              variant="text"
-              color="error"
-              size="small"
-              @click="confirmDelete(item)"
-            >
-              <v-icon>mdi-delete</v-icon>
-              <v-tooltip activator="parent" location="top">
-                Verwijder issue
-              </v-tooltip>
-            </v-btn>
-          </template>
-        </v-data-table>
+            <template v-else>
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                size="small"
+                @click="confirmDelete(item)"
+              >
+                <v-icon>mdi-delete</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Verwijder issue
+                </v-tooltip>
+              </v-btn>
+              <v-btn
+                :to="`/kaart/${item.id}`"
+                icon
+                variant="text"
+                size="small"
+                color="primary"
+              >
+                <v-icon>mdi-open-in-new</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Bekijk issue in de kaart
+                </v-tooltip>
+              </v-btn>
+            </template>
+          </template></v-data-table
+        >
       </v-card-text>
     </v-card>
 
