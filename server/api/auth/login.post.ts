@@ -4,10 +4,10 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../../utils/tokenUtils";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
-  const db = hubDatabase();
-
+  const db = getDb();
   const { username, password } = await readBody(event);
 
   if (!username || !password) {
@@ -17,12 +17,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const user: User | null = await db
+  const user = db
     .prepare(
       "SELECT id, username, name, role, password_hash FROM users WHERE username = ?"
     )
-    .bind(username)
-    .first();
+    .get(username);
 
   if (!user) {
     throw createError({
@@ -31,7 +30,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const isValidPassword = await bcrypt.compare(password, user.password_hash);
+  const isValidPassword =
+    typeof user.password_hash === "string"
+      ? await bcrypt.compare(password, user.password_hash)
+      : false;
 
   if (!isValidPassword) {
     console.log("Invalid password for username:", username);
@@ -44,8 +46,8 @@ export default defineEventHandler(async (event) => {
   try {
     // Create access token and refresh token
     const [accessToken, refreshToken] = await Promise.all([
-      generateAccessToken(user),
-      generateRefreshToken(user.id),
+      generateAccessToken(user as Omit<User, "created_at" | "password_hash">),
+      generateRefreshToken(user.id as number),
     ]);
 
     return {

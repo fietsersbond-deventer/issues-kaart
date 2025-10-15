@@ -2,6 +2,7 @@ import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 import { getEmitter } from "~~/server/utils/getEmitter";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -44,21 +45,26 @@ export default defineEventHandler(async (event) => {
     throw error;
   }
 
-  const issue = await hubDatabase()
-    .prepare(
-      "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?1, ?2, ?3, ?4) RETURNING id, title, description, legend_id, geometry, created_at"
-    )
-    .bind(title, sanitizedDescription, legend_id, JSON.stringify(geometry))
-    .first();
-
-  if (!issue) {
+  const db = getDb();
+  const insertStmt = db.prepare(
+    "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?, ?, ?, ?)"
+  );
+  const result = insertStmt.run(
+    title,
+    sanitizedDescription,
+    legend_id,
+    JSON.stringify(geometry)
+  );
+  const selectStmt = db.prepare(
+    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?"
+  );
+  const row = selectStmt.get(result.lastInsertRowid);
+  if (!row) {
     throw createError({
       statusCode: 500,
-      message: "Failed to create issue: No result returned",
+      message: "Failed to fetch created issue",
     });
   }
-
-  eventEmitter.emit("issue:created", issue);
-
-  return issue;
+  eventEmitter.emit("issue:created", row);
+  return row;
 });

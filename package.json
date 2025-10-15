@@ -1,12 +1,11 @@
 {
-  "name": "nuxthub-starter",
+  "name": "fietsersbond-onderwerpen",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "nuxt dev --inspect --host",
     "build": "nuxt build",
-    "preview": "npx nuxthub preview",
-    "deploy": "npx nuxthub deploy",
+    "start": "nuxt start",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
@@ -14,12 +13,12 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:ci": "vitest run --reporter=verbose --coverage.enabled=false"
+    "test:ci": "vitest run --reporter=verbose --coverage.enabled=false",
+    "migrate": "tsx server/database/runMigrations.ts"
   },
   "dependencies": {
     "@auth/core": "^0.39.1",
     "@nuxt/eslint": "^1.4.1",
-    "@nuxthub/core": "^0.9.0",
     "@pinia/nuxt": "0.11.0",
     "@sidebase/nuxt-auth": "^0.10.1",
     "@turf/bbox": "^7.2.0",
@@ -61,7 +60,6 @@
   "devDependencies": {
     "@nuxt/eslint-config": "^1.4.1",
     "@types/ejs": "^3.1.5",
-    "@types/proj4": "^2.5.6",
     "@types/sanitize-html": "^2.16.0",
     "@vitest/coverage-v8": "^3.2.3",
     "@vitest/ui": "^3.2.3",
@@ -85,7 +83,8 @@
       "bcrypt"
     ],
     "ignoredBuiltDependencies": [
-      "@tailwindcss/oxide"
+      "@tailwindcss/oxide",
+      "core-js"
     ]
   }
 }

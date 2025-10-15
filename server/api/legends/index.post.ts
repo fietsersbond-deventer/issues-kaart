@@ -1,5 +1,6 @@
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
+import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -13,19 +14,20 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const legend = await hubDatabase()
-    .prepare(
-      "INSERT INTO legend (name, description, color) VALUES (?1, ?2, ?3) RETURNING id, name, description, color, created_at"
-    )
-    .bind(name, description || null, color)
-    .first<Legend>();
-
-  if (!legend) {
+  const db = getDb();
+  const insertStmt = db.prepare(
+    "INSERT INTO legend (name, description, color) VALUES (?, ?, ?)"
+  );
+  const result = insertStmt.run(name, description || null, color);
+  const selectStmt = db.prepare(
+    "SELECT id, name, description, color, created_at FROM legend WHERE id = ?"
+  );
+  const row = selectStmt.get(result.lastInsertRowid);
+  if (!row) {
     throw createError({
       statusCode: 500,
-      message: "Failed to create legend item",
+      message: "Failed to fetch created legend item",
     });
   }
-
-  return legend;
+  return row as unknown as Legend;
 });

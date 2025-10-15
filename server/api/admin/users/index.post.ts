@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
 import { testPassword } from "~~/server/utils/testPassword";
+import { getDb } from "~~/server/utils/db";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -27,17 +28,21 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
+  const db = getDb();
   const passwordHash = hashPassword(password);
 
   try {
-    const user = await db
-      .prepare(
-        "INSERT INTO users (username, password_hash, name, role) VALUES (?1, ?2, ?3, ?4) RETURNING id, username, name, role, created_at"
-      )
-      .bind(username, passwordHash, name || null, role)
-      .first();
-
+    const insertStmt = db.prepare(
+      "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)"
+    );
+    const result = insertStmt.run(username, passwordHash, name || null, role);
+    const selectStmt = db.prepare(
+      "SELECT id, username, name, role, created_at FROM users WHERE id = ?"
+    );
+    const user = selectStmt.get(result.lastInsertRowid);
+    if (!user) {
+      throw new Error("User not found after insert");
+    }
     return user;
   } catch (error) {
     if (error instanceof Error && error.message.includes("unique constraint")) {

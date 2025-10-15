@@ -21,21 +21,16 @@ export default defineNuxtConfig({
     },
     isProduction: process.env.NODE_ENV === "production",
   },
+  content: {
+    experimental: { sqliteConnector: "native" },
+  },
   modules: [
-    "@nuxthub/core",
     "@nuxt/eslint",
     "@sidebase/nuxt-auth",
     "nuxt-mdi",
     "vuetify-nuxt-module",
     "@pinia/nuxt",
   ],
-  hub: {
-    database: true,
-    blob: false,
-    kv: false,
-    cache: false,
-    workers: true,
-  },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
     provider: {
