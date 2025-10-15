@@ -1,11 +1,13 @@
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { getDb } from "~~/server/utils/db";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler((event) => {
   requireAdminSession(event);
 
-  const db = hubDatabase();
-  const { results: users } = await db
-    .prepare(`
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `
       SELECT 
         u.id, 
         u.username, 
@@ -18,8 +20,8 @@ export default defineEventHandler(async (event) => {
       LEFT JOIN password_reset_tokens prt ON u.id = prt.user_id
         AND prt.expires_at > datetime('now')
       ORDER BY u.created_at DESC
-    `)
+    `
+    )
     .all();
-
-  return users;
+  return rows;
 });

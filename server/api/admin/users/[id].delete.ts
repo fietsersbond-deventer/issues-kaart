@@ -1,6 +1,7 @@
 import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { getDb } from "~~/server/utils/db";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler((event) => {
   requireAdminSession(event);
 
   const id = event.context.params?.id;
@@ -12,16 +13,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
-
-  try {
-    await db.prepare("DELETE FROM users WHERE id = ?").bind(id).run();
-
-    return { success: true };
-  } catch {
+  const db = getDb();
+  const result = db.prepare("DELETE FROM users WHERE id = ?").run(id);
+  if (result.changes === 0) {
     throw createError({
       statusCode: 500,
       message: "Failed to delete user",
     });
   }
+  return { success: true };
 });

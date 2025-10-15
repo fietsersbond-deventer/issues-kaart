@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import * as postmark from "postmark";
+import { getDb } from "~~/server/utils/db";
 
 const POSTMARK_API_KEY = process.env.NUXT_POSTMARK_API_KEY;
 const APP_URL = process.env.NUXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -28,13 +29,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
+  const db = getDb();
 
   // Find user by email
-  const user = await db
+  const user = db
     .prepare("SELECT id, username FROM users WHERE username = ?")
-    .bind(email)
-    .first();
+    .get(email);
 
   // If no user found, return success to prevent email enumeration
   if (!user) {
@@ -47,12 +47,9 @@ export default defineEventHandler(async (event) => {
   expiresAt.setDate(expiresAt.getDate() + 1); // Token expires in 24 hours
 
   // Store reset token
-  await db
-    .prepare(
-      "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?1, ?2, ?3)"
-    )
-    .bind(user.id, token, expiresAt.toISOString())
-    .run();
+  db.prepare(
+    "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)"
+  ).run(user.id, token, expiresAt.toISOString());
 
   // Send email using Postmark template
   await postmarkClient.sendEmailWithTemplate({

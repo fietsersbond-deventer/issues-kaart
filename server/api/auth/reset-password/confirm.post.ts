@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { testPassword } from "~~/server/utils/testPassword";
+import { getDb } from "~~/server/utils/db";
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -25,17 +26,16 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = hubDatabase();
+  const db = getDb();
 
   // Get reset token and associated user
-  const resetToken = await db
+  const resetToken = db
     .prepare(
       "SELECT prt.*, u.id as user_id FROM password_reset_tokens prt " +
         "JOIN users u ON u.id = prt.user_id " +
         "WHERE prt.token = ? AND prt.expires_at > datetime('now')"
     )
-    .bind(token)
-    .first();
+    .get(token);
 
   if (!resetToken) {
     throw createError({
@@ -47,12 +47,11 @@ export default defineEventHandler(async (event) => {
   const passwordHash = hashPassword(password);
 
   // Update password and delete used token
-  await db.batch([
-    db
-      .prepare("UPDATE users SET password_hash = ? WHERE id = ?")
-      .bind(passwordHash, resetToken.user_id),
-    db.prepare("DELETE FROM password_reset_tokens WHERE token = ?").bind(token),
-  ]);
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+    passwordHash,
+    resetToken.user_id
+  );
+  db.prepare("DELETE FROM password_reset_tokens WHERE token = ?").run(token);
 
   return { success: true };
 });
