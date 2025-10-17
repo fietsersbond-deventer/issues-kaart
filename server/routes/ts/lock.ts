@@ -11,7 +11,7 @@ const editingStatus: Record<string, PeerInfo | undefined> = {};
 
 export default defineWebSocketHandler({
   open(peer: WebSocketPeer) {
-    console.log(`[peer] Connection opened: ${peer.toString()}`);
+    console.log(`[ws/lock] Connection opened: ${peer.toString()}`);
 
     // Subscribe to the 'lockIssue' event
     peer.subscribe("lockIssue");
@@ -19,7 +19,7 @@ export default defineWebSocketHandler({
 
     // Ensure the peer subscribes to the 'editing-status' event
     peer.subscribe("editing-status");
-    console.log(`[peer] Subscribed to 'editing-status': ${peer.toString()}`);
+    console.log(`[ws/lock] Subscribed to 'editing-status': ${peer.toString()}`);
 
     peer.send(
       JSON.stringify({ type: "editing-status", payload: editingStatus })
@@ -29,7 +29,7 @@ export default defineWebSocketHandler({
   message(peer: WebSocketPeer, message: string) {
     try {
       const data = JSON.parse(message.toString()); // Ensure message is a string
-      console.log("Parsed message:", data);
+      console.log("[ws/lock] Parsed message:", data);
 
       if (data.type === "lockIssue" || data.type === "unlockIssue") {
         const { issueId, username } = data;
@@ -37,7 +37,7 @@ export default defineWebSocketHandler({
 
         if (editingStatus[Number(issueId)]) {
           if (editingStatus[Number(issueId)]!.peer !== peer.toString()) {
-            console.log("Peer is not the editor:", peer.toString());
+            console.log("[ws/lock] Peer is not the editor:", peer.toString());
             return;
           }
         }
@@ -53,22 +53,22 @@ export default defineWebSocketHandler({
           "editing-status",
           JSON.stringify({ type: "editing-status", payload: editingStatus })
         );
-        console.log("Broadcasted editing status:", editingStatus);
+        console.log("[ws/lock] Broadcasted editing status:", editingStatus);
 
         // Send the updated editing status back to the sender
         peer.send(
           JSON.stringify({ type: "editing-status", payload: editingStatus })
         );
       } else {
-        console.log("Unknown message type:", data.type);
+        console.log("[ws/lock] Unknown message type:", data.type);
       }
     } catch (error) {
-      console.error("Failed to parse message:", error);
+      console.error("[ws/lock] Failed to parse message:", error);
     }
   },
 
   close(peer: WebSocketPeer) {
-    console.log(`[peer] Connection closed: ${peer.toString()}`);
+    console.log(`[ws/lock] Connection closed: ${peer.toString()}`);
 
     // Clean up editing status for disconnected peers
     setTimeout(() => {
@@ -89,7 +89,7 @@ export default defineWebSocketHandler({
       );
 
       console.log(
-        "Updated editing status after peer disconnect:",
+        "[ws/lock] Updated editing status after peer disconnect:",
         editingStatus
       );
     }, 500);

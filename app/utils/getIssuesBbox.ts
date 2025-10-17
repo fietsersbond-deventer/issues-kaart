@@ -1,4 +1,4 @@
-import { isExistingIssue, type Issue } from "~/types/Issue";
+import type { MapIssue } from "~/types/Issue";
 import bbox from "@turf/bbox";
 import { featureCollection } from "@turf/helpers";
 import type { BBox } from "geojson";
@@ -36,15 +36,16 @@ function extendMinimumBbox(issuesBbox: BBox, minBbox: BBox): BBox {
   ];
 }
 
-export function getIssuesBbox(issues: Issue[]): BBox | undefined {
-  const existingIssues = issues.filter((issue) => isExistingIssue(issue));
-  if (existingIssues.length === 0) return undefined;
+export function getIssuesBbox(issues: MapIssue[]): BBox | undefined {
+  // Filter out issues without geometry
+  const issuesWithGeometry = issues.filter((issue) => issue.geometry);
+  if (issuesWithGeometry.length === 0) return undefined;
 
   // Create a feature collection from the geometries
-  const features = existingIssues.map((issue) => ({
+  const features = issuesWithGeometry.map((issue) => ({
     type: "Feature" as const,
     properties: {},
-    geometry: issue.geometry!,
+    geometry: issue.geometry,
   }));
   const collection = featureCollection(features);
   const issuesBbox = bbox(collection);

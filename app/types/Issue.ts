@@ -20,6 +20,29 @@ export type NewIssue = Optional<
 
 export type Issue = ExistingIssue | NewIssue;
 
+/**
+ * Lightweight issue type for map display
+ * Contains only essential data for rendering on the map
+ */
+export type MapIssue = {
+  id: number;
+  title: string;
+  color: string;
+  geometry: Point | Polygon | LineString;
+};
+
+/**
+ * Lightweight issue type for admin list display
+ * Contains only essential data for the admin table
+ */
+export type AdminListIssue = {
+  id: number;
+  title: string;
+  legend_id: number | null;
+  legend_name?: string;
+  created_at: Date;
+};
+
 export function isExistingIssue(issue: Issue): issue is ExistingIssue {
   return "id" in issue;
 }
