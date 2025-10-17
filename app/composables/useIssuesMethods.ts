@@ -6,11 +6,11 @@ import type { Issue } from "@/types/Issue";
  */
 export function useIssuesMethods() {
   const { token } = useAuth();
-  
+
   const headers = computed(() => {
     if (!token.value) return undefined;
     // Remove "Bearer " if it's already there, then add it back
-    const cleanToken = token.value.replace(/^Bearer\s+/i, '');
+    const cleanToken = token.value.replace(/^Bearer\s+/i, "");
     return {
       Authorization: `Bearer ${cleanToken}`,
     };
