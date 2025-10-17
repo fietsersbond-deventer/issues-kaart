@@ -15,15 +15,16 @@
 
 <script lang="ts" setup>
 import { ref, inject, onMounted, onUnmounted } from "vue";
-import type { Feature, Map } from "ol";
-import type { MapBrowserEvent } from "ol/MapBrowserEvent";
+import type { Feature } from "ol";
+import type MapBrowserEvent from "ol/MapBrowserEvent";
 import type { LineString, Point, Polygon } from "ol/geom";
+import type OlMap from "ol/Map";
 
 const { isDrawing } = defineProps<{
   isDrawing: boolean;
 }>();
 
-const map: Map | undefined = inject("map");
+const map: OlMap | undefined = inject("map");
 
 const tooltipContent = ref<string | null>(null);
 const tooltipImage = ref<string | null>(null);
@@ -35,7 +36,7 @@ let pointerListener: ((evt: MapBrowserEvent<PointerEvent>) => void) | null =
 onMounted(() => {
   if (!map) return;
   pointerListener = (evt: MapBrowserEvent<PointerEvent>) => {
-    // Don't show tooltip or change cursor when drawing/editing
+    // Don't show tooltip when drawing/editing
     if (isDrawing) {
       tooltipContent.value = null;
       tooltipImage.value = null;
@@ -47,12 +48,10 @@ onMounted(() => {
     if (features && features.length > 0) {
       const feature = features[0] as Feature<Point | LineString | Polygon>;
       const properties = feature.getProperties();
+
       tooltipContent.value = properties.title || "Geen titel";
-      // Extract data URL image and set thumbnail
-      const desc = (properties.description as string) || "";
-      const imgMatch = desc.match(/<img[^>]+src=["'](data:[^"']+)["']/i);
-      tooltipImage.value =
-        imgMatch && typeof imgMatch[1] === "string" ? imgMatch[1] : null;
+      tooltipImage.value = properties.imageUrl || null;
+
       map.getTargetElement().style.cursor = "pointer";
       // Always position above pointer
       if (typeof pixel[0] === "number" && typeof pixel[1] === "number") {

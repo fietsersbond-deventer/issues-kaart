@@ -179,7 +179,7 @@ const toolbar = [
   [{ indent: "-1" }, { indent: "+1" }], // outdent/indent
 ];
 
-const { update, create, remove } = useIssues();
+const { update, create, remove } = useIssuesMethods();
 const { legends } = storeToRefs(useLegends());
 const { isEditing } = useIsEditing();
 

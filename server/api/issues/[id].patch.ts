@@ -1,5 +1,4 @@
 import type { Geometry } from "geojson";
-import type { Issue } from "../../database/schema";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 import { getEmitter } from "~~/server/utils/getEmitter";
@@ -56,39 +55,27 @@ export default defineEventHandler(async (event) => {
   // Build the SQL update statement dynamically based on provided fields
   const updateFields: string[] = [];
   const values: (string | number | null)[] = [];
-  let paramCounter = 1;
 
   if (updates.title !== undefined) {
-    updateFields.push(`title = ?${paramCounter}`);
+    updateFields.push(`title = ?`);
     values.push(updates.title);
-    paramCounter++;
   }
   if (updates.description !== undefined) {
-    updateFields.push(`description = ?${paramCounter}`);
+    updateFields.push(`description = ?`);
     values.push(updates.description);
-    paramCounter++;
   }
   if (updates.legend_id !== undefined) {
-    updateFields.push(`legend_id = ?${paramCounter}`);
+    updateFields.push(`legend_id = ?`);
     values.push(updates.legend_id);
-    paramCounter++;
   }
 
   if (updates.geometry !== undefined) {
-    updateFields.push(`geometry = ?${paramCounter}`);
+    updateFields.push(`geometry = ?`);
     values.push(JSON.stringify(updates.geometry));
-    paramCounter++;
   }
 
   // Add the ID as the last parameter
   values.push(id);
-
-  const updateQuery = `
-    UPDATE issues 
-    SET ${updateFields.join(", ")} 
-    WHERE id = ?${paramCounter} 
-    RETURNING id, title, description, legend_id, geometry, created_at
-  `;
 
   const db = getDb();
   const updateStmt = db.prepare(
