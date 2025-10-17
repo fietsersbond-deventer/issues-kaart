@@ -140,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Issue } from "~/types/Issue";
+import type { MapIssue } from "~/types/Issue";
 import { register } from "ol/proj/proj4.js";
 import { transform } from "ol/proj";
 import proj4 from "proj4";
@@ -162,10 +162,13 @@ interface Size {
   height: number;
 }
 
-const { issues } = storeToRefs(useIssues());
+// Use lightweight map issues for rendering (only id, title, color, geometry, imageUrl)
+const { issues } = storeToRefs(
+  useIssues({ fields: "id,title,color,geometry,imageUrl" })
+);
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
-function isSelected(issue: Issue) {
+function isSelected(issue: MapIssue) {
   return issue.id === selectedId.value;
 }
 
@@ -178,7 +181,7 @@ function getPreview(url: string) {
 /**
  * Returns the properties object for any OpenLayers feature, with type safety.
  */
-function getFeatureProperties(issue: Issue) {
+function getFeatureProperties(issue: MapIssue) {
   const { geometry, ...props } = issue;
   return props;
 }
@@ -303,7 +306,7 @@ watch(selectedIssue, () => {
 function style(feature: Feature) {
   const properties = feature.getProperties();
   const issueId = properties.id;
-  const issue = issues.value?.find((i) => i.id === issueId);
+  const issue = issues.value?.find((i: MapIssue) => i.id === issueId);
   if (!issue) return;
 
   if (feature.getGeometry()!.getType() === "Point") {
@@ -349,7 +352,7 @@ const rdProjection = new Projection({
 const markers = computed(() => {
   return (
     issues.value?.filter(
-      (issue): issue is Issue => issue.geometry?.type === "Point"
+      (issue: MapIssue): issue is MapIssue => issue.geometry?.type === "Point"
     ) ?? []
   );
 });
@@ -357,7 +360,7 @@ const markers = computed(() => {
 const polygons = computed(() => {
   return (
     issues.value?.filter(
-      (issue): issue is Issue => issue.geometry?.type === "Polygon"
+      (issue: MapIssue): issue is MapIssue => issue.geometry?.type === "Polygon"
     ) ?? []
   );
 });
@@ -365,36 +368,37 @@ const polygons = computed(() => {
 const lines = computed(() => {
   return (
     issues.value?.filter(
-      (issue): issue is Issue => issue.geometry?.type === "LineString"
+      (issue: MapIssue): issue is MapIssue =>
+        issue.geometry?.type === "LineString"
     ) ?? []
   );
 });
 
-function toPointCoords(issue: Issue) {
+function toPointCoords(issue: MapIssue) {
   if (issue.geometry.type !== "Point") return [0, 0];
   return transform(issue.geometry.coordinates, "EPSG:4326", "EPSG:3857");
 }
 
-function toLineCoords(issue: Issue) {
+function toLineCoords(issue: MapIssue) {
   if (issue.geometry.type !== "LineString") return [[0, 0]];
   return issue.geometry.coordinates.map((coord) =>
     transform(coord, "EPSG:4326", "EPSG:3857")
   );
 }
 
-function toPolygonCoords(issue: Issue) {
+function toPolygonCoords(issue: MapIssue) {
   if (issue.geometry.type !== "Polygon") return [[[0, 0]]];
   return issue.geometry.coordinates.map((ring) =>
     ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857"))
   );
 }
 
-function getPolygonFillColor(issue: Issue) {
+function getPolygonFillColor(issue: MapIssue) {
   const color = issue.color || "#000000";
   return color + "40"; // 40 is 25% opacity in hex
 }
 
-function navigateToIssue(issue: Issue) {
+function navigateToIssue(issue: MapIssue) {
   navigateTo(`/kaart/${issue.id}`);
 }
 
@@ -413,7 +417,7 @@ function onFeatureSelect(event: SelectEvent) {
       return;
     } else {
       selectedId.value = issueId;
-      navigateToIssue({ id: issueId } as Issue);
+      navigateToIssue({ id: issueId } as MapIssue);
       emit("feature-clicked");
     }
   } else {
@@ -432,8 +436,20 @@ function onModifyEnd(event: ModifyEvent) {
     dataProjection: "EPSG:4326",
     featureProjection: "EPSG:3857",
   });
-  // @ts-ignore
+
+  // Update selectedIssue geometry
+  // @ts-expect-error - geometry type is complex
   selectedIssue.value!.geometry = geoJSON.geometry;
+
+  // ALSO update the geometry in the issues array (which the map renders from)
+  // This prevents the map from reverting to the old geometry
+  const issueIndex = issues.value.findIndex(
+    (i) => "id" in i && i.id === selectedId.value
+  );
+  if (issueIndex !== -1) {
+    // @ts-expect-error - geometry type is complex
+    issues.value[issueIndex].geometry = geoJSON.geometry;
+  }
 }
 
 const emit = defineEmits(["feature-clicked"]);

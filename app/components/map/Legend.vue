@@ -32,7 +32,8 @@
 
 <script setup lang="ts">
 const { legends } = storeToRefs(useLegends());
-const { issues } = storeToRefs(useIssues());
+// Only need legend_id to determine which legends are visible
+const { issues } = storeToRefs(useIssues({ fields: "id,legend_id" }));
 
 // Only show legends that are actually used in the map
 const visibleLegends = computed(() => {

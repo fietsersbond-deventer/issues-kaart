@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { isExistingIssue, type Issue } from "~/types/Issue";
+import type { AdminListIssue } from "~/types/Issue";
 import type { Legend } from "~/types/Legend";
 
 definePageMeta({
@@ -127,7 +127,10 @@ definePageMeta({
   middleware: ["sidebase-auth"],
 });
 
-const issuesStore = useIssues();
+// Use lightweight issues for admin list (only id, title, legend_id, legend_name, created_at)
+const issuesStore = useIssues({
+  fields: "id,title,legend_id,legend_name,created_at",
+});
 const { remove, update } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
 
@@ -137,13 +140,11 @@ const { locks } = storeToRefs(locksStore);
 
 const showDeleteDialog = ref(false);
 const loading = ref(false);
-const deleteIssue = ref<Issue | null>(null);
+const deleteIssue = ref<AdminListIssue | null>(null);
 const snackbar = useSnackbar();
 const { data: availableLegends } = useFetch<Legend[]>("/api/legends");
 
-const existingIssues = computed(
-  () => issues.value.filter((issue) => isExistingIssue(issue)) || []
-);
+const existingIssues = computed(() => issues.value || []);
 
 const search = ref("");
 
@@ -163,13 +164,13 @@ const headers = [
   { title: "Acties", value: "actions", sortable: false },
 ];
 
-function confirmDelete(issue: Issue) {
+function confirmDelete(issue: AdminListIssue) {
   deleteIssue.value = issue;
   showDeleteDialog.value = true;
 }
 
 async function deleteUserConfirmed() {
-  if (!deleteIssue.value || !isExistingIssue(deleteIssue.value)) return;
+  if (!deleteIssue.value) return;
 
   loading.value = true;
   try {
@@ -189,9 +190,7 @@ async function deleteUserConfirmed() {
   }
 }
 
-async function updateIssue(issue: Issue) {
-  if (!isExistingIssue(issue)) return;
-
+async function updateIssue(issue: AdminListIssue) {
   try {
     await update(issue.id, issue);
     snackbar.showSuccess(`Onderwerp "${issue.title}" is bijgewerkt`);
