@@ -298,7 +298,7 @@ const isMapSmall = computed(() => {
 
 // In mobile mode, always recenter when selected issue changes
 watch(selectedIssue, () => {
-  if (mobile.value && selectedIssue.value?.geometry) {
+  if (selectedIssue.value?.geometry) {
     recenterOnSelectedIssue();
   }
 });
