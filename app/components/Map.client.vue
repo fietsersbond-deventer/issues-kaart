@@ -12,6 +12,7 @@
 
     <MapSearch @selected="onSearchSelected" />
     <MapAddFeature ref="addFeature" />
+    <MapResetExtentControl @reset="resetToOriginalExtent" />
 
     <ol-layerswitcherimage-control v-if="!isMapVerySmall" :collapsed="false" />
     <OlCustomControl v-if="!isMapSmall" position="bottom-left">
@@ -245,6 +246,19 @@ function onSearchSelected(bbox: BBox) {
   setBbox(bbox, {
     padding: currentPadding.value,
     maxZoom: 17,
+    easing: easeOut,
+    duration: 1000,
+  });
+}
+
+function resetToOriginalExtent() {
+  if (!issues.value || issues.value.length === 0) return;
+
+  const bbox = getIssuesBbox(issues.value);
+  if (!bbox) return;
+
+  setBbox(bbox, {
+    padding: currentPadding.value,
     easing: easeOut,
     duration: 1000,
   });
