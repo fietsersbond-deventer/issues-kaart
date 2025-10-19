@@ -307,7 +307,7 @@ const isMapSmall = computed(() => {
 watch(selectedIssue, (newIssue) => {
   // Skip if this is the first load (handled above)
   if (firstLoad.value) return;
-  
+
   // Zoom to the new issue if it has geometry
   if (newIssue?.geometry) {
     recenterOnSelectedIssue();
