@@ -22,14 +22,19 @@
       </SizeCalculator>
     </OlCustomControl>
 
-    <ol-tile-layer ref="light" title="Licht" :visible="true" :base-layer="true">
+    <ol-tile-layer
+      ref="light"
+      title="Licht"
+      :visible="preferredLayer === 'Licht'"
+      :base-layer="true"
+    >
       <ol-source-stadia-maps layer="alidade_smooth" />
     </ol-tile-layer>
 
     <ol-tile-layer
       ref="fietskaart"
       title="Fiets"
-      :visible="false"
+      :visible="preferredLayer === 'Fiets'"
       :base-layer="true"
     >
       <ol-source-xyz
@@ -41,7 +46,7 @@
     <ol-tile-layer
       ref="luchtfoto"
       title="Foto"
-      :visible="false"
+      :visible="preferredLayer === 'Foto'"
       :base-layer="true"
     >
       <ol-source-tile-wms
@@ -56,7 +61,7 @@
     <ol-tile-layer
       ref="lufolabels"
       title="Straatnamen"
-      :visible="false"
+      :visible="preferredLayer === 'Foto'"
       :display-in-layer-switcher="false"
     >
       <ol-source-wmts
@@ -172,6 +177,9 @@ function isSelected(issue: MapIssue) {
   return issue.id === selectedId.value;
 }
 
+// Layer preference management
+const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
+
 function getPreview(url: string) {
   return function () {
     return [url];
@@ -189,16 +197,19 @@ function getFeatureProperties(issue: MapIssue) {
 // preview images for layers
 const lufolabelsSource = useTemplateRef("lufolabels-source");
 const luchtfotoSource = useTemplateRef("luchtfoto-source");
+const light = useTemplateRef("light");
+const fietskaart = useTemplateRef("fietskaart");
 
-const luchtfotoIsVisible = ref(false);
+// Watch for layer visibility changes and update preferred layer
+watchLayerVisibility(light, "Licht");
+watchLayerVisibility(fietskaart, "Fiets");
+watchLayerVisibility(luchtfotoSource, "Foto");
 
+// Set up preview images for layers
 watch(luchtfotoSource, (luchtfotoSource) => {
   if (luchtfotoSource.layer) {
     const layer = luchtfotoSource.layer as TileLayer;
     layer.getPreview = getPreview("/preview-luchtfoto.png");
-    layer.on("change:visible", () => {
-      luchtfotoIsVisible.value = layer.getVisible();
-    });
   }
 });
 
@@ -206,9 +217,6 @@ watch(lufolabelsSource, (lufolabelsSource) => {
   if (lufolabelsSource.tileLayer) {
     const layer = lufolabelsSource.tileLayer as TileLayer;
     layer.getPreview = getPreview("/preview-lufolabels.png");
-    watch(luchtfotoIsVisible, (isVisible) => {
-      layer.setVisible(isVisible);
-    });
   }
 });
 
