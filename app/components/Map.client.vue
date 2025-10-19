@@ -251,13 +251,20 @@ const { mobile } = useDisplay();
 // Use the map bounds composable to track bounding box changes
 // useMapBounds(mapRef);
 
-watch([view, issues], () => {
+watch([view, issues, selectedIssue], () => {
   if (!firstLoad.value) return;
   if (view.value && issues.value.length > 0) {
-    const bbox = getIssuesBbox(issues.value);
-    if (!bbox) return;
-    setBbox(bbox);
-    firstLoad.value = false;
+    // If there's a selected issue with geometry, zoom to it
+    if (selectedIssue.value?.geometry) {
+      recenterOnSelectedIssue();
+      firstLoad.value = false;
+    } else {
+      // Otherwise, fit all issues
+      const bbox = getIssuesBbox(issues.value);
+      if (!bbox) return;
+      setBbox(bbox);
+      firstLoad.value = false;
+    }
   }
 });
 
@@ -296,9 +303,13 @@ const isMapSmall = computed(() => {
   return false;
 });
 
-// In mobile mode, always recenter when selected issue changes
-watch(selectedIssue, () => {
-  if (selectedIssue.value?.geometry) {
+// Recenter map when selected issue changes (after initial load)
+watch(selectedIssue, (newIssue) => {
+  // Skip if this is the first load (handled above)
+  if (firstLoad.value) return;
+  
+  // Zoom to the new issue if it has geometry
+  if (newIssue?.geometry) {
     recenterOnSelectedIssue();
   }
 });
