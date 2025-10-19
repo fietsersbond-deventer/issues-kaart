@@ -52,7 +52,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
     } else {
       // For LineStrings and Polygons, fit to bounding box with margin
       const [minLng, minLat, maxLng, maxLat] = bbox(geometry);
-      
+
       // Transform bbox from EPSG:4326 to EPSG:3857
       const extent = transformExtent(
         [minLng, minLat, maxLng, maxLat],
