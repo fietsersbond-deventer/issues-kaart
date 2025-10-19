@@ -252,7 +252,6 @@ const { mobile } = useDisplay();
 // useMapBounds(mapRef);
 
 watch([view, issues, selectedIssue], () => {
-  if (!firstLoad.value) return;
   if (view.value && issues.value.length > 0) {
     // If there's a selected issue with geometry, zoom to it
     if (selectedIssue.value?.geometry) {
@@ -301,17 +300,6 @@ const isMapSmall = computed(() => {
     return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.45;
   }
   return false;
-});
-
-// Recenter map when selected issue changes (after initial load)
-watch(selectedIssue, (newIssue) => {
-  // Skip if this is the first load (handled above)
-  if (firstLoad.value) return;
-
-  // Zoom to the new issue if it has geometry
-  if (newIssue?.geometry) {
-    recenterOnSelectedIssue();
-  }
 });
 
 function style(feature: Feature) {
