@@ -11,6 +11,7 @@ export type ExistingIssue = {
   color?: string; // Added from join
   geometry: Point | Polygon | LineString;
   created_at: Date;
+  imageUrl: string | null; // URL path to image endpoint if issue has image
 };
 
 export type NewIssue = Optional<
@@ -43,7 +44,8 @@ export type AdminListIssue = {
   created_at: Date;
 };
 
-export function isExistingIssue(issue: Issue): issue is ExistingIssue {
+export function isExistingIssue(issue?: Issue | null): issue is ExistingIssue {
+  if (!issue) return false;
   return "id" in issue;
 }
 

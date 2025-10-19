@@ -1,5 +1,6 @@
 // import type { Issue } from "../../database/schema";
 import { getDb } from "~~/server/utils/db";
+import { extractImageUrl } from "~~/server/utils/extractImageUrl";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -28,9 +29,17 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found`,
     });
   }
+
+  // Check if there's an image in the description
+  const description =
+    typeof row.description === "string" ? row.description : null;
+  const hasImage = extractImageUrl(description) !== null;
+  const imageUrl = hasImage ? `/api/issues/${row.id}/image` : null;
+
   return {
     ...row,
     geometry:
       typeof row.geometry === "string" ? JSON.parse(row.geometry) : null,
+    imageUrl,
   };
 });

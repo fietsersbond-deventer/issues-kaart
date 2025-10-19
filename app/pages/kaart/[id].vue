@@ -33,7 +33,7 @@
     </v-toolbar>
 
     <div v-if="issue" class="pa-4">
-      <template v-if="issue.id">
+      <template v-if="'id' in issue">
         <EditForm
           v-if="isEditing"
           v-model="issue"
@@ -87,6 +87,8 @@
 </template>
 
 <script setup lang="ts">
+import { isExistingIssue } from "@/types/Issue";
+
 const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
@@ -101,6 +103,12 @@ useHead(() => ({
     ? `${issue.value.title} - Fietsersbond`
     : "Nieuw onderwerp - Fietsersbond",
 }));
+
+watch(issue, () => {
+  if (isExistingIssue(issue.value)) {
+    useIssueOpenGraph(issue.value);
+  }
+});
 
 // Update route meta for breadcrumbs
 watch(
