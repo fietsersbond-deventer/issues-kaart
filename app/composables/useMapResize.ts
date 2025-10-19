@@ -49,7 +49,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
         view.animate({
           center: newTarget,
           zoom: targetZoom,
-          duration: 400,
+          duration: 600,
         });
       } else {
         // For LineStrings and Polygons, fit to bounding box with margin
@@ -64,7 +64,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
 
         view.fit(extent, {
           padding: [50, 50, 50, 50], // Add 50px margin on all sides
-          duration: 400,
+          duration: 600,
           maxZoom: 17, // Don't zoom in too close
         });
       }
