@@ -72,6 +72,22 @@ export default defineNuxtConfig({
       display: {
         mobileBreakpoint: "lg",
       },
+      theme: {
+        defaultTheme: "light",
+        themes: {
+          light: {
+            colors: {
+              primary: "#000000",
+              secondary: "#afaeae",
+              accent: "#82B1FF",
+              error: "#FF5252",
+              info: "#2196F3",
+              success: "#4CAF50",
+              warning: "#FFC107",
+            },
+          },
+        },
+      },
     },
   },
   vite: {
