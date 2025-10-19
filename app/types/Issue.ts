@@ -15,7 +15,7 @@ export type ExistingIssue = {
 };
 
 export type NewIssue = Optional<
-  Omit<ExistingIssue, "id" | "created_at">,
+  Omit<ExistingIssue, "id" | "created_at" | "imageUrl">,
   "geometry"
 >;
 
