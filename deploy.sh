@@ -12,7 +12,8 @@ if [ -z "$DEPLOYMENT_TARGET" ]; then
   exit 1
 fi
 
-echo "Deployment complete."
+
+npm run build
 
 # Update package.json on remote
 rsync -avz package.json "$DEPLOYMENT_TARGET/package.json"
