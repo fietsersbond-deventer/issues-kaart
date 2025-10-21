@@ -2,6 +2,7 @@
   <ol-map
     ref="mapRef"
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
+    :controls="[]"
   >
     <ol-view
       ref="view"
@@ -10,18 +11,33 @@
       :projection="projection"
     />
 
-    <MapSearch @selected="onSearchSelected" />
-    <MapAddFeature ref="addFeature" />
-    <MapResetExtentControl @reset="resetToOriginalExtent" />
+    <!-- Top-left corner controls -->
+    <MapControlContainer position="top-left">
+      <MapSearch
+        @selected="onSearchSelected"
+        @search-expanded="onSearchExpanded"
+      />
+      <MapResetExtentControl @reset="resetToOriginalExtent" />
+    </MapControlContainer>
 
-    <ol-layerswitcherimage-control v-if="!isMapVerySmall" :collapsed="false" />
-    <OlCustomControl v-if="!isMapSmall" position="bottom-left">
+    <!-- Top-right corner controls -->
+    <MapControlContainer position="top-right">
+      <MapLayerSwitcher
+        v-show="!isMapVerySmall && !isSearchExpanded"
+        v-model="preferredLayer"
+      />
+    </MapControlContainer>
+
+    <!-- Bottom-left corner controls -->
+    <MapControlContainer v-if="!isMapSmall" position="bottom-left">
       <SizeCalculator v-model="legendSize">
         <MobileCollapsible title="Legenda" icon="mdi-map-legend">
           <MapLegend />
         </MobileCollapsible>
       </SizeCalculator>
-    </OlCustomControl>
+    </MapControlContainer>
+
+    <MapAddFeature ref="addFeature" />
 
     <ol-tile-layer
       ref="light"
@@ -206,21 +222,6 @@ watchLayerVisibility(light, "Licht");
 watchLayerVisibility(fietskaart, "Fiets");
 watchLayerVisibility(luchtfotoSource, "Foto");
 
-// Set up preview images for layers
-watch(luchtfotoSource, (luchtfotoSource) => {
-  if (luchtfotoSource.layer) {
-    const layer = luchtfotoSource.layer as TileLayer;
-    layer.getPreview = getPreview("/preview-luchtfoto.png");
-  }
-});
-
-watch(lufolabelsSource, (lufolabelsSource) => {
-  if (lufolabelsSource.tileLayer) {
-    const layer = lufolabelsSource.tileLayer as TileLayer;
-    layer.getPreview = getPreview("/preview-lufolabels.png");
-  }
-});
-
 const defaultPadding = [50, 50, 50, 50]; // [top, right, bottom, left]
 const currentPadding = ref(defaultPadding);
 
@@ -249,6 +250,12 @@ function onSearchSelected(bbox: BBox) {
     easing: easeOut,
     duration: 1000,
   });
+}
+
+const isSearchExpanded = ref(false);
+
+function onSearchExpanded(expanded: boolean) {
+  isSearchExpanded.value = expanded;
 }
 
 function resetToOriginalExtent() {

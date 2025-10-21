@@ -1,141 +1,211 @@
 <template>
-  <ol-search-control
-    placeholder="Zoek"
-    :get-title="getTitle"
-    :autocomplete="search"
-    :class="{ 'is-searching': isSearching }"
-    @select="select"
-  />
+  <div class="map-search-control">
+    <!-- Mobile: Search button that expands -->
+    <v-btn
+      v-if="mobile && !isExpanded"
+      icon
+      size="small"
+      class="search-button"
+      title="Zoek locatie"
+      :loading="isSearching"
+      @click="toggleSearch"
+    >
+      <v-icon>mdi-magnify</v-icon>
+    </v-btn>
+
+    <!-- Desktop or expanded mobile search -->
+    <v-autocomplete
+      v-if="!mobile || isExpanded"
+      ref="searchInput"
+      v-model="selectedItem"
+      v-model:search="searchText"
+      :items="searchResults"
+      :loading="isSearching"
+      :menu="searchResults.length > 0"
+      item-title="displayName"
+      item-value="id"
+      placeholder="Zoek locatie..."
+      hide-no-data
+      hide-details
+      density="compact"
+      variant="solo"
+      clearable
+      auto-select-first
+      @update:model-value="onSelect"
+      @blur="onBlur"
+    >
+      <template #prepend-inner>
+        <v-btn
+          v-if="mobile"
+          icon
+          size="x-small"
+          variant="text"
+          @click="closeSearch"
+        >
+          <v-icon size="18">mdi-arrow-left</v-icon>
+        </v-btn>
+      </template>
+      <template #append-inner>
+        <v-progress-circular
+          v-if="isSearching"
+          indeterminate
+          size="20"
+          width="2"
+          color="primary"
+        />
+      </template>
+      <template #item="{ props, item }">
+        <v-list-item v-bind="props" :title="item.raw.displayName">
+          <template #subtitle>
+            <span class="text-caption">{{ item.raw.type }}</span>
+          </template>
+        </v-list-item>
+      </template>
+    </v-autocomplete>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import type { SearchEvent } from "ol-ext";
-import { transformBboxToOpenLayers } from "~/utils/getIssuesBbox";
 import type { BBox } from "geojson";
+import { transformBboxToOpenLayers } from "~/utils/getIssuesBbox";
 import {
-  PhotonSearchProvider,
   NominatimSearchProvider,
   type SearchResult,
   useLocationSearch,
 } from "~/composables/useLocationSearch";
+import { useDisplay } from "vuetify";
 
 const emit = defineEmits<{
   selected: [data: BBox];
+  searchExpanded: [expanded: boolean];
 }>();
 
-function select(e: SearchEvent) {
-  // The search result is now a SearchResult object with boundingBox property
-  const result = e.search as SearchResult;
-
-  // Don't navigate if it's the "no results" message
-  if (result.type === "no-results") {
-    return;
-  }
-
-  const boundingBox = transformBboxToOpenLayers(result.boundingBox);
-  emit("selected", boundingBox);
-}
-
-function getTitle(feature: SearchResult) {
-  return searchProvider.getTitle(feature);
-}
-
-// Choose which search provider to use:
-// To switch to Nominatim, uncomment the next line and comment out the Photon line
+const { mobile } = useDisplay();
 const searchProvider = new NominatimSearchProvider();
-// const searchProvider = new PhotonSearchProvider(); // Current: Photon
-
 const { search: performSearch, isSearching } =
   useLocationSearch(searchProvider);
 
-async function search(text: string, cb: (features: SearchResult[]) => void) {
-  // If the search text is empty or just whitespace, return empty results
-  if (!text || text.trim().length === 0) {
-    cb([]);
+const searchText = ref("");
+const selectedItem = ref<string | null>(null);
+const searchResults = ref<SearchResult[]>([]);
+const isExpanded = ref(false);
+const searchInput = ref();
+
+function toggleSearch() {
+  console.log(
+    "Toggle search - before:",
+    isExpanded.value,
+    "mobile:",
+    mobile.value
+  );
+  isExpanded.value = !isExpanded.value;
+  console.log("Toggle search - after:", isExpanded.value);
+  emit("searchExpanded", isExpanded.value);
+
+  if (isExpanded.value) {
+    // Focus the input after it's rendered
+    nextTick(() => {
+      console.log("Trying to focus input:", searchInput.value);
+      searchInput.value?.focus();
+    });
+  }
+}
+
+function closeSearch() {
+  isExpanded.value = false;
+  searchText.value = "";
+  searchResults.value = [];
+  emit("searchExpanded", false);
+}
+
+function onBlur() {
+  // On mobile, close search if there's no search text
+  if (mobile.value && !searchText.value) {
+    setTimeout(() => {
+      closeSearch();
+    }, 200);
+  }
+}
+
+// Watch for search text changes with debounce
+let searchTimeout: NodeJS.Timeout;
+watch(searchText, (value) => {
+  clearTimeout(searchTimeout);
+
+  if (!value || value.trim().length === 0) {
+    searchResults.value = [];
     return;
   }
 
-  const results = await performSearch(text);
+  searchTimeout = setTimeout(async () => {
+    console.log("Searching for:", value);
+    const results = await performSearch(value);
+    console.log("Got results:", results.length);
 
-  if (results.length === 0) {
-    // Show "no results found" message
-    cb([
-      {
-        id: "no-results",
-        name: "Geen resultaten gevonden",
-        displayName: `Geen resultaten`,
-        type: "no-results",
-        boundingBox: [0, 0, 0, 0] as BBox,
-        coordinates: [0, 0] as [number, number],
-        properties: {
+    if (results.length === 0) {
+      searchResults.value = [
+        {
+          id: "no-results",
           name: "Geen resultaten gevonden",
+          displayName: "Geen resultaten gevonden",
           type: "no-results",
-          extent: [0, 0, 0, 0],
+          boundingBox: [0, 0, 0, 0] as BBox,
+          coordinates: [0, 0] as [number, number],
         },
-      },
-    ]);
-    return;
+      ];
+    } else {
+      // Create a new array to ensure reactivity
+      searchResults.value = [...results];
+    }
+
+    // Force update on next tick
+    await nextTick();
+    console.log("Search results updated:", searchResults.value.length);
+  }, 300);
+});
+
+function onSelect(itemId: string | null) {
+  if (!itemId || itemId === "no-results") return;
+
+  const result = searchResults.value.find((r) => r.id === itemId);
+  if (!result) return;
+
+  const boundingBox = transformBboxToOpenLayers(result.boundingBox);
+  emit("selected", boundingBox);
+
+  // Clear selection and close on mobile
+  selectedItem.value = null;
+  if (mobile.value) {
+    closeSearch();
   }
-
-  // Convert SearchResult objects to the format expected by ol-search-control
-  const features = results.map((result: SearchResult) => ({
-    ...result,
-    // Add any additional properties that ol-search-control might expect
-    properties: {
-      name: result.name,
-      type: result.type,
-      extent: result.boundingBox,
-    },
-  }));
-
-  cb(features);
 }
 </script>
 
-<style>
-.ol-search {
-  top: 0.5em !important;
-  left: 3em !important;
+<style scoped>
+.search-button {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-.ol-search ul {
-  color: #333;
-  font-size: 0.85em;
-  max-width: 21em;
-}
-
-.ol-search ul i {
-  display: block;
-  color: #333;
-  font-size: 0.85em;
-}
-
-.ol-search.is-searching input {
-  padding-right: 2em;
-}
-
-.ol-search.is-searching::after {
-  content: "";
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  border: 2px solid #666;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: search-spin 1s linear infinite;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-@keyframes search-spin {
-  from {
-    transform: translateY(-50%) rotate(0deg);
+@media (min-width: 600px) {
+  .map-search-control :deep(.v-autocomplete) {
+    width: 300px;
   }
-  to {
-    transform: translateY(-50%) rotate(360deg);
+}
+
+@media (max-width: 599px) {
+  .map-search-control :deep(.v-autocomplete) {
+    width: calc(100vw - 1em);
+    max-width: 400px;
   }
+}
+
+.map-search-control :deep(.v-field) {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  background: white;
+}
+
+.map-search-control :deep(.v-autocomplete__menu-content) {
+  max-height: 400px;
 }
 </style>
