@@ -47,15 +47,18 @@ export function useMapView(mapRef: Ref<unknown>) {
         if (initialRotation !== undefined) rotation.value = initialRotation;
 
         // Add listener for view changes (pan, zoom, rotate)
-        view.on(["change:center", "change:resolution", "change:rotation"], () => {
-          const newCenter = view.getCenter();
-          const newZoom = view.getZoom();
-          const newRotation = view.getRotation();
+        view.on(
+          ["change:center", "change:resolution", "change:rotation"],
+          () => {
+            const newCenter = view.getCenter();
+            const newZoom = view.getZoom();
+            const newRotation = view.getRotation();
 
-          if (newCenter) center.value = newCenter as [number, number];
-          if (newZoom !== undefined) zoom.value = newZoom;
-          if (newRotation !== undefined) rotation.value = newRotation;
-        });
+            if (newCenter) center.value = newCenter as [number, number];
+            if (newZoom !== undefined) zoom.value = newZoom;
+            if (newRotation !== undefined) rotation.value = newRotation;
+          }
+        );
       },
       { immediate: true }
     );

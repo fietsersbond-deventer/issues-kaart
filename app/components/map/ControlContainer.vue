@@ -1,7 +1,12 @@
 <template>
   <div
     ref="controlRef"
-    :class="['ol-positioning', 'ol-unselectable', 'control-container', position]"
+    :class="[
+      'ol-positioning',
+      'ol-unselectable',
+      'control-container',
+      position,
+    ]"
   >
     <slot />
   </div>
