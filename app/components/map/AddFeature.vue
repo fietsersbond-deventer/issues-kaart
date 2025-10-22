@@ -9,7 +9,6 @@ import type { Feature } from "ol";
 import type { Point, LineString, Polygon } from "ol/geom";
 import { GeoJSON } from "ol/format";
 import { POLYGON, POINT, LINE } from "~/utils/ReactiveFeature";
-import type { Issue } from "~/types/Issue";
 
 const eventBus = useMapEventBus().inject();
 if (!eventBus) throw new Error("No eventBus provided yet");
