@@ -11,7 +11,7 @@
         <ol-map class="mini-map" :controls="[]">
           <ol-view
             :center="center"
-            :zoom="zoom - 2"
+            :zoom="zoom - 3"
             :rotation="rotation"
             projection="EPSG:3857"
           />
