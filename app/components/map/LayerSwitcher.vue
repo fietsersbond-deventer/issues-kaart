@@ -44,18 +44,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Map } from "ol";
 
 const selectedLayer = defineModel<string>();
 
-// Get the map instance from vue3-openlayers context
-const map = inject<Map>("map");
-
-// Create a ref wrapper for the map to use with useMapView composable
-const mapRef = ref({ map });
-
 // Use the map view composable to sync with main map
-const { center, zoom, rotation } = useMapView(mapRef);
+const { center, zoom, rotation } = useMapView();
 
 const layers = [{ name: "Licht" }, { name: "Fiets" }, { name: "Foto" }];
 
