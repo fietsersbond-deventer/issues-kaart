@@ -1,5 +1,12 @@
 import { defineStore } from "pinia";
-import type { ExistingIssue, Issue } from "@/types/Issue";
+import {
+  isExistingIssue,
+  isNewIssue,
+  type ExistingIssue,
+  type Issue,
+} from "@/types/Issue";
+import type { Emitter } from "mitt";
+import { useThrottleFn } from "@vueuse/core";
 
 /**
  * Issues store
@@ -32,14 +39,7 @@ export function useIssues(options?: { fields?: string }) {
       ? new Set(fields.split(",").map((f) => f.trim()))
       : null;
 
-    // Subscribe to WebSocket messages
-    const unsubscribe = ws.subscribe((parsed) => {
-      console.debug(
-        `[useIssues(${storeName})] Received WS message:`,
-        parsed.type
-      );
-
-      const issue = parsed.payload as ExistingIssue;
+    function getSelectedFields(issue: Issue) {
       if (issue.geometry && typeof issue.geometry === "string") {
         issue.geometry = JSON.parse(issue.geometry);
       }
@@ -70,7 +70,9 @@ export function useIssues(options?: { fields?: string }) {
           if (field === "imageUrl") {
             // Check if issue has an image in description
             const hasImage =
-              issue.description && issue.description.includes("data:image");
+              "id" in issue &&
+              issue.description &&
+              issue.description.includes("data:image");
             (filteredIssue as Record<string, unknown>).imageUrl = hasImage
               ? `/api/issues/${issue.id}/image`
               : null;
@@ -79,39 +81,47 @@ export function useIssues(options?: { fields?: string }) {
       } else {
         filteredIssue = issue as Issue;
       }
+      return filteredIssue;
+    }
 
+    // Subscribe to WebSocket messages
+    const unsubscribe = ws.subscribe((parsed) => {
       console.debug(
-        `[useIssues(${storeName})] Filtered issue for update:`,
-        filteredIssue
+        `[useIssues(${storeName})] Received WS message:`,
+        parsed.type
       );
 
       switch (parsed.type) {
-        case "issue-created":
-          issues.value.push(filteredIssue);
+        case "issue-created": {
+          const issue = getSelectedFields(parsed.payload as Issue);
+
+          issues.value.push(issue as ExistingIssue);
           if (isAuthenticated.value) {
             snackbar.showMessageOnce(`Onderwerp ${issue.title} aangemaakt`);
           }
           break;
+        }
         case "issue-modified":
           {
+            const issue = getSelectedFields(parsed.payload as Issue);
             const existingIndex = issues.value.findIndex(
-              (i) => "id" in i && i.id === issue.id
+              (i) => "id" in i && i.id === (issue as ExistingIssue).id
             );
 
             console.debug(
               `[useIssues(${storeName})] issue-modified - Found at index:`,
               existingIndex,
               "Updating with:",
-              filteredIssue
+              issue
             );
 
             if (existingIndex !== -1) {
-              issues.value[existingIndex] = filteredIssue;
+              issues.value[existingIndex] = issue;
               if (isAuthenticated.value) {
                 snackbar.showMessageOnce(`Onderwerp ${issue.title} gewijzigd`);
               }
             } else {
-              issues.value.push(filteredIssue);
+              issues.value.push(issue);
               if (isAuthenticated.value) {
                 snackbar.showMessageOnce(`Onderwerp ${issue.title} aangemaakt`);
               }
@@ -133,6 +143,35 @@ export function useIssues(options?: { fields?: string }) {
           console.debug("Unknown WebSocket message type:", parsed.type);
       }
     });
+
+    // any changes to the selected issue should be reflected in this store
+    const { issue } = storeToRefs(useSelectedIssue());
+    const throttledUpdate = useThrottleFn((issue: Issue | null) => {
+      if (!issue) return;
+
+      const existingIndex = issues.value.findIndex(
+        (i) =>
+          (isNewIssue(issue) && isNewIssue(i)) ||
+          (isExistingIssue(issue) && isExistingIssue(i) && i.id === issue.id)
+      );
+
+      if (existingIndex !== -1) {
+        // Update existing issue in store
+        issues.value[existingIndex] = getSelectedFields(issue);
+      } else {
+        // Add new issue to store
+        issues.value.push(getSelectedFields(issue));
+      }
+    }, 100);
+
+    // watch issue and update store accordingly
+    watch(
+      issue,
+      (updatedIssue) => {
+        throttledUpdate(updatedIssue);
+      },
+      { deep: true }
+    );
 
     // Cleanup subscription when store is disposed
     onUnmounted(unsubscribe);

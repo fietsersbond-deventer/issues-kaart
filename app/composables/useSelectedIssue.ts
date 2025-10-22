@@ -1,4 +1,3 @@
-import { useRoute } from "#app";
 import type { Issue, NewIssue, ExistingIssue } from "~/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
@@ -50,14 +49,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
 
       // Only update if this is the issue we're viewing
       if (updatedIssue.id === selectedId.value) {
-        if (isEditing.value && issue.value) {
-          // When editing, preserve geometry to prevent reverting the editor's changes
-          const currentGeometry = issue.value.geometry;
-          issue.value = { ...updatedIssue, geometry: currentGeometry };
-        } else {
-          // When not editing, update everything
-          issue.value = updatedIssue;
-        }
+        issue.value = updatedIssue;
       }
     } else if (parsed.type === "issue-deleted") {
       const deletedId = parsed.payload as number;
