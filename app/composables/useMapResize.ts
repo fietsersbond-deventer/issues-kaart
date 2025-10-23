@@ -5,7 +5,10 @@ import centroid from "@turf/centroid";
 import bbox from "@turf/bbox";
 import type { Geometry } from "geojson";
 
-export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
+export function useMapResize(
+  mapRef: Ref<{ map?: OLMap } | null | undefined>,
+  padding: Ref<[number, number, number, number]>
+) {
   const { issue: selectedIssue } = storeToRefs(useSelectedIssue());
   const mapHeight = ref(0);
   const mapWidth = ref(0);
@@ -63,7 +66,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
         );
 
         view.fit(extent, {
-          padding: [50, 50, 50, 50], // Add 50px margin on all sides
+          padding: padding.value,
           duration: 600,
           maxZoom: 17, // Don't zoom in too close
         });

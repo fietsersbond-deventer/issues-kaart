@@ -13,27 +13,15 @@
 
     <!-- Top-left corner controls -->
     <MapControlContainer position="top-left">
-      <MapSearch
-        @selected="onSearchSelected"
-        @search-expanded="onSearchExpanded"
-      />
       <MapResetExtentControl @reset="resetToOriginalExtent" />
     </MapControlContainer>
 
-    <!-- Top-right corner controls -->
-    <MapControlContainer position="top-right">
-      <MapLayerSwitcher
-        v-show="!isMapVerySmall && !isSearchExpanded"
-        v-model="preferredLayer"
-      />
-    </MapControlContainer>
-
-    <!-- Bottom-left corner controls -->
-    <MapControlContainer v-if="!isMapSmall" position="bottom-left">
+    <MapControlContainer v-show="!isMapSmall" position="bottom-left">
       <SizeCalculator v-model="legendSize">
         <MobileCollapsible title="Legenda" icon="mdi-map-legend">
           <MapLegend />
         </MobileCollapsible>
+        <MapLayerSwitcher v-model="preferredLayer" />
       </SizeCalculator>
     </MapControlContainer>
 
@@ -222,8 +210,8 @@ watchLayerVisibility(light, "Licht");
 watchLayerVisibility(fietskaart, "Fiets");
 watchLayerVisibility(luchtfotoSource, "Foto");
 
-const defaultPadding = [50, 50, 50, 50]; // [top, right, bottom, left]
-const currentPadding = ref(defaultPadding);
+// [top, right, bottom, left]
+const currentPadding = ref<[number, number, number, number]>([50, 50, 50, 50]);
 
 const legendSize = ref<Size>({ width: 0, height: 0 });
 
@@ -241,21 +229,6 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
   if (!view.value) return;
   const padding = options.padding || currentPadding.value;
   view.value.fit(bbox, { ...options, padding });
-}
-
-function onSearchSelected(bbox: BBox) {
-  setBbox(bbox, {
-    padding: currentPadding.value,
-    maxZoom: 17,
-    easing: easeOut,
-    duration: 1000,
-  });
-}
-
-const isSearchExpanded = ref(false);
-
-function onSearchExpanded(expanded: boolean) {
-  isSearchExpanded.value = expanded;
 }
 
 function resetToOriginalExtent() {
@@ -312,7 +285,10 @@ const zoom = ref(13);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
-const { mapHeight, recenterOnSelectedIssue } = useMapResize(mapRef);
+const { mapHeight, recenterOnSelectedIssue } = useMapResize(
+  mapRef,
+  currentPadding
+);
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
