@@ -12,9 +12,6 @@
         <li class="mb-2">
           Klik op een onderwerp op de kaart om de details te bekijken
         </li>
-        <li class="mb-2">
-          Gebruik de zoomknoppen of scroll met je muis om in en uit te zoomen
-        </li>
         <li class="mb-2">Zoek een locatie met de zoekbalk linksboven</li>
         <li class="mb-2">
           Bekijk de legenda om te zien wat de kleuren betekenen
