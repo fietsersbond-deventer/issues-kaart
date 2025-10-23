@@ -221,7 +221,7 @@ watch(legendSize, async () => {
     50, // top
     50, // right
     legendSize.value.height + 20, // bottom
-    legendSize.value.width + 20, // left
+    50, // left
   ];
 });
 
