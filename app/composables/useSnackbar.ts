@@ -1,36 +1,36 @@
 interface SnackbarState {
-  show: boolean
-  text: string
-  color?: string
+  show: boolean;
+  text: string;
+  color?: string;
 }
 
 const snackbar = ref<SnackbarState>({
   show: false,
-  text: '',
-  color: 'success'
-})
+  text: "",
+  color: "success",
+});
 
 export function useSnackbar() {
-  function showMessage(text: string, color: string = 'success') {
+  function showMessage(text: string, color: string = "success") {
     snackbar.value = {
       show: true,
       text,
-      color
-    }
+      color,
+    };
   }
 
   function showSuccess(text: string) {
-    showMessage(text, 'success')
+    showMessage(text, "success");
   }
 
   function showError(text: string) {
-    showMessage(text, 'error')
+    showMessage(text, "error");
   }
 
   return {
     snackbar,
     showMessage,
     showSuccess,
-    showError
-  }
+    showError,
+  };
 }

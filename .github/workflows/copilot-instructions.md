@@ -13,6 +13,15 @@
 - never overwrite any .env of local.js file without asking and confirming
 - always use relative paths. NEVER use an absolute path like S:/Sources/...
 
+# code formatting
+
+- ALWAYS format code using the VS Code default formatter for the file type
+- After making any code changes, ensure the code is properly formatted
+- Follow the project's ESLint rules (configured via @nuxt/eslint)
+- Code must be formatted consistently with the existing codebase
+- Never manually format code - let the formatter handle it
+- If unsure about formatting, defer to the existing code style in the project
+
 # workflow
 
 - focus on areas of code relevant to the task

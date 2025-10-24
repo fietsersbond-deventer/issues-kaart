@@ -2,7 +2,9 @@
   <v-dialog v-model="modelValue" max-width="500px">
     <v-card>
       <v-card-title>
-        <span>{{ isEdit ? 'Legend Item aanpassen' : 'Nieuw Legenda Item' }}</span>
+        <span>{{
+          isEdit ? "Legend Item aanpassen" : "Nieuw Legenda Item"
+        }}</span>
       </v-card-title>
 
       <v-card-text>
@@ -43,14 +45,14 @@
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
 
-const modelValue = defineModel<boolean>('modelValue');
+const modelValue = defineModel<boolean>("modelValue");
 
 const { legend = undefined } = defineProps<{
   legend?: Legend;
 }>();
 
 const emit = defineEmits<{
-  (e: 'save', item: Partial<Legend>): void;
+  (e: "save", item: Partial<Legend>): void;
 }>();
 
 const defaultItem: Partial<Legend> = {
@@ -59,15 +61,20 @@ const defaultItem: Partial<Legend> = {
   color: "#2196F3",
 };
 
-const editedItem = ref<Partial<Legend>>(legend ? { ...legend } : { ...defaultItem });
+const editedItem = ref<Partial<Legend>>(
+  legend ? { ...legend } : { ...defaultItem }
+);
 const isEdit = computed(() => !!legend);
 
-watch(() => legend, (newLegend) => {
-  editedItem.value = newLegend ? { ...newLegend } : { ...defaultItem };
-});
+watch(
+  () => legend,
+  (newLegend) => {
+    editedItem.value = newLegend ? { ...newLegend } : { ...defaultItem };
+  }
+);
 
 function save() {
-  emit('save', editedItem.value);
+  emit("save", editedItem.value);
 }
 
 function close() {
