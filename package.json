@@ -1,6 +1,14 @@
 {
   "name": "fietsersbond-onderwerpen",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Interactieve kaart voor het melden en beheren van fietsgerelateerde onderwerpen in Deventer",
+  "author": "Fietsersbond Deventer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fietsersbond-deventer/issues-kaart.git"
+  },
+  "private": false,
   "type": "module",
   "scripts": {
     "dev": "nuxt dev --inspect --host",
