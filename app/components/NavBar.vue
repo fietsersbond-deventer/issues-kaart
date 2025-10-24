@@ -78,6 +78,7 @@ async function handleLogout() {
   height: 100%;
   padding-right: 1em;
   max-width: 50%;
+  text-decoration: none;
 }
 
 .navbar {
