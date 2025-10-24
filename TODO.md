@@ -5,6 +5,7 @@ Deze TODO lijst beschrijft alle stappen om de Fietsersbond Deventer app generiek
 ## 📋 Overzicht van Deventer-specifieke elementen
 
 ### Hardcoded Teksten & Branding
+
 - Organisatie naam "Fietsersbond Deventer" in meerdere bestanden
 - Welkomtekst "Welkom bij de Fietsersbond Deventer"
 - Site titles, descriptions, Open Graph metadata
@@ -12,16 +13,19 @@ Deze TODO lijst beschrijft alle stappen om de Fietsersbond Deventer app generiek
 - GitHub repository links naar `fietsersbond-deventer`
 
 ### Geografische Configuratie
+
 - Kaart centrum coördinaten: `[687858.9021986299, 6846820.48790154]` (Deventer)
 - Zoek bias coördinaten: `52.2511467, 6.1574997` (Deventer)
 - Zoekgebied bounding box: `"6.0,52.1,6.3,52.4"` (rond Deventer)
 - Initieel zoom niveau: `13`
 
 ### Externe URLs
+
 - Hoofdwebsite: `https://deventer.fietsersbond.nl/`
 - Contact URL: `https://deventer.fietsersbond.nl/contact/contact-met-de-afdeling/`
 
 ### Database & Deployment
+
 - Database pad: `/path/to/fietsersbond.sqlite3`
 - PM2 app naam: `fietsersbond`
 - Deploy script met hardcoded paths
@@ -33,7 +37,9 @@ Deze TODO lijst beschrijft alle stappen om de Fietsersbond Deventer app generiek
 ### Stap 1: Environment Variabelen Uitbreiden
 
 #### `.env.example` aanpassen
+
 Toevoegen aan `.env.example`:
+
 ```bash
 # ====== ORGANISATIE CONFIGURATIE ======
 NUXT_PUBLIC_ORGANIZATION_NAME="Fietsersbond Afdeling"
@@ -57,6 +63,7 @@ NUXT_PUBLIC_FAVICON_PATH="/favicon.ico"
 ### Stap 2: Nuxt Config Aanpassen
 
 #### `nuxt.config.ts` uitbreiden
+
 - Alle nieuwe environment variabelen toevoegen aan `runtimeConfig.public`
 - Favicon path configurabel maken
 - Type conversies toevoegen voor numerieke waarden
@@ -64,28 +71,34 @@ NUXT_PUBLIC_FAVICON_PATH="/favicon.ico"
 ### Stap 3: Composables Aanpassen
 
 #### `app/composables/useLocationSearch.ts`
+
 - `biasLat` en `biasLon` vervangen door config waarden
 - `viewbox` configurabel maken
 - `deventerCoords` vervangen door config waarden
 - Hardcoded coördinaten in sorteerfunctie vervangen
 
 #### `app/composables/useMapView.ts`
+
 - Hardcoded center coördinaten vervangen door config waarden
 
 #### `app/composables/useIssueOpenGraph.ts`
+
 - Hardcoded "Fietsersbond" vervangen door config organisatie naam
 - Site name configurabel maken
 
 #### `app/composables/useBreadcrumbs.ts`
+
 - "Deventer onderwerpen" vervangen door config waarde
 
 ### Stap 4: Components Aanpassen
 
 #### `app/components/Map.client.vue`
+
 - Hardcoded center coördinaten vervangen
 - Initieel zoom niveau configurabel maken
 
 #### `app/components/NavBar.vue`
+
 - Logo path configurabel maken
 - Logo alt text configurabel maken
 - Organisatie naam in header configurabel maken
@@ -93,30 +106,36 @@ NUXT_PUBLIC_FAVICON_PATH="/favicon.ico"
 - Tooltip teksten aanpassen
 
 #### `app/components/Intro.vue`
+
 - Welkomtekst configurabel maken
 
 ### Stap 5: Pages Aanpassen
 
 #### `app/app.vue`
+
 - SEO meta title configurabel maken
 
 #### `app/pages/kaart/[id].vue`
+
 - Page titles configurabel maken
 
 ### Stap 6: Deployment & Infrastructure
 
 #### `deploy.sh`
+
 - PM2 app naam configurabel maken
 - Hardcoded paths vervangen door variabelen
 - User path `/home/fietsersbond/` configurabel maken
 
 #### `ecosystem.config.example.cjs`
+
 - App naam configurabel maken
 - Database path placeholder generiek maken
 
 ### Stap 9: Configuration Helper
 
 #### Nieuwe bestanden toevoegen
+
 - `config/organization.example.json` - Voorbeeld configuratie
 - `scripts/setup-organization.js` - Script om configuratie te valideren
 - `docs/CONFIGURATION.md` - Uitgebreide configuratie handleiding
@@ -140,6 +159,7 @@ De app zal dan volledig branded zijn voor hun organisatie zonder code wijziginge
 ## 📝 Extra Overwegingen
 
 ### Automated Setup (Optioneel)
+
 - CLI tool voor eerste setup
 - Docker container met environment setup
 - GitHub template repository maken
