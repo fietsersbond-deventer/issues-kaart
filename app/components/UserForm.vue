@@ -1,14 +1,7 @@
 <template>
   <v-form v-model="validForm" @submit.prevent="handleSubmit">
-    <v-text-field
-      v-model="form.username"
-      label="Gebruikersnaam"
-      required
-    />
-    <v-text-field
-      v-model="form.name"
-      label="Naam"
-    />
+    <v-text-field v-model="form.username" label="Gebruikersnaam" required />
+    <v-text-field v-model="form.name" label="Naam" />
     <v-select
       v-model="form.role"
       label="Rol"
@@ -31,7 +24,7 @@
         type="submit"
         :disabled="!validForm"
       >
-        {{ editMode ? 'Opslaan' : 'Toevoegen' }}
+        {{ editMode ? "Opslaan" : "Toevoegen" }}
       </v-btn>
       <v-btn color="error" @click="$emit('cancel')">Annuleren</v-btn>
     </v-card-actions>
@@ -39,23 +32,25 @@
 </template>
 
 <script setup lang="ts">
-import type { User } from '~/types/User';
-import { useRoles } from '~/composables/useRoles';
+import type { User } from "~/types/User";
+import { useRoles } from "~/composables/useRoles";
 
 const validForm = ref(true);
 
 const props = defineProps<{
-  user?: Pick<User, 'id' | 'username' | 'name' | 'role'>;
+  user?: Pick<User, "id" | "username" | "name" | "role">;
   loading?: boolean;
 }>();
 
 const emit = defineEmits<{
-  submit: [data: {
-    username: string;
-    name: string | null;
-    role: string;
-    password?: string;
-  }];
+  submit: [
+    data: {
+      username: string;
+      name: string | null;
+      role: string;
+      password?: string;
+    }
+  ];
   cancel: [];
 }>();
 
@@ -64,23 +59,20 @@ const { getAllRoles } = useRoles();
 const roles = getAllRoles();
 
 const form = ref({
-  username: props.user?.username ?? '',
-  name: props.user?.name ?? '',
-  role: props.user?.role ?? 'user',
-  password: ''
+  username: props.user?.username ?? "",
+  name: props.user?.name ?? "",
+  role: props.user?.role ?? "user",
+  password: "",
 });
-
-const isPasswordValid = ref(false);
-
 
 function handleSubmit() {
   if (!validForm.value) return;
 
-  emit('submit', {
+  emit("submit", {
     username: form.value.username,
     name: form.value.name || null,
     role: form.value.role,
-    ...(editMode.value ? {} : { password: form.value.password })
+    ...(editMode.value ? {} : { password: form.value.password }),
   });
 }
 </script>

@@ -3,12 +3,6 @@
     <v-navigation-drawer permanent>
       <v-list>
         <v-list-item
-          v-if="isAdmin"
-          prepend-icon="mdi-account-group"
-          title="Gebruikers"
-          to="/admin/users"
-        />
-        <v-list-item
           prepend-icon="mdi-file-document"
           title="Onderwerpen"
           to="/admin/issues"
@@ -19,6 +13,12 @@
           to="/admin/legends"
         />
       </v-list>
+      <v-list-item
+        v-if="isAdmin"
+        prepend-icon="mdi-account-group"
+        title="Gebruikers"
+        to="/admin/users"
+      />
     </v-navigation-drawer>
 
     <v-main>
@@ -34,18 +34,14 @@ definePageMeta({
   title: "Beheer",
   navTitle: "Beheer",
 
-  // Add middleware to handle redirects from /admin
   middleware: [
     "sidebase-auth",
     function (to) {
       if (to.path === "/admin") {
-        const { isAdmin } = useRoles();
-        return isAdmin.value ? "/admin/users" : "/admin/issues";
+        return "/admin/issues";
       }
     },
   ],
 });
 const { isAdmin } = useRoles();
-
-// All redirects are now handled by the middleware
 </script>
