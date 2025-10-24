@@ -102,12 +102,14 @@ DEPLOYMENT_TARGET=user@host:/path/to/deploy ./deploy.sh
 ```
 
 Het script:
+
 1. Bouwt de applicatie (`npm run build`)
 2. Synchroniseert `package.json` naar de remote server
 3. Synchroniseert de `.output` directory (server, public, nitro.json)
 4. Herstart de applicatie via PM2 op de remote server
 
 **Vereisten voor deployment:**
+
 - SSH toegang tot de remote server
 - PM2 geïnstalleerd op de remote server
 - De `DEPLOYMENT_TARGET` environment variabele gezet
