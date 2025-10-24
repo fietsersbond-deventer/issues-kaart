@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "vue.volar",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "misterj.vue-volar-extention-pack",
+    "nuxtr.nuxtr-vscode",
+    "lukas-tr.materialdesignicons-intellisense",
+    "alexcvzz.vscode-sqlite",
+    "antfu.goto-alias",
+    "mikestead.dotenv",
+    "christian-kohler.path-intellisense",
+    "yoavbls.pretty-ts-errors",
+    "eamodio.gitlens"
+  ],
+  "unwantedRecommendations": ["octref.vetur"]
+}
