@@ -1,6 +1,5 @@
 import { feature as asFeature } from "@turf/helpers";
 import { bbox } from "@turf/bbox";
-import { ref } from "vue";
 import type { Feature, Geometry, LineString, Point, Polygon } from "geojson";
 
 export const POLYGON = "polygon";

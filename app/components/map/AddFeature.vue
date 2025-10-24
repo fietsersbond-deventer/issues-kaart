@@ -3,7 +3,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import type { DrawEvent } from "ol/interaction/Draw";
 import type { Feature } from "ol";
 import type { Point, LineString, Polygon } from "ol/geom";

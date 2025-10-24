@@ -14,7 +14,6 @@
 
 <script setup lang="ts">
 import { Control } from "ol/control";
-import { onMounted, onBeforeUnmount } from "vue";
 import type { Map } from "ol";
 
 defineProps<{

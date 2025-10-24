@@ -45,11 +45,9 @@ import type { Legend } from "~~/server/database/schema";
 
 const modelValue = defineModel<boolean>('modelValue');
 
-const props = withDefaults(defineProps<{
+const { legend = undefined } = defineProps<{
   legend?: Legend;
-}>(), {
-  legend: undefined,
-});
+}>();
 
 const emit = defineEmits<{
   (e: 'save', item: Partial<Legend>): void;
@@ -61,10 +59,10 @@ const defaultItem: Partial<Legend> = {
   color: "#2196F3",
 };
 
-const editedItem = ref<Partial<Legend>>(props.legend ? { ...props.legend } : { ...defaultItem });
-const isEdit = computed(() => !!props.legend);
+const editedItem = ref<Partial<Legend>>(legend ? { ...legend } : { ...defaultItem });
+const isEdit = computed(() => !!legend);
 
-watch(() => props.legend, (newLegend) => {
+watch(() => legend, (newLegend) => {
   editedItem.value = newLegend ? { ...newLegend } : { ...defaultItem };
 });
 

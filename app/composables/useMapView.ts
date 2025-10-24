@@ -1,4 +1,3 @@
-import { onMounted, ref, watch, type Ref } from "vue";
 import type { Map } from "ol";
 
 export interface MapViewState {

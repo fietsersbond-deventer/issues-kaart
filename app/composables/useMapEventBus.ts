@@ -1,4 +1,3 @@
-import { inject, provide } from "vue";
 // https://github.com/developit/mitt
 import mitt, { type Emitter } from "mitt";
 

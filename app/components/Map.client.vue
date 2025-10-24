@@ -162,7 +162,6 @@ import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke } from "ol/style";
 import { click } from "ol/events/condition";
-import type TileLayer from "ol/layer/Tile";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
@@ -200,7 +199,6 @@ function getFeatureProperties(issue: MapIssue) {
 }
 
 // preview images for layers
-const lufolabelsSource = useTemplateRef("lufolabels-source");
 const luchtfotoSource = useTemplateRef("luchtfoto-source");
 const light = useTemplateRef("light");
 const fietskaart = useTemplateRef("fietskaart");

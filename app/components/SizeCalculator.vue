@@ -5,7 +5,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 
 interface Size {

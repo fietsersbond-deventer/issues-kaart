@@ -1,5 +1,3 @@
-import { ref } from 'vue'
-
 interface SnackbarState {
   show: boolean
   text: string

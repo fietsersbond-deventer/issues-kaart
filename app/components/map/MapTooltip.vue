@@ -14,7 +14,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, onMounted, onUnmounted } from "vue";
 import type { Feature } from "ol";
 import type MapBrowserEvent from "ol/MapBrowserEvent";
 import type { LineString, Point, Polygon } from "ol/geom";

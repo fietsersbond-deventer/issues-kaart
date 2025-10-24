@@ -1,5 +1,4 @@
 import type { Map } from "ol";
-import { inject, provide } from "vue";
 /**
  * @example 
  * 

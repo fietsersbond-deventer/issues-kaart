@@ -1,7 +1,7 @@
 <template>
   <div
     ref="controlRef"
-    :class="['ol-positioning', 'ol-unselectable', props.position]"
+    :class="['ol-positioning', 'ol-unselectable', position]"
   >
     <slot />
   </div>
@@ -9,17 +9,11 @@
 
 <script setup lang="ts">
 import { Control } from "ol/control";
-import { onMounted, onBeforeUnmount } from "vue";
 import type { Map } from "ol";
 
-const props = withDefaults(
-  defineProps<{
-    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-  }>(),
-  {
-    position: "top-left",
-  }
-);
+const { position = "top-left" } = defineProps<{
+  position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+}>();
 
 const controlRef = useTemplateRef<HTMLDivElement>("controlRef");
 let control: Control;

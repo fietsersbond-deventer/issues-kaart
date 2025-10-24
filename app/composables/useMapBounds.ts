@@ -1,5 +1,5 @@
 import { transformExtent } from "ol/proj";
-import { onMounted, watch, type Ref } from "vue";
+import type { Ref } from "vue";
 import type { Map } from "ol";
 
 export interface MapBounds {
