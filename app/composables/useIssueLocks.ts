@@ -1,11 +1,8 @@
 import { ref, watch, computed } from "vue";
-import { useWebSocket } from "@vueuse/core";
 import { defineStore } from "pinia";
+import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
 
 export const useIssueLocks = defineStore("issueLocks", () => {
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const websocketUrl = `${protocol}://${window.location.host}/ts/lock`;
-
   const { isEditing } = useIsEditing();
   const { selectedId } = storeToRefs(useSelectedIssue());
 
@@ -13,44 +10,52 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   const { data: authData, status } = useAuth();
   const isAuthenticated = computed(() => status.value === "authenticated");
 
-  // Create WebSocket instance at top level - but control its connection state
-  const ws = useWebSocket(websocketUrl, {
-    immediate: false, // Don't connect immediately
-    autoReconnect: {
-      retries: 3,
-      delay: 1000,
-      onFailed() {
-        console.error("WebSocket failed to reconnect after retries");
-      },
-    },
-    onConnected() {
-      console.log("WebSocket connected to", websocketUrl);
-    },
-    onDisconnected() {
-      console.log("WebSocket disconnected");
-    },
-    onError(error) {
-      console.error("WebSocket error:", error);
-    },
-  });
+  // Use shared WebSocket connection
+  const authWs = useSharedAuthWebSocket();
 
   // Watch authentication status and manage WebSocket connection
   watch(
     isAuthenticated,
     (authenticated) => {
       if (authenticated) {
-        ws.open();
-      } else {
-        ws.close();
+        // Don't manage connection here - let useOnlineUsers handle it
+        // Re-establish lock if user was editing when connection was lost
+        if (
+          isEditing.value &&
+          selectedId.value &&
+          authWs.status.value === "OPEN"
+        ) {
+          console.log("Lock herstellen voor issue:", selectedId.value);
+          notifyEditing(selectedId.value, true);
+        }
       }
+      // Don't close connection here - let useOnlineUsers handle it
     },
     { immediate: true }
   );
 
-  const userName = computed(() => authData.value?.name || "Onbekend");
+  const userName = computed(() => authData.value?.username || "unknown");
+  const displayName = computed(
+    () => authData.value?.name || authData.value?.username || "Unknown"
+  );
 
-  const editingUsers = ref<Record<string, { peer: string; username: string }>>(
-    {}
+  const editingUsers = ref<
+    Record<string, { peer: string; username: string; displayName: string }>
+  >({});
+
+  // Track our own peer ID
+  const myPeerId = ref<string | null>(null);
+
+  // Clear editing users when connection is lost (prevent stale lock indicators)
+  watch(
+    () => authWs.status.value,
+    (status) => {
+      if (status === "CLOSED" || status === "CONNECTING") {
+        editingUsers.value = {};
+        myPeerId.value = null; // Clear our peer ID too
+        console.log("Lock status gewist vanwege verbindingsverlies");
+      }
+    }
   );
 
   watch(
@@ -71,44 +76,41 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     { immediate: true }
   );
 
-  watch(ws.data, (data) => {
-    if (!data) return;
-    console.debug("WebSocket message received:", data);
-    try {
-      const message = JSON.parse(data as string);
-      if (message.type === "editing-status") {
-        editingUsers.value = message.payload;
-      }
-    } catch (error) {
-      console.error("Failed to parse WebSocket message:", error);
+  // Subscribe to WebSocket messages for lock status updates
+  const unsubscribe = authWs.subscribe((message) => {
+    if (message.type === "editing-status") {
+      editingUsers.value =
+        (message.payload as Record<
+          string,
+          { peer: string; username: string; displayName: string }
+        >) || {};
+    } else if (message.type === "peer-connected") {
+      myPeerId.value = message.payload as string;
     }
   });
 
   function notifyEditing(issueId: number, isEditing: boolean) {
-    console.debug("notifyEditing", { issueId, isEditing });
-
     // Only send if authenticated and WebSocket is connected
-    if (!isAuthenticated.value || ws.status.value !== "OPEN") {
-      console.warn(
-        "Cannot notify editing: not authenticated or WebSocket not connected"
-      );
+    if (!isAuthenticated.value || authWs.status.value !== "OPEN") {
       return;
     }
 
     if (isEditing) {
-      ws.send(
+      authWs.send(
         JSON.stringify({
           type: "lockIssue",
           issueId,
           username: userName.value,
+          displayName: displayName.value,
         })
       );
     } else {
-      ws.send(
+      authWs.send(
         JSON.stringify({
           type: "unlockIssue",
           issueId,
           username: userName.value,
+          displayName: displayName.value,
         })
       );
     }
@@ -116,8 +118,9 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   function isLocked(issueId: number) {
     const editingUser = editingUsers.value[issueId];
-    if (editingUser !== undefined && editingUser.username !== userName.value) {
-      return editingUser.username;
+    // Show as locked if someone else is editing (different peer ID)
+    if (editingUser !== undefined && editingUser.peer !== myPeerId.value) {
+      return editingUser.displayName || editingUser.username;
     }
     return false;
   }
@@ -126,8 +129,9 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     const locks: Record<string, string> = {};
     for (const id in editingUsers.value) {
       const user = editingUsers.value[id];
-      if (user && user.username !== userName.value) {
-        locks[id] = user.username;
+      // Show lock if someone else is editing (different peer ID)
+      if (user && user.peer !== myPeerId.value) {
+        locks[id] = user.displayName || user.username;
       }
     }
     return locks;
@@ -138,11 +142,17 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     return isLocked(selectedId.value);
   });
 
+  // Cleanup function
+  function cleanup() {
+    unsubscribe();
+  }
+
   return {
     editingUsers,
     notifyEditing,
     isLockedByOther,
     isLocked,
     locks,
+    cleanup,
   };
 });

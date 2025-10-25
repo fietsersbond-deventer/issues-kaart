@@ -11,7 +11,10 @@
       <div class="header-link ml-3">Fietsersbond Deventer onderwerpen</div>
     </NuxtLink>
     <v-spacer />
+
+    <!-- Show online users when authenticated -->
     <template v-if="status === 'authenticated'">
+      <OnlineUsers :avatar-size="28" :max-avatars="4" :show-text class="mr-4" />
       <v-btn
         v-tooltip:top="'Nieuw onderwerp toevoegen'"
         to="/kaart/new"

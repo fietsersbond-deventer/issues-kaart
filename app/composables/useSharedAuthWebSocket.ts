@@ -1,7 +1,7 @@
 import { useWebSocket } from "@vueuse/core";
 
 /**
- * WebSocket message event bus
+ * WebSocket message event bus for authenticated user features
  * Allows multiple stores to subscribe to messages without processing duplicates
  */
 type WebSocketMessage = {
@@ -11,7 +11,7 @@ type WebSocketMessage = {
 
 type WebSocketSubscriber = (message: WebSocketMessage) => void;
 
-const createWebSocketEventBus = () => {
+const createAuthWebSocketEventBus = () => {
   const subscribers = new Set<WebSocketSubscriber>();
 
   return {
@@ -24,37 +24,47 @@ const createWebSocketEventBus = () => {
         const message = JSON.parse(data) as WebSocketMessage;
         subscribers.forEach((callback) => callback(message));
       } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
+        console.error("Failed to parse auth WebSocket message:", error);
       }
     },
   };
 };
 
 /**
- * Shared WebSocket connection for all issue stores
- * Singleton pattern to ensure only one connection and one message processor
+ * Shared WebSocket connection for all authenticated user features (locks + presence)
+ * Singleton pattern with reference counting to minimize overhead
  */
-export const useSharedIssuesWebSocket = (() => {
+export const useSharedAuthWebSocket = (() => {
   let wsInstance: ReturnType<typeof useWebSocket> | null = null;
-  let eventBus: ReturnType<typeof createWebSocketEventBus> | null = null;
+  let eventBus: ReturnType<typeof createAuthWebSocketEventBus> | null = null;
+  let refCount = 0;
 
   return () => {
     if (!wsInstance) {
       const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const websocketUrl = `${protocol}://${window.location.host}/ts/notify`;
+      const websocketUrl = `${protocol}://${window.location.host}/ts/auth`;
 
-      eventBus = createWebSocketEventBus();
+      eventBus = createAuthWebSocketEventBus();
 
       wsInstance = useWebSocket(websocketUrl, {
-        autoReconnect: true,
+        immediate: false, // Don't connect immediately - controlled by auth state
+        autoReconnect: {
+          retries: 5,
+          delay: 1000,
+          onFailed() {
+            console.error(
+              "Auth WebSocket verbinding herstellen mislukt na meerdere pogingen"
+            );
+          },
+        },
         onConnected() {
-          console.debug("WebSocket connected to", websocketUrl);
+          console.log("Auth WebSocket verbonden met", websocketUrl);
         },
         onDisconnected() {
-          console.debug("WebSocket disconnected");
+          console.log("Auth WebSocket verbinding verbroken");
         },
         onError(error) {
-          console.error("WebSocket error:", error);
+          console.error("Auth WebSocket fout:", error);
         },
       });
 
@@ -68,11 +78,21 @@ export const useSharedIssuesWebSocket = (() => {
         }
       );
     }
+
+    refCount++;
+
     return {
       subscribe: eventBus!.subscribe,
       status: wsInstance.status,
-      close: wsInstance.close,
+      close: () => {
+        refCount--;
+        if (refCount <= 0) {
+          wsInstance?.close();
+          refCount = 0;
+        }
+      },
       open: wsInstance.open,
+      send: wsInstance.send,
     };
   };
 })();
