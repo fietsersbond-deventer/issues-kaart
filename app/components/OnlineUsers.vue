@@ -1,12 +1,12 @@
 <template>
   <div class="online-users">
-    <template v-if="otherUserCount > 0">
+    <template v-if="displayedUserCount > 0">
       <!-- Show individual avatars when there are few users -->
-      <template v-if="otherUserCount <= maxAvatars">
+      <template v-if="displayedUserCount <= maxAvatars">
         <div class="avatar-container">
           <UserAvatar
-            v-for="user in otherOnlineUsers"
-            :key="user.userId"
+            v-for="user in displayedOnlineUsers"
+            :key="user.peerId"
             :user="user"
             :size="avatarSize"
             class="avatar-item"
@@ -19,8 +19,8 @@
         <div class="avatar-container">
           <!-- Show first few avatars -->
           <UserAvatar
-            v-for="user in otherOnlineUsers.slice(0, maxAvatars - 1)"
-            :key="user.userId"
+            v-for="user in displayedOnlineUsers.slice(0, maxAvatars - 1)"
+            :key="user.peerId"
             :user="user"
             :size="avatarSize"
             class="avatar-item"
@@ -36,7 +36,7 @@
                 class="avatar-item overflow-avatar"
               >
                 <span class="overflow-text">
-                  +{{ otherUserCount - (maxAvatars - 1) }}
+                  +{{ displayedUserCount - (maxAvatars - 1) }}
                 </span>
               </v-avatar>
             </template>
@@ -64,13 +64,14 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const onlineUsersStore = useOnlineUsers();
-const { otherOnlineUsers, otherUserCount } = storeToRefs(onlineUsersStore);
+const { displayedOnlineUsers, displayedUserCount } =
+  storeToRefs(onlineUsersStore);
 
 // Get the function directly from the store
 const { getUserDisplayName } = onlineUsersStore;
 
 const overflowTooltip = computed(() => {
-  const hiddenUsers = otherOnlineUsers.value.slice(props.maxAvatars - 1);
+  const hiddenUsers = displayedOnlineUsers.value.slice(props.maxAvatars - 1);
   const names = hiddenUsers.map((user: OnlineUser) => getUserDisplayName(user));
 
   if (names.length <= 3) {

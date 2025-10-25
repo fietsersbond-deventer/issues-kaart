@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
 
 export interface OnlineUser {
+  peerId: string;
   username: string;
   name: string | null;
   userId: number;
@@ -21,10 +22,14 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   const onlineUsers = ref<OnlineUser[]>([]);
   const connectionStatus = computed(() => authWs.status.value);
 
+  // Track our own peer ID
+  const myPeerId = ref<string | null>(null);
+
   // Clear online users when disconnected (they'll be repopulated on reconnect)
   watch(connectionStatus, (status) => {
     if (status === "CLOSED" || status === "CONNECTING") {
       onlineUsers.value = [];
+      myPeerId.value = null;
     }
   });
 
@@ -80,6 +85,8 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   const unsubscribe = authWs.subscribe((message) => {
     if (message.type === "online-users") {
       onlineUsers.value = (message.payload as OnlineUser[]) || [];
+    } else if (message.type === "peer-connected") {
+      myPeerId.value = message.payload as string;
     }
   });
 
@@ -97,16 +104,54 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Computed properties for easier use
   const currentUser = computed(() => authData.value);
 
-  const otherOnlineUsers = computed(() => {
-    if (!currentUser.value) return onlineUsers.value;
+  const displayedOnlineUsers = computed(() => {
+    if (!currentUser.value || !myPeerId.value) return onlineUsers.value;
 
-    return onlineUsers.value.filter(
-      (user) => user.userId !== Number(currentUser.value!.id)
+    const currentUserId = Number(currentUser.value.id);
+
+    // Count how many peers (sessions) the current user has
+    const mySessionCount = onlineUsers.value.filter(
+      (user) => user.userId === currentUserId
+    ).length;
+
+    // Helper function to deduplicate users by userId (keep most recent)
+    const deduplicateUsers = (users: OnlineUser[]): OnlineUser[] => {
+      const userMap = new Map<number, OnlineUser>();
+
+      // Find the most recent connection for each userId
+      users.forEach((user) => {
+        const existing = userMap.get(user.userId);
+        if (!existing || user.connectedAt > existing.connectedAt) {
+          userMap.set(user.userId, user);
+        }
+      });
+
+      return Array.from(userMap.values());
+    };
+
+    // Get deduplicated other users (excluding current user)
+    const otherUsers = onlineUsers.value.filter(
+      (user) => user.userId !== currentUserId
     );
+    const deduplicatedOtherUsers = deduplicateUsers(otherUsers);
+
+    // If user has multiple sessions, add one instance of self
+    // If user has only one session, show only other users
+    if (mySessionCount > 1) {
+      const selfUser = onlineUsers.value.find(
+        (user) => user.peerId === myPeerId.value
+      );
+
+      return selfUser
+        ? [...deduplicatedOtherUsers, selfUser]
+        : deduplicatedOtherUsers;
+    } else {
+      return deduplicatedOtherUsers;
+    }
   });
 
   const onlineUserCount = computed(() => onlineUsers.value.length);
-  const otherUserCount = computed(() => otherOnlineUsers.value.length);
+  const displayedUserCount = computed(() => displayedOnlineUsers.value.length);
 
   // Get user display name
   function getUserDisplayName(user: OnlineUser): string {
@@ -151,9 +196,9 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
   return {
     onlineUsers,
-    otherOnlineUsers,
+    displayedOnlineUsers,
     onlineUserCount,
-    otherUserCount,
+    displayedUserCount,
     currentUser,
     connectionStatus,
     getUserDisplayName,

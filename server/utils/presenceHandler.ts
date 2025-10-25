@@ -18,9 +18,9 @@ type PresenceMessage = {
 
 const onlineUsers = new Map<string, OnlineUser>();
 
-// Helper function to get public user list (without peerIds)
-function getPublicUserList(): Array<Omit<OnlineUser, "peerId">> {
-  return Array.from(onlineUsers.values()).map(({ peerId, ...user }) => user);
+// Helper function to get public user list (including peerIds for client-side filtering)
+function getPublicUserList(): OnlineUser[] {
+  return Array.from(onlineUsers.values());
 }
 
 export function handlePresenceMessage(
