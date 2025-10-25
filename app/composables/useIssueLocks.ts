@@ -1,4 +1,4 @@
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useWebSocket } from "@vueuse/core";
 import { defineStore } from "pinia";
 
@@ -9,11 +9,20 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   const { isEditing } = useIsEditing();
   const { selectedId } = storeToRefs(useSelectedIssue());
 
-  // Extract the user's name from the authentication context
-  const { data: authData } = useAuth();
+  // Extract the user's name and authentication status
+  const { data: authData, status } = useAuth();
+  const isAuthenticated = computed(() => status.value === "authenticated");
 
-  const { data: wsData, send: wsSend } = useWebSocket(websocketUrl, {
-    autoReconnect: true,
+  // Create WebSocket instance at top level - but control its connection state
+  const ws = useWebSocket(websocketUrl, {
+    immediate: false, // Don't connect immediately
+    autoReconnect: {
+      retries: 3,
+      delay: 1000,
+      onFailed() {
+        console.error("WebSocket failed to reconnect after retries");
+      },
+    },
     onConnected() {
       console.log("WebSocket connected to", websocketUrl);
     },
@@ -24,6 +33,19 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       console.error("WebSocket error:", error);
     },
   });
+
+  // Watch authentication status and manage WebSocket connection
+  watch(
+    isAuthenticated,
+    (authenticated) => {
+      if (authenticated) {
+        ws.open();
+      } else {
+        ws.close();
+      }
+    },
+    { immediate: true }
+  );
 
   const userName = computed(() => authData.value?.name || "Onbekend");
 
@@ -49,7 +71,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     { immediate: true }
   );
 
-  watch(wsData, (data) => {
+  watch(ws.data, (data) => {
+    if (!data) return;
     console.debug("WebSocket message received:", data);
     try {
       const message = JSON.parse(data as string);
@@ -63,8 +86,15 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   function notifyEditing(issueId: number, isEditing: boolean) {
     console.debug("notifyEditing", { issueId, isEditing });
+    
+    // Only send if authenticated and WebSocket is connected
+    if (!isAuthenticated.value || ws.status.value !== "OPEN") {
+      console.warn("Cannot notify editing: not authenticated or WebSocket not connected");
+      return;
+    }
+
     if (isEditing) {
-      wsSend(
+      ws.send(
         JSON.stringify({
           type: "lockIssue",
           issueId,
@@ -72,7 +102,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
         })
       );
     } else {
-      wsSend(
+      ws.send(
         JSON.stringify({
           type: "unlockIssue",
           issueId,
