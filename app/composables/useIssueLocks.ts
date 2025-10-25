@@ -86,10 +86,12 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   function notifyEditing(issueId: number, isEditing: boolean) {
     console.debug("notifyEditing", { issueId, isEditing });
-    
+
     // Only send if authenticated and WebSocket is connected
     if (!isAuthenticated.value || ws.status.value !== "OPEN") {
-      console.warn("Cannot notify editing: not authenticated or WebSocket not connected");
+      console.warn(
+        "Cannot notify editing: not authenticated or WebSocket not connected"
+      );
       return;
     }
 
