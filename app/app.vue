@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSnackbar } from '~/composables/useSnackbar';
+import { useSnackbar } from "~/composables/useSnackbar";
 
 useSeoMeta({
   title: "Fietsersbond Deventer - Projecten",
@@ -29,7 +29,7 @@ const { snackbar } = useSnackbar();
         <v-snackbar
           v-model="snackbar.show"
           :color="snackbar.color"
-          :timeout="3000"
+          :timeout="snackbar.timeout"
         >
           {{ snackbar.text }}
         </v-snackbar>

@@ -141,9 +141,9 @@ const geometryRules = [
     "Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de kaart.",
 ];
 
-// Only enable submit if form is valid (includes geometry validation) AND has modifications
+// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
 const canSubmit = computed(() => {
-  return valid.value && isModified.value;
+  return valid.value && isModified.value && !isEditingUnsafe.value;
 });
 
 const modules = [
@@ -182,8 +182,14 @@ const toolbar = [
 const { update, create, remove } = useIssuesMethods();
 const { legends } = storeToRefs(useLegends());
 const { isEditing } = useIsEditing();
+const { isConnected, isEditingUnsafe } = storeToRefs(useIssueLocks());
 
 async function onSubmit() {
+  // Prevent submission if connection is lost
+  if (isEditingUnsafe.value) {
+    return;
+  }
+
   if (issue.value && valid.value) {
     if (isExistingIssue(issue.value)) {
       await update(issue.value.id, issue.value);
