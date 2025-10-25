@@ -1,16 +1,18 @@
 import type { WebSocketPeer } from "#nitro";
 import { getDb } from "./db";
 
-// Store editing status: { issueId: { peer: string, username: string } }
+// Store editing status: { issueId: { peer: string, username: string, displayName: string } }
 type PeerInfo = {
   peer: string;
-  username: string | undefined;
+  username: string;
+  displayName: string;
 };
 
 type LockMessage = {
   type: "lockIssue" | "unlockIssue";
   issueId: number;
   username: string;
+  displayName?: string;
 };
 
 const editingStatus: Record<string, PeerInfo | undefined> = {};
@@ -33,25 +35,35 @@ export function handleLockMessage(
   data: LockMessage
 ): boolean {
   if (data.type === "lockIssue" || data.type === "unlockIssue") {
-    const { issueId, username } = data;
+    const { issueId, username, displayName } = data;
     const isEditing = data.type === "lockIssue";
+    const peerId = peer.toString();
 
-    if (editingStatus[Number(issueId)]) {
-      if (editingStatus[Number(issueId)]!.peer !== peer.toString()) {
-        return false; // Message handled but rejected
-      }
+    // Check if a different peer is already editing this issue
+    const currentEditor = editingStatus[Number(issueId)];
+    if (currentEditor && currentEditor.peer !== peerId) {
+      // Send current editing status to inform client about the existing lock
+      peer.send(
+        JSON.stringify({ type: "editing-status", payload: editingStatus })
+      );
+      return false; // Message handled but rejected - different peer is editing
     }
 
-    // Get issue title for logging
+    // Get issue title for logging - use display name for logs
     const issueTitle = getIssueTitle(issueId);
+    const logName = displayName || username;
 
     if (isEditing) {
-      editingStatus[Number(issueId)] = { peer: peer.toString(), username };
-      console.log(`${username} is editing ${issueTitle}`);
+      editingStatus[Number(issueId)] = { 
+        peer: peerId, 
+        username, 
+        displayName: displayName || username 
+      };
+      console.log(`${logName} is editing ${issueTitle}`);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete editingStatus[Number(issueId)];
-      console.log(`${username} stopped editing ${issueTitle}`);
+      console.log(`${logName} stopped editing ${issueTitle}`);
     }
 
     // Broadcast the updated editing status to all peers
@@ -87,7 +99,11 @@ export function cleanupLockForPeer(peer: WebSocketPeer) {
   setTimeout(() => {
     // Remove all entries associated with the disconnected peer
     Object.keys(editingStatus).forEach((issueId) => {
-      if (editingStatus[issueId]?.peer === peerId) {
+      const editor = editingStatus[issueId];
+      if (editor && editor.peer === peerId) {
+        const issueTitle = getIssueTitle(Number(issueId));
+        console.log(`${editor.username} stopped editing ${issueTitle} (disconnected)`);
+        
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete editingStatus[issueId];
       }

@@ -34,11 +34,15 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     { immediate: true }
   );
 
-  const userName = computed(() => authData.value?.name || "Onbekend");
+  const userName = computed(() => authData.value?.username || "unknown");
+  const displayName = computed(() => authData.value?.name || authData.value?.username || "Unknown");
 
-  const editingUsers = ref<Record<string, { peer: string; username: string }>>(
+  const editingUsers = ref<Record<string, { peer: string; username: string; displayName: string }>>(
     {}
   );
+
+  // Track our own peer ID
+  const myPeerId = ref<string | null>(null);
 
   // Clear editing users when connection is lost (prevent stale lock indicators)
   watch(
@@ -46,6 +50,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     (status) => {
       if (status === "CLOSED" || status === "CONNECTING") {
         editingUsers.value = {};
+        myPeerId.value = null; // Clear our peer ID too
         console.log("Lock status gewist vanwege verbindingsverlies");
       }
     }
@@ -75,8 +80,10 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       editingUsers.value =
         (message.payload as Record<
           string,
-          { peer: string; username: string }
+          { peer: string; username: string; displayName: string }
         >) || {};
+    } else if (message.type === "peer-connected") {
+      myPeerId.value = message.payload as string;
     }
   });
 
@@ -92,6 +99,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
           type: "lockIssue",
           issueId,
           username: userName.value,
+          displayName: displayName.value,
         })
       );
     } else {
@@ -100,6 +108,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
           type: "unlockIssue",
           issueId,
           username: userName.value,
+          displayName: displayName.value,
         })
       );
     }
@@ -107,8 +116,9 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   function isLocked(issueId: number) {
     const editingUser = editingUsers.value[issueId];
-    if (editingUser !== undefined && editingUser.username !== userName.value) {
-      return editingUser.username;
+    // Show as locked if someone else is editing (different peer ID)
+    if (editingUser !== undefined && editingUser.peer !== myPeerId.value) {
+      return editingUser.displayName || editingUser.username;
     }
     return false;
   }
@@ -117,8 +127,9 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     const locks: Record<string, string> = {};
     for (const id in editingUsers.value) {
       const user = editingUsers.value[id];
-      if (user && user.username !== userName.value) {
-        locks[id] = user.username;
+      // Show lock if someone else is editing (different peer ID)
+      if (user && user.peer !== myPeerId.value) {
+        locks[id] = user.displayName || user.username;
       }
     }
     return locks;

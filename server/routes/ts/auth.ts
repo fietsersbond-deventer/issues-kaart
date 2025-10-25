@@ -13,6 +13,12 @@ import {
 
 export default defineWebSocketHandler({
   open(peer: WebSocketPeer) {
+    // Send peer ID immediately when connection opens
+    peer.send(JSON.stringify({
+      type: "peer-connected",
+      payload: peer.toString()
+    }));
+
     // Initialize both lock and presence functionality
     initializeLockForPeer(peer);
     initializePresenceForPeer(peer);
