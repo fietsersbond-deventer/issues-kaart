@@ -54,10 +54,10 @@ export function handleLockMessage(
     const logName = displayName || username;
 
     if (isEditing) {
-      editingStatus[Number(issueId)] = { 
-        peer: peerId, 
-        username, 
-        displayName: displayName || username 
+      editingStatus[Number(issueId)] = {
+        peer: peerId,
+        username,
+        displayName: displayName || username,
       };
       console.log(`${logName} is editing ${issueTitle}`);
     } else {
@@ -102,8 +102,10 @@ export function cleanupLockForPeer(peer: WebSocketPeer) {
       const editor = editingStatus[issueId];
       if (editor && editor.peer === peerId) {
         const issueTitle = getIssueTitle(Number(issueId));
-        console.log(`${editor.username} stopped editing ${issueTitle} (disconnected)`);
-        
+        console.log(
+          `${editor.username} stopped editing ${issueTitle} (disconnected)`
+        );
+
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete editingStatus[issueId];
       }

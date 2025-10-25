@@ -35,11 +35,13 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   );
 
   const userName = computed(() => authData.value?.username || "unknown");
-  const displayName = computed(() => authData.value?.name || authData.value?.username || "Unknown");
-
-  const editingUsers = ref<Record<string, { peer: string; username: string; displayName: string }>>(
-    {}
+  const displayName = computed(
+    () => authData.value?.name || authData.value?.username || "Unknown"
   );
+
+  const editingUsers = ref<
+    Record<string, { peer: string; username: string; displayName: string }>
+  >({});
 
   // Track our own peer ID
   const myPeerId = ref<string | null>(null);
