@@ -12,12 +12,20 @@ export function handlePresenceMessage(
   peer: WebSocketPeer,
   data: unknown
 ): boolean {
-  const message = data as { type: string; payload?: Record<string, unknown>; [key: string]: unknown };
-  
+  const message = data as {
+    type: string;
+    payload?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+
   if (message.type === "user-online") {
     // Handle new message format with payload
     const payload = message.payload || message; // Fallback for old format
-    const { username, name, userId } = payload as { username: string; name?: string | null; userId: number };
+    const { username, name, userId } = payload as {
+      username: string;
+      name?: string | null;
+      userId: number;
+    };
 
     if (!username || userId === undefined) {
       console.log("[ws/presence] Ontbrekende gebruikersgegevens");

@@ -1,5 +1,8 @@
 import { useWebSocket } from "@vueuse/core";
-import type { AnyWebSocketMessage, WebSocketEvents } from "@/types/WebSocketMessages";
+import type {
+  AnyWebSocketMessage,
+  WebSocketEvents,
+} from "@/types/WebSocketMessages";
 
 /**
  * WebSocket message event bus for authenticated user features
@@ -55,11 +58,17 @@ export const useSharedAuthWebSocket = (() => {
         },
         onConnected() {
           console.log("Auth WebSocket verbonden met", websocketUrl);
-          console.log("WebSocket status na verbinding:", wsInstance?.status.value);
+          console.log(
+            "WebSocket status na verbinding:",
+            wsInstance?.status.value
+          );
         },
         onDisconnected() {
           console.log("Auth WebSocket verbinding verbroken");
-          console.log("WebSocket status na verbreking:", wsInstance?.status.value);
+          console.log(
+            "WebSocket status na verbreking:",
+            wsInstance?.status.value
+          );
         },
         onError(error) {
           console.error("Auth WebSocket fout:", error);

@@ -23,16 +23,21 @@ function getIssueTitle(issueId: number): string {
   }
 }
 
-export function handleLockMessage(
-  peer: WebSocketPeer,
-  data: unknown
-): boolean {
-  const message = data as { type: string; payload?: Record<string, unknown>; [key: string]: unknown };
-  
+export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
+  const message = data as {
+    type: string;
+    payload?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+
   if (message.type === "lockIssue" || message.type === "unlockIssue") {
     // Handle new message format with payload
     const payload = message.payload || message; // Fallback for old format
-    const { issueId, username, displayName } = payload as { issueId: number; username: string; displayName?: string };
+    const { issueId, username, displayName } = payload as {
+      issueId: number;
+      username: string;
+      displayName?: string;
+    };
 
     if (!issueId) {
       console.error("lockIssue/unlockIssue requires issueId");
@@ -84,7 +89,10 @@ export function handleLockMessage(
   } else if (message.type === "clearMyLocks") {
     // Handle new message format with payload
     const payload = message.payload || message; // Fallback for old format
-    const { username, displayName } = payload as { username: string; displayName?: string };
+    const { username, displayName } = payload as {
+      username: string;
+      displayName?: string;
+    };
     const peerId = peer.toString();
     const logName = displayName || username;
 
