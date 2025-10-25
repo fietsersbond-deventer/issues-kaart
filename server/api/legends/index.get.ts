@@ -1,7 +1,7 @@
 import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
 
-export default defineEventHandler(() => {
+export default defineCachedEventHandler(() => {
   const db = getDb();
   const rows = db
     .prepare(

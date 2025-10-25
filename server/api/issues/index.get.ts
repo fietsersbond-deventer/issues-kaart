@@ -12,7 +12,7 @@ import { extractImageUrl } from "~~/server/utils/extractImageUrl";
  * - /api/issues?fields=id,title,legend_id,legend_name,created_at (for admin list)
  * - /api/issues (for full data)
  */
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event) => {
   const db = getDb();
   const query = getQuery(event);
   const requestedFields = query.fields ? String(query.fields).split(",") : null;
