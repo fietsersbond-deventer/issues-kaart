@@ -11,7 +11,7 @@ const editingStatus: Record<string, PeerInfo | undefined> = {};
 
 export default defineWebSocketHandler({
   open(peer: WebSocketPeer) {
-    console.log(`[ws/lock] Connection opened: ${peer.toString()}`);
+    console.log(`[ws/lock] Verbinding geopend: ${peer.toString()}`);
 
     // Subscribe to the 'lockIssue' event
     peer.subscribe("lockIssue");
@@ -19,7 +19,9 @@ export default defineWebSocketHandler({
 
     // Ensure the peer subscribes to the 'editing-status' event
     peer.subscribe("editing-status");
-    console.log(`[ws/lock] Subscribed to 'editing-status': ${peer.toString()}`);
+    console.log(
+      `[ws/lock] Geabonneerd op 'editing-status': ${peer.toString()}`
+    );
 
     peer.send(
       JSON.stringify({ type: "editing-status", payload: editingStatus })
@@ -35,7 +37,7 @@ export default defineWebSocketHandler({
 
         if (editingStatus[Number(issueId)]) {
           if (editingStatus[Number(issueId)]!.peer !== peer.toString()) {
-            console.log("[ws/lock] Peer is not the editor:", peer.toString());
+            console.log("[ws/lock] Peer is niet de editor:", peer.toString());
             return;
           }
         }
@@ -51,22 +53,22 @@ export default defineWebSocketHandler({
           "editing-status",
           JSON.stringify({ type: "editing-status", payload: editingStatus })
         );
-        console.log("[ws/lock] Broadcasted editing status:", editingStatus);
+        console.log("[ws/lock] Bewerkingsstatus uitgezonden:", editingStatus);
 
         // Send the updated editing status back to the sender
         peer.send(
           JSON.stringify({ type: "editing-status", payload: editingStatus })
         );
       } else {
-        console.log("[ws/lock] Unknown message type:", data.type);
+        console.log("[ws/lock] Onbekend berichttype:", data.type);
       }
     } catch (error) {
-      console.error("[ws/lock] Failed to parse message:", error);
+      console.error("[ws/lock] Bericht verwerken mislukt:", error);
     }
   },
 
   close(peer: WebSocketPeer) {
-    console.log(`[ws/lock] Connection closed: ${peer.toString()}`);
+    console.log(`[ws/lock] Verbinding gesloten: ${peer.toString()}`);
 
     // Clean up editing status for disconnected peers
     setTimeout(() => {
@@ -87,7 +89,7 @@ export default defineWebSocketHandler({
       );
 
       console.log(
-        "[ws/lock] Updated editing status after peer disconnect:",
+        "[ws/lock] Bewerkingsstatus bijgewerkt na peer disconnect:",
         editingStatus
       );
     }, 500);

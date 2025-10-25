@@ -17,20 +17,27 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   const ws = useWebSocket(websocketUrl, {
     immediate: false, // Don't connect immediately
     autoReconnect: {
-      retries: 3,
+      retries: 5,
       delay: 1000,
       onFailed() {
-        console.error("WebSocket failed to reconnect after retries");
+        console.error(
+          "WebSocket verbinding herstellen mislukt na meerdere pogingen"
+        );
       },
     },
     onConnected() {
-      console.log("WebSocket connected to", websocketUrl);
+      console.log("WebSocket verbonden met", websocketUrl);
+      // Re-establish lock if user was editing when connection was lost
+      if (isAuthenticated.value && isEditing.value && selectedId.value) {
+        console.log("Lock herstellen voor issue:", selectedId.value);
+        notifyEditing(selectedId.value, true);
+      }
     },
     onDisconnected() {
-      console.log("WebSocket disconnected");
+      console.log("WebSocket verbinding verbroken");
     },
     onError(error) {
-      console.error("WebSocket error:", error);
+      console.error("WebSocket fout:", error);
     },
   });
 
@@ -51,6 +58,17 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   const editingUsers = ref<Record<string, { peer: string; username: string }>>(
     {}
+  );
+
+  // Clear editing users when connection is lost (prevent stale lock indicators)
+  watch(
+    () => ws.status.value,
+    (status) => {
+      if (status === "CLOSED" || status === "CONNECTING") {
+        editingUsers.value = {};
+        console.log("Lock status gewist vanwege verbindingsverlies");
+      }
+    }
   );
 
   watch(
@@ -90,7 +108,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     // Only send if authenticated and WebSocket is connected
     if (!isAuthenticated.value || ws.status.value !== "OPEN") {
       console.warn(
-        "Cannot notify editing: not authenticated or WebSocket not connected"
+        "Kan bewerking niet melden: niet geauthenticeerd of WebSocket niet verbonden"
       );
       return;
     }
