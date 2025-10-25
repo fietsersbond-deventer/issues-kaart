@@ -1,14 +1,6 @@
-import { ref, computed, watch, nextTick } from "vue";
 import { defineStore } from "pinia";
 import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
-
-export interface OnlineUser {
-  peerId: string;
-  username: string;
-  name: string | null;
-  userId: number;
-  connectedAt: number;
-}
+import type { OnlineUser } from "@/types/WebSocketMessages";
 
 export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Extract the user's authentication data
@@ -48,20 +40,17 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
       return;
     }
 
-    authWs.send(
-      JSON.stringify({
-        type: "user-online",
-        username: authData.value.username,
-        name: authData.value.name,
-        userId: authData.value.id,
-      })
-    );
+    authWs.sendMessage("user-online", {
+      username: authData.value.username,
+      name: authData.value.name,
+      userId: Number(authData.value.id),
+    });
   }
 
   // Notify server that user is offline
   function notifyUserOffline() {
     if (authWs.status.value === "OPEN") {
-      authWs.send(JSON.stringify({ type: "user-offline" }));
+      authWs.sendMessage("user-offline", {});
     }
   }
 
@@ -71,12 +60,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     (authenticated) => {
       if (authenticated) {
         authWs.open();
-        // Send user online notification when authenticated
-        nextTick(() => {
-          if (authWs.status.value === "OPEN") {
-            notifyUserOnline();
-          }
-        });
+        // Don't try to send immediately - wait for connection status change
       } else {
         notifyUserOffline();
         authWs.close();
@@ -145,7 +129,6 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     () => authWs.status.value,
     (status, prevStatus) => {
       if (status === "OPEN" && prevStatus !== "OPEN" && isAuthenticated.value) {
-        console.log("Auth WebSocket reconnected, re-registering user");
         notifyUserOnline();
       }
     }

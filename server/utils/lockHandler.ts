@@ -8,13 +8,6 @@ type PeerInfo = {
   displayName: string;
 };
 
-type LockMessage = {
-  type: "lockIssue" | "unlockIssue";
-  issueId: number;
-  username: string;
-  displayName?: string;
-};
-
 const editingStatus: Record<string, PeerInfo | undefined> = {};
 
 // Helper function to get issue title
@@ -32,11 +25,21 @@ function getIssueTitle(issueId: number): string {
 
 export function handleLockMessage(
   peer: WebSocketPeer,
-  data: LockMessage
+  data: unknown
 ): boolean {
-  if (data.type === "lockIssue" || data.type === "unlockIssue") {
-    const { issueId, username, displayName } = data;
-    const isEditing = data.type === "lockIssue";
+  const message = data as { type: string; payload?: Record<string, unknown>; [key: string]: unknown };
+  
+  if (message.type === "lockIssue" || message.type === "unlockIssue") {
+    // Handle new message format with payload
+    const payload = message.payload || message; // Fallback for old format
+    const { issueId, username, displayName } = payload as { issueId: number; username: string; displayName?: string };
+
+    if (!issueId) {
+      console.error("lockIssue/unlockIssue requires issueId");
+      return false;
+    }
+
+    const isEditing = message.type === "lockIssue";
     const peerId = peer.toString();
 
     // Check if a different peer is already editing this issue
@@ -78,7 +81,46 @@ export function handleLockMessage(
     );
 
     return true; // Message handled
+  } else if (message.type === "clearMyLocks") {
+    // Handle new message format with payload
+    const payload = message.payload || message; // Fallback for old format
+    const { username, displayName } = payload as { username: string; displayName?: string };
+    const peerId = peer.toString();
+    const logName = displayName || username;
+
+    // Find and remove all locks for this peer
+    const removedIssues: number[] = [];
+    Object.keys(editingStatus).forEach((issueId) => {
+      const editor = editingStatus[issueId];
+      if (editor && editor.peer === peerId) {
+        removedIssues.push(Number(issueId));
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete editingStatus[issueId];
+      }
+    });
+
+    if (removedIssues.length > 0) {
+      console.log(
+        `${logName} cleared locks for issues: ${removedIssues.join(
+          ", "
+        )} (reconnected without selected issue)`
+      );
+
+      // Broadcast the updated editing status to all peers
+      peer.publish(
+        "editing-status",
+        JSON.stringify({ type: "editing-status", payload: editingStatus })
+      );
+
+      // Send the updated editing status back to the sender
+      peer.send(
+        JSON.stringify({ type: "editing-status", payload: editingStatus })
+      );
+    }
+
+    return true; // Message handled
   }
+
   return false; // Message not handled
 }
 
@@ -86,6 +128,7 @@ export function initializeLockForPeer(peer: WebSocketPeer) {
   // Subscribe to lock-related events
   peer.subscribe("lockIssue");
   peer.subscribe("unlockIssue");
+  peer.subscribe("clearMyLocks");
   peer.subscribe("editing-status");
 
   // Send current editing status to the connecting user

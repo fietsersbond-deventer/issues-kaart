@@ -49,11 +49,27 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   // Clear editing users when connection is lost (prevent stale lock indicators)
   watch(
     () => authWs.status.value,
-    (status) => {
+    (status, prevStatus) => {
       if (status === "CLOSED" || status === "CONNECTING") {
         editingUsers.value = {};
         myPeerId.value = null; // Clear our peer ID too
-        console.log("Lock status gewist vanwege verbindingsverlies");
+        console.debug("Lock status gewist vanwege verbindingsverlies");
+      } else if (status === "OPEN" && prevStatus !== "OPEN") {
+        // WebSocket reconnected - send current editing state
+        console.debug("WebSocket reconnected, sending current editing state");
+        if (selectedId.value && isAuthenticated.value) {
+          // We know which issue we're on, send specific lock state
+          notifyEditing(selectedId.value, isEditing.value);
+        } else if (isAuthenticated.value) {
+          // No selected issue, but we might have had locks - clear any stale locks
+          console.debug(
+            "No selected issue on reconnect, clearing any stale locks"
+          );
+          authWs.sendMessage("clearMyLocks", {
+            username: userName.value,
+            displayName: displayName.value,
+          });
+        }
       }
     }
   );
@@ -96,23 +112,17 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     }
 
     if (isEditing) {
-      authWs.send(
-        JSON.stringify({
-          type: "lockIssue",
-          issueId,
-          username: userName.value,
-          displayName: displayName.value,
-        })
-      );
+      authWs.sendMessage("lockIssue", {
+        issueId,
+        username: userName.value,
+        displayName: displayName.value,
+      });
     } else {
-      authWs.send(
-        JSON.stringify({
-          type: "unlockIssue",
-          issueId,
-          username: userName.value,
-          displayName: displayName.value,
-        })
-      );
+      authWs.sendMessage("unlockIssue", {
+        issueId,
+        username: userName.value,
+        displayName: displayName.value,
+      });
     }
   }
 

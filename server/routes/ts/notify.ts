@@ -1,7 +1,16 @@
 import type { WebSocketPeer } from "#nitro";
 import { defineWebSocketHandler } from "#nitro";
 import type { ExistingIssue } from "~/types/Issue";
+import type { WebSocketEvents } from "~/types/WebSocketMessages";
 import { getEmitter } from "~~/server/utils/getEmitter";
+
+// Helper function to create type-safe WebSocket messages
+function createNotifyMessage<T extends keyof WebSocketEvents>(
+  type: T,
+  payload: WebSocketEvents[T]
+): string {
+  return JSON.stringify({ type, payload });
+}
 
 // Store listeners per peer for cleanup
 const peerListeners = new WeakMap<
@@ -27,10 +36,7 @@ export default defineWebSocketHandler({
         "[ws/notify] Emitting issue:created event for issue ID:",
         issue.id
       );
-      peer.publish(
-        "notify",
-        JSON.stringify({ type: "issue-created", payload: issue })
-      );
+      peer.publish("notify", createNotifyMessage("issue-created", issue));
     };
 
     const onModified = (issue: ExistingIssue) => {
@@ -38,10 +44,7 @@ export default defineWebSocketHandler({
         "[ws/notify] Emitting issue:modified event for issue ID:",
         issue.id
       );
-      peer.publish(
-        "notify",
-        JSON.stringify({ type: "issue-modified", payload: issue })
-      );
+      peer.publish("notify", createNotifyMessage("issue-modified", issue));
     };
 
     const onDeleted = (issueId: number) => {
@@ -49,10 +52,7 @@ export default defineWebSocketHandler({
         "[ws/notify] Emitting issue:deleted event for issue ID:",
         issueId
       );
-      peer.publish(
-        "notify",
-        JSON.stringify({ type: "issue-deleted", payload: issueId })
-      );
+      peer.publish("notify", createNotifyMessage("issue-deleted", issueId));
     };
 
     // Store listeners for this peer

@@ -1,20 +1,5 @@
 import type { WebSocketPeer } from "#nitro";
-
-// Store online users: { peerId: { username: string, name: string, userId: number } }
-type OnlineUser = {
-  peerId: string;
-  username: string;
-  name: string | null;
-  userId: number;
-  connectedAt: number;
-};
-
-type PresenceMessage = {
-  type: "user-online" | "user-offline";
-  username?: string;
-  name?: string | null;
-  userId?: number;
-};
+import type { OnlineUser } from "../../app/types/WebSocketMessages";
 
 const onlineUsers = new Map<string, OnlineUser>();
 
@@ -25,10 +10,14 @@ function getPublicUserList(): OnlineUser[] {
 
 export function handlePresenceMessage(
   peer: WebSocketPeer,
-  data: PresenceMessage
+  data: unknown
 ): boolean {
-  if (data.type === "user-online") {
-    const { username, name, userId } = data;
+  const message = data as { type: string; payload?: Record<string, unknown>; [key: string]: unknown };
+  
+  if (message.type === "user-online") {
+    // Handle new message format with payload
+    const payload = message.payload || message; // Fallback for old format
+    const { username, name, userId } = payload as { username: string; name?: string | null; userId: number };
 
     if (!username || userId === undefined) {
       console.log("[ws/presence] Ontbrekende gebruikersgegevens");
@@ -67,7 +56,7 @@ export function handlePresenceMessage(
     );
 
     return true; // Message handled
-  } else if (data.type === "user-offline") {
+  } else if (message.type === "user-offline") {
     const peerId = peer.toString();
     const user = onlineUsers.get(peerId);
 

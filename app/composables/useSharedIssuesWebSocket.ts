@@ -1,15 +1,11 @@
 import { useWebSocket } from "@vueuse/core";
+import type { AnyWebSocketMessage } from "@/types/WebSocketMessages";
 
 /**
  * WebSocket message event bus
  * Allows multiple stores to subscribe to messages without processing duplicates
  */
-type WebSocketMessage = {
-  type: string;
-  payload: unknown;
-};
-
-type WebSocketSubscriber = (message: WebSocketMessage) => void;
+type WebSocketSubscriber = (message: AnyWebSocketMessage) => void;
 
 const createWebSocketEventBus = () => {
   const subscribers = new Set<WebSocketSubscriber>();
@@ -21,7 +17,7 @@ const createWebSocketEventBus = () => {
     },
     publish(data: string) {
       try {
-        const message = JSON.parse(data) as WebSocketMessage;
+        const message = JSON.parse(data) as AnyWebSocketMessage;
         subscribers.forEach((callback) => callback(message));
       } catch (error) {
         console.error("Failed to parse WebSocket message:", error);
