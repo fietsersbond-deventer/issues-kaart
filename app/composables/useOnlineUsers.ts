@@ -18,8 +18,12 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Use shared WebSocket connection
   const authWs = useSharedAuthWebSocket();
 
+  // Import snackbar for notifications
+  const { showMessage } = useSnackbar();
+
   // Store online users
   const onlineUsers = ref<OnlineUser[]>([]);
+  const previousOnlineUsers = ref<OnlineUser[]>([]);
   const connectionStatus = computed(() => authWs.status.value);
 
   // Track our own peer ID
@@ -28,6 +32,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Clear online users when disconnected (they'll be repopulated on reconnect)
   watch(connectionStatus, (status) => {
     if (status === "CLOSED" || status === "CONNECTING") {
+      previousOnlineUsers.value = [...onlineUsers.value];
       onlineUsers.value = [];
       myPeerId.value = null;
     }
@@ -89,6 +94,51 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
       myPeerId.value = message.payload as string;
     }
   });
+
+  // Watch for changes in online users to show notifications
+  watch(
+    onlineUsers,
+    (newUsers, oldUsers) => {
+      if (!isAuthenticated.value || !currentUser.value) return;
+
+      // Skip notifications on initial load or when reconnecting
+      if (oldUsers.length === 0) {
+        previousOnlineUsers.value = [...newUsers];
+        return;
+      }
+
+      const currentUserId = Number(currentUser.value.id);
+
+      // Create sets of user IDs for easy comparison
+      const oldUserIds = new Set(oldUsers.map((user) => user.userId));
+      const newUserIds = new Set(newUsers.map((user) => user.userId));
+
+      // Find users who joined
+      const joinedUsers = newUsers.filter(
+        (user) => user.userId !== currentUserId && !oldUserIds.has(user.userId)
+      );
+
+      // Find users who left
+      const leftUsers = oldUsers.filter(
+        (user) => user.userId !== currentUserId && !newUserIds.has(user.userId)
+      );
+
+      // Show notifications for joined users
+      joinedUsers.forEach((user) => {
+        const displayName = getUserDisplayName(user);
+        showMessage(`${displayName} is ook ingelogd`, "info");
+      });
+
+      // Show notifications for left users
+      leftUsers.forEach((user) => {
+        const displayName = getUserDisplayName(user);
+        showMessage(`${displayName} is uitgelogd`, "info");
+      });
+
+      previousOnlineUsers.value = [...newUsers];
+    },
+    { deep: true }
+  );
 
   // Watch for connection events to re-register user
   watch(
