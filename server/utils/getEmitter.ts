@@ -8,7 +8,5 @@ const eventEmitter = new EventEmitter();
 eventEmitter.setMaxListeners(150);
 
 export function getEmitter() {
-  console.log("getEmitter called, returning existing EventEmitter instance");
-
   return eventEmitter;
 }

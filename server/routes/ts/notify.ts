@@ -75,7 +75,6 @@ export default defineWebSocketHandler({
       emitter.off("issue:modified", listeners.onModified);
       emitter.off("issue:deleted", listeners.onDeleted);
       peerListeners.delete(peer);
-      console.log(`[ws/notify] Cleaned up listeners for: ${peer.toString()}`);
     }
   },
 });

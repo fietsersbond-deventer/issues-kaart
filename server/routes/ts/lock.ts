@@ -29,8 +29,6 @@ export default defineWebSocketHandler({
   message(peer: WebSocketPeer, message: string) {
     try {
       const data = JSON.parse(message.toString()); // Ensure message is a string
-      console.log("[ws/lock] Parsed message:", data);
-
       if (data.type === "lockIssue" || data.type === "unlockIssue") {
         const { issueId, username } = data;
         const isEditing = data.type === "lockIssue";
