@@ -1,6 +1,6 @@
-import { ref, computed, watch } from "vue";
-import { useWebSocket } from "@vueuse/core";
+import { ref, computed, watch, nextTick } from "vue";
 import { defineStore } from "pinia";
+import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
 
 export interface OnlineUser {
   username: string;
@@ -10,42 +10,16 @@ export interface OnlineUser {
 }
 
 export const useOnlineUsers = defineStore("onlineUsers", () => {
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const websocketUrl = `${protocol}://${window.location.host}/ts/presence`;
-
   // Extract the user's authentication data
   const { data: authData, status } = useAuth();
   const isAuthenticated = computed(() => status.value === "authenticated");
 
-  // Create WebSocket instance at top level - but control its connection state
-  const ws = useWebSocket(websocketUrl, {
-    immediate: false, // Don't connect immediately
-    autoReconnect: {
-      retries: 5,
-      delay: 1000,
-      onFailed() {
-        console.error("WebSocket verbinding herstellen mislukt na meerdere pogingen");
-      },
-    },
-    onConnected() {
-      console.log("WebSocket verbonden met", websocketUrl);
-      // Send user online notification when connected (including reconnects)
-      if (isAuthenticated.value && authData.value) {
-        console.log("Gebruiker registreren als online:", authData.value.username);
-        notifyUserOnline();
-      }
-    },
-    onDisconnected() {
-      console.log("WebSocket verbinding verbroken");
-    },
-    onError(error) {
-      console.error("WebSocket fout:", error);
-    },
-  });
+  // Use shared WebSocket connection
+  const authWs = useSharedAuthWebSocket();
 
   // Store online users
   const onlineUsers = ref<OnlineUser[]>([]);
-  const connectionStatus = computed(() => ws.status.value);
+  const connectionStatus = computed(() => authWs.status.value);
   
   // Clear online users when disconnected (they'll be repopulated on reconnect)
   watch(connectionStatus, (status) => {
@@ -56,11 +30,11 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
   // Notify server that user is online
   function notifyUserOnline() {
-    if (!isAuthenticated.value || !authData.value || ws.status.value !== "OPEN") {
+    if (!isAuthenticated.value || !authData.value || authWs.status.value !== "OPEN") {
       return;
     }
 
-    ws.send(JSON.stringify({
+    authWs.send(JSON.stringify({
       type: "user-online",
       username: authData.value.username,
       name: authData.value.name,
@@ -70,8 +44,8 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
   // Notify server that user is offline
   function notifyUserOffline() {
-    if (ws.status.value === "OPEN") {
-      ws.send(JSON.stringify({ type: "user-offline" }));
+    if (authWs.status.value === "OPEN") {
+      authWs.send(JSON.stringify({ type: "user-offline" }));
     }
   }
 
@@ -80,31 +54,39 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     isAuthenticated,
     (authenticated) => {
       if (authenticated) {
-        ws.open();
+        authWs.open();
+        // Send user online notification when authenticated
+        nextTick(() => {
+          if (authWs.status.value === "OPEN") {
+            notifyUserOnline();
+          }
+        });
       } else {
         notifyUserOffline();
-        ws.close();
+        authWs.close();
         onlineUsers.value = []; // Clear online users when not authenticated
       }
     },
     { immediate: true }
   );
 
-  // Watch for incoming WebSocket messages
-  watch(ws.data, (data) => {
-    if (!data) return;
-    
-    try {
-      const message = JSON.parse(data as string);
-      
-      if (message.type === "online-users") {
-        onlineUsers.value = message.payload || [];
-        console.debug("Online gebruikers bijgewerkt:", onlineUsers.value);
-      }
-    } catch (error) {
-      console.error("WebSocket bericht verwerken mislukt:", error);
+  // Subscribe to WebSocket messages
+  const unsubscribe = authWs.subscribe((message) => {
+    if (message.type === "online-users") {
+      onlineUsers.value = (message.payload as OnlineUser[]) || [];
     }
   });
+
+  // Watch for connection events to re-register user
+  watch(
+    () => authWs.status.value,
+    (status, prevStatus) => {
+      if (status === "OPEN" && prevStatus !== "OPEN" && isAuthenticated.value) {
+        console.log("Auth WebSocket reconnected, re-registering user");
+        notifyUserOnline();
+      }
+    }
+  );
 
   // Computed properties for easier use
   const currentUser = computed(() => authData.value);
@@ -151,6 +133,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Cleanup on unmount
   function cleanup() {
     notifyUserOffline();
+    unsubscribe();
   }
 
   // Clean up when navigating away

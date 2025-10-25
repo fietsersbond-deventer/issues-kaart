@@ -8,10 +8,7 @@
         class="user-avatar"
         :class="{ 'cursor-pointer': showTooltip }"
       >
-        <span 
-          class="avatar-text"
-          :style="{ fontSize: textSize }"
-        >
+        <span class="avatar-text" :style="{ fontSize: textSize }">
           {{ initials }}
         </span>
       </v-avatar>
@@ -20,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import type { OnlineUser } from '@/composables/useOnlineUsers';
+import type { OnlineUser } from "@/composables/useOnlineUsers";
 
 interface Props {
   user: OnlineUser;
@@ -34,21 +31,23 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const onlineUsersStore = useOnlineUsers();
-const { getUserDisplayName, getUserInitials, getUserAvatarColor } = onlineUsersStore;
+const { getUserDisplayName, getUserInitials, getUserAvatarColor } =
+  onlineUsersStore;
 
 const initials = computed(() => getUserInitials(props.user));
 const backgroundColor = computed(() => getUserAvatarColor(props.user));
 const displayName = computed(() => getUserDisplayName(props.user));
 
 const tooltipText = computed(() => {
-  if (!props.showTooltip) return '';
-  
+  if (!props.showTooltip) return "";
+
   const timeAgo = getTimeAgo(props.user.connectedAt);
-  return `${displayName.value} (online ${timeAgo})`;
+  return `${displayName.value} (${timeAgo} online)`;
 });
 
 const textSize = computed(() => {
-  const sizeNum = typeof props.size === 'number' ? props.size : parseInt(props.size);
+  const sizeNum =
+    typeof props.size === "number" ? props.size : parseInt(props.size);
   return `${Math.max(8, sizeNum * 0.4)}px`;
 });
 
@@ -62,7 +61,7 @@ function getTimeAgo(timestamp: number): string {
   if (days > 0) return `${days}d geleden`;
   if (hours > 0) return `${hours}u geleden`;
   if (minutes > 0) return `${minutes}m geleden`;
-  return 'zojuist';
+  return "zojuist";
 }
 </script>
 
@@ -81,4 +80,5 @@ function getTimeAgo(timestamp: number): string {
   color: white;
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}</style>
+}
+</style>
