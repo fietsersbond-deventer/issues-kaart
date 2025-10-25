@@ -55,6 +55,9 @@ export default defineNuxtConfig({
         endpoint: { path: "/refresh", method: "post" },
       },
     },
+    sessionRefresh: {
+      enableOnWindowFocus: false,
+    },
   },
   nitro: {
     experimental: {
