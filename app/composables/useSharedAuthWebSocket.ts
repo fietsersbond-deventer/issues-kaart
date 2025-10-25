@@ -52,7 +52,9 @@ export const useSharedAuthWebSocket = (() => {
           retries: 5,
           delay: 1000,
           onFailed() {
-            console.error("Auth WebSocket verbinding herstellen mislukt na meerdere pogingen");
+            console.error(
+              "Auth WebSocket verbinding herstellen mislukt na meerdere pogingen"
+            );
           },
         },
         onConnected() {

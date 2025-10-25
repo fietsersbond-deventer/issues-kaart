@@ -20,7 +20,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Store online users
   const onlineUsers = ref<OnlineUser[]>([]);
   const connectionStatus = computed(() => authWs.status.value);
-  
+
   // Clear online users when disconnected (they'll be repopulated on reconnect)
   watch(connectionStatus, (status) => {
     if (status === "CLOSED" || status === "CONNECTING") {
@@ -30,16 +30,22 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
   // Notify server that user is online
   function notifyUserOnline() {
-    if (!isAuthenticated.value || !authData.value || authWs.status.value !== "OPEN") {
+    if (
+      !isAuthenticated.value ||
+      !authData.value ||
+      authWs.status.value !== "OPEN"
+    ) {
       return;
     }
 
-    authWs.send(JSON.stringify({
-      type: "user-online",
-      username: authData.value.username,
-      name: authData.value.name,
-      userId: authData.value.id,
-    }));
+    authWs.send(
+      JSON.stringify({
+        type: "user-online",
+        username: authData.value.username,
+        name: authData.value.name,
+        userId: authData.value.id,
+      })
+    );
   }
 
   // Notify server that user is offline
@@ -90,12 +96,12 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
   // Computed properties for easier use
   const currentUser = computed(() => authData.value);
-  
+
   const otherOnlineUsers = computed(() => {
     if (!currentUser.value) return onlineUsers.value;
-    
-    return onlineUsers.value.filter(user => 
-      user.userId !== Number(currentUser.value!.id)
+
+    return onlineUsers.value.filter(
+      (user) => user.userId !== Number(currentUser.value!.id)
     );
   });
 
@@ -110,24 +116,26 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Get user initials for avatar
   function getUserInitials(user: OnlineUser): string {
     const displayName = getUserDisplayName(user);
-    const words = displayName.split(' ').filter(word => word.trim().length > 0);
-    
+    const words = displayName
+      .split(" ")
+      .filter((word) => word.trim().length > 0);
+
     if (words.length >= 2) {
-      const first = words[0]?.charAt(0) || '';
-      const second = words[1]?.charAt(0) || '';
+      const first = words[0]?.charAt(0) || "";
+      const second = words[1]?.charAt(0) || "";
       return (first + second).toUpperCase();
     } else if (words.length >= 1) {
-      const word = words[0] || '';
+      const word = words[0] || "";
       return word.substring(0, 2).toUpperCase();
     } else {
-      return 'U'; // fallback
+      return "U"; // fallback
     }
   }
 
   // Generate a consistent color that matches navbar buttons
   function getUserAvatarColor(_user: OnlineUser): string {
     // Use a neutral dark color that matches the navbar button icons
-    return '#424242'; // Material Design grey-800, matches button text color
+    return "#424242"; // Material Design grey-800, matches button text color
   }
 
   // Cleanup on unmount
@@ -137,8 +145,8 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
   }
 
   // Clean up when navigating away
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', cleanup);
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", cleanup);
   }
 
   return {

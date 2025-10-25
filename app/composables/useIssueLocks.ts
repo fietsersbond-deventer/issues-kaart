@@ -20,7 +20,11 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       if (authenticated) {
         // Don't manage connection here - let useOnlineUsers handle it
         // Re-establish lock if user was editing when connection was lost
-        if (isEditing.value && selectedId.value && authWs.status.value === "OPEN") {
+        if (
+          isEditing.value &&
+          selectedId.value &&
+          authWs.status.value === "OPEN"
+        ) {
           console.log("Lock herstellen voor issue:", selectedId.value);
           notifyEditing(selectedId.value, true);
         }
@@ -68,7 +72,11 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   // Subscribe to WebSocket messages for lock status updates
   const unsubscribe = authWs.subscribe((message) => {
     if (message.type === "editing-status") {
-      editingUsers.value = (message.payload as Record<string, { peer: string; username: string }>) || {};
+      editingUsers.value =
+        (message.payload as Record<
+          string,
+          { peer: string; username: string }
+        >) || {};
     }
   });
 

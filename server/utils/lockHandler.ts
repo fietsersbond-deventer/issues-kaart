@@ -28,7 +28,10 @@ function getIssueTitle(issueId: number): string {
   }
 }
 
-export function handleLockMessage(peer: WebSocketPeer, data: LockMessage): boolean {
+export function handleLockMessage(
+  peer: WebSocketPeer,
+  data: LockMessage
+): boolean {
   if (data.type === "lockIssue" || data.type === "unlockIssue") {
     const { issueId, username } = data;
     const isEditing = data.type === "lockIssue";
@@ -61,7 +64,7 @@ export function handleLockMessage(peer: WebSocketPeer, data: LockMessage): boole
     peer.send(
       JSON.stringify({ type: "editing-status", payload: editingStatus })
     );
-    
+
     return true; // Message handled
   }
   return false; // Message not handled
@@ -72,16 +75,14 @@ export function initializeLockForPeer(peer: WebSocketPeer) {
   peer.subscribe("lockIssue");
   peer.subscribe("unlockIssue");
   peer.subscribe("editing-status");
-  
+
   // Send current editing status to the connecting user
-  peer.send(
-    JSON.stringify({ type: "editing-status", payload: editingStatus })
-  );
+  peer.send(JSON.stringify({ type: "editing-status", payload: editingStatus }));
 }
 
 export function cleanupLockForPeer(peer: WebSocketPeer) {
   const peerId = peer.toString();
-  
+
   // Clean up editing status for disconnected peer
   setTimeout(() => {
     // Remove all entries associated with the disconnected peer
