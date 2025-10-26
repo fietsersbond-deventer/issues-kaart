@@ -4,7 +4,7 @@ import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
 export function useConnectionStatus() {
   const authWs = useSharedAuthWebSocket();
   const { showPersistent, hide, showMessage } = useSnackbar();
-  
+
   // Track connection status for warnings
   const isConnected = computed(() => authWs.status.value === "OPEN");
   const connectionWarningShown = ref(false);
@@ -46,7 +46,7 @@ export function useConnectionStatus() {
   // Cleanup function
   function cleanup() {
     unwatchConnection();
-    
+
     // Clean up event listeners
     if (import.meta.client && handleBeforeUnload) {
       window.removeEventListener("beforeunload", handleBeforeUnload);
