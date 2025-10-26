@@ -33,7 +33,7 @@ export function createIconSvgDataUrl(iconName: string): Promise<string> {
         const content = computedStyle.getPropertyValue("content");
 
         let svgContent = "";
-        
+
         if (content && content !== "none" && content !== '""') {
           // Parse the unicode content
           const iconChar = content
@@ -61,7 +61,9 @@ export function createIconSvgDataUrl(iconName: string): Promise<string> {
         document.body.removeChild(tempDiv);
 
         // Convert SVG to data URL
-        const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgContent.trim())}`;
+        const svgDataUrl = `data:image/svg+xml;base64,${btoa(
+          svgContent.trim()
+        )}`;
         resolve(svgDataUrl);
       } catch (err) {
         console.warn("Error generating icon SVG:", err);
@@ -75,8 +77,10 @@ export function createIconSvgDataUrl(iconName: string): Promise<string> {
           <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           </svg>
         `;
-        
-        const svgDataUrl = `data:image/svg+xml;base64,${btoa(fallbackSvg.trim())}`;
+
+        const svgDataUrl = `data:image/svg+xml;base64,${btoa(
+          fallbackSvg.trim()
+        )}`;
         resolve(svgDataUrl);
       }
     }, 100); // Small delay to ensure fonts are loaded
@@ -183,7 +187,7 @@ export function createIconCanvasDataUrl(
 
         // Create simple fallback - colored circle with white icon
         ctx.clearRect(0, 0, size, size);
-        
+
         // Draw colored circle background
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -205,7 +209,7 @@ export function createFallbackIconSvgDataUrl(): string {
       <circle cx="16" cy="16" r="15" fill="currentColor"/>
     </svg>
   `;
-  
+
   return `data:image/svg+xml;base64,${btoa(svgContent.trim())}`;
 }
 

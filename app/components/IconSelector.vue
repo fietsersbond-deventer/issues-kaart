@@ -23,10 +23,15 @@
 
     <v-row v-if="selectedIcon && !paginatedIcons.includes(selectedIcon)">
       <v-col cols="12" class="text-center">
-        <v-chip color="primary" variant="outlined" class="cursor-pointer" @click="showSelectedIcon">
-          <LegendIndicator 
-            :legend="{ icon: selectedIcon, color: previewColor }" 
-            :size="16" 
+        <v-chip
+          color="primary"
+          variant="outlined"
+          class="cursor-pointer"
+          @click="showSelectedIcon"
+        >
+          <LegendIndicator
+            :legend="{ icon: selectedIcon, color: previewColor }"
+            :size="16"
             class="mr-2"
           />
           Huidig geselecteerd (klik om te tonen)
@@ -108,7 +113,7 @@ interface Props {
   previewColor?: string;
 }
 
-const { previewColor = '#666666' } = defineProps<Props>();
+const { previewColor = "#666666" } = defineProps<Props>();
 
 const selectedIcon = defineModel<string | undefined>({ required: true });
 

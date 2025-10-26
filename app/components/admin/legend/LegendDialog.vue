@@ -31,7 +31,10 @@
               <v-col cols="8">
                 <h4 class="mb-3">Icoon (optioneel)</h4>
                 <div class="mb-4">
-                  <IconSelector v-model="editedItem.icon" :preview-color="editedItem.color" />
+                  <IconSelector
+                    v-model="editedItem.icon"
+                    :preview-color="editedItem.color"
+                  />
                 </div>
 
                 <!-- Preview section -->
@@ -42,12 +45,12 @@
                     <div class="text-caption">In legenda:</div>
                     <LegendIndicator :legend="editedItem" :size="24" />
                     <div class="text-caption">Op kaart:</div>
-                  <img
-                    v-if="editedItem.icon_data_url"
-                    :src="editedItem.icon_data_url"
-                    alt="Map icon preview"
-                    style="width: 32px; height: 32px; border-radius: 50%"
-                  >
+                    <img
+                      v-if="editedItem.icon_data_url"
+                      :src="editedItem.icon_data_url"
+                      alt="Map icon preview"
+                      style="width: 32px; height: 32px; border-radius: 50%"
+                    />
                     <v-chip v-else color="grey" size="small"
                       >Genereren...</v-chip
                     >

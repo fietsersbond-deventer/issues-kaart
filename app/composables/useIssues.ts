@@ -49,7 +49,7 @@ export function useIssues(options?: { fields?: string }) {
 
       // Enrich with legend data if legend_id exists
       if ("legend_id" in issue && issue.legend_id && legends.value) {
-        const legend = legends.value.find(l => l.id === issue.legend_id);
+        const legend = legends.value.find((l) => l.id === issue.legend_id);
         if (legend) {
           // Add legend properties to the issue for easy access
           const enrichedIssue = issue as Issue & {
@@ -164,7 +164,7 @@ export function useIssues(options?: { fields?: string }) {
       data,
       (newData) => {
         if (newData) {
-          issues.value = newData.map(issue => processIssue(issue));
+          issues.value = newData.map((issue) => processIssue(issue));
         } else {
           issues.value = [];
         }
@@ -177,7 +177,7 @@ export function useIssues(options?: { fields?: string }) {
       legends,
       () => {
         if (issues.value.length > 0) {
-          issues.value = issues.value.map(issue => processIssue(issue));
+          issues.value = issues.value.map((issue) => processIssue(issue));
         }
       },
       { deep: true }
