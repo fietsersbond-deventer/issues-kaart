@@ -8,7 +8,17 @@
         density="compact"
       >
         <template #prepend>
-          <div class="color-preview" :style="{ backgroundColor: item.color }" />
+          <v-icon 
+            v-if="item.icon" 
+            :icon="item.icon" 
+            :color="item.color"
+            size="small"
+          />
+          <div 
+            v-else
+            class="color-preview" 
+            :style="{ backgroundColor: item.color }" 
+          />
         </template>
         <v-list-item-title class="text-body-2 text-truncate">{{
           item.name

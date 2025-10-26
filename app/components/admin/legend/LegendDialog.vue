@@ -26,6 +26,15 @@
                 swatches-max-height="300px"
               />
             </v-col>
+            <v-col cols="12">
+              <v-expansion-panels>
+                <v-expansion-panel title="Icoon (optioneel)">
+                  <v-expansion-panel-text>
+                    <IconSelector v-model="editedItem.icon" />
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </v-col>
           </v-row>
         </v-container>
       </v-card-text>
@@ -56,17 +65,20 @@ const defaultItem: Partial<Legend> = {
   name: "",
   description: "",
   color: "#2196F3",
+  icon: null,
 };
 
 const editedItem = ref<Partial<Legend>>(
-  legend ? { ...legend } : { ...defaultItem }
+  legend ? { ...legend, icon: legend.icon || null } : { ...defaultItem }
 );
 const isEdit = computed(() => !!legend);
 
 watch(
   () => legend,
   (newLegend) => {
-    editedItem.value = newLegend ? { ...newLegend } : { ...defaultItem };
+    editedItem.value = newLegend
+      ? { ...newLegend, icon: newLegend.icon || null }
+      : { ...defaultItem };
   }
 );
 

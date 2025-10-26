@@ -9,6 +9,7 @@ export type ExistingIssue = {
   legend_id: number | null;
   legend_name?: string; // Added from join
   color?: string; // Added from join
+  icon?: string; // Added from join - Material Design Icon name
   geometry: Point | Polygon | LineString;
   created_at: Date;
   imageUrl: string | null; // URL path to image endpoint if issue has image
@@ -29,6 +30,7 @@ export type MapIssue = {
   id: number;
   title: string;
   color: string;
+  icon?: string; // Material Design Icon name
   geometry: Point | Polygon | LineString;
 };
 

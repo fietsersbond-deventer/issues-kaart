@@ -6,7 +6,7 @@ export default defineEventHandler(async () => {
   const issues = db
     .prepare(
       `SELECT i.id, i.title, i.description, 
-     l.color,
+     l.color, l.icon,
      i.legend_id, l.name as legend_name,
      i.geometry, i.created_at
      FROM issues i 

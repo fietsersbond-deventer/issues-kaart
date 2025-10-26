@@ -39,6 +39,10 @@ export default defineEventHandler(async (event) => {
     updateFields.push(`color = ?`);
     values.push(updates.color);
   }
+  if (updates.icon !== undefined) {
+    updateFields.push(`icon = ?`);
+    values.push(updates.icon);
+  }
 
   // Add the ID as the last parameter
   values.push(id);
@@ -55,7 +59,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   const selectStmt = db.prepare(
-    "SELECT id, name, description, color, created_at FROM legend WHERE id = ?"
+    "SELECT id, name, description, color, icon, created_at FROM legend WHERE id = ?"
   );
   const row = selectStmt.get(id);
   if (!row) {

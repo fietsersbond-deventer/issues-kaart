@@ -4,4 +4,5 @@ export type Legend = {
   color: string;
   description: string;
   created_at: string;
+  icon?: string; // Material Design Icon name (e.g., 'mdi-bicycle')
 };

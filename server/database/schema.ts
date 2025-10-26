@@ -23,6 +23,7 @@ export type Legend = {
   created_at: Date;
   usage_count: number;
   used_by_issues: Array<{ id: number; title: string }>;
+  icon?: string | null; // Material Design Icon name (e.g., 'mdi-bicycle')
 };
 
 export type Issue = {

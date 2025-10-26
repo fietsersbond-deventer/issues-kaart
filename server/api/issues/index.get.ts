@@ -12,7 +12,7 @@ import { extractImageUrl } from "~~/server/utils/extractImageUrl";
  * - /api/issues?fields=id,title,legend_id,legend_name,created_at (for admin list)
  * - /api/issues (for full data)
  */
-export default defineCachedEventHandler(async (event) => {
+export default defineEventHandler(async (event) => {
   const db = getDb();
   const query = getQuery(event);
   const requestedFields = query.fields ? String(query.fields).split(",") : null;
@@ -25,6 +25,7 @@ export default defineCachedEventHandler(async (event) => {
     legend_id: "i.legend_id",
     legend_name: "l.name as legend_name",
     color: "l.color",
+    icon: "l.icon",
     geometry: "i.geometry",
     created_at: "i.created_at",
     imageUrl: "i.description", // Special field - will be processed
@@ -64,7 +65,7 @@ export default defineCachedEventHandler(async (event) => {
   } else {
     // Return all fields if none specified
     selectFields = `i.id, i.title, i.description, i.legend_id,
-     l.name as legend_name, l.color,
+     l.name as legend_name, l.color, l.icon,
      i.geometry, i.created_at`;
   }
 

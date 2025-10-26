@@ -5,7 +5,7 @@ import { getDb } from "~~/server/utils/db";
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
 
-  const { name, description, color } = await readBody<Partial<Legend>>(event);
+  const { name, description, color, icon } = await readBody<Partial<Legend>>(event);
 
   if (!name || !color) {
     throw createError({
@@ -16,11 +16,11 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const insertStmt = db.prepare(
-    "INSERT INTO legend (name, description, color) VALUES (?, ?, ?)"
+    "INSERT INTO legend (name, description, color, icon) VALUES (?, ?, ?, ?)"
   );
-  const result = insertStmt.run(name, description || null, color);
+  const result = insertStmt.run(name, description || null, color, icon || null);
   const selectStmt = db.prepare(
-    "SELECT id, name, description, color, created_at FROM legend WHERE id = ?"
+    "SELECT id, name, description, color, icon, created_at FROM legend WHERE id = ?"
   );
   const row = selectStmt.get(result.lastInsertRowid);
   if (!row) {

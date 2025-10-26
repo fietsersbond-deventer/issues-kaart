@@ -5,7 +5,6 @@ import {
   type ExistingIssue,
   type Issue,
 } from "@/types/Issue";
-import type { Emitter } from "mitt";
 import { useThrottleFn } from "@vueuse/core";
 
 /**
@@ -47,6 +46,7 @@ export function useIssues(options?: { fields?: string }) {
       if (legend) {
         issue.legend_name = legend.name;
         issue.color = legend.color;
+        issue.icon = legend.icon || undefined;
       }
 
       // Filter issue to only include fields this store requested
@@ -65,6 +65,9 @@ export function useIssues(options?: { fields?: string }) {
           }
           if (field === "color" && issue.color) {
             filteredIssue.color = issue.color;
+          }
+          if (field === "icon" && issue.icon) {
+            filteredIssue.icon = issue.icon;
           }
           // Handle imageUrl virtual field
           if (field === "imageUrl") {

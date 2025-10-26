@@ -171,9 +171,9 @@ interface Size {
   height: number;
 }
 
-// Use lightweight map issues for rendering (only id, title, color, geometry, imageUrl)
+// Use lightweight map issues for rendering (only id, title, color, icon, geometry, imageUrl)
 const { issues } = storeToRefs(
-  useIssues({ fields: "id,title,color,geometry,imageUrl" })
+  useIssues({ fields: "id,title,color,icon,geometry,imageUrl" })
 );
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
@@ -308,16 +308,19 @@ const isMapSmall = computed(() => {
 function style(feature: Feature) {
   const properties = feature.getProperties();
   const issueId = properties.id;
-  const issue = issues.value?.find((i: MapIssue) => i.id === issueId);
+  const issue = issues.value?.find((i) => i.id === issueId);
   if (!issue) return;
+
+  // Provide default color if none specified (for backward compatibility)
+  const issueColor = issue.color || "#2196F3";
 
   if (feature.getGeometry()!.getType() === "Point") {
     return new Style({
       image: new Circle({
         radius: 8,
-        fill: new Fill({ color: issue.color }),
+        fill: new Fill({ color: issueColor }),
         stroke: new Stroke({
-          color: isSelected(issue) ? "black" : "white",
+          color: isSelected(issue as MapIssue) ? "black" : "white",
           width: 2,
         }),
       }),
@@ -325,18 +328,18 @@ function style(feature: Feature) {
   } else if (feature.getGeometry()!.getType() === "LineString") {
     return new Style({
       stroke: new Stroke({
-        color: issue.color,
-        width: isSelected(issue) ? 6 : 3,
+        color: issueColor,
+        width: isSelected(issue as MapIssue) ? 6 : 3,
       }),
     });
   } else
     return new Style({
       stroke: new Stroke({
-        color: isSelected(issue) ? "black" : issue.color,
+        color: isSelected(issue as MapIssue) ? "black" : issueColor,
         width: 2,
       }),
       fill: new Fill({
-        color: getPolygonFillColor(issue),
+        color: getPolygonFillColor(issue as MapIssue),
       }),
     });
 }

@@ -2,7 +2,7 @@
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
 
-export default defineCachedEventHandler(async (event) => {
+export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
 
   if (!id) {

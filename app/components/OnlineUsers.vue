@@ -48,12 +48,11 @@
 </template>
 
 <script setup lang="ts">
-import type { OnlineUser } from "@/composables/useOnlineUsers";
+import type { OnlineUser } from "~/types/WebSocketMessages";
 
 interface Props {
   avatarSize?: number;
   maxAvatars?: number;
-  showText?: boolean;
   orientation?: "horizontal" | "vertical";
 }
 
