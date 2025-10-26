@@ -5,7 +5,9 @@ import { getDb } from "~~/server/utils/db";
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
 
-  const { name, description, color, icon } = await readBody<Partial<Legend>>(event);
+  const { name, description, color, icon } = await readBody<Partial<Legend>>(
+    event
+  );
 
   if (!name || !color) {
     throw createError({

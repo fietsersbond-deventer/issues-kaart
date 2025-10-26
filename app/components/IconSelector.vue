@@ -44,11 +44,7 @@
             <v-icon :icon="selectedIcon" class="mr-2" />
             <span>Geselecteerd: {{ selectedIcon }}</span>
             <v-spacer />
-            <v-btn
-              size="small"
-              variant="text"
-              @click="clearSelection"
-            >
+            <v-btn size="small" variant="text" @click="clearSelection">
               Wissen
             </v-btn>
           </div>
@@ -135,11 +131,9 @@ const filteredIcons = computed(() => {
   if (!searchQuery.value) {
     return transportIcons;
   }
-  
+
   const query = searchQuery.value.toLowerCase();
-  return transportIcons.filter(icon => 
-    icon.toLowerCase().includes(query)
-  );
+  return transportIcons.filter((icon) => icon.toLowerCase().includes(query));
 });
 
 function selectIcon(icon: string) {

@@ -10,12 +10,8 @@
     </thead>
     <tbody>
       <tr v-for="item in legends" :key="item.id">
-                <td>
-          <LegendIndicator 
-            :color="item.color"
-            :icon="item.icon"
-            :size="24"
-          />
+        <td>
+          <LegendIndicator :color="item.color" :icon="item.icon" :size="24" />
         </td>
         <td>{{ item.name }}</td>
         <td>{{ item.description }}</td>

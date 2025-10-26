@@ -20,7 +20,7 @@
       class="color-rectangle"
       :style="{
         backgroundColor: color,
-        width: (size * 2 + 4) + 'px',
+        width: size * 2 + 4 + 'px',
         height: size + 'px',
         borderRadius: '4px',
         border: '1px solid rgba(0, 0, 0, 0.12)',

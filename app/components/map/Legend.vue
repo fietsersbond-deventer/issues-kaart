@@ -8,16 +8,16 @@
         density="compact"
       >
         <template #prepend>
-          <v-icon 
-            v-if="item.icon" 
-            :icon="item.icon" 
+          <v-icon
+            v-if="item.icon"
+            :icon="item.icon"
             :color="item.color"
             size="small"
           />
-          <div 
+          <div
             v-else
-            class="color-preview" 
-            :style="{ backgroundColor: item.color }" 
+            class="color-preview"
+            :style="{ backgroundColor: item.color }"
           />
         </template>
         <v-list-item-title class="text-body-2 text-truncate">{{

@@ -11,7 +11,7 @@
   >
     <template #selection="{ item: legend }">
       <div class="d-flex align-center" style="gap: 8px">
-        <LegendIndicator 
+        <LegendIndicator
           :color="legend.raw.color"
           :icon="legend.raw.icon"
           :size="20"
@@ -24,7 +24,7 @@
       <v-list-item v-bind="itemProps" :subtitle="legend.raw.description">
         <template #prepend>
           <div class="me-2">
-            <LegendIndicator 
+            <LegendIndicator
               :color="legend.raw.color"
               :icon="legend.raw.icon"
               :size="20"
