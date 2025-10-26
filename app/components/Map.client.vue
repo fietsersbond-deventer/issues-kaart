@@ -92,7 +92,7 @@
           <ol-style v-if="issue.icon && issue.icon_data_url">
             <ol-style-icon
               :src="issue.icon_data_url"
-              :scale="isSelected(issue) ? 1.2 : 1"
+              :scale="isSelected(issue) ? 1.4 : 1"
               :anchor="[0.5, 0.5]"
             />
           </ol-style>
@@ -167,7 +167,7 @@ import { Collection, type Feature } from "ol";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
-import { Style, Circle, Fill, Stroke } from "ol/style";
+import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
@@ -325,16 +325,51 @@ function style(feature: Feature) {
   const issueColor = issue.color;
 
   if (feature.getGeometry()!.getType() === "Point") {
-    return new Style({
-      image: new Circle({
-        radius: 8,
-        fill: new Fill({ color: issueColor }),
-        stroke: new Stroke({
-          color: isSelected(issue) ? "black" : "white",
-          width: 2,
+    // If the issue has an icon, use it with black circle when selected
+    if (issue.icon && issue.icon_data_url) {
+      if (isSelected(issue)) {
+        // Create composite style: black circle outline + icon on top
+        return [
+          new Style({
+            image: new Circle({
+              radius: 16,
+              stroke: new Stroke({
+                color: "black",
+                width: 2,
+              }),
+            }),
+          }),
+          new Style({
+            image: new Icon({
+              src: issue.icon_data_url,
+              scale: 1,
+              anchor: [0.5, 0.5],
+            }),
+          }),
+        ];
+      } else {
+        // Just the icon when not selected
+        return new Style({
+          image: new Icon({
+            src: issue.icon_data_url,
+            scale: 1,
+            anchor: [0.5, 0.5],
+          }),
+        });
+      }
+    } else {
+      // Fallback to circle for issues without icons
+      return new Style({
+        image: new Circle({
+          radius: 8,
+          fill: new Fill({ color: issueColor }),
+          stroke: new Stroke({
+            color: isSelected(issue) ? "black" : "white",
+            width: 2,
+          }),
         }),
-      }),
-    });
+      });
+    }
   } else if (feature.getGeometry()!.getType() === "LineString") {
     return new Style({
       stroke: new Stroke({
