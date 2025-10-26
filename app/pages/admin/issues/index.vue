@@ -146,7 +146,6 @@
 </template>
 
 <script setup lang="ts">
-import { useSessionStorage } from "@vueuse/core";
 import type { AdminListIssue } from "~/types/Issue";
 import type { Legend } from "~/types/Legend";
 
@@ -174,8 +173,8 @@ const { data: availableLegends } = useFetch<Legend[]>("/api/legends");
 
 const existingIssues = computed(() => issues.value || []);
 
-// Persistent state management using VueUse's useSessionStorage
-const state = useSessionStorage("admin-issues-state", {
+// Persistent state management using Nuxt's useState
+const state = useState("admin-issues-state", () => ({
   search: "",
   page: 1,
   itemsPerPage: 10,
@@ -183,7 +182,7 @@ const state = useSessionStorage("admin-issues-state", {
     key: string;
     order: "asc" | "desc";
   }[],
-});
+}));
 
 // Reset pagination when search changes
 watch(
