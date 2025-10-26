@@ -1,4 +1,5 @@
 import { transformAssetUrls } from "vite-plugin-vuetify";
+import { nl } from "vuetify/locale";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -72,6 +73,11 @@ export default defineNuxtConfig({
     },
     vuetifyOptions: {
       /* vuetify options */
+      locale: {
+        locale: "nl",
+        fallback: "en",
+        messages: { nl },
+      },
       display: {
         mobileBreakpoint: "lg",
       },
