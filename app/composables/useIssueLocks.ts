@@ -46,8 +46,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     Record<string, { peer: string; username: string; displayName: string }>
   >({});
 
-  // Track our own peer ID
-  const myPeerId = ref<string | null>(null);
+  // Use centrally stored peer ID from shared WebSocket
+  const myPeerId = authWs.peerId;
 
   // Track connection status for warnings
   const isConnected = computed(() => authWs.status.value === "OPEN");
@@ -59,7 +59,6 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     (status, prevStatus) => {
       if (status === "CLOSED" || status === "CONNECTING") {
         editingUsers.value = {};
-        myPeerId.value = null; // Clear our peer ID too
         console.debug("Lock status gewist vanwege verbindingsverlies");
 
         // Show warning about unsafe editing when connection is lost
@@ -83,9 +82,6 @@ export const useIssueLocks = defineStore("issueLocks", () => {
           notifyEditing(selectedId.value, isEditing.value);
         } else if (isAuthenticated.value) {
           // No selected issue, but we might have had locks - clear any stale locks
-          console.debug(
-            "No selected issue on reconnect, clearing any stale locks"
-          );
           authWs.sendMessage("clearMyLocks", {
             username: userName.value,
             displayName: displayName.value,
@@ -121,9 +117,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
           string,
           { peer: string; username: string; displayName: string }
         >) || {};
-    } else if (message.type === "peer-connected") {
-      myPeerId.value = message.payload as string;
     }
+    // peer-connected is now handled centrally in useSharedAuthWebSocket
   });
 
   function notifyEditing(issueId: number, isEditing: boolean) {

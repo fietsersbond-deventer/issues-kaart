@@ -30,6 +30,17 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
     [key: string]: unknown;
   };
 
+  if (message.type === "get-peer-id") {
+    // Send peer ID to client
+    peer.send(
+      JSON.stringify({
+        type: "peer-connected",
+        payload: peer.toString(),
+      })
+    );
+    return true; // Message handled
+  }
+
   if (message.type === "lockIssue" || message.type === "unlockIssue") {
     // Handle new message format with payload
     const payload = message.payload || message; // Fallback for old format

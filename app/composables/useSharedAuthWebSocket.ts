@@ -37,6 +37,7 @@ export const useSharedAuthWebSocket = (() => {
   let wsInstance: ReturnType<typeof useWebSocket> | null = null;
   let eventBus: ReturnType<typeof createAuthWebSocketEventBus> | null = null;
   let refCount = 0;
+  const peerId = ref<string | null>(null);
 
   return () => {
     if (!wsInstance) {
@@ -57,18 +58,20 @@ export const useSharedAuthWebSocket = (() => {
           },
         },
         onConnected() {
-          console.log("Auth WebSocket verbonden met", websocketUrl);
-          console.log(
+          console.debug("Auth WebSocket verbonden met", websocketUrl);
+          console.debug(
             "WebSocket status na verbinding:",
             wsInstance?.status.value
           );
         },
         onDisconnected() {
-          console.log("Auth WebSocket verbinding verbroken");
-          console.log(
+          console.debug("Auth WebSocket verbinding verbroken");
+          console.debug(
             "WebSocket status na verbreking:",
             wsInstance?.status.value
           );
+          // Clear peer ID on disconnect
+          peerId.value = null;
         },
         onError(error) {
           console.error("Auth WebSocket fout:", error);
@@ -80,6 +83,15 @@ export const useSharedAuthWebSocket = (() => {
         () => wsInstance!.data.value,
         (data) => {
           if (data) {
+            try {
+              const message = JSON.parse(data as string);
+              // Store peer ID centrally when received
+              if (message.type === "peer-connected") {
+                peerId.value = message.payload as string;
+              }
+            } catch (error) {
+              console.error("Failed to parse message for peer ID:", error);
+            }
             eventBus!.publish(data as string);
           }
         }
@@ -100,6 +112,7 @@ export const useSharedAuthWebSocket = (() => {
     return {
       subscribe: eventBus!.subscribe,
       status: wsInstance.status,
+      peerId: readonly(peerId), // Expose peer ID as readonly
       close: () => {
         refCount--;
         if (refCount <= 0) {
@@ -108,7 +121,6 @@ export const useSharedAuthWebSocket = (() => {
         }
       },
       open: wsInstance.open,
-      send: wsInstance.send, // Keep raw send for backwards compatibility
       sendMessage, // New type-safe send
     };
   };
