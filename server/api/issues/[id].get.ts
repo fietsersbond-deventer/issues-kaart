@@ -16,10 +16,8 @@ export default defineEventHandler(async (event) => {
   const row = db
     .prepare(
       `SELECT i.id, i.title, i.description, i.legend_id, 
-     l.name as legend_name, l.color,
      i.geometry, i.created_at 
      FROM issues i 
-     LEFT JOIN legend l ON i.legend_id = l.id 
      WHERE i.id = ?`
     )
     .get(id);

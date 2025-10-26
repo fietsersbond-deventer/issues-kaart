@@ -8,12 +8,21 @@
         density="compact"
       >
         <template #prepend>
+          <!-- Show generated canvas icon if available -->
+          <img
+            v-if="item.icon && item.icon_data_url"
+            :src="item.icon_data_url"
+            :alt="item.icon"
+            class="legend-icon-image"
+          />
+          <!-- Fallback to v-icon -->
           <v-icon
-            v-if="item.icon"
+            v-else-if="item.icon"
             :icon="item.icon"
             :color="item.color"
             size="small"
           />
+          <!-- Color rectangle fallback -->
           <div
             v-else
             class="color-preview"
@@ -80,9 +89,14 @@ const visibleLegends = computed(() => {
 .color-preview {
   width: 16px;
   height: 16px;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
-  margin-right: 8px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-icon-image {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 </style>

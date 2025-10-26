@@ -9,17 +9,31 @@
       gap: '4px',
     }"
   >
-    <template v-if="icon">
-      <!-- Point icon -->
-      <v-icon :icon="icon" :color="color" :size="size" />
+    <template v-if="legend?.icon">
+      <!-- Show generated canvas icon if available, otherwise fallback to v-icon -->
+      <template v-if="legend.icon_data_url">
+        <img
+          :src="legend.icon_data_url"
+          :alt="legend.icon"
+          :style="{
+            width: size + 'px',
+            height: size + 'px',
+            borderRadius: '50%',
+          }"
+        />
+      </template>
+      <template v-else>
+        <!-- Fallback to regular v-icon -->
+        <v-icon :icon="legend.icon" :color="legend.color" :size="size" />
+      </template>
       <!-- Line/polygon indicator -->
-      <v-icon icon="mdi-vector-polyline" :color="color" :size="size" />
+      <v-icon icon="mdi-vector-polyline" :color="legend.color" :size="size" />
     </template>
     <div
       v-else
       class="color-rectangle"
       :style="{
-        backgroundColor: color,
+        backgroundColor: legend.color,
         width: size * 2 + 4 + 'px',
         height: size + 'px',
         borderRadius: '4px',
@@ -30,16 +44,16 @@
 </template>
 
 <script setup lang="ts">
+import type { Legend } from "~/types/Legend";
+
 interface Props {
-  color: string;
-  icon?: string | null;
-  size?: number;
+  legend: Pick<Legend, "name" | "color" | "icon" | "icon_data_url"> & {
+    id?: number;
+  };
+  size: number;
 }
 
-withDefaults(defineProps<Props>(), {
-  icon: null,
-  size: 20,
-});
+const { legend, size } = defineProps<Props>();
 </script>
 
 <style scoped>

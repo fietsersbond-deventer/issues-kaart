@@ -23,9 +23,6 @@ export default defineEventHandler(async (event) => {
     title: "i.title",
     description: "i.description",
     legend_id: "i.legend_id",
-    legend_name: "l.name as legend_name",
-    color: "l.color",
-    icon: "l.icon",
     geometry: "i.geometry",
     created_at: "i.created_at",
     imageUrl: "i.description", // Special field - will be processed
@@ -64,16 +61,14 @@ export default defineEventHandler(async (event) => {
     includeGeometry = validFields.includes("geometry");
   } else {
     // Return all fields if none specified
-    selectFields = `i.id, i.title, i.description, i.legend_id,
-     l.name as legend_name, l.color, l.icon,
-     i.geometry, i.created_at`;
+    selectFields = `i.id, i.title, i.description, i.legend_id, i.geometry, i.created_at`;
+    includeImageUrl = true; // Include imageUrl processing for full data
   }
 
   const rows = db
     .prepare(
       `SELECT ${selectFields}
      FROM issues i 
-     LEFT JOIN legend l ON i.legend_id = l.id 
      ORDER BY i.created_at DESC`
     )
     .all();

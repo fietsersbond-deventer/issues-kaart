@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-const selectedIcon = defineModel<string | null>({ required: true });
+const selectedIcon = defineModel<string | undefined>({ required: true });
 
 const searchQuery = ref("");
 
@@ -141,7 +141,7 @@ function selectIcon(icon: string) {
 }
 
 function clearSelection() {
-  selectedIcon.value = null;
+  selectedIcon.value = undefined;
 }
 </script>
 

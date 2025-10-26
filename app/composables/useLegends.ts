@@ -1,4 +1,4 @@
-import type { Issue, Legend } from "~~/server/database/schema";
+import type { Legend } from "~~/server/database/schema";
 
 export type LegendUsage = Record<
   number,
@@ -16,7 +16,11 @@ export const useLegends = defineStore("categories", () => {
     Authorization: `Bearer ${token.value?.replace("Bearer ", "")}`,
   }));
 
-  const { data: legends } = useFetch<Legend[]>("/api/legends", {});
+  // Use manual refresh approach for better reactivity control
+  const { data: legends, refresh: refreshLegends } = useFetch<Legend[]>(
+    "/api/legends",
+    {}
+  );
 
   async function getUsage() {
     const result = await $fetch<
@@ -41,19 +45,31 @@ export const useLegends = defineStore("categories", () => {
     });
   }
 
-  function update(id: number, updates: Partial<Legend>) {
-    return $fetch<Legend>(`/api/legends/${id}`, {
+  async function update(id: number, updates: Partial<Legend>) {
+    const result = await $fetch<Legend>(`/api/legends/${id}`, {
       method: "PATCH",
       body: updates,
       headers: headers.value,
     });
+
+    // Refresh the data from server to ensure UI updates
+    await refreshLegends();
+
+    return result;
   }
 
-  function remove(id: number) {
-    return $fetch<{ success: boolean }>(`/api/legends/${id}`, {
+  async function remove(id: number) {
+    const result = await $fetch<{ success: boolean }>(`/api/legends/${id}`, {
       method: "DELETE",
       headers: headers.value,
     });
+
+    // Refresh the data from server to ensure UI updates
+    if (result.success) {
+      await refreshLegends();
+    }
+
+    return result;
   }
 
   return {

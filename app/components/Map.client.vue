@@ -89,9 +89,16 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
-          <ol-style>
+          <ol-style v-if="issue.icon && issue.icon_data_url">
+            <ol-style-icon
+              :src="issue.icon_data_url"
+              :scale="isSelected(issue) ? 1.2 : 1"
+              :anchor="[0.5, 0.5]"
+            />
+          </ol-style>
+          <ol-style v-else>
             <ol-style-circle :radius="mobile ? 10 : 8">
-              <ol-style-fill :color="issue.color" />
+              <ol-style-fill :color="issue.color || '#2196F3'" />
               <ol-style-stroke
                 :color="isSelected(issue) ? 'black' : 'white'"
                 :width="2"
@@ -171,10 +178,13 @@ interface Size {
   height: number;
 }
 
-// Use lightweight map issues for rendering (only id, title, color, icon, geometry, imageUrl)
+// Use lightweight map issues for rendering (only essential fields)
 const { issues } = storeToRefs(
-  useIssues({ fields: "id,title,color,icon,geometry,imageUrl" })
+  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const })
 );
+
+// Get legends separately for mapping
+const { legends } = storeToRefs(useLegends());
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
@@ -230,9 +240,9 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
 }
 
 function resetToOriginalExtent() {
-  if (!issues.value || issues.value.length === 0) return;
+  if (!mapIssues.value || mapIssues.value.length === 0) return;
 
-  const bbox = getIssuesBbox(issues.value);
+  const bbox = getIssuesBbox(mapIssues.value);
   if (!bbox) return;
 
   setBbox(bbox, {
@@ -252,14 +262,14 @@ const { mobile } = useDisplay();
 // useMapBounds(mapRef);
 
 watch([view, issues, selectedIssue], () => {
-  if (view.value && issues.value.length > 0) {
+  if (view.value && mapIssues.value.length > 0) {
     // If there's a selected issue with geometry, zoom to it
     if (selectedIssue.value?.geometry) {
       recenterOnSelectedIssue();
       firstLoad.value = false;
     } else {
       // Otherwise, fit all issues
-      const bbox = getIssuesBbox(issues.value);
+      const bbox = getIssuesBbox(mapIssues.value);
       if (!bbox) return;
       setBbox(bbox);
       firstLoad.value = false;
@@ -308,11 +318,11 @@ const isMapSmall = computed(() => {
 function style(feature: Feature) {
   const properties = feature.getProperties();
   const issueId = properties.id;
-  const issue = issues.value?.find((i) => i.id === issueId);
+  const issue = mapIssues.value?.find((i) => i.id === issueId);
   if (!issue) return;
 
   // Provide default color if none specified (for backward compatibility)
-  const issueColor = issue.color || "#2196F3";
+  const issueColor = issue.color;
 
   if (feature.getGeometry()!.getType() === "Point") {
     return new Style({
@@ -320,7 +330,7 @@ function style(feature: Feature) {
         radius: 8,
         fill: new Fill({ color: issueColor }),
         stroke: new Stroke({
-          color: isSelected(issue as MapIssue) ? "black" : "white",
+          color: isSelected(issue) ? "black" : "white",
           width: 2,
         }),
       }),
@@ -354,28 +364,44 @@ const rdProjection = new Projection({
   extent: [-285401.92, 22598.08, 595401.92, 903401.92],
 });
 
-const markers = computed(() => {
+// Convert issues to MapIssue type (only existing issues with ID) and map legend data
+const mapIssues = computed(() => {
+  const legendMap = new Map(legends.value?.map((l) => [l.id, l]) || []);
+
   return (
-    issues.value?.filter(
-      (issue: MapIssue): issue is MapIssue => issue.geometry?.type === "Point"
-    ) ?? []
+    (issues.value || [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((issue: any): issue is MapIssue => "id" in issue)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((issue: any): MapIssue => {
+        const legend = legendMap.get(issue.legend_id);
+        return {
+          id: issue.id,
+          title: issue.title,
+          color: legend?.color,
+          icon: legend?.icon || undefined,
+          icon_data_url: legend?.icon_data_url || undefined,
+          geometry: issue.geometry,
+        };
+      })
+  );
+});
+
+const markers = computed(() => {
+  return mapIssues.value.filter(
+    (issue): issue is MapIssue => issue.geometry?.type === "Point"
   );
 });
 
 const polygons = computed(() => {
-  return (
-    issues.value?.filter(
-      (issue: MapIssue): issue is MapIssue => issue.geometry?.type === "Polygon"
-    ) ?? []
+  return mapIssues.value.filter(
+    (issue): issue is MapIssue => issue.geometry?.type === "Polygon"
   );
 });
 
 const lines = computed(() => {
-  return (
-    issues.value?.filter(
-      (issue: MapIssue): issue is MapIssue =>
-        issue.geometry?.type === "LineString"
-    ) ?? []
+  return mapIssues.value.filter(
+    (issue): issue is MapIssue => issue.geometry?.type === "LineString"
   );
 });
 
@@ -477,5 +503,60 @@ const emit = defineEmits(["feature-clicked"]);
 .map-small .ol-attribution.ol-uncollapsible,
 .map-small .ol-control.ol-attribution {
   display: none !important;
+}
+
+.map-icon-container {
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.map-icon-container::before {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: -1;
+}
+
+/* Legacy styles for old approach */
+.map-icon {
+  background: white;
+  border-radius: 50%;
+  padding: 4px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.map-icon-simple {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.icon-text {
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>
