@@ -179,22 +179,30 @@ const state = useSessionStorage("admin-issues-state", {
   search: "",
   page: 1,
   itemsPerPage: 10,
-  sortBy: [{ key: "created_at", order: "desc" }] as { key: string; order: "asc" | "desc" }[],
+  sortBy: [{ key: "created_at", order: "desc" }] as {
+    key: string;
+    order: "asc" | "desc";
+  }[],
 });
 
 // Reset pagination when search changes
-watch(() => state.value.search, (newSearch, oldSearch) => {
-  if (newSearch !== oldSearch) {
-    state.value.page = 1;
+watch(
+  () => state.value.search,
+  (newSearch, oldSearch) => {
+    if (newSearch !== oldSearch) {
+      state.value.page = 1;
+    }
   }
-});
+);
 
 const filteredIssues = computed(() => {
   return existingIssues.value.filter(
     (issue) =>
       !state.value.search ||
       issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
-      issue.legend_name?.toLowerCase().includes(state.value.search.toLowerCase())
+      issue.legend_name
+        ?.toLowerCase()
+        .includes(state.value.search.toLowerCase())
   );
 });
 
