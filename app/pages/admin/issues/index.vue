@@ -19,10 +19,10 @@
           class="elevation-1"
           density="compact"
           :loading="!issues.length"
-          :item-class="(item) => (locks[item.id] ? 'locked-row' : '')"
+          :row-props="lockRow"
         >
           <template #item.title="{ item }">
-            <div :class="locks[item.id] ? 'locked-cell' : ''">
+            <div>
               <v-text-field
                 v-model="item.title"
                 dense
@@ -36,7 +36,7 @@
           </template>
 
           <template #item.legend_name="{ item }">
-            <div :class="locks[item.id] ? 'locked-cell' : ''">
+            <div>
               <CategorySelect
                 v-if="availableLegends"
                 v-model="item.legend_id"
@@ -50,7 +50,7 @@
           </template>
 
           <template #item.created_at="{ item }">
-            <div :class="locks[item.id] ? 'locked-cell' : ''">
+            <div>
               {{
                 new Date(item.created_at).toLocaleDateString("nl-NL", {
                   year: "numeric",
@@ -62,7 +62,7 @@
           </template>
 
           <template #item.actions="{ item }">
-            <div :class="locks[item.id] ? 'locked-cell' : ''">
+            <div>
               <template v-if="locks[item.id]">
                 <div
                   class="d-flex align-center justify-center lock-icon-container"
@@ -186,6 +186,14 @@ const headers = [
   { title: "Acties", value: "actions", sortable: false },
 ];
 
+function lockRow(data: { item: AdminListIssue }) {
+  return {
+    class: {
+      "locked-row": !!locks.value[data.item.id],
+    },
+  };
+}
+
 function confirmDelete(issue: AdminListIssue) {
   deleteIssue.value = issue;
   showDeleteDialog.value = true;
@@ -239,69 +247,8 @@ async function updateIssue(issue: AdminListIssue) {
   user-select: none;
 }
 
-/* Make locked cells completely unclickable */
-.locked-cell {
-  pointer-events: none !important;
-  opacity: 0.6;
-  user-select: none;
-}
-
-/* Try to target table rows more aggressively */
-tbody tr.locked-row,
-.v-data-table tbody tr.locked-row,
-.v-table tbody tr.locked-row {
-  pointer-events: none !important;
-  opacity: 0.6 !important;
-  user-select: none !important;
-}
-
-/* Re-enable pointer events only for the lock icon tooltip and arrow button */
-.locked-row .lock-icon-container,
-.locked-cell .lock-icon-container {
+/* Re-enable pointer events only for allowed interactive elements */
+.locked-row .lock-icon-container {
   pointer-events: auto !important;
-}
-
-/* Disable all form interactions in locked rows/cells */
-.locked-row input,
-.locked-row select,
-.locked-row textarea,
-.locked-row button,
-.locked-row .v-field,
-.locked-row .v-input,
-.locked-row .v-select,
-.locked-row .v-text-field,
-.locked-cell input,
-.locked-cell select,
-.locked-cell textarea,
-.locked-cell button,
-.locked-cell .v-field,
-.locked-cell .v-input,
-.locked-cell .v-select,
-.locked-cell .v-text-field {
-  pointer-events: none !important;
-  user-select: none !important;
-}
-
-/* But allow buttons specifically marked with lock-icon-container class */
-.locked-row .lock-icon-container button,
-.locked-cell .lock-icon-container button,
-.locked-row .lock-icon-container .v-btn,
-.locked-cell .lock-icon-container .v-btn {
-  pointer-events: auto !important;
-}
-
-/* Ensure no focus can happen */
-.locked-row input:focus,
-.locked-row select:focus,
-.locked-row textarea:focus,
-.locked-row .v-field:focus-within,
-.locked-row .v-input:focus-within,
-.locked-cell input:focus,
-.locked-cell select:focus,
-.locked-cell textarea:focus,
-.locked-cell .v-field:focus-within,
-.locked-cell .v-input:focus-within {
-  outline: none !important;
-  box-shadow: none !important;
 }
 </style>
