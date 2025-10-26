@@ -10,22 +10,27 @@
     }"
   >
     <template v-if="legend?.icon">
-      <!-- Show generated canvas icon if available, otherwise fallback to v-icon -->
-      <template v-if="legend.icon_data_url">
-        <img
-          :src="legend.icon_data_url"
-          :alt="legend.icon"
-          :style="{
-            width: size + 'px',
-            height: size + 'px',
-            borderRadius: '50%',
-          }"
+      <!-- Show circular icon like on the map -->
+      <div
+        class="icon-circle"
+        :style="{
+          width: size + 'px',
+          height: size + 'px',
+          backgroundColor: legend.color || '#2196F3',
+          borderRadius: '50%',
+          border: '1px solid rgba(0, 0, 0, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative'
+        }"
+      >
+        <v-icon 
+          :icon="legend.icon" 
+          :color="getContrastColor(legend.color || '#2196F3')" 
+          :size="Math.round(size * 0.6)"
         />
-      </template>
-      <template v-else>
-        <!-- Fallback to regular v-icon -->
-        <v-icon :icon="legend.icon" :color="legend.color" :size="size" />
-      </template>
+      </div>
       <!-- Line/polygon indicator -->
       <v-icon icon="mdi-vector-polyline" :color="legend.color" :size="size" />
     </template>
@@ -54,6 +59,23 @@ interface Props {
 }
 
 const { legend, size } = defineProps<Props>();
+
+// Calculate contrast color based on background luminance
+function getContrastColor(hexColor: string): string {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  // Calculate relative luminance using WCAG formula
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // Return black for light backgrounds, white for dark backgrounds
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+}
 </script>
 
 <style scoped>

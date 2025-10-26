@@ -31,7 +31,7 @@
               <v-col cols="8">
                 <h4 class="mb-3">Icoon (optioneel)</h4>
                 <div class="mb-4">
-                  <IconSelector v-model="editedItem.icon" />
+                  <IconSelector v-model="editedItem.icon" :preview-color="editedItem.color" />
                 </div>
 
                 <!-- Preview section -->
@@ -42,12 +42,12 @@
                     <div class="text-caption">In legenda:</div>
                     <LegendIndicator :legend="editedItem" :size="24" />
                     <div class="text-caption">Op kaart:</div>
-                    <img
-                      v-if="editedItem.icon_data_url"
-                      :src="editedItem.icon_data_url"
-                      alt="Map icon preview"
-                      style="width: 32px; height: 32px; border-radius: 50%"
-                    />
+                  <img
+                    v-if="editedItem.icon_data_url"
+                    :src="editedItem.icon_data_url"
+                    alt="Map icon preview"
+                    style="width: 32px; height: 32px; border-radius: 50%"
+                  >
                     <v-chip v-else color="grey" size="small"
                       >Genereren...</v-chip
                     >
@@ -71,8 +71,8 @@
 <script setup lang="ts">
 import type { Legend } from "~/types/Legend";
 import {
-  createIconCanvasDataUrl,
-  createFallbackIconDataUrl,
+  createIconSvgDataUrl,
+  createFallbackIconSvgDataUrl,
 } from "@/utils/iconCanvas";
 
 const modelValue = defineModel<boolean>("modelValue");
@@ -114,17 +114,17 @@ const editedItem = ref<LegendFormData>(
 );
 const isEdit = computed(() => !!legend);
 
-// Watch for changes to icon or color and regenerate canvas
+// Watch for changes to icon and regenerate SVG
 watch(
-  [() => editedItem.value.icon, () => editedItem.value.color],
-  async ([newIcon, newColor]) => {
-    if (newIcon && newColor) {
+  () => editedItem.value.icon,
+  async (newIcon) => {
+    if (newIcon) {
       try {
-        const dataUrl = await createIconCanvasDataUrl(newIcon, newColor);
+        const dataUrl = await createIconSvgDataUrl(newIcon);
         editedItem.value.icon_data_url = dataUrl;
       } catch (error) {
-        console.warn("Failed to generate icon canvas, using fallback:", error);
-        editedItem.value.icon_data_url = createFallbackIconDataUrl(newColor);
+        console.warn("Failed to generate icon SVG, using fallback:", error);
+        editedItem.value.icon_data_url = createFallbackIconSvgDataUrl();
       }
     } else {
       editedItem.value.icon_data_url = undefined;

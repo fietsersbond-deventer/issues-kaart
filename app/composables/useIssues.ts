@@ -20,6 +20,9 @@ export function useIssues(options?: { fields?: string }) {
     const issues = ref<Issue[]>([]);
     const snackbar = useSharedSnackbar();
 
+    // Get legends for enriching issues
+    const { legends } = storeToRefs(useLegends());
+
     // Check if user is authenticated (only show notifications to editors)
     const { status } = useAuth();
     const isAuthenticated = computed(() => status.value === "authenticated");
@@ -42,6 +45,25 @@ export function useIssues(options?: { fields?: string }) {
         (issue as Issue & { imageUrl?: string | null }).imageUrl = hasImage
           ? `/api/issues/${issue.id}/image`
           : null;
+      }
+
+      // Enrich with legend data if legend_id exists
+      if ("legend_id" in issue && issue.legend_id && legends.value) {
+        const legend = legends.value.find(l => l.id === issue.legend_id);
+        if (legend) {
+          // Add legend properties to the issue for easy access
+          const enrichedIssue = issue as Issue & {
+            color?: string;
+            icon?: string;
+            icon_data_url?: string;
+            legend_name?: string;
+          };
+          enrichedIssue.color = legend.color;
+          enrichedIssue.icon = legend.icon;
+          enrichedIssue.icon_data_url = legend.icon_data_url;
+          enrichedIssue.legend_name = legend.name;
+          return enrichedIssue;
+        }
       }
 
       return issue;
@@ -142,12 +164,23 @@ export function useIssues(options?: { fields?: string }) {
       data,
       (newData) => {
         if (newData) {
-          issues.value = newData;
+          issues.value = newData.map(issue => processIssue(issue));
         } else {
           issues.value = [];
         }
       },
       { immediate: true }
+    );
+
+    // Reprocess issues when legends change
+    watch(
+      legends,
+      () => {
+        if (issues.value.length > 0) {
+          issues.value = issues.value.map(issue => processIssue(issue));
+        }
+      },
+      { deep: true }
     );
 
     function refresh() {

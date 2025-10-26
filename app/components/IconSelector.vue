@@ -21,6 +21,19 @@
       </v-col>
     </v-row>
 
+    <v-row v-if="selectedIcon && !paginatedIcons.includes(selectedIcon)">
+      <v-col cols="12" class="text-center">
+        <v-chip color="primary" variant="outlined" class="cursor-pointer" @click="showSelectedIcon">
+          <LegendIndicator 
+            :legend="{ icon: selectedIcon, color: previewColor }" 
+            :size="16" 
+            class="mr-2"
+          />
+          Huidig geselecteerd (klik om te tonen)
+        </v-chip>
+      </v-col>
+    </v-row>
+
     <v-row v-if="loading">
       <v-col cols="12" class="text-center">
         <v-progress-circular indeterminate />
@@ -89,6 +102,13 @@ import {
   type MdiIcon,
 } from "@/utils/getAllMdiIcons";
 import ValidatedIcon from "@/components/ValidatedIcon.vue";
+import LegendIndicator from "@/components/LegendIndicator.vue";
+
+interface Props {
+  previewColor?: string;
+}
+
+const { previewColor = '#666666' } = defineProps<Props>();
 
 const selectedIcon = defineModel<string | undefined>({ required: true });
 
@@ -100,86 +120,6 @@ const loading = ref(false);
 const loadingMessage = ref("Loading all MDI icons...");
 const allIcons = ref<MdiIcon[]>([]);
 const missingIcons = ref(new Set<string>());
-
-// Curated list of transport and cycling related MDI icons (verified)
-const transportIcons = [
-  // Bicycle related
-  "mdi-bicycle",
-  "mdi-bike",
-  "mdi-bike-fast",
-  "mdi-bicycle-electric",
-  "mdi-bicycle-basket",
-
-  // Traffic and signs
-  "mdi-traffic-light",
-  "mdi-traffic-cone",
-  "mdi-sign-pole",
-  "mdi-road",
-  "mdi-road-variant",
-
-  // Infrastructure
-  "mdi-bridge",
-  "mdi-tunnel-outline", // Changed from mdi-tunnel
-  "mdi-stairs-up", // Changed from mdi-stairs
-  "mdi-escalator-up", // Changed from mdi-escalator
-  "mdi-elevator-passenger", // Changed from mdi-elevator
-
-  // Transportation
-  "mdi-bus",
-  "mdi-train",
-  "mdi-tram",
-  "mdi-car",
-  "mdi-parking",
-
-  // Safety and warnings
-  "mdi-alert",
-  "mdi-alert-triangle-outline", // Fixed typo and used outline version
-  "mdi-alert-circle", // Alternative warning icon
-  "mdi-shield-check", // Changed from mdi-shield
-  "mdi-security",
-
-  // Construction and maintenance
-  "mdi-hammer",
-  "mdi-wrench",
-  "mdi-hard-hat",
-  "mdi-cone", // This might be mdi-traffic-cone
-  "mdi-barrier",
-
-  // Nature and environment
-  "mdi-tree",
-  "mdi-flower",
-  "mdi-water",
-  "mdi-weather-sunny",
-  "mdi-weather-rainy",
-
-  // Locations and POI
-  "mdi-map-marker",
-  "mdi-home",
-  "mdi-school",
-  "mdi-hospital-box", // Changed from mdi-hospital
-  "mdi-shopping",
-  "mdi-office-building",
-
-  // General useful icons
-  "mdi-information",
-  "mdi-check",
-  "mdi-close",
-  "mdi-star",
-  "mdi-heart",
-  "mdi-lightbulb",
-
-  // Additional verified icons
-  "mdi-account",
-  "mdi-cog",
-  "mdi-menu",
-  "mdi-plus",
-  "mdi-minus",
-  "mdi-delete",
-  "mdi-edit",
-  "mdi-eye",
-  "mdi-download",
-  "mdi-upload",
-];
 
 // Available categories (now using tags)
 const categoryOptions = computed(() => {
@@ -193,7 +133,7 @@ const baseIcons = computed(() => {
   if (allIcons.value.length > 0) {
     return allIcons.value.map((icon) => icon.name);
   }
-  return transportIcons;
+  return [];
 });
 
 // Filter icons based on search and tag
@@ -274,10 +214,35 @@ onMounted(async () => {
   }
 });
 
+const showSelectedIcon = () => {
+  if (selectedIcon.value) {
+    const iconIndex = filteredIcons.value.indexOf(selectedIcon.value);
+    if (iconIndex >= 0) {
+      currentPage.value = Math.floor(iconIndex / ICONS_PER_PAGE) + 1;
+    }
+  }
+};
+
 // Reset pagination when filters change
 watch([searchQuery, selectedCategory], () => {
   currentPage.value = 1;
 });
+
+// Ensure selected icon is visible when component loads or selection changes
+watch(
+  [validIcons, selectedIcon],
+  () => {
+    if (selectedIcon.value && validIcons.value.length > 0) {
+      const selectedIndex = validIcons.value.indexOf(selectedIcon.value);
+      if (selectedIndex !== -1) {
+        // Calculate which page the selected icon is on
+        const pageWithSelection = Math.floor(selectedIndex / iconsPerPage) + 1;
+        currentPage.value = pageWithSelection;
+      }
+    }
+  },
+  { immediate: true }
+);
 
 function selectIcon(icon: string) {
   // Toggle: if the same icon is clicked, deselect it
