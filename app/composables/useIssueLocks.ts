@@ -86,8 +86,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   watch(
     isEditing,
     (newIsEditing, oldIsEditing) => {
-      if (oldIsEditing !== newIsEditing) {
-        notifyEditing(selectedId.value!, newIsEditing);
+      if (oldIsEditing !== newIsEditing && selectedId.value) {
+        notifyEditing(selectedId.value, newIsEditing);
       }
     },
     { immediate: true }
