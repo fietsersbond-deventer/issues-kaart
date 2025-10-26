@@ -2,66 +2,68 @@
   <v-dialog v-model="modelValue" max-width="90%" persistent>
     <keep-alive>
       <v-card v-show="modelValue">
-      <v-card-title>
-        <span>{{
-          isEdit ? "Legend Item aanpassen" : "Nieuw Legenda Item"
-        }}</span>
-      </v-card-title>
+        <v-card-title>
+          <span>{{
+            isEdit ? "Legend Item aanpassen" : "Nieuw Legenda Item"
+          }}</span>
+        </v-card-title>
 
-      <v-card-text>
-        <v-container>
-          <v-row>
-            <v-col cols="12">
-              <v-text-field v-model="editedItem.name" label="Naam" required />
-            </v-col>
-            <v-col cols="12">
-              <v-text-field
-                v-model="editedItem.description"
-                label="Omschrijving"
-              />
-            </v-col>
-            <v-col cols="4">
-              <h4 class="mb-3">Kleur</h4>
-              <v-color-picker
-                v-model="editedItem.color"
-                show-swatches
-                swatches-max-height="300px"
-              />
-            </v-col>
-            <v-col cols="8">
-              <h4 class="mb-3">Icoon (optioneel)</h4>
-              <div class="mb-4">
-                <IconSelector v-model="editedItem.icon" />
-              </div>
-
-              <!-- Preview section -->
-              <div v-if="editedItem.icon" class="mt-4">
-                <v-divider class="mb-4" />
-                <h4 class="mb-2">Voorvertoning:</h4>
-                <div class="d-flex align-center gap-4 flex-wrap">
-                  <div class="text-caption">In legenda:</div>
-                  <LegendIndicator :legend="editedItem" :size="24" />
-                  <div class="text-caption">Op kaart:</div>
-                  <img
-                    v-if="editedItem.icon_data_url"
-                    :src="editedItem.icon_data_url"
-                    alt="Map icon preview"
-                    style="width: 32px; height: 32px; border-radius: 50%"
-                  >
-                  <v-chip v-else color="grey" size="small">Genereren...</v-chip>
+        <v-card-text>
+          <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field v-model="editedItem.name" label="Naam" required />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editedItem.description"
+                  label="Omschrijving"
+                />
+              </v-col>
+              <v-col cols="4">
+                <h4 class="mb-3">Kleur</h4>
+                <v-color-picker
+                  v-model="editedItem.color"
+                  show-swatches
+                  swatches-max-height="300px"
+                />
+              </v-col>
+              <v-col cols="8">
+                <h4 class="mb-3">Icoon (optioneel)</h4>
+                <div class="mb-4">
+                  <IconSelector v-model="editedItem.icon" />
                 </div>
-              </div>
-            </v-col>
-          </v-row>
-        </v-container>
-      </v-card-text>
 
-      <v-card-actions>
-        <v-spacer />
-        <v-btn color="primary" variant="text" @click="save"> Opslaan </v-btn>
-        <v-btn color="error" variant="text" @click="close"> Annuleren </v-btn>
-      </v-card-actions>
-    </v-card>
+                <!-- Preview section -->
+                <div v-if="editedItem.icon" class="mt-4">
+                  <v-divider class="mb-4" />
+                  <h4 class="mb-2">Voorvertoning:</h4>
+                  <div class="d-flex align-center gap-4 flex-wrap">
+                    <div class="text-caption">In legenda:</div>
+                    <LegendIndicator :legend="editedItem" :size="24" />
+                    <div class="text-caption">Op kaart:</div>
+                    <img
+                      v-if="editedItem.icon_data_url"
+                      :src="editedItem.icon_data_url"
+                      alt="Map icon preview"
+                      style="width: 32px; height: 32px; border-radius: 50%"
+                    />
+                    <v-chip v-else color="grey" size="small"
+                      >Genereren...</v-chip
+                    >
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" variant="text" @click="save"> Opslaan </v-btn>
+          <v-btn color="error" variant="text" @click="close"> Annuleren </v-btn>
+        </v-card-actions>
+      </v-card>
     </keep-alive>
   </v-dialog>
 </template>

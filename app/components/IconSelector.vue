@@ -46,8 +46,8 @@
                 class="icon-button ma-1"
                 @click="selectIcon(icon)"
               >
-                <ValidatedIcon 
-                  :icon="icon" 
+                <ValidatedIcon
+                  :icon="icon"
                   size="24"
                   @icon-not-found="handleIconNotFound"
                 />
@@ -82,7 +82,12 @@
 </template>
 
 <script setup lang="ts">
-import { searchIcons, getTagOptions, getIconsByTag, type MdiIcon } from "@/utils/getAllMdiIcons";
+import {
+  searchIcons,
+  getTagOptions,
+  getIconsByTag,
+  type MdiIcon,
+} from "@/utils/getAllMdiIcons";
 import ValidatedIcon from "@/components/ValidatedIcon.vue";
 
 const selectedIcon = defineModel<string | undefined>({ required: true });
@@ -105,7 +110,7 @@ const transportIcons = [
   "mdi-bicycle-electric",
   "mdi-bicycle-basket",
 
-  // Traffic and signs  
+  // Traffic and signs
   "mdi-traffic-light",
   "mdi-traffic-cone",
   "mdi-sign-pole",
@@ -115,8 +120,8 @@ const transportIcons = [
   // Infrastructure
   "mdi-bridge",
   "mdi-tunnel-outline", // Changed from mdi-tunnel
-  "mdi-stairs-up",      // Changed from mdi-stairs
-  "mdi-escalator-up",   // Changed from mdi-escalator
+  "mdi-stairs-up", // Changed from mdi-stairs
+  "mdi-escalator-up", // Changed from mdi-escalator
   "mdi-elevator-passenger", // Changed from mdi-elevator
 
   // Transportation
@@ -129,15 +134,15 @@ const transportIcons = [
   // Safety and warnings
   "mdi-alert",
   "mdi-alert-triangle-outline", // Fixed typo and used outline version
-  "mdi-alert-circle",   // Alternative warning icon
-  "mdi-shield-check",   // Changed from mdi-shield
+  "mdi-alert-circle", // Alternative warning icon
+  "mdi-shield-check", // Changed from mdi-shield
   "mdi-security",
 
   // Construction and maintenance
   "mdi-hammer",
   "mdi-wrench",
   "mdi-hard-hat",
-  "mdi-cone",           // This might be mdi-traffic-cone
+  "mdi-cone", // This might be mdi-traffic-cone
   "mdi-barrier",
 
   // Nature and environment
@@ -151,7 +156,7 @@ const transportIcons = [
   "mdi-map-marker",
   "mdi-home",
   "mdi-school",
-  "mdi-hospital-box",   // Changed from mdi-hospital
+  "mdi-hospital-box", // Changed from mdi-hospital
   "mdi-shopping",
   "mdi-office-building",
 
@@ -162,7 +167,7 @@ const transportIcons = [
   "mdi-star",
   "mdi-heart",
   "mdi-lightbulb",
-  
+
   // Additional verified icons
   "mdi-account",
   "mdi-cog",
@@ -179,14 +184,14 @@ const transportIcons = [
 // Available categories (now using tags)
 const categoryOptions = computed(() => {
   if (!allIcons.value.length) return [];
-  
+
   return getTagOptions(allIcons.value);
 });
 
 // Base icon set to work with
 const baseIcons = computed(() => {
   if (allIcons.value.length > 0) {
-    return allIcons.value.map(icon => icon.name);
+    return allIcons.value.map((icon) => icon.name);
   }
   return transportIcons;
 });
@@ -194,24 +199,24 @@ const baseIcons = computed(() => {
 // Filter icons based on search and tag
 const filteredIcons = computed(() => {
   let icons = baseIcons.value;
-  
+
   // Apply tag filter if we have the full icon set
   if (selectedCategory.value && allIcons.value.length > 0) {
     const tagIcons = getIconsByTag(allIcons.value, selectedCategory.value);
-    icons = tagIcons.map(icon => icon.name);
+    icons = tagIcons.map((icon) => icon.name);
   }
-  
+
   // Apply search filter
   if (searchQuery.value) {
     if (allIcons.value.length > 0) {
       const searchResults = searchIcons(allIcons.value, searchQuery.value);
-      icons = searchResults.map(icon => icon.name);
+      icons = searchResults.map((icon) => icon.name);
     } else {
       const query = searchQuery.value.toLowerCase();
       icons = icons.filter((icon) => icon.toLowerCase().includes(query));
     }
   }
-  
+
   return icons;
 });
 
@@ -223,7 +228,7 @@ const displayedIcons = computed(() => {
 
 // Filter out missing icons
 const validIcons = computed(() => {
-  return displayedIcons.value.filter(icon => !missingIcons.value.has(icon));
+  return displayedIcons.value.filter((icon) => !missingIcons.value.has(icon));
 });
 
 // Pagination
@@ -241,20 +246,28 @@ const paginatedIcons = computed(() => {
 onMounted(async () => {
   loading.value = true;
   loadingMessage.value = "Loading all MDI icons...";
-  
+
   try {
-    const response = await fetch('https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json');
+    const response = await fetch(
+      "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json"
+    );
     const icons = await response.json();
-    
-    allIcons.value = icons.map((icon: { name: string; tags?: string[]; category?: string; aliases?: string[] }) => ({
-      name: `mdi-${icon.name}`,
-      tags: icon.tags || [],
-      category: icon.category || 'uncategorized',
-      aliases: icon.aliases || []
-    }));
-    
+
+    allIcons.value = icons.map(
+      (icon: {
+        name: string;
+        tags?: string[];
+        category?: string;
+        aliases?: string[];
+      }) => ({
+        name: `mdi-${icon.name}`,
+        tags: icon.tags || [],
+        category: icon.category || "uncategorized",
+        aliases: icon.aliases || [],
+      })
+    );
   } catch (error) {
-    console.error('Failed to load full icon set:', error);
+    console.error("Failed to load full icon set:", error);
     loadingMessage.value = "Failed to load icons";
   } finally {
     loading.value = false;

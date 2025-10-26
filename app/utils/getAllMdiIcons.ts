@@ -23,17 +23,19 @@ interface MdiIconRaw {
 
 export async function getAllMdiIcons(): Promise<MdiIcon[]> {
   try {
-    const response = await fetch('https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json');
+    const response = await fetch(
+      "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json"
+    );
     const icons: MdiIconRaw[] = await response.json();
-    
+
     return icons.map((icon) => ({
       name: `mdi-${icon.name}`,
       tags: icon.tags || [],
-      category: icon.category || 'uncategorized',
-      aliases: icon.aliases || []
+      category: icon.category || "uncategorized",
+      aliases: icon.aliases || [],
     }));
   } catch (error) {
-    console.error('Failed to fetch MDI icons:', error);
+    console.error("Failed to fetch MDI icons:", error);
     return [];
   }
 }
@@ -41,22 +43,24 @@ export async function getAllMdiIcons(): Promise<MdiIcon[]> {
 /**
  * Get all unique tags from icons for dropdown options
  */
-export function getTagOptions(icons: MdiIcon[]): Array<{title: string, value: string}> {
+export function getTagOptions(
+  icons: MdiIcon[]
+): Array<{ title: string; value: string }> {
   // Collect all tags
   const tagCounts: Record<string, number> = {};
-  
-  icons.forEach(icon => {
-    icon.tags.forEach(tag => {
+
+  icons.forEach((icon) => {
+    icon.tags.forEach((tag) => {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
   });
-  
+
   // Convert to dropdown options and sort by frequency
   return Object.entries(tagCounts)
     .sort(([, a], [, b]) => b - a) // Sort by count descending
     .map(([tag, count]) => ({
       title: `${tag} (${count})`,
-      value: tag
+      value: tag,
     }));
 }
 
@@ -64,8 +68,8 @@ export function getTagOptions(icons: MdiIcon[]): Array<{title: string, value: st
  * Get icons by tag
  */
 export function getIconsByTag(icons: MdiIcon[], tag: string): MdiIcon[] {
-  return icons.filter(icon => 
-    icon.tags.some(iconTag => iconTag.toLowerCase() === tag.toLowerCase())
+  return icons.filter((icon) =>
+    icon.tags.some((iconTag) => iconTag.toLowerCase() === tag.toLowerCase())
   );
 }
 
@@ -74,10 +78,11 @@ export function getIconsByTag(icons: MdiIcon[], tag: string): MdiIcon[] {
  */
 export function searchIcons(icons: MdiIcon[], query: string): MdiIcon[] {
   const searchTerm = query.toLowerCase();
-  return icons.filter(icon => 
-    icon.name.toLowerCase().includes(searchTerm) ||
-    icon.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
-    icon.aliases.some(alias => alias.toLowerCase().includes(searchTerm))
+  return icons.filter(
+    (icon) =>
+      icon.name.toLowerCase().includes(searchTerm) ||
+      icon.tags.some((tag) => tag.toLowerCase().includes(searchTerm)) ||
+      icon.aliases.some((alias) => alias.toLowerCase().includes(searchTerm))
   );
 }
 
@@ -85,22 +90,33 @@ export function searchIcons(icons: MdiIcon[], query: string): MdiIcon[] {
  * Transport and bicycle related categories in MDI
  */
 export const TRANSPORT_CATEGORIES = [
-  'transportation',
-  'automotive',
-  'bicycle',
-  'sign',
-  'places',
-  'navigation'
+  "transportation",
+  "automotive",
+  "bicycle",
+  "sign",
+  "places",
+  "navigation",
 ];
 
 /**
  * Get all transport-related icons
  */
 export function getTransportIcons(icons: MdiIcon[]): MdiIcon[] {
-  return icons.filter(icon => 
-    TRANSPORT_CATEGORIES.includes(icon.category.toLowerCase()) ||
-    icon.tags.some(tag => 
-      ['transport', 'bicycle', 'bike', 'car', 'bus', 'train', 'road', 'traffic', 'sign'].includes(tag.toLowerCase())
-    )
+  return icons.filter(
+    (icon) =>
+      TRANSPORT_CATEGORIES.includes(icon.category.toLowerCase()) ||
+      icon.tags.some((tag) =>
+        [
+          "transport",
+          "bicycle",
+          "bike",
+          "car",
+          "bus",
+          "train",
+          "road",
+          "traffic",
+          "sign",
+        ].includes(tag.toLowerCase())
+      )
   );
 }
