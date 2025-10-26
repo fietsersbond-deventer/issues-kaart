@@ -19,80 +19,102 @@
           class="elevation-1"
           density="compact"
           :loading="!issues.length"
+          :item-class="(item) => (locks[item.id] ? 'locked-row' : '')"
         >
           <template #item.title="{ item }">
-            <v-text-field
-              v-model="item.title"
-              dense
-              hide-details
-              :disabled="!!locks[item.id]"
-              @change="updateIssue(item)"
-              @focus="notifyEditing(item.id, true)"
-              @blur="notifyEditing(item.id, false)"
-            />
+            <div :class="locks[item.id] ? 'locked-cell' : ''">
+              <v-text-field
+                v-model="item.title"
+                dense
+                hide-details
+                :disabled="!!locks[item.id]"
+                @change="updateIssue(item)"
+                @focus="notifyEditing(item.id, true)"
+                @blur="notifyEditing(item.id, false)"
+              />
+            </div>
           </template>
 
           <template #item.legend_name="{ item }">
-            <CategorySelect
-              v-if="availableLegends"
-              v-model="item.legend_id"
-              :legends="availableLegends"
-              :disabled="!!locks[item.id]"
-              @update:model-value="updateIssue(item)"
-              @focus="notifyEditing(item.id, true)"
-              @blur="notifyEditing(item.id, false)"
-            />
+            <div :class="locks[item.id] ? 'locked-cell' : ''">
+              <CategorySelect
+                v-if="availableLegends"
+                v-model="item.legend_id"
+                :legends="availableLegends"
+                :disabled="!!locks[item.id]"
+                @update:model-value="updateIssue(item)"
+                @focus="notifyEditing(item.id, true)"
+                @blur="notifyEditing(item.id, false)"
+              />
+            </div>
           </template>
 
           <template #item.created_at="{ item }">
-            {{
-              new Date(item.created_at).toLocaleDateString("nl-NL", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              })
-            }}
+            <div :class="locks[item.id] ? 'locked-cell' : ''">
+              {{
+                new Date(item.created_at).toLocaleDateString("nl-NL", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                })
+              }}
+            </div>
           </template>
 
           <template #item.actions="{ item }">
-            <v-btn
-              v-if="locks[item.id]"
-              icon
-              variant="text"
-              color="warning"
-              size="small"
-            >
-              <v-icon color="warning" icon="mdi-lock" />
-              <v-tooltip activator="parent" location="top">
-                {{ locks[item.id] }}
-              </v-tooltip>
-            </v-btn>
-            <template v-else>
-              <v-btn
-                icon="mdi-delete"
-                variant="text"
-                color="error"
-                size="small"
-                @click="confirmDelete(item)"
-              >
-                <v-icon>mdi-delete</v-icon>
-                <v-tooltip activator="parent" location="top">
-                  Verwijder issue
-                </v-tooltip>
-              </v-btn>
-              <v-btn
-                :to="`/kaart/${item.id}`"
-                icon
-                variant="text"
-                size="small"
-                color="primary"
-              >
-                <v-icon>mdi-open-in-new</v-icon>
-                <v-tooltip activator="parent" location="top">
-                  Bekijk issue in de kaart
-                </v-tooltip>
-              </v-btn>
-            </template>
+            <div :class="locks[item.id] ? 'locked-cell' : ''">
+              <template v-if="locks[item.id]">
+                <div
+                  class="d-flex align-center justify-center lock-icon-container"
+                  style="width: 40px; height: 40px"
+                >
+                  <v-icon color="warning" icon="mdi-lock" />
+                  <v-tooltip activator="parent" location="top">
+                    {{ locks[item.id] }}
+                  </v-tooltip>
+                </div>
+                <v-btn
+                  :to="`/kaart/${item.id}`"
+                  icon
+                  variant="text"
+                  size="small"
+                  color="primary"
+                  class="lock-icon-container"
+                >
+                  <v-icon>mdi-arrow-right</v-icon>
+                  <v-tooltip activator="parent" location="top">
+                    Bekijk issue in de kaart
+                  </v-tooltip>
+                </v-btn>
+              </template>
+              <template v-else>
+                <v-btn
+                  icon="mdi-delete"
+                  variant="text"
+                  color="error"
+                  size="small"
+                  @click.stop="confirmDelete(item)"
+                >
+                  <v-icon>mdi-delete</v-icon>
+                  <v-tooltip activator="parent" location="top">
+                    Verwijder issue
+                  </v-tooltip>
+                </v-btn>
+                <v-btn
+                  :to="`/kaart/${item.id}`"
+                  icon
+                  variant="text"
+                  size="small"
+                  color="primary"
+                  @click.stop
+                >
+                  <v-icon>mdi-arrow-right</v-icon>
+                  <v-tooltip activator="parent" location="top">
+                    Bekijk issue in de kaart
+                  </v-tooltip>
+                </v-btn>
+              </template>
+            </div>
           </template></v-data-table
         >
       </v-card-text>
@@ -208,5 +230,78 @@ async function updateIssue(issue: AdminListIssue) {
   width: 16px;
   height: 16px;
   border-radius: 50%;
+}
+
+/* Make locked rows completely unclickable */
+.locked-row {
+  pointer-events: none !important;
+  opacity: 0.6;
+  user-select: none;
+}
+
+/* Make locked cells completely unclickable */
+.locked-cell {
+  pointer-events: none !important;
+  opacity: 0.6;
+  user-select: none;
+}
+
+/* Try to target table rows more aggressively */
+tbody tr.locked-row,
+.v-data-table tbody tr.locked-row,
+.v-table tbody tr.locked-row {
+  pointer-events: none !important;
+  opacity: 0.6 !important;
+  user-select: none !important;
+}
+
+/* Re-enable pointer events only for the lock icon tooltip and arrow button */
+.locked-row .lock-icon-container,
+.locked-cell .lock-icon-container {
+  pointer-events: auto !important;
+}
+
+/* Disable all form interactions in locked rows/cells */
+.locked-row input,
+.locked-row select,
+.locked-row textarea,
+.locked-row button,
+.locked-row .v-field,
+.locked-row .v-input,
+.locked-row .v-select,
+.locked-row .v-text-field,
+.locked-cell input,
+.locked-cell select,
+.locked-cell textarea,
+.locked-cell button,
+.locked-cell .v-field,
+.locked-cell .v-input,
+.locked-cell .v-select,
+.locked-cell .v-text-field {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* But allow buttons specifically marked with lock-icon-container class */
+.locked-row .lock-icon-container button,
+.locked-cell .lock-icon-container button,
+.locked-row .lock-icon-container .v-btn,
+.locked-cell .lock-icon-container .v-btn {
+  pointer-events: auto !important;
+}
+
+/* Ensure no focus can happen */
+.locked-row input:focus,
+.locked-row select:focus,
+.locked-row textarea:focus,
+.locked-row .v-field:focus-within,
+.locked-row .v-input:focus-within,
+.locked-cell input:focus,
+.locked-cell select:focus,
+.locked-cell textarea:focus,
+.locked-cell .v-field:focus-within,
+.locked-cell .v-input:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
 }
 </style>
