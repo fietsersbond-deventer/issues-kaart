@@ -143,6 +143,10 @@ if (!id || typeof id !== "string") {
   setEditing(true);
 }
 
+onUnmounted(() => {
+  setEditing(false);
+});
+
 // watch([issue, id], ([newIssue, newId]) => {
 //   if (newId && newId !== "new" && newIssue === undefined) {
 //     // If the issue was not found, redirect to the main map page
