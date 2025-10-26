@@ -1,6 +1,7 @@
 import { ref, watch, computed } from "vue";
 import { defineStore } from "pinia";
 import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
+import { useConnectionStatus } from "./useConnectionStatus";
 
 export const useIssueLocks = defineStore("issueLocks", () => {
   const { isEditing } = useIsEditing();
@@ -13,8 +14,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   // Use shared WebSocket connection
   const authWs = useSharedAuthWebSocket();
 
-  // Import snackbar for connection warnings
-  const { showPersistent, hide, showMessage } = useSnackbar();
+  // Use connection status composable for warnings and status tracking
+  const { isConnected } = useConnectionStatus();
 
   // Watch authentication status and manage WebSocket connection
   watch(
@@ -49,10 +50,6 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   // Use centrally stored peer ID from shared WebSocket
   const myPeerId = authWs.peerId;
 
-  // Track connection status for warnings
-  const isConnected = computed(() => authWs.status.value === "OPEN");
-  const connectionWarningShown = ref(false);
-
   // Clear editing users when connection is lost (prevent stale lock indicators)
   watch(
     () => authWs.status.value,
@@ -60,22 +57,9 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       if (status === "CLOSED" || status === "CONNECTING") {
         editingUsers.value = {};
         console.debug("Lock status gewist vanwege verbindingsverlies");
-
-        // Show warning about unsafe editing when connection is lost
-        if (isAuthenticated.value && !connectionWarningShown.value) {
-          showPersistent("Verbinding verbroken");
-          connectionWarningShown.value = true;
-        }
       } else if (status === "OPEN" && prevStatus !== "OPEN") {
         // WebSocket reconnected - send current editing state
         console.debug("WebSocket reconnected, sending current editing state");
-
-        // Clear connection warning when reconnected
-        if (connectionWarningShown.value) {
-          hide(); // Hide the persistent warning
-          showMessage("Verbinding hersteld");
-          connectionWarningShown.value = false;
-        }
 
         if (selectedId.value && isAuthenticated.value) {
           // We know which issue we're on, send specific lock state

@@ -143,7 +143,7 @@ const geometryRules = [
 
 // Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
 const canSubmit = computed(() => {
-  return valid.value && isModified.value && !isEditingUnsafe.value;
+  return valid.value && isModified.value && !isConnected.value;
 });
 
 const modules = [
@@ -182,11 +182,11 @@ const toolbar = [
 const { update, create, remove } = useIssuesMethods();
 const { legends } = storeToRefs(useLegends());
 const { isEditing } = useIsEditing();
-const { isConnected, isEditingUnsafe } = storeToRefs(useIssueLocks());
+const { isConnected } = useConnectionStatus();
 
 async function onSubmit() {
   // Prevent submission if connection is lost
-  if (isEditingUnsafe.value) {
+  if (!isConnected.value) {
     return;
   }
 

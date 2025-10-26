@@ -3,7 +3,7 @@
     <v-toolbar v-if="status === 'authenticated'">
       <Toolbar>
         <template v-if="!isEditing">
-          <v-btn v-if="isEditingUnsafe" variant="text" color="error" disabled>
+          <v-btn v-if="!isConnected" variant="text" color="error" disabled>
             <v-icon>mdi-wifi-off</v-icon>
             <v-tooltip activator="parent" location="top">
               Verbinding verbroken - bewerken is niet mogelijk
@@ -21,7 +21,7 @@
             v-else
             icon="mdi-pencil"
             variant="text"
-            :disabled="isEditingUnsafe"
+            :disabled="!isConnected"
             @click="safeToggleEditing()"
           />
         </template>
@@ -103,12 +103,13 @@ const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue } = storeToRefs(useSelectedIssue());
-const { isLockedByOther, isEditingUnsafe } = storeToRefs(useIssueLocks());
+const { isLockedByOther } = storeToRefs(useIssueLocks());
+const { isConnected } = useConnectionStatus();
 
 // Safe toggle function that checks connection
 function safeToggleEditing() {
   // Prevent starting edit mode when connection is unsafe
-  if (!isEditing.value && isEditingUnsafe.value) {
+  if (!isEditing.value && !isConnected.value) {
     return;
   }
   toggleEditing();
