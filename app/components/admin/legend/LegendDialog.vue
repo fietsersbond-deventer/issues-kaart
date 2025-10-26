@@ -1,6 +1,7 @@
 <template>
-  <v-dialog v-model="modelValue" max-width="800px">
-    <v-card>
+  <v-dialog v-model="modelValue" max-width="90%" persistent>
+    <keep-alive>
+      <v-card v-show="modelValue">
       <v-card-title>
         <span>{{
           isEdit ? "Legend Item aanpassen" : "Nieuw Legenda Item"
@@ -19,7 +20,7 @@
                 label="Omschrijving"
               />
             </v-col>
-            <v-col cols="6">
+            <v-col cols="4">
               <h4 class="mb-3">Kleur</h4>
               <v-color-picker
                 v-model="editedItem.color"
@@ -27,7 +28,7 @@
                 swatches-max-height="300px"
               />
             </v-col>
-            <v-col cols="6">
+            <v-col cols="8">
               <h4 class="mb-3">Icoon (optioneel)</h4>
               <div class="mb-4">
                 <IconSelector v-model="editedItem.icon" />
@@ -46,7 +47,7 @@
                     :src="editedItem.icon_data_url"
                     alt="Map icon preview"
                     style="width: 32px; height: 32px; border-radius: 50%"
-                  />
+                  >
                   <v-chip v-else color="grey" size="small">Genereren...</v-chip>
                 </div>
               </div>
@@ -61,6 +62,7 @@
         <v-btn color="error" variant="text" @click="close"> Annuleren </v-btn>
       </v-card-actions>
     </v-card>
+    </keep-alive>
   </v-dialog>
 </template>
 

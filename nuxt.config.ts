@@ -105,5 +105,8 @@ export default defineNuxtConfig({
         transformAssetUrls,
       },
     },
+    server: {
+      allowedHosts: true,
+    },
   },
 });
