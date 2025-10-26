@@ -4,7 +4,7 @@
     <v-card class="mb-4">
       <v-card-title class="d-flex align-center" style="gap: 16px">
         <v-text-field
-          v-model="search"
+          v-model="state.search"
           label="Zoek"
           dense
           hide-details
@@ -13,6 +13,9 @@
       </v-card-title>
       <v-card-text>
         <v-data-table
+          v-model:page="state.page"
+          v-model:items-per-page="state.itemsPerPage"
+          v-model:sort-by="state.sortBy"
           :headers="headers"
           :items="filteredIssues"
           item-value="id"
@@ -20,6 +23,8 @@
           density="compact"
           :loading="!issues.length"
           :row-props="lockRow"
+          :items-per-page-options="[5, 10, 25, 50]"
+          show-current-page
         >
           <template #item.title="{ item }">
             <div>
@@ -141,6 +146,7 @@
 </template>
 
 <script setup lang="ts">
+import { useSessionStorage } from "@vueuse/core";
 import type { AdminListIssue } from "~/types/Issue";
 import type { Legend } from "~/types/Legend";
 
@@ -168,14 +174,27 @@ const { data: availableLegends } = useFetch<Legend[]>("/api/legends");
 
 const existingIssues = computed(() => issues.value || []);
 
-const search = ref("");
+// Persistent state management using VueUse's useSessionStorage
+const state = useSessionStorage("admin-issues-state", {
+  search: "",
+  page: 1,
+  itemsPerPage: 10,
+  sortBy: [{ key: "created_at", order: "desc" }] as { key: string; order: "asc" | "desc" }[],
+});
+
+// Reset pagination when search changes
+watch(() => state.value.search, (newSearch, oldSearch) => {
+  if (newSearch !== oldSearch) {
+    state.value.page = 1;
+  }
+});
 
 const filteredIssues = computed(() => {
   return existingIssues.value.filter(
     (issue) =>
-      !search.value ||
-      issue.title.toLowerCase().includes(search.value.toLowerCase()) ||
-      issue.legend_name?.toLowerCase().includes(search.value.toLowerCase())
+      !state.value.search ||
+      issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
+      issue.legend_name?.toLowerCase().includes(state.value.search.toLowerCase())
   );
 });
 
