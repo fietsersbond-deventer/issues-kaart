@@ -36,21 +36,6 @@
         </div>
       </v-col>
     </v-row>
-
-    <v-row v-if="selectedIcon">
-      <v-col cols="12">
-        <v-alert type="info" variant="tonal" density="compact">
-          <div class="d-flex align-center">
-            <v-icon :icon="selectedIcon" class="mr-2" />
-            <span>Geselecteerd: {{ selectedIcon }}</span>
-            <v-spacer />
-            <v-btn size="small" variant="text" @click="clearSelection">
-              Wissen
-            </v-btn>
-          </div>
-        </v-alert>
-      </v-col>
-    </v-row>
   </div>
 </template>
 
@@ -137,11 +122,12 @@ const filteredIcons = computed(() => {
 });
 
 function selectIcon(icon: string) {
-  selectedIcon.value = icon;
-}
-
-function clearSelection() {
-  selectedIcon.value = undefined;
+  // Toggle: if the same icon is clicked, deselect it
+  if (selectedIcon.value === icon) {
+    selectedIcon.value = undefined;
+  } else {
+    selectedIcon.value = icon;
+  }
 }
 </script>
 

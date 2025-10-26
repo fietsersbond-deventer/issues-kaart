@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="modelValue" max-width="500px">
+  <v-dialog v-model="modelValue" max-width="800px">
     <v-card>
       <v-card-title>
         <span>{{
@@ -19,43 +19,39 @@
                 label="Omschrijving"
               />
             </v-col>
-            <v-col cols="12">
+            <v-col cols="6">
+              <h4 class="mb-3">Kleur</h4>
               <v-color-picker
                 v-model="editedItem.color"
                 show-swatches
                 swatches-max-height="300px"
               />
             </v-col>
-            <v-col cols="12">
-              <v-expansion-panels>
-                <v-expansion-panel title="Icoon (optioneel)">
-                  <v-expansion-panel-text>
-                    <div class="mb-4">
-                      <IconSelector v-model="editedItem.icon" />
-                    </div>
+            <v-col cols="6">
+              <h4 class="mb-3">Icoon (optioneel)</h4>
+              <div class="mb-4">
+                <IconSelector v-model="editedItem.icon" />
+              </div>
 
-                    <!-- Preview section -->
-                    <div v-if="editedItem.icon" class="mt-4">
-                      <v-divider class="mb-4" />
-                      <h4 class="mb-2">Voorvertoning:</h4>
-                      <div class="d-flex align-center gap-4">
-                        <div class="text-caption">In legenda:</div>
-                        <LegendIndicator :legend="editedItem" :size="24" />
-                        <div class="text-caption">Op kaart:</div>
-                        <img
-                          v-if="editedItem.icon_data_url"
-                          :src="editedItem.icon_data_url"
-                          alt="Map icon preview"
-                          style="width: 32px; height: 32px; border-radius: 50%"
-                        />
-                        <v-chip v-else color="grey" size="small"
-                          >Genereren...</v-chip
-                        >
-                      </div>
-                    </div>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
+              <!-- Preview section -->
+              <div v-if="editedItem.icon" class="mt-4">
+                <v-divider class="mb-4" />
+                <h4 class="mb-2">Voorvertoning:</h4>
+                <div class="d-flex align-center gap-4 flex-wrap">
+                  <div class="text-caption">In legenda:</div>
+                  <LegendIndicator :legend="editedItem" :size="24" />
+                  <div class="text-caption">Op kaart:</div>
+                  <img
+                    v-if="editedItem.icon_data_url"
+                    :src="editedItem.icon_data_url"
+                    alt="Map icon preview"
+                    style="width: 32px; height: 32px; border-radius: 50%"
+                  >
+                  <v-chip v-else color="grey" size="small"
+                    >Genereren...</v-chip
+                  >
+                </div>
+              </div>
             </v-col>
           </v-row>
         </v-container>
