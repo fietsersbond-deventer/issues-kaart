@@ -10,9 +10,7 @@
         <td>
           <LegendIndicator :legend="item" :size="16" />
         </td>
-        <td class="text-body-2 text-truncate">{{
-          item.name
-        }}</td>
+        <td class="text-body-2 text-truncate">{{ item.name }}</td>
         <td v-if="item.description">
           <v-tooltip :text="item.description" location="top">
             <template #activator="{ props }">
