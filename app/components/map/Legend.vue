@@ -1,38 +1,19 @@
 <template>
   <div class="legend-container">
-    <v-list density="compact" class="legend-list pa-0">
-      <v-list-item
+    <v-table density="compact" class="legend-list pa-0">
+      <tr
         v-for="item in visibleLegends"
         :key="item.id"
         class="legend-item"
         density="compact"
       >
-        <template #prepend>
-          <!-- Show generated canvas icon if available -->
-          <img
-            v-if="item.icon && item.icon_data_url"
-            :src="item.icon_data_url"
-            :alt="item.icon"
-            class="legend-icon-image"
-          />
-          <!-- Fallback to v-icon -->
-          <v-icon
-            v-else-if="item.icon"
-            :icon="item.icon"
-            :color="item.color"
-            size="small"
-          />
-          <!-- Color rectangle fallback -->
-          <div
-            v-else
-            class="color-preview"
-            :style="{ backgroundColor: item.color }"
-          />
-        </template>
-        <v-list-item-title class="text-body-2 text-truncate">{{
+        <td>
+          <LegendIndicator :legend="item" :size="16" />
+        </td>
+        <td class="text-body-2 text-truncate">{{
           item.name
-        }}</v-list-item-title>
-        <template v-if="item.description" #append>
+        }}</td>
+        <td v-if="item.description">
           <v-tooltip :text="item.description" location="top">
             <template #activator="{ props }">
               <v-icon
@@ -43,9 +24,9 @@
               />
             </template>
           </v-tooltip>
-        </template>
-      </v-list-item>
-    </v-list>
+        </td>
+      </tr>
+    </v-table>
   </div>
 </template>
 
