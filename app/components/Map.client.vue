@@ -81,7 +81,11 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -89,22 +93,6 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
-          <ol-style v-if="issue.icon && issue.icon_data_url">
-            <ol-style-icon
-              :src="issue.icon_data_url"
-              :scale="isSelected(issue) ? 1.4 : 1"
-              :anchor="[0.5, 0.5]"
-            />
-          </ol-style>
-          <ol-style v-else>
-            <ol-style-circle :radius="mobile ? 10 : 8">
-              <ol-style-fill :color="issue.color || '#2196F3'" />
-              <ol-style-stroke
-                :color="isSelected(issue) ? 'black' : 'white'"
-                :width="2"
-              />
-            </ol-style-circle>
-          </ol-style>
         </ol-feature>
 
         <ol-feature
@@ -113,12 +101,6 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-line-string :coordinates="toLineCoords(issue)" />
-          <ol-style>
-            <ol-style-stroke
-              :color="issue.color"
-              :width="isSelected(issue) ? (mobile ? 8 : 6) : mobile ? 5 : 3"
-            />
-          </ol-style>
         </ol-feature>
 
         <ol-feature
@@ -127,13 +109,6 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
-          <ol-style>
-            <ol-style-stroke
-              :color="isSelected(issue) ? 'black' : issue.color"
-              :width="2"
-            />
-            <ol-style-fill :color="getPolygonFillColor(issue)" />
-          </ol-style>
         </ol-feature>
 
         <!-- editor -->
@@ -182,9 +157,6 @@ interface Size {
 const { issues } = storeToRefs(
   useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const })
 );
-
-// Get legends separately for mapping
-const { legends } = storeToRefs(useLegends());
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
@@ -240,9 +212,9 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
 }
 
 function resetToOriginalExtent() {
-  if (!mapIssues.value || mapIssues.value.length === 0) return;
+  if (!issues.value || issues.value.length === 0) return;
 
-  const bbox = getIssuesBbox(mapIssues.value);
+  const bbox = getIssuesBbox(issues.value);
   if (!bbox) return;
 
   setBbox(bbox, {
@@ -262,14 +234,14 @@ const { mobile } = useDisplay();
 // useMapBounds(mapRef);
 
 watch([view, issues, selectedIssue], () => {
-  if (view.value && mapIssues.value.length > 0) {
+  if (view.value && issues.value.length > 0) {
     // If there's a selected issue with geometry, zoom to it
     if (selectedIssue.value?.geometry) {
       recenterOnSelectedIssue();
       firstLoad.value = false;
     } else {
       // Otherwise, fit all issues
-      const bbox = getIssuesBbox(mapIssues.value);
+      const bbox = getIssuesBbox(issues.value);
       if (!bbox) return;
       setBbox(bbox);
       firstLoad.value = false;
@@ -318,45 +290,71 @@ const isMapSmall = computed(() => {
 function style(feature: Feature) {
   const properties = feature.getProperties();
   const issueId = properties.id;
-  const issue = mapIssues.value?.find((i) => i.id === issueId);
+  const issue = issues.value?.find((i) => i.id === issueId);
   if (!issue) return;
 
   // Provide default color if none specified (for backward compatibility)
-  const issueColor = issue.color;
+  const issueColor = issue.legend?.color;
 
   if (feature.getGeometry()!.getType() === "Point") {
     // If the issue has an icon, use it with black circle when selected
-    if (issue.icon && issue.icon_data_url) {
-      if (isSelected(issue)) {
-        // Create composite style: black circle outline + icon on top
-        return [
-          new Style({
-            image: new Circle({
-              radius: 16,
-              stroke: new Stroke({
-                color: "black",
-                width: 2,
-              }),
-            }),
-          }),
-          new Style({
-            image: new Icon({
-              src: issue.icon_data_url,
-              scale: 1,
-              anchor: [0.5, 0.5],
-            }),
-          }),
-        ];
-      } else {
-        // Just the icon when not selected
-        return new Style({
+    if (issue.legend?.icon) {
+      console.log("Debug - Issue", issue.id, "icon data:", {
+        hasIcon: !!issue.legend?.icon,
+        hasIconDataUrl: !!issue.legend?.icon_data_url,
+        iconName: issue.legend?.icon,
+        color: issue.legend?.color,
+      });
+
+      // Use the canvas-generated PNG directly (already includes colored circle + contrasting icon)
+      if (issue.legend?.icon_data_url) {
+        console.log("Using canvas PNG icon for issue", issue.id);
+
+        const iconStyle = new Style({
           image: new Icon({
-            src: issue.icon_data_url,
-            scale: 1,
+            src: issue.legend.icon_data_url,
+            scale: 0.5, // Scale down more to fit inside the black border
             anchor: [0.5, 0.5],
           }),
         });
+
+        // Add black border overlay if selected
+        if (isSelected(issue)) {
+          const borderStyle = new Style({
+            image: new Circle({
+              radius: 10, // Adjusted for smaller icons
+              fill: new Fill({ color: "transparent" }),
+              stroke: new Stroke({ color: "black", width: 3 }),
+            }),
+          });
+          return [iconStyle, borderStyle]; // Return both styles
+        }
+
+        return iconStyle;
       }
+
+      // Fallback to simple colored circle if no icon
+      const circleStyle = new Style({
+        image: new Circle({
+          radius: 8,
+          fill: new Fill({ color: issue.legend?.color || "#2196F3" }),
+          stroke: new Stroke({ color: "white", width: 2 }),
+        }),
+      });
+
+      // Add black border overlay if selected
+      if (isSelected(issue)) {
+        const borderStyle = new Style({
+          image: new Circle({
+            radius: 11, // Slightly larger than the circle
+            fill: new Fill({ color: "transparent" }),
+            stroke: new Stroke({ color: "black", width: 3 }),
+          }),
+        });
+        return [circleStyle, borderStyle]; // Return both styles
+      }
+
+      return circleStyle;
     } else {
       // Fallback to circle for issues without icons
       return new Style({
@@ -399,45 +397,16 @@ const rdProjection = new Projection({
   extent: [-285401.92, 22598.08, 595401.92, 903401.92],
 });
 
-// Convert issues to MapIssue type (only existing issues with ID) and map legend data
-const mapIssues = computed(() => {
-  const legendMap = new Map(legends.value?.map((l) => [l.id, l]) || []);
-
-  return (
-    (issues.value || [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((issue: any): issue is MapIssue => "id" in issue)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((issue: any): MapIssue => {
-        const legend = legendMap.get(issue.legend_id);
-        return {
-          id: issue.id,
-          title: issue.title,
-          color: legend?.color,
-          icon: legend?.icon || undefined,
-          icon_data_url: legend?.icon_data_url || undefined,
-          geometry: issue.geometry,
-        };
-      })
-  );
-});
-
 const markers = computed(() => {
-  return mapIssues.value.filter(
-    (issue): issue is MapIssue => issue.geometry?.type === "Point"
-  );
+  return issues.value.filter((issue) => issue.geometry?.type === "Point");
 });
 
 const polygons = computed(() => {
-  return mapIssues.value.filter(
-    (issue): issue is MapIssue => issue.geometry?.type === "Polygon"
-  );
+  return issues.value.filter((issue) => issue.geometry?.type === "Polygon");
 });
 
 const lines = computed(() => {
-  return mapIssues.value.filter(
-    (issue): issue is MapIssue => issue.geometry?.type === "LineString"
-  );
+  return issues.value.filter((issue) => issue.geometry?.type === "LineString");
 });
 
 function toPointCoords(issue: MapIssue) {
@@ -460,7 +429,7 @@ function toPolygonCoords(issue: MapIssue) {
 }
 
 function getPolygonFillColor(issue: MapIssue) {
-  const color = issue.color || "#000000";
+  const color = issue.legend?.color || "#000000";
   return color + "40"; // 40 is 25% opacity in hex
 }
 
@@ -468,6 +437,7 @@ function navigateToIssue(issue: MapIssue) {
   navigateTo(`/kaart/${issue.id}`);
 }
 
+// Fallback function to create a simple circle icon if icon_data_url is missing
 const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
   new Collection()
 );

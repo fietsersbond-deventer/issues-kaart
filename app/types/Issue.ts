@@ -1,55 +1,47 @@
 import type { LineString, Point, Polygon } from "geojson";
-
-type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+import type { Legend } from "./Legend";
 
 /**
  * Base issue type representing the full database structure
  */
 export type BaseIssue = {
-  id: number;
   title: string;
+  legend_id: number;
+  legend: Legend; // Legend data
+};
+
+/**
+ * Existing issue from database
+ */
+export type Issue = BaseIssue & {
+  id: number;
   description: string;
-  legend_id: number | null;
   geometry: Point | Polygon | LineString;
   created_at: Date;
   imageUrl: string | null; // URL path to image endpoint if issue has image
 };
 
 /**
- * Existing issue from database
+ * New issue for creation (geometry, legend_id, and legend are optional for drafts)
  */
-export type ExistingIssue = BaseIssue;
-
-/**
- * New issue for creation (geometry is optional for drafts)
- */
-export type NewIssue = Optional<
-  Omit<BaseIssue, "id" | "created_at" | "imageUrl">,
-  "geometry"
+export type NewIssue = Omit<
+  Issue,
+  "id" | "created_at" | "imageUrl" | "geometry"
 >;
-
-/**
- * Union type for all issues
- */
-export type Issue = ExistingIssue | NewIssue;
 
 /**
  * Lightweight issue type for map display
  * Contains only essential data for rendering on the map
  */
-export type MapIssue = Pick<BaseIssue, "id" | "title" | "geometry"> & {
-  color?: string; // Mapped from legend client-side
-  icon?: string; // Mapped from legend client-side
-  icon_data_url?: string; // Mapped from legend client-side
-};
+export type MapIssue = Pick<Issue, "id" | "title" | "geometry" | "legend">;
 
 /**
  * Lightweight issue type for admin list display
  * Contains only essential data for the admin table
  */
 export type AdminListIssue = Pick<
-  BaseIssue,
-  "id" | "title" | "legend_id" | "created_at"
+  Issue,
+  "id" | "title" | "legend_id" | "legend" | "created_at"
 >;
 
 /**
@@ -75,7 +67,7 @@ export type ParseFields<T extends string> =
  */
 export type IssueWithFields<T extends string> = Pick<BaseIssue, ParseFields<T>>;
 
-export function isExistingIssue(issue?: Issue | null): issue is ExistingIssue {
+export function isExistingIssue(issue?: Issue | null): issue is Issue {
   if (!issue) return false;
   return "id" in issue;
 }

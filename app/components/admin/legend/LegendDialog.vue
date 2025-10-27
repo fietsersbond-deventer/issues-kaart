@@ -74,9 +74,9 @@
 <script setup lang="ts">
 import type { Legend } from "~/types/Legend";
 import {
-  createIconSvgDataUrl,
-  createFallbackIconSvgDataUrl,
-} from "@/utils/iconCanvas";
+  createIconCanvasDataUrl,
+  createFallbackIconDataUrl,
+} from "~/utils/iconCanvas";
 
 const modelValue = defineModel<boolean>("modelValue");
 
@@ -117,17 +117,17 @@ const editedItem = ref<LegendFormData>(
 );
 const isEdit = computed(() => !!legend);
 
-// Watch for changes to icon and regenerate SVG
+// Watch for changes to icon and regenerate using canvas (the working approach)
 watch(
-  () => editedItem.value.icon,
-  async (newIcon) => {
-    if (newIcon) {
+  [() => editedItem.value.icon, () => editedItem.value.color],
+  async ([newIcon, newColor]) => {
+    if (newIcon && newColor) {
       try {
-        const dataUrl = await createIconSvgDataUrl(newIcon);
+        const dataUrl = await createIconCanvasDataUrl(newIcon, newColor);
         editedItem.value.icon_data_url = dataUrl;
       } catch (error) {
-        console.warn("Failed to generate icon SVG, using fallback:", error);
-        editedItem.value.icon_data_url = createFallbackIconSvgDataUrl();
+        console.warn("Failed to generate icon canvas, using fallback:", error);
+        editedItem.value.icon_data_url = createFallbackIconDataUrl(newColor);
       }
     } else {
       editedItem.value.icon_data_url = undefined;

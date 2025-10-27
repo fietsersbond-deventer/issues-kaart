@@ -146,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AdminListIssue } from "~/types/Issue";
+import type { AdminListIssue } from "@/types/Issue";
 import type { Legend } from "~/types/Legend";
 
 definePageMeta({
@@ -154,11 +154,11 @@ definePageMeta({
   middleware: ["sidebase-auth"],
 });
 
-// Use lightweight issues for admin list (only id, title, legend_id, legend_name, created_at)
+// Use lightweight issues for admin list (only id, title, legend_id, created_at)
 const issuesStore = useIssues({
-  fields: "id,title,legend_id,legend_name,created_at",
+  fields: "id,title,legend_id,created_at",
 });
-const { remove, update } = issuesStore;
+const { remove } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
 
 const locksStore = useIssueLocks();
@@ -199,7 +199,7 @@ const filteredIssues = computed(() => {
     (issue) =>
       !state.value.search ||
       issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
-      issue.legend_name
+      issue.legend.name
         ?.toLowerCase()
         .includes(state.value.search.toLowerCase())
   );

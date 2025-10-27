@@ -56,8 +56,8 @@
             label
             variant="flat"
             size="small"
-            :color="issue.color"
-            >{{ issue.legend_name }}</v-chip
+            :color="issue.legend.color"
+            >{{ issue.legend.name }}</v-chip
           >
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="ql-editor" v-html="issue.description" />

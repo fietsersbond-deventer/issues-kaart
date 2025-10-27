@@ -11,7 +11,9 @@ import { useThrottleFn } from "@vueuse/core";
  * Issues store with optional field selection
  * Use the fields option to request specific fields and reduce payload size
  */
-export function useIssues(options?: { fields?: string }) {
+export function useIssues<T extends ExistingIssue>(options?: {
+  fields?: string;
+}) {
   const fields = options?.fields;
   const storeName = fields ? `issues-${fields.replace(/,/g, "-")}` : "issues";
 
@@ -51,17 +53,9 @@ export function useIssues(options?: { fields?: string }) {
       if ("legend_id" in issue && issue.legend_id && legends.value) {
         const legend = legends.value.find((l) => l.id === issue.legend_id);
         if (legend) {
-          // Add legend properties to the issue for easy access
-          const enrichedIssue = issue as Issue & {
-            color?: string;
-            icon?: string;
-            icon_data_url?: string;
-            legend_name?: string;
-          };
-          enrichedIssue.color = legend.color;
-          enrichedIssue.icon = legend.icon;
-          enrichedIssue.icon_data_url = legend.icon_data_url;
-          enrichedIssue.legend_name = legend.name;
+          // Add the full legend object to the issue
+          const enrichedIssue = issue as Issue & { legend: typeof legend };
+          enrichedIssue.legend = legend;
           return enrichedIssue;
         }
       }

@@ -16,16 +16,15 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   const { legends } = storeToRefs(useLegends());
 
   /**
-   * Enriches an issue with legend_name and color from the legends store
+   * Enriches an issue with legend from the legends store
    */
   function enrichIssueWithLegend(issueData: ExistingIssue): ExistingIssue {
-    if (issueData.legend_id) {
+    if (issueData.legend_id && legends.value) {
       const legend = legends.value.find((l) => l.id === issueData.legend_id);
       if (legend) {
         return {
           ...issueData,
-          legend_name: legend.name,
-          color: legend.color,
+          legend: legend,
         };
       }
     }
@@ -86,7 +85,6 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   const newIssue: NewIssue = {
     title: "",
     description: "",
-    legend_id: null,
   };
 
   watch(

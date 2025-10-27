@@ -2,7 +2,10 @@
  * Creates a plain SVG data URL from a Material Design Icon
  * Returns just the icon without any background circle for flexible styling
  */
-export function createIconSvgDataUrl(iconName: string): Promise<string> {
+export function createIconSvgDataUrl(
+  iconName: string,
+  color?: string
+): Promise<string> {
   return new Promise((resolve) => {
     // Create a temporary div with the icon
     const tempDiv = document.createElement("div");
@@ -42,15 +45,15 @@ export function createIconSvgDataUrl(iconName: string): Promise<string> {
               return String.fromCharCode(parseInt(hex, 16));
             });
 
-          // Create plain SVG with just the icon (no background circle)
+          // Create plain SVG with just the icon (no background circle) - color neutral
           svgContent = `
             <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <text x="12" y="12" font-family="Material Design Icons" font-size="18" 
-                    fill="white" text-anchor="middle" dominant-baseline="central">${iconChar}</text>
+                    fill="currentColor" text-anchor="middle" dominant-baseline="central">${iconChar}</text>
             </svg>
           `;
         } else {
-          // No icon found, return empty SVG
+          // No icon found, return empty SVG (color neutral)
           svgContent = `
             <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             </svg>
@@ -60,8 +63,8 @@ export function createIconSvgDataUrl(iconName: string): Promise<string> {
         // Clean up DOM
         document.body.removeChild(tempDiv);
 
-        // Convert SVG to data URL
-        const svgDataUrl = `data:image/svg+xml;base64,${btoa(
+        // Convert SVG to data URL using utf8 encoding (same as fallback)
+        const svgDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(
           svgContent.trim()
         )}`;
         resolve(svgDataUrl);
@@ -72,13 +75,13 @@ export function createIconSvgDataUrl(iconName: string): Promise<string> {
           document.body.removeChild(tempDiv);
         }
 
-        // Create empty SVG fallback
+        // Create empty SVG fallback (color neutral)
         const fallbackSvg = `
           <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           </svg>
         `;
 
-        const svgDataUrl = `data:image/svg+xml;base64,${btoa(
+        const svgDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(
           fallbackSvg.trim()
         )}`;
         resolve(svgDataUrl);
@@ -117,9 +120,11 @@ export function createIconCanvasDataUrl(
     tempDiv.appendChild(iconElement);
     document.body.appendChild(tempDiv);
 
-    // Create canvas
+    // Create canvas - use higher resolution for crisp rendering
     const canvas = document.createElement("canvas");
-    const size = 32;
+    const displaySize = 24; // Final display size
+    const scale = 2; // Render at 2x resolution for crispness
+    const size = displaySize * scale; // 48px actual canvas size
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
@@ -129,30 +134,65 @@ export function createIconCanvasDataUrl(
       return;
     }
 
+    // Scale the context for high-DPI rendering
+    ctx.scale(scale, scale);
+
     // Wait for fonts to load and then render
     setTimeout(() => {
       try {
         // Clear canvas to transparent
-        ctx.clearRect(0, 0, size, size);
+        ctx.clearRect(0, 0, displaySize, displaySize);
 
-        // Draw colored circle background
+        // Calculate contrasting color for the icon
+        const getContrastColor = (bgColor: string) => {
+          // Remove # if present
+          const hex = bgColor.replace("#", "");
+          // Convert to RGB
+          const r = parseInt(hex.substr(0, 2), 16);
+          const g = parseInt(hex.substr(2, 2), 16);
+          const b = parseInt(hex.substr(4, 2), 16);
+          // Calculate brightness
+          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+          // Return black for light backgrounds, white for dark
+          return brightness > 128 ? "#000000" : "#ffffff";
+        };
+
+        const iconColor = getContrastColor(color);
+
+        // Draw colored circle background with white border (using display size coordinates)
+        const borderWidth = 2;
+        const radius = displaySize / 2 - borderWidth; // Leave more room for border
+
+        // Draw white border circle
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(
+          displaySize / 2,
+          displaySize / 2,
+          displaySize / 2 - 1,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+
+        // Draw colored circle inside with clear border separation
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 1, 0, 2 * Math.PI);
+        ctx.arc(displaySize / 2, displaySize / 2, radius, 0, 2 * Math.PI);
         ctx.fill();
 
         // Try to get the icon content
         const computedStyle = window.getComputedStyle(iconElement, "::before");
         const content = computedStyle.getPropertyValue("content");
 
-        // Set icon color to white for contrast
-        ctx.fillStyle = "white";
+        // Set icon color to contrasting color
+        ctx.fillStyle = iconColor;
         ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+        ctx.textBaseline = "middle"; // Better centering
 
         if (content && content !== "none" && content !== '""') {
-          // Use MDI font
-          ctx.font = '20px "Material Design Icons"';
+          // Use MDI font with smaller size for better fit
+          ctx.font = '14px "Material Design Icons"'; // Reduced from 20px
 
           // Parse the unicode content
           const iconChar = content
@@ -161,16 +201,17 @@ export function createIconCanvasDataUrl(
               return String.fromCharCode(parseInt(hex, 16));
             });
 
-          ctx.fillText(iconChar, size / 2, size / 2);
+          // Draw icon centered (using display size coordinates)
+          ctx.fillText(iconChar, displaySize / 2, displaySize / 2);
         } else {
-          // Fallback: use first letter
-          ctx.fillStyle = "white";
-          ctx.font = "bold 14px Arial";
+          // Fallback: use first letter with contrasting color
+          ctx.fillStyle = iconColor;
+          ctx.font = "bold 10px Arial"; // Reduced from 14px
           const fallbackChar = iconName
             .replace(/^mdi-/, "")
             .charAt(0)
             .toUpperCase();
-          ctx.fillText(fallbackChar, size / 2, size / 2);
+          ctx.fillText(fallbackChar, displaySize / 2, displaySize / 2);
         }
 
         // Clean up DOM
@@ -185,13 +226,26 @@ export function createIconCanvasDataUrl(
           document.body.removeChild(tempDiv);
         }
 
-        // Create simple fallback - colored circle with white icon
-        ctx.clearRect(0, 0, size, size);
+        // Create simple fallback - smaller colored circle with white border (high-res)
+        const borderWidth = 2;
+        const radius = displaySize / 2 - borderWidth;
 
-        // Draw colored circle background
+        // Draw white border circle
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(
+          displaySize / 2,
+          displaySize / 2,
+          displaySize / 2 - 1,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+
+        // Draw colored circle inside with clear border separation
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 1, 0, 2 * Math.PI);
+        ctx.arc(displaySize / 2, displaySize / 2, radius, 0, 2 * Math.PI);
         ctx.fill();
 
         resolve(canvas.toDataURL("image/png"));
@@ -210,7 +264,7 @@ export function createFallbackIconSvgDataUrl(): string {
     </svg>
   `;
 
-  return `data:image/svg+xml;base64,${btoa(svgContent.trim())}`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svgContent.trim())}`;
 }
 
 /**
