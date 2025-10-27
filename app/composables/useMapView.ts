@@ -43,10 +43,10 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
       if (newCenter) center.value = newCenter as [number, number];
     }, 16); // Throttle center updates (frequent during panning)
 
-    const updateZoom = () => {
+    const updateZoom = useThrottleFn(() => {
       const newZoom = view.getZoom();
       if (newZoom !== undefined) zoom.value = newZoom;
-    }; // No throttling for zoom - immediate updates for responsive icon scaling
+    }, 16);
 
     const updateRotation = () => {
       const newRotation = view.getRotation();
