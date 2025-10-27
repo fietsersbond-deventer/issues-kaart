@@ -305,12 +305,6 @@ function style(feature: Feature) {
         // Clamp to min/max bounds
         const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
 
-        console.log(
-          `PRODUCTION - Zoom: ${zoom.value}, Icon scale: ${clampedScale.toFixed(
-            2
-          )}`
-        );
-
         const iconStyle = new Style({
           image: new Icon({
             src: issue.legend.icon_data_url,
@@ -346,8 +340,6 @@ function style(feature: Feature) {
         minRadius,
         Math.min(maxRadius, finalRadius)
       );
-
-      console.log(`FIXED TEST - Circle radius: ${clampedRadius.toFixed(2)}`);
 
       const circleStyle = new Style({
         image: new Circle({

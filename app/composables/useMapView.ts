@@ -1,5 +1,6 @@
 import type { Map } from "ol";
 import type { Ref } from "vue";
+import { useThrottleFn } from "@vueuse/core";
 
 export interface MapViewState {
   center: [number, number];
@@ -36,16 +37,25 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
     if (initialZoom !== undefined) zoom.value = initialZoom;
     if (initialRotation !== undefined) rotation.value = initialRotation;
 
-    // Add listener for view changes (pan, zoom, rotate)
-    view.on(["change:center", "change:resolution", "change:rotation"], () => {
+    // Separate listeners for different types of changes
+    const updateCenter = useThrottleFn(() => {
       const newCenter = view.getCenter();
-      const newZoom = view.getZoom();
-      const newRotation = view.getRotation();
-
       if (newCenter) center.value = newCenter as [number, number];
+    }, 16); // Throttle center updates (frequent during panning)
+
+    const updateZoom = () => {
+      const newZoom = view.getZoom();
       if (newZoom !== undefined) zoom.value = newZoom;
+    }; // No throttling for zoom - immediate updates for responsive icon scaling
+
+    const updateRotation = () => {
+      const newRotation = view.getRotation();
       if (newRotation !== undefined) rotation.value = newRotation;
-    });
+    };
+
+    view.on("change:center", updateCenter);
+    view.on("change:resolution", updateZoom);
+    view.on("change:rotation", updateRotation);
 
     // Don't allow rotation changes
     watch(rotation, () => {
