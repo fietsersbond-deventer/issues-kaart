@@ -4,12 +4,7 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view
-      ref="view"
-      :center="center"
-      :zoom="zoom"
-      :projection="projection"
-    />
+    <ol-view ref="view" :center="center" :projection="projection" />
 
     <!-- Top-left corner controls -->
     <MapControlContainer position="top-left">
@@ -261,7 +256,7 @@ const isDrawing = computed(() => {
 });
 
 const center = ref([687858.9021986299, 6846820.48790154]);
-const zoom = ref(13);
+const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
@@ -299,30 +294,37 @@ function style(feature: Feature) {
   if (feature.getGeometry()!.getType() === "Point") {
     // If the issue has an icon, use it with black circle when selected
     if (issue.legend?.icon) {
-      console.log("Debug - Issue", issue.id, "icon data:", {
-        hasIcon: !!issue.legend?.icon,
-        hasIconDataUrl: !!issue.legend?.icon_data_url,
-        iconName: issue.legend?.icon,
-        color: issue.legend?.color,
-      });
-
       // Use the canvas-generated PNG directly (already includes colored circle + contrasting icon)
       if (issue.legend?.icon_data_url) {
-        console.log("Using canvas PNG icon for issue", issue.id);
+        // FIXED: Higher zoom should = larger icons (but reasonable sizes)
+        const minScale = 0.4; // Small when zoomed out (low zoom values)
+        const maxScale = 1.0; // Normal size when zoomed in (high zoom values)
+        // CORRECTED: Use zoom value directly - higher zoom = higher scale
+        const finalScale =
+          minScale + ((zoom.value - 10) / 8) * (maxScale - minScale);
+        // Clamp to min/max bounds
+        const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
+
+        console.log(
+          `PRODUCTION - Zoom: ${zoom.value}, Icon scale: ${clampedScale.toFixed(
+            2
+          )}`
+        );
 
         const iconStyle = new Style({
           image: new Icon({
             src: issue.legend.icon_data_url,
-            scale: 0.5, // Scale down more to fit inside the black border
+            scale: clampedScale,
             anchor: [0.5, 0.5],
           }),
         });
 
-        // Add black border overlay if selected
+        // Add black border overlay if selected (scale border with icon)
         if (isSelected(issue)) {
+          const borderRadius = 10 + (finalScale - 0.4) * 15; // Scale border with icon size
           const borderStyle = new Style({
             image: new Circle({
-              radius: 10, // Adjusted for smaller icons
+              radius: Math.max(6, borderRadius),
               fill: new Fill({ color: "transparent" }),
               stroke: new Stroke({ color: "black", width: 3 }),
             }),
@@ -333,20 +335,37 @@ function style(feature: Feature) {
         return iconStyle;
       }
 
-      // Fallback to simple colored circle if no icon
+      // FIXED: Higher zoom should = larger circles (but reasonable sizes)
+      const minRadius = 4; // Small when zoomed out (low zoom values)
+      const maxRadius = 8; // Normal size when zoomed in (high zoom values)
+      // CORRECTED: Use zoom value directly - higher zoom = larger radius
+      const finalRadius =
+        minRadius + ((zoom.value - 10) / 8) * (maxRadius - minRadius);
+      // Clamp to min/max bounds
+      const clampedRadius = Math.max(
+        minRadius,
+        Math.min(maxRadius, finalRadius)
+      );
+
+      console.log(`FIXED TEST - Circle radius: ${clampedRadius.toFixed(2)}`);
+
       const circleStyle = new Style({
         image: new Circle({
-          radius: 8,
+          radius: clampedRadius,
           fill: new Fill({ color: issue.legend?.color || "#2196F3" }),
-          stroke: new Stroke({ color: "white", width: 2 }),
+          stroke: new Stroke({
+            color: "white",
+            width: Math.max(1, clampedRadius / 6),
+          }),
         }),
       });
 
-      // Add black border overlay if selected
+      // Add black border overlay if selected (scale with circle)
       if (isSelected(issue)) {
+        const borderRadius = finalRadius + 3;
         const borderStyle = new Style({
           image: new Circle({
-            radius: 11, // Slightly larger than the circle
+            radius: borderRadius,
             fill: new Fill({ color: "transparent" }),
             stroke: new Stroke({ color: "black", width: 3 }),
           }),

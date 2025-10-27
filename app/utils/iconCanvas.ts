@@ -120,11 +120,11 @@ export function createIconCanvasDataUrl(
     tempDiv.appendChild(iconElement);
     document.body.appendChild(tempDiv);
 
-    // Create canvas - use higher resolution for crisp rendering
+    // Create canvas - use even higher resolution for crisp scaling at large sizes
     const canvas = document.createElement("canvas");
-    const displaySize = 24; // Final display size
-    const scale = 2; // Render at 2x resolution for crispness
-    const size = displaySize * scale; // 48px actual canvas size
+    const displaySize = 32; // Larger base size for better scaling
+    const scale = 3; // Render at 3x resolution for extra crispness
+    const size = displaySize * scale; // 96px actual canvas size
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
@@ -191,8 +191,8 @@ export function createIconCanvasDataUrl(
         ctx.textBaseline = "middle"; // Better centering
 
         if (content && content !== "none" && content !== '""') {
-          // Use MDI font with smaller size for better fit
-          ctx.font = '14px "Material Design Icons"'; // Reduced from 20px
+          // Use MDI font with larger size for better visibility when scaled
+          ctx.font = '20px "Material Design Icons"'; // Increased from 14px
 
           // Parse the unicode content
           const iconChar = content
@@ -201,12 +201,12 @@ export function createIconCanvasDataUrl(
               return String.fromCharCode(parseInt(hex, 16));
             });
 
-          // Draw icon centered (using display size coordinates)
+          // Draw icon centered
           ctx.fillText(iconChar, displaySize / 2, displaySize / 2);
         } else {
-          // Fallback: use first letter with contrasting color
+          // Fallback: use first letter with larger font
           ctx.fillStyle = iconColor;
-          ctx.font = "bold 10px Arial"; // Reduced from 14px
+          ctx.font = "bold 16px Arial"; // Increased from 10px
           const fallbackChar = iconName
             .replace(/^mdi-/, "")
             .charAt(0)
