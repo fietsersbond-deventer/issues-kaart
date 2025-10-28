@@ -143,7 +143,7 @@ const geometryRules = [
 
 // Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
 const canSubmit = computed(() => {
-  return valid.value && isModified.value && !isConnected.value;
+  return valid.value && isModified.value && isConnected.value;
 });
 
 const modules = [
