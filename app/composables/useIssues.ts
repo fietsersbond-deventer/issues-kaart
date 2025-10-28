@@ -5,22 +5,25 @@ import {
   type ExistingIssue,
   type Issue,
 } from "@/types/Issue";
-import type { Emitter } from "mitt";
 import { useThrottleFn } from "@vueuse/core";
 
 /**
- * Issues store
+ * Issues store with optional field selection
  * Use the fields option to request specific fields and reduce payload size
  */
-export function useIssues(options?: { fields?: string }) {
+export function useIssues<T extends ExistingIssue>(options?: {
+  fields?: string;
+}) {
   const fields = options?.fields;
   const storeName = fields ? `issues-${fields.replace(/,/g, "-")}` : "issues";
 
   return defineStore(storeName, () => {
     const ws = useSharedIssuesWebSocket();
-
     const issues = ref<Issue[]>([]);
     const snackbar = useSharedSnackbar();
+
+    // Get legends for enriching issues
+    const { legends } = storeToRefs(useLegends());
 
     // Check if user is authenticated (only show notifications to editors)
     const { status } = useAuth();
@@ -32,56 +35,32 @@ export function useIssues(options?: { fields?: string }) {
       fetchOptions
     );
 
-    const { legends } = storeToRefs(useLegends());
-
-    // Parse requested fields for filtering WebSocket updates
-    const requestedFields = fields
-      ? new Set(fields.split(",").map((f) => f.trim()))
-      : null;
-
-    function getSelectedFields(issue: Issue) {
+    function processIssue(issue: Issue): Issue {
       if (issue.geometry && typeof issue.geometry === "string") {
         issue.geometry = JSON.parse(issue.geometry);
       }
-      const legend = legends.value?.find((l) => l.id === issue.legend_id);
-      if (legend) {
-        issue.legend_name = legend.name;
-        issue.color = legend.color;
+
+      // Handle imageUrl virtual field
+      if (fields?.includes("imageUrl") && "id" in issue) {
+        const hasImage =
+          issue.description && issue.description.includes("data:image");
+        (issue as Issue & { imageUrl?: string | null }).imageUrl = hasImage
+          ? `/api/issues/${issue.id}/image`
+          : null;
       }
 
-      // Filter issue to only include fields this store requested
-      let filteredIssue: Issue;
-      if (requestedFields) {
-        filteredIssue = {} as Issue;
-        for (const field of requestedFields) {
-          if (field in issue) {
-            (filteredIssue as Record<string, unknown>)[field] = (
-              issue as Record<string, unknown>
-            )[field];
-          }
-          // Handle legend fields that come from join
-          if (field === "legend_name" && issue.legend_name) {
-            filteredIssue.legend_name = issue.legend_name;
-          }
-          if (field === "color" && issue.color) {
-            filteredIssue.color = issue.color;
-          }
-          // Handle imageUrl virtual field
-          if (field === "imageUrl") {
-            // Check if issue has an image in description
-            const hasImage =
-              "id" in issue &&
-              issue.description &&
-              issue.description.includes("data:image");
-            (filteredIssue as Record<string, unknown>).imageUrl = hasImage
-              ? `/api/issues/${issue.id}/image`
-              : null;
-          }
+      // Enrich with legend data if legend_id exists
+      if ("legend_id" in issue && issue.legend_id && legends.value) {
+        const legend = legends.value.find((l) => l.id === issue.legend_id);
+        if (legend) {
+          // Add the full legend object to the issue
+          const enrichedIssue = issue as Issue & { legend: typeof legend };
+          enrichedIssue.legend = legend;
+          return enrichedIssue;
         }
-      } else {
-        filteredIssue = issue as Issue;
       }
-      return filteredIssue;
+
+      return issue;
     }
 
     // Subscribe to WebSocket messages
@@ -93,8 +72,7 @@ export function useIssues(options?: { fields?: string }) {
 
       switch (parsed.type) {
         case "issue-created": {
-          const issue = getSelectedFields(parsed.payload as Issue);
-
+          const issue = processIssue(parsed.payload as Issue);
           issues.value.push(issue as ExistingIssue);
           if (isAuthenticated.value) {
             snackbar.showMessageOnce(`Onderwerp ${issue.title} aangemaakt`);
@@ -103,7 +81,7 @@ export function useIssues(options?: { fields?: string }) {
         }
         case "issue-modified":
           {
-            const issue = getSelectedFields(parsed.payload as Issue);
+            const issue = processIssue(parsed.payload as Issue);
             const existingIndex = issues.value.findIndex(
               (i) => "id" in i && i.id === (issue as ExistingIssue).id
             );
@@ -157,10 +135,10 @@ export function useIssues(options?: { fields?: string }) {
 
       if (existingIndex !== -1) {
         // Update existing issue in store
-        issues.value[existingIndex] = getSelectedFields(issue);
+        issues.value[existingIndex] = processIssue(issue);
       } else {
         // Add new issue to store
-        issues.value.push(getSelectedFields(issue));
+        issues.value.push(processIssue(issue));
       }
     }, 100);
 
@@ -180,12 +158,23 @@ export function useIssues(options?: { fields?: string }) {
       data,
       (newData) => {
         if (newData) {
-          issues.value = newData;
+          issues.value = newData.map((issue) => processIssue(issue));
         } else {
           issues.value = [];
         }
       },
       { immediate: true }
+    );
+
+    // Reprocess issues when legends change
+    watch(
+      legends,
+      () => {
+        if (issues.value.length > 0) {
+          issues.value = issues.value.map((issue) => processIssue(issue));
+        }
+      },
+      { deep: true }
     );
 
     function refresh() {

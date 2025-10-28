@@ -2,7 +2,7 @@
   <v-table>
     <thead>
       <tr>
-        <th>Kleur</th>
+        <th>Indicator</th>
         <th>Naam</th>
         <th>Omschrijving</th>
         <th />
@@ -11,7 +11,11 @@
     <tbody>
       <tr v-for="item in legends" :key="item.id">
         <td>
-          <div class="color-preview" :style="{ backgroundColor: item.color }" />
+          <LegendIndicator
+            :key="item.id"
+            :legend="item"
+            :size="24"
+          />
         </td>
         <td>{{ item.name }}</td>
         <td>{{ item.description }}</td>
@@ -55,12 +59,12 @@ const emit = defineEmits<{
 
 function hasUsage(item: Legend) {
   if (!item?.id) return false;
-  return props.usage[item.id]?.usage_count > 0;
+  return (props.usage?.[item.id]?.usage_count ?? 0) > 0;
 }
 
 function getUsageText(item: Legend) {
   if (!item?.id) return "";
-  const count = props.usage[item.id]?.usage_count;
+  const count = props.usage?.[item.id]?.usage_count;
   if (!count) return "";
   return `Dit legenda item wordt gebruikt`;
 }

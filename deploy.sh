@@ -24,7 +24,13 @@ rsync -avz --exclude='node_modules' .output/server/ "$DEPLOYMENT_TARGET/server/"
 rsync -avz .output/public/ "$DEPLOYMENT_TARGET/public/"
 rsync -avz .output/nitro.json "$DEPLOYMENT_TARGET/nitro.json"
 
+# Sync migration files and script to remote
+rsync -avz server/database/ "$DEPLOYMENT_TARGET/server/database/"
+
+# echo "Running database migrations on remote..."
+# ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:} && node --import tsx/esm server/database/runMigrations.ts"
+
 echo "Restarting PM2 on remote..."
-ssh "${DEPLOYMENT_TARGET%%:*}" "/home/fietsersbond/.nvm/versions/node/v22.20.0/bin/pm2 restart fietsersbond"
+ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:} && pm2 restart fietsersbond"
 
 echo "Deployment and restart complete."

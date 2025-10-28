@@ -4,12 +4,7 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view
-      ref="view"
-      :center="center"
-      :zoom="zoom"
-      :projection="projection"
-    />
+    <ol-view ref="view" :center="center" :projection="projection" />
 
     <!-- Top-left corner controls -->
     <MapControlContainer position="top-left">
@@ -81,7 +76,11 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -89,15 +88,6 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-point :coordinates="toPointCoords(issue)" />
-          <ol-style>
-            <ol-style-circle :radius="mobile ? 10 : 8">
-              <ol-style-fill :color="issue.color" />
-              <ol-style-stroke
-                :color="isSelected(issue) ? 'black' : 'white'"
-                :width="2"
-              />
-            </ol-style-circle>
-          </ol-style>
         </ol-feature>
 
         <ol-feature
@@ -106,12 +96,6 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-line-string :coordinates="toLineCoords(issue)" />
-          <ol-style>
-            <ol-style-stroke
-              :color="issue.color"
-              :width="isSelected(issue) ? (mobile ? 8 : 6) : mobile ? 5 : 3"
-            />
-          </ol-style>
         </ol-feature>
 
         <ol-feature
@@ -120,13 +104,6 @@
           :properties="getFeatureProperties(issue)"
         >
           <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
-          <ol-style>
-            <ol-style-stroke
-              :color="isSelected(issue) ? 'black' : issue.color"
-              :width="2"
-            />
-            <ol-style-fill :color="getPolygonFillColor(issue)" />
-          </ol-style>
         </ol-feature>
 
         <!-- editor -->
@@ -160,7 +137,7 @@ import { Collection, type Feature } from "ol";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
-import { Style, Circle, Fill, Stroke } from "ol/style";
+import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
@@ -171,9 +148,9 @@ interface Size {
   height: number;
 }
 
-// Use lightweight map issues for rendering (only id, title, color, geometry, imageUrl)
+// Use lightweight map issues for rendering (only essential fields)
 const { issues } = storeToRefs(
-  useIssues({ fields: "id,title,color,geometry,imageUrl" })
+  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const })
 );
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
@@ -279,7 +256,7 @@ const isDrawing = computed(() => {
 });
 
 const center = ref([687858.9021986299, 6846820.48790154]);
-const zoom = ref(13);
+const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
@@ -308,35 +285,114 @@ const isMapSmall = computed(() => {
 function style(feature: Feature) {
   const properties = feature.getProperties();
   const issueId = properties.id;
-  const issue = issues.value?.find((i: MapIssue) => i.id === issueId);
+  const issue = issues.value?.find((i) => i.id === issueId);
   if (!issue) return;
 
+  // Provide default color if none specified (for backward compatibility)
+  const issueColor = issue.legend?.color;
+
   if (feature.getGeometry()!.getType() === "Point") {
-    return new Style({
-      image: new Circle({
-        radius: 8,
-        fill: new Fill({ color: issue.color }),
-        stroke: new Stroke({
-          color: isSelected(issue) ? "black" : "white",
-          width: 2,
+    // If the issue has an icon, use it with black circle when selected
+    if (issue.legend?.icon) {
+      if (issue.legend?.icon_data_url) {
+        const minScale = 0.3; // Small when zoomed out (low zoom values)
+        const maxScale = 0.7; // larger when zoomed in (high zoom values)
+        const finalScale =
+          minScale + ((zoom.value - 10) / 8) * (maxScale - minScale);
+        // Clamp to min/max bounds
+        const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
+
+        const iconStyle = new Style({
+          image: new Icon({
+            src: issue.legend.icon_data_url,
+            scale: clampedScale,
+            anchor: [0.5, 0.5],
+          }),
+        });
+
+        // Add black border overlay if selected (scale border with icon)
+        if (isSelected(issue)) {
+          // Calculate actual rendered icon size: base canvas size (64px) * current scale
+          const baseIconSize = 64; // This matches the canvas size from iconCanvas.ts (32 * 2)
+          const actualIconSize = baseIconSize * clampedScale;
+          const iconRadius = actualIconSize / 2; // Icon is circular, so radius is half the size
+          const borderRadius = iconRadius + 1; // Border extends 1px beyond the icon edge
+          const borderStyle = new Style({
+            image: new Circle({
+              radius: Math.max(6, borderRadius),
+              fill: new Fill({ color: "transparent" }),
+              stroke: new Stroke({ color: "black", width: 3 }),
+            }),
+          });
+          return [iconStyle, borderStyle]; // Return both styles
+        }
+
+        return iconStyle;
+      }
+
+      const minRadius = 3; // Small when zoomed out (low zoom values)
+      const maxRadius = 7; // Normal size when zoomed in (high zoom values)
+      const finalRadius =
+        minRadius + ((zoom.value - 10) / 8) * (maxRadius - minRadius);
+      // Clamp to min/max bounds
+      const clampedRadius = Math.max(
+        minRadius,
+        Math.min(maxRadius, finalRadius)
+      );
+
+      const circleStyle = new Style({
+        image: new Circle({
+          radius: clampedRadius,
+          fill: new Fill({ color: issue.legend?.color || "#2196F3" }),
+          stroke: new Stroke({
+            color: "white",
+            width: Math.max(1, clampedRadius / 6),
+          }),
         }),
-      }),
-    });
+      });
+
+      // Add black border overlay if selected (scale with circle)
+      if (isSelected(issue)) {
+        const borderRadius = finalRadius + 3;
+        const borderStyle = new Style({
+          image: new Circle({
+            radius: borderRadius,
+            fill: new Fill({ color: "transparent" }),
+            stroke: new Stroke({ color: "black", width: 3 }),
+          }),
+        });
+        return [circleStyle, borderStyle]; // Return both styles
+      }
+
+      return circleStyle;
+    } else {
+      // Fallback to circle for issues without icons
+      return new Style({
+        image: new Circle({
+          radius: 8,
+          fill: new Fill({ color: issueColor }),
+          stroke: new Stroke({
+            color: isSelected(issue) ? "black" : "white",
+            width: 2,
+          }),
+        }),
+      });
+    }
   } else if (feature.getGeometry()!.getType() === "LineString") {
     return new Style({
       stroke: new Stroke({
-        color: issue.color,
-        width: isSelected(issue) ? 6 : 3,
+        color: issueColor,
+        width: isSelected(issue as MapIssue) ? 6 : 3,
       }),
     });
   } else
     return new Style({
       stroke: new Stroke({
-        color: isSelected(issue) ? "black" : issue.color,
+        color: isSelected(issue as MapIssue) ? "black" : issueColor,
         width: 2,
       }),
       fill: new Fill({
-        color: getPolygonFillColor(issue),
+        color: getPolygonFillColor(issue as MapIssue),
       }),
     });
 }
@@ -352,28 +408,15 @@ const rdProjection = new Projection({
 });
 
 const markers = computed(() => {
-  return (
-    issues.value?.filter(
-      (issue: MapIssue): issue is MapIssue => issue.geometry?.type === "Point"
-    ) ?? []
-  );
+  return issues.value.filter((issue) => issue.geometry?.type === "Point");
 });
 
 const polygons = computed(() => {
-  return (
-    issues.value?.filter(
-      (issue: MapIssue): issue is MapIssue => issue.geometry?.type === "Polygon"
-    ) ?? []
-  );
+  return issues.value.filter((issue) => issue.geometry?.type === "Polygon");
 });
 
 const lines = computed(() => {
-  return (
-    issues.value?.filter(
-      (issue: MapIssue): issue is MapIssue =>
-        issue.geometry?.type === "LineString"
-    ) ?? []
-  );
+  return issues.value.filter((issue) => issue.geometry?.type === "LineString");
 });
 
 function toPointCoords(issue: MapIssue) {
@@ -396,7 +439,7 @@ function toPolygonCoords(issue: MapIssue) {
 }
 
 function getPolygonFillColor(issue: MapIssue) {
-  const color = issue.color || "#000000";
+  const color = issue.legend?.color || "#000000";
   return color + "40"; // 40 is 25% opacity in hex
 }
 
@@ -404,6 +447,7 @@ function navigateToIssue(issue: MapIssue) {
   navigateTo(`/kaart/${issue.id}`);
 }
 
+// Fallback function to create a simple circle icon if icon_data_url is missing
 const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
   new Collection()
 );
@@ -474,5 +518,60 @@ const emit = defineEmits(["feature-clicked"]);
 .map-small .ol-attribution.ol-uncollapsible,
 .map-small .ol-control.ol-attribution {
   display: none !important;
+}
+
+.map-icon-container {
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.map-icon-container::before {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: -1;
+}
+
+/* Legacy styles for old approach */
+.map-icon {
+  background: white;
+  border-radius: 50%;
+  padding: 4px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.map-icon-simple {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.icon-text {
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>

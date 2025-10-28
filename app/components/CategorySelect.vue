@@ -11,22 +11,20 @@
   >
     <template #selection="{ item: legend }">
       <div class="d-flex align-center" style="gap: 8px">
-        <div
-          class="color-preview"
-          :style="{ backgroundColor: legend.raw.color }"
-        />
+        <LegendIndicator :legend="legend.raw" :size="20" />
         <span>{{ legend.raw.name }}</span>
       </div>
     </template>
 
     <template #item="{ props: itemProps, item: legend }">
-      <v-list-item v-bind="itemProps" :subtitle="legend.raw.description">
+      <v-list-item
+        v-bind="itemProps"
+        :subtitle="legend.raw.description || undefined"
+      >
         <template #prepend>
-          <div
-            class="me-2"
-            style="width: 20px; height: 20px; border-radius: 4px"
-            :style="{ backgroundColor: legend.raw.color }"
-          />
+          <div class="me-2">
+            <LegendIndicator :legend="legend.raw" :size="20" />
+          </div>
         </template>
       </v-list-item>
     </template>
@@ -39,4 +37,3 @@ import type { Legend } from "~/types/Legend";
 const legend_id = defineModel<number | null>({ required: true });
 const { legends } = defineProps<{ legends: Legend[] }>();
 </script>
-<style></style>

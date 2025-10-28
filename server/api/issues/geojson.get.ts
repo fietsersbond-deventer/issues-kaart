@@ -6,11 +6,9 @@ export default defineEventHandler(async () => {
   const issues = db
     .prepare(
       `SELECT i.id, i.title, i.description, 
-     l.color,
-     i.legend_id, l.name as legend_name,
+     i.legend_id,
      i.geometry, i.created_at
      FROM issues i 
-     LEFT JOIN legend l ON i.legend_id = l.id 
      ORDER BY i.created_at DESC`
     )
     .all();
@@ -29,7 +27,7 @@ export default defineEventHandler(async () => {
           id: issue.id as number,
           title: issue.title as string,
           description: issue.description as string,
-          color: issue.color as string,
+          legend_id: issue.legend_id as number,
           created_at: issue.created_at as string,
         },
       } as Feature;

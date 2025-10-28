@@ -18,11 +18,13 @@ export type RefreshToken = {
 export type Legend = {
   id: number;
   name: string;
-  description: string | null;
+  description: string;
   color: string;
   created_at: Date;
   usage_count: number;
   used_by_issues: Array<{ id: number; title: string }>;
+  icon?: string; // Material Design Icon name (e.g., 'mdi-bicycle')
+  icon_data_url?: string; // Pre-generated canvas data URL for map rendering
 };
 
 export type Issue = {

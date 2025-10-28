@@ -1,19 +1,17 @@
 <template>
   <div class="legend-container">
-    <v-list density="compact" class="legend-list pa-0">
-      <v-list-item
+    <v-table density="compact" class="legend-list pa-0">
+      <tr
         v-for="item in visibleLegends"
         :key="item.id"
         class="legend-item"
         density="compact"
       >
-        <template #prepend>
-          <div class="color-preview" :style="{ backgroundColor: item.color }" />
-        </template>
-        <v-list-item-title class="text-body-2 text-truncate">{{
-          item.name
-        }}</v-list-item-title>
-        <template v-if="item.description" #append>
+        <td>
+          <LegendIndicator :legend="item" :size="16" />
+        </td>
+        <td class="text-body-2 text-truncate">{{ item.name }}</td>
+        <td v-if="item.description">
           <v-tooltip :text="item.description" location="top">
             <template #activator="{ props }">
               <v-icon
@@ -24,9 +22,9 @@
               />
             </template>
           </v-tooltip>
-        </template>
-      </v-list-item>
-    </v-list>
+        </td>
+      </tr>
+    </v-table>
   </div>
 </template>
 
@@ -70,9 +68,14 @@ const visibleLegends = computed(() => {
 .color-preview {
   width: 16px;
   height: 16px;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
-  margin-right: 8px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-icon-image {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 </style>

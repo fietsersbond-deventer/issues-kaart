@@ -1,11 +1,21 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "fs";
 import path from "path";
+import { config } from "dotenv";
+
+// Load environment variables from .env file
+config();
 
 const MIGRATION_TABLE = "_hub_migrations";
-const DB_PATH =
-  process.env.NUXT_DB_PATH ||
-  path.resolve(process.cwd(), "server/database/fietsersbond.db");
+// test whether env variable is set. Throw error if not set
+if (!process.env.NUXT_DB_PATH) {
+  throw new Error("NUXT_DB_PATH environment variable is not set.");
+}
+const DB_PATH = process.env.NUXT_DB_PATH;
+// log database path
+console.log(`DB Path: ${DB_PATH}`);
+
+// test whether
 const MIGRATIONS_DIR = path.resolve(
   process.cwd(),
   "server/database/migrations"
