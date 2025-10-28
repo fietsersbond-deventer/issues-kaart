@@ -39,13 +39,17 @@ export default defineEventHandler(async (event) => {
     updateFields.push(`color = ?`);
     values.push(updates.color);
   }
+  updateFields.push(`icon = ?`);
   if (updates.icon !== undefined) {
-    updateFields.push(`icon = ?`);
     values.push(updates.icon);
+  } else {
+    values.push(null);
   }
+  updateFields.push(`icon_data_url = ?`);
   if (updates.icon_data_url !== undefined) {
-    updateFields.push(`icon_data_url = ?`);
     values.push(updates.icon_data_url);
+  } else {
+    values.push(null);
   }
 
   // Add the ID as the last parameter
