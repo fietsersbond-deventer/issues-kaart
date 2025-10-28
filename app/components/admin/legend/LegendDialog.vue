@@ -117,24 +117,29 @@ const editedItem = ref<LegendFormData>(
 );
 const isEdit = computed(() => !!legend);
 
-// Watch for changes to icon and regenerate using canvas (the working approach)
-watch(
-  [() => editedItem.value.icon, () => editedItem.value.color],
-  async ([newIcon, newColor]) => {
-    if (newIcon && newColor) {
-      try {
-        const dataUrl = await createIconCanvasDataUrl(newIcon, newColor);
-        editedItem.value.icon_data_url = dataUrl;
-      } catch (error) {
-        console.warn("Failed to generate icon canvas, using fallback:", error);
-        editedItem.value.icon_data_url = createFallbackIconDataUrl(newColor);
-      }
-    } else {
-      editedItem.value.icon_data_url = undefined;
+async function setIcon() {
+  if (editedItem.value.icon && editedItem.value.color) {
+    try {
+      const dataUrl = await createIconCanvasDataUrl(
+        editedItem.value.icon,
+        editedItem.value.color
+      );
+      editedItem.value.icon_data_url = dataUrl;
+    } catch (error) {
+      console.warn("Failed to generate icon canvas, using fallback:", error);
+      editedItem.value.icon_data_url = createFallbackIconDataUrl(
+        editedItem.value.color
+      );
     }
-  },
-  { immediate: true }
-);
+  } else {
+    editedItem.value.icon_data_url = undefined;
+  }
+}
+
+// Watch for changes to icon and regenerate using canvas (the working approach)
+watch([() => editedItem.value.icon, () => editedItem.value.color], setIcon, {
+  immediate: true,
+});
 
 watch(
   () => legend,
@@ -148,7 +153,8 @@ watch(
   { immediate: true }
 );
 
-function save() {
+async function save() {
+  await setIcon();
   emit("save", editedItem.value);
 }
 

@@ -294,12 +294,9 @@ function style(feature: Feature) {
   if (feature.getGeometry()!.getType() === "Point") {
     // If the issue has an icon, use it with black circle when selected
     if (issue.legend?.icon) {
-      // Use the canvas-generated PNG directly (already includes colored circle + contrasting icon)
       if (issue.legend?.icon_data_url) {
-        // FIXED: Higher zoom should = larger icons (but reasonable sizes)
-        const minScale = 0.4; // Small when zoomed out (low zoom values)
-        const maxScale = 1.0; // Normal size when zoomed in (high zoom values)
-        // CORRECTED: Use zoom value directly - higher zoom = higher scale
+        const minScale = 0.3; // Small when zoomed out (low zoom values)
+        const maxScale = 0.7; // larger when zoomed in (high zoom values)
         const finalScale =
           minScale + ((zoom.value - 10) / 8) * (maxScale - minScale);
         // Clamp to min/max bounds
@@ -315,7 +312,11 @@ function style(feature: Feature) {
 
         // Add black border overlay if selected (scale border with icon)
         if (isSelected(issue)) {
-          const borderRadius = 10 + (finalScale - 0.4) * 15; // Scale border with icon size
+          // Calculate actual rendered icon size: base canvas size (64px) * current scale
+          const baseIconSize = 64; // This matches the canvas size from iconCanvas.ts (32 * 2)
+          const actualIconSize = baseIconSize * clampedScale;
+          const iconRadius = actualIconSize / 2; // Icon is circular, so radius is half the size
+          const borderRadius = iconRadius + 1; // Border extends 1px beyond the icon edge
           const borderStyle = new Style({
             image: new Circle({
               radius: Math.max(6, borderRadius),
@@ -329,10 +330,8 @@ function style(feature: Feature) {
         return iconStyle;
       }
 
-      // FIXED: Higher zoom should = larger circles (but reasonable sizes)
-      const minRadius = 4; // Small when zoomed out (low zoom values)
-      const maxRadius = 8; // Normal size when zoomed in (high zoom values)
-      // CORRECTED: Use zoom value directly - higher zoom = larger radius
+      const minRadius = 3; // Small when zoomed out (low zoom values)
+      const maxRadius = 7; // Normal size when zoomed in (high zoom values)
       const finalRadius =
         minRadius + ((zoom.value - 10) / 8) * (maxRadius - minRadius);
       // Clamp to min/max bounds

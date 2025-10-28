@@ -120,11 +120,11 @@ export function createIconCanvasDataUrl(
     tempDiv.appendChild(iconElement);
     document.body.appendChild(tempDiv);
 
-    // Create canvas - use even higher resolution for crisp scaling at large sizes
+    // Create canvas - use reasonable resolution for web display
     const canvas = document.createElement("canvas");
-    const displaySize = 32; // Larger base size for better scaling
-    const scale = 3; // Render at 3x resolution for extra crispness
-    const size = displaySize * scale; // 96px actual canvas size
+    const displaySize = 32; // 32px base size matches preview size
+    const scale = 2; // Render at 2x resolution for crisp display (reduced from 3x)
+    const size = displaySize * scale; // 64px actual canvas size (reduced from 96px)
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
@@ -191,8 +191,8 @@ export function createIconCanvasDataUrl(
         ctx.textBaseline = "middle"; // Better centering
 
         if (content && content !== "none" && content !== '""') {
-          // Use MDI font with larger size for better visibility when scaled
-          ctx.font = '20px "Material Design Icons"'; // Increased from 14px
+          // Use MDI font with appropriate size for 32px display
+          ctx.font = '18px "Material Design Icons"'; // Reduced from 20px for smaller canvas
 
           // Parse the unicode content
           const iconChar = content
