@@ -143,20 +143,6 @@ export function createIconCanvasDataUrl(
         // Clear canvas to transparent
         ctx.clearRect(0, 0, displaySize, displaySize);
 
-        // Calculate contrasting color for the icon
-        const getContrastColor = (bgColor: string) => {
-          // Remove # if present
-          const hex = bgColor.replace("#", "");
-          // Convert to RGB
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-          // Calculate brightness
-          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-          // Return black for light backgrounds, white for dark
-          return brightness > 128 ? "#000000" : "#ffffff";
-        };
-
         const iconColor = getContrastColor(color);
 
         // Draw colored circle background with white border (using display size coordinates)

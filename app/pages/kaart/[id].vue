@@ -57,6 +57,7 @@
             variant="flat"
             size="small"
             :color="issue.legend.color"
+            :text-color="getContrastColor(issue.legend.color)"
             >{{ issue.legend.name }}</v-chip
           >
           <!-- eslint-disable-next-line vue/no-v-html -->
