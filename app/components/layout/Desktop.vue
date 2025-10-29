@@ -1,7 +1,9 @@
 <template>
   <v-layout class="desktop-layout">
     <v-main class="map-main" :style="{ width: 'calc(100% - 600px)' }">
-      <Map class="fill-height" />
+      <Map class="fill-height">
+        <!-- Use default slot content for desktop -->
+      </Map>
     </v-main>
 
     <v-navigation-drawer

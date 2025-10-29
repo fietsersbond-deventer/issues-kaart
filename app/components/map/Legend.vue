@@ -1,6 +1,6 @@
 <template>
   <div class="legend-container">
-    <v-table density="compact" class="legend-list pa-0">
+    <v-table class="legend-list pa-0">
       <tr
         v-for="item in visibleLegends"
         :key="item.id"
@@ -8,9 +8,9 @@
         density="compact"
       >
         <td>
-          <LegendIndicator :legend="item" :size="16" />
+          <LegendIndicator :legend="item" :size="24" />
         </td>
-        <td class="text-body-2 text-truncate">{{ item.name }}</td>
+        <td class="text-body-2 text-truncate pa-2">{{ item.name }}</td>
         <td v-if="item.description">
           <v-tooltip :text="item.description" location="top">
             <template #activator="{ props }">
