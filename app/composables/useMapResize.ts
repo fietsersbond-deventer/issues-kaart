@@ -106,6 +106,14 @@ export function useMapResize(
     });
   });
 
+  watch(
+    padding,
+    () => {
+      recenterOnSelectedIssue();
+    },
+    { deep: true }
+  );
+
   onUnmounted(() => {
     if (resizeObserver) {
       resizeObserver.disconnect();

@@ -7,18 +7,21 @@
     <ol-view ref="view" :center="center" :projection="projection" />
 
     <!-- Top-left corner controls -->
-    <MapControlContainer position="top-left">
-      <MapResetExtentControl @reset="resetToOriginalExtent" />
-    </MapControlContainer>
+    <slot name="top-left-controls">
+      <MapControlContainer position="top-left">
+        <MapResetExtentControl @reset="resetToOriginalExtent" />
+      </MapControlContainer>
+    </slot>
 
-    <MapControlContainer v-show="!isMapSmall" position="bottom-left">
-      <SizeCalculator v-model="legendSize">
-        <MobileCollapsible title="Legenda" icon="mdi-map-legend">
+    <!-- Bottom-left corner controls -->
+    <slot name="bottom-left-controls" :is-small="isMapSmall">
+      <MapControlContainer v-show="!isMapSmall" position="bottom-left">
+        <SizeCalculator v-model="legendSize">
           <MapLegend />
-        </MobileCollapsible>
-        <MapLayerSwitcher v-model="preferredLayer" />
-      </SizeCalculator>
-    </MapControlContainer>
+          <MapLayerSwitcher v-model="preferredLayer" />
+        </SizeCalculator>
+      </MapControlContainer>
+    </slot>
 
     <MapAddFeature ref="addFeature" />
 
@@ -217,6 +220,15 @@ function resetToOriginalExtent() {
     easing: easeOut,
     duration: 1000,
   });
+}
+
+function updatePadding(controlsSize: Size) {
+  currentPadding.value = [
+    50, // top
+    50, // right
+    controlsSize.height + 20, // bottom
+    50, // left
+  ];
 }
 
 const view = useTemplateRef("view");
@@ -499,6 +511,13 @@ function onModifyEnd(event: ModifyEvent) {
 }
 
 const emit = defineEmits(["feature-clicked"]);
+
+// Expose functions to parent components
+defineExpose({
+  resetToOriginalExtent,
+  preferredLayer,
+  updatePadding,
+});
 </script>
 
 <style>
