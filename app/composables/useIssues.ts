@@ -40,15 +40,6 @@ export function useIssues<T extends ExistingIssue>(options?: {
         issue.geometry = JSON.parse(issue.geometry);
       }
 
-      // Handle imageUrl virtual field
-      if (fields?.includes("imageUrl") && "id" in issue) {
-        const hasImage =
-          issue.description && issue.description.includes("data:image");
-        (issue as Issue & { imageUrl?: string | null }).imageUrl = hasImage
-          ? `/api/issues/${issue.id}/image`
-          : null;
-      }
-
       // Enrich with legend data if legend_id exists
       if ("legend_id" in issue && issue.legend_id && legends.value) {
         const legend = legends.value.find((l) => l.id === issue.legend_id);
