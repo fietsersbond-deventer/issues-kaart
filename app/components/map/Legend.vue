@@ -1,6 +1,6 @@
 <template>
   <div class="legend-container">
-    <v-table class="legend-list pa-0">
+    <v-table class="legend-list pa-2">
       <tr
         v-for="item in visibleLegends"
         :key="item.id"
