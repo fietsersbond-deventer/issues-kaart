@@ -32,7 +32,11 @@
         />
       </div>
       <!-- Line/polygon indicator -->
-      <v-icon icon="mdi-vector-polyline" :color="legend.color" :size="size" />
+      <v-icon
+        icon="mdi-chart-line-variant"
+        :color="legend.color"
+        :size="size"
+      />
     </template>
     <div
       v-else
