@@ -391,12 +391,34 @@ function style(feature: Feature) {
       });
     }
   } else if (feature.getGeometry()!.getType() === "LineString") {
-    return new Style({
-      stroke: new Stroke({
-        color: issueColor,
-        width: isSelected(issue as MapIssue) ? 6 : 3,
-      }),
-    });
+    const lineWidth = 3;
+    const selectedLineWidth = 6;
+    
+    if (isSelected(issue as MapIssue)) {
+      // Draw black border first (thicker), then colored line on top
+      const borderStyle = new Style({
+        stroke: new Stroke({
+          color: "black",
+          width: selectedLineWidth + 2, // 2px wider than the colored line
+        }),
+      });
+      
+      const lineStyle = new Style({
+        stroke: new Stroke({
+          color: issueColor,
+          width: selectedLineWidth,
+        }),
+      });
+      
+      return [borderStyle, lineStyle]; // Return both styles - border first, then line
+    } else {
+      return new Style({
+        stroke: new Stroke({
+          color: issueColor,
+          width: lineWidth,
+        }),
+      });
+    }
   } else
     return new Style({
       stroke: new Stroke({
