@@ -302,6 +302,9 @@ function style(feature: Feature) {
 
   // Provide default color if none specified (for backward compatibility)
   const issueColor = issue.legend?.color;
+  
+  // Set higher zIndex for selected features to bring them to the top
+  const zIndex = isSelected(issue) ? 1000 : 1;
 
   if (feature.getGeometry()!.getType() === "Point") {
     // If the issue has an icon, use it with black circle when selected
@@ -320,6 +323,7 @@ function style(feature: Feature) {
             scale: clampedScale,
             anchor: [0.5, 0.5],
           }),
+          zIndex,
         });
 
         // Add black border overlay if selected (scale border with icon)
@@ -335,6 +339,7 @@ function style(feature: Feature) {
               fill: new Fill({ color: "transparent" }),
               stroke: new Stroke({ color: "black", width: 3 }),
             }),
+            zIndex: zIndex + 1, // Border slightly above the icon
           });
           return [iconStyle, borderStyle]; // Return both styles
         }
@@ -361,6 +366,7 @@ function style(feature: Feature) {
             width: Math.max(1, clampedRadius / 6),
           }),
         }),
+        zIndex,
       });
 
       // Add black border overlay if selected (scale with circle)
@@ -372,6 +378,7 @@ function style(feature: Feature) {
             fill: new Fill({ color: "transparent" }),
             stroke: new Stroke({ color: "black", width: 3 }),
           }),
+          zIndex: zIndex + 1, // Border slightly above the circle
         });
         return [circleStyle, borderStyle]; // Return both styles
       }
@@ -388,6 +395,7 @@ function style(feature: Feature) {
             width: 2,
           }),
         }),
+        zIndex,
       });
     }
   } else if (feature.getGeometry()!.getType() === "LineString") {
@@ -401,6 +409,7 @@ function style(feature: Feature) {
           color: "black",
           width: selectedLineWidth + 2, // 2px wider than the colored line
         }),
+        zIndex: zIndex, // Border at base z-index
       });
 
       const lineStyle = new Style({
@@ -408,6 +417,7 @@ function style(feature: Feature) {
           color: issueColor,
           width: selectedLineWidth,
         }),
+        zIndex: zIndex + 1, // Line slightly above the border
       });
 
       return [borderStyle, lineStyle]; // Return both styles - border first, then line
@@ -417,6 +427,7 @@ function style(feature: Feature) {
           color: issueColor,
           width: lineWidth,
         }),
+        zIndex,
       });
     }
   } else
@@ -428,6 +439,7 @@ function style(feature: Feature) {
       fill: new Fill({
         color: getPolygonFillColor(issue as MapIssue),
       }),
+      zIndex,
     });
 }
 
