@@ -22,6 +22,9 @@
                     @click="showLayerSwitcher = !showLayerSwitcher"
                   >
                     <v-icon>mdi-layers</v-icon>
+                    <v-tooltip activator="parent" location="top">
+                      Kaartlagen
+                    </v-tooltip>
                   </v-btn>
 
                   <!-- Legend button -->
@@ -32,6 +35,9 @@
                     @click="showLegend = !showLegend"
                   >
                     <v-icon>mdi-map-legend</v-icon>
+                    <v-tooltip activator="parent" location="top">
+                      Legenda
+                    </v-tooltip>
                   </v-btn>
                 </div>
 
