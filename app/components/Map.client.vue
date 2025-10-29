@@ -302,7 +302,7 @@ function style(feature: Feature) {
 
   // Provide default color if none specified (for backward compatibility)
   const issueColor = issue.legend?.color;
-  
+
   // Set higher zIndex for selected features to bring them to the top
   const zIndex = isSelected(issue) ? 1000 : 1;
 
