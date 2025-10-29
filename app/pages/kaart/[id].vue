@@ -61,7 +61,7 @@
             >{{ issue.legend.name }}</v-chip
           >
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="ql-editor" v-html="issue.description" />
+          <div class="ql-editor viewer" v-html="issue.description" />
         </template>
       </template>
       <template v-else>
@@ -165,5 +165,10 @@ definePageMeta({
   position: relative;
   width: 100%;
   min-height: 100%;
+}
+
+.ql-editor.viewer img {
+  width: 100% !important;
+  height: auto;
 }
 </style>
