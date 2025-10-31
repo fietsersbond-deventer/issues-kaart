@@ -284,7 +284,7 @@ watch(
         const bbox = getIssuesBbox(issues.value);
         if (bbox) {
           setBbox(bbox, {
-            padding: currentPadding.value,
+            padding: [50, 50, 50, 50],
             duration: 800, // Smooth animation
           });
         }
