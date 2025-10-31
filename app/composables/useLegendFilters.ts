@@ -24,13 +24,15 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   // Computed: determine if we're showing all legends based on the current selection
   const isShowingAll = computed(() => {
     if (!legends.value || legends.value.length === 0) return true;
-    
-    const allLegendIds = new Set(legends.value.map(legend => legend.id));
+
+    const allLegendIds = new Set(legends.value.map((legend) => legend.id));
     const visibleIds = visibleLegendIds.value;
-    
+
     // We're showing all if the sets are the same size and contain the same elements
-    return allLegendIds.size === visibleIds.size && 
-           [...allLegendIds].every(id => visibleIds.has(id));
+    return (
+      allLegendIds.size === visibleIds.size &&
+      [...allLegendIds].every((id) => visibleIds.has(id))
+    );
   });
 
   /**
