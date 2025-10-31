@@ -2,9 +2,6 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   // Set of legend IDs that are currently visible (selected)
   const visibleLegendIds = ref<Set<number>>(new Set());
 
-  // Track if we're in "show all" mode (true) or selective filtering mode (false)
-  const isShowingAll = ref(true);
-
   // Initialize with all available legends when legends are loaded
   const { legends } = storeToRefs(useLegends());
 
@@ -19,11 +16,22 @@ export const useLegendFilters = defineStore("legendFilters", () => {
       ) {
         // Initialize with all legend IDs visible
         visibleLegendIds.value = new Set(newLegends.map((legend) => legend.id));
-        isShowingAll.value = true;
       }
     },
     { immediate: true }
   );
+
+  // Computed: determine if we're showing all legends based on the current selection
+  const isShowingAll = computed(() => {
+    if (!legends.value || legends.value.length === 0) return true;
+    
+    const allLegendIds = new Set(legends.value.map(legend => legend.id));
+    const visibleIds = visibleLegendIds.value;
+    
+    // We're showing all if the sets are the same size and contain the same elements
+    return allLegendIds.size === visibleIds.size && 
+           [...allLegendIds].every(id => visibleIds.has(id));
+  });
 
   /**
    * Toggle the visibility of a legend with special first-click behavior
@@ -32,7 +40,6 @@ export const useLegendFilters = defineStore("legendFilters", () => {
     if (isShowingAll.value) {
       // First click: show only this legend
       visibleLegendIds.value = new Set([legendId]);
-      isShowingAll.value = false;
     } else {
       // Subsequent clicks: toggle individual legends
       if (visibleLegendIds.value.has(legendId)) {
@@ -47,15 +54,16 @@ export const useLegendFilters = defineStore("legendFilters", () => {
           visibleLegendIds.value = new Set(
             legends.value.map((legend) => legend.id)
           );
-          isShowingAll.value = true;
         }
+      } else {
+        // Trigger reactivity for the set
+        visibleLegendIds.value = new Set(visibleLegendIds.value);
       }
     }
   }
 
   /**
    * Check if a legend is visible
-   * In show-all mode, everything appears selected for UI purposes
    */
   function isLegendVisible(legendId: number): boolean {
     return visibleLegendIds.value.has(legendId);
@@ -69,13 +77,12 @@ export const useLegendFilters = defineStore("legendFilters", () => {
       visibleLegendIds.value = new Set(
         legends.value.map((legend) => legend.id)
       );
-      isShowingAll.value = true;
     }
   }
 
   return {
     visibleLegendIds: readonly(visibleLegendIds),
-    isShowingAll: readonly(isShowingAll),
+    isShowingAll,
     toggleLegendVisibility,
     isLegendVisible,
     showAllLegends,

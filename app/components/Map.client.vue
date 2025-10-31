@@ -157,14 +157,15 @@ const { issues: allIssues } = storeToRefs(
 );
 
 // Filter issues based on legend visibility
-const { isLegendVisible } = useLegendFilters();
+const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
+
 const issues = computed(() => {
   return (
     allIssues.value?.filter((issue) => {
       // If issue has no legend_id, show it by default
       if (!issue.legend_id) return true;
       // Otherwise, check if the legend is visible
-      return isLegendVisible(issue.legend_id);
+      return visibleLegendIds.value.has(issue.legend_id);
     }) ?? []
   );
 });
@@ -268,6 +269,30 @@ watch([view, allIssues, selectedIssue], () => {
     }
   }
 });
+
+// Watch for legend filter changes and zoom to visible issues
+watch(
+  visibleLegendIds,
+  () => {
+    // Only auto-zoom when view is ready and there are issues to show
+    if (view.value && issues.value.length > 0) {
+      // If we're back to show-all mode and there's a selected issue, zoom to it
+      if (isShowingAll.value && selectedIssue.value) {
+        recenterOnSelectedIssue();
+      } else if (!isShowingAll.value) {
+        // If we're filtering, zoom to fit the visible issues
+        const bbox = getIssuesBbox(issues.value);
+        if (bbox) {
+          setBbox(bbox, {
+            padding: currentPadding.value,
+            duration: 800, // Smooth animation
+          });
+        }
+      }
+    }
+  },
+  { deep: true }
+);
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {
