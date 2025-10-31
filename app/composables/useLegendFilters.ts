@@ -2,17 +2,21 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   // Set of legend IDs that are currently visible (selected)
   // By default, all legends are visible
   const visibleLegendIds = ref<Set<number>>(new Set());
-  
+
   // Initialize with all available legends when legends are loaded
   const { legends } = storeToRefs(useLegends());
-  
+
   // Initialize visibleLegendIds when legends are first loaded
   watch(
     legends,
     (newLegends) => {
-      if (newLegends && newLegends.length > 0 && visibleLegendIds.value.size === 0) {
+      if (
+        newLegends &&
+        newLegends.length > 0 &&
+        visibleLegendIds.value.size === 0
+      ) {
         // Initialize with all legend IDs visible
-        visibleLegendIds.value = new Set(newLegends.map(legend => legend.id));
+        visibleLegendIds.value = new Set(newLegends.map((legend) => legend.id));
       }
     },
     { immediate: true }

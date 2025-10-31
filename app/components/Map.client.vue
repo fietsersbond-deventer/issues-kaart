@@ -159,12 +159,14 @@ const { issues: allIssues } = storeToRefs(
 // Filter issues based on legend visibility
 const { isLegendVisible } = useLegendFilters();
 const issues = computed(() => {
-  return allIssues.value?.filter(issue => {
-    // If issue has no legend_id, show it by default
-    if (!issue.legend_id) return true;
-    // Otherwise, check if the legend is visible
-    return isLegendVisible(issue.legend_id);
-  }) ?? [];
+  return (
+    allIssues.value?.filter((issue) => {
+      // If issue has no legend_id, show it by default
+      if (!issue.legend_id) return true;
+      // Otherwise, check if the legend is visible
+      return isLegendVisible(issue.legend_id);
+    }) ?? []
+  );
 });
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
