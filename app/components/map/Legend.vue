@@ -4,8 +4,10 @@
       <tr
         v-for="item in visibleLegends"
         :key="item.id"
-        class="legend-item"
+        class="legend-item clickable"
+        :class="{ 'legend-item--disabled': !isLegendVisible(item.id) }"
         density="compact"
+        @click="toggleLegendVisibility(item.id)"
       >
         <td>
           <LegendIndicator :legend="item" :size="24" />
@@ -30,6 +32,8 @@
 
 <script setup lang="ts">
 const { legends } = storeToRefs(useLegends());
+const { toggleLegendVisibility, isLegendVisible } = useLegendFilters();
+
 // Only need legend_id to determine which legends are visible
 const { issues } = storeToRefs(useIssues({ fields: "id,legend_id" }));
 
@@ -63,6 +67,23 @@ const visibleLegends = computed(() => {
   min-height: 28px !important;
   height: 28px !important;
   padding: 0 8px !important;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.legend-item.clickable {
+  cursor: pointer;
+}
+
+.legend-item.clickable:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.legend-item--disabled {
+  opacity: 0.4;
+}
+
+.legend-item--disabled:hover {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .color-preview {

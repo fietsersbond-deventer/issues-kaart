@@ -152,9 +152,20 @@ interface Size {
 }
 
 // Use lightweight map issues for rendering (only essential fields)
-const { issues } = storeToRefs(
+const { issues: allIssues } = storeToRefs(
   useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const })
 );
+
+// Filter issues based on legend visibility
+const { isLegendVisible } = useLegendFilters();
+const issues = computed(() => {
+  return allIssues.value?.filter(issue => {
+    // If issue has no legend_id, show it by default
+    if (!issue.legend_id) return true;
+    // Otherwise, check if the legend is visible
+    return isLegendVisible(issue.legend_id);
+  }) ?? [];
+});
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
@@ -210,9 +221,9 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
 }
 
 function resetToOriginalExtent() {
-  if (!issues.value || issues.value.length === 0) return;
+  if (!allIssues.value || allIssues.value.length === 0) return;
 
-  const bbox = getIssuesBbox(issues.value);
+  const bbox = getIssuesBbox(allIssues.value);
   if (!bbox) return;
 
   setBbox(bbox, {
@@ -240,15 +251,15 @@ const { mobile } = useDisplay();
 // Use the map bounds composable to track bounding box changes
 // useMapBounds(mapRef);
 
-watch([view, issues, selectedIssue], () => {
-  if (view.value && issues.value.length > 0) {
+watch([view, allIssues, selectedIssue], () => {
+  if (view.value && allIssues.value.length > 0) {
     // If there's a selected issue with geometry, zoom to it
     if (selectedIssue.value?.geometry) {
       recenterOnSelectedIssue();
       firstLoad.value = false;
     } else {
-      // Otherwise, fit all issues
-      const bbox = getIssuesBbox(issues.value);
+      // Otherwise, fit all issues (including filtered ones for initial view)
+      const bbox = getIssuesBbox(allIssues.value);
       if (!bbox) return;
       setBbox(bbox);
       firstLoad.value = false;
