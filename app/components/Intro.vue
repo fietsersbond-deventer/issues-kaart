@@ -15,7 +15,8 @@
           </li>
           <li class="mb-2">Zoek een locatie met de zoekbalk linksboven</li>
           <li class="mb-2">
-            Bekijk de legenda om te zien wat de kleuren betekenen
+            Bekijk de legenda om te zien wat de kleuren betekenen en klik om
+            categorieën aan of uit te schakelen
           </li>
         </ul>
       </v-card>
