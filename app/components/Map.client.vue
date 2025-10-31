@@ -170,6 +170,10 @@ const issues = computed(() => {
   );
 });
 
+const issuesBbox = computed(() => {
+  return getIssuesBbox(issues.value);
+});
+
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
   return issue.id === selectedId.value;
@@ -230,7 +234,7 @@ function resetToOriginalExtent() {
   if (!bbox) return;
 
   setBbox(bbox, {
-    padding: currentPadding.value,
+    padding: [50, 50, 50, 50],
     easing: easeOut,
     duration: 1000,
   });
@@ -262,7 +266,7 @@ watch([view, allIssues, selectedIssue], () => {
       firstLoad.value = false;
     } else {
       // Otherwise, fit all issues (including filtered ones for initial view)
-      const bbox = getIssuesBbox(allIssues.value);
+      const bbox = issuesBbox.value;
       if (!bbox) return;
       setBbox(bbox);
       firstLoad.value = false;
@@ -274,21 +278,14 @@ watch([view, allIssues, selectedIssue], () => {
 watch(
   visibleLegendIds,
   () => {
-    // Only auto-zoom when view is ready and there are issues to show
-    if (view.value && issues.value.length > 0) {
-      // If we're back to show-all mode and there's a selected issue, zoom to it
-      if (isShowingAll.value && selectedIssue.value) {
-        recenterOnSelectedIssue();
-      } else if (!isShowingAll.value) {
-        // If we're filtering, zoom to fit the visible issues
-        const bbox = getIssuesBbox(issues.value);
-        if (bbox) {
-          setBbox(bbox, {
-            padding: [50, 50, 50, 50],
-            duration: 800, // Smooth animation
-          });
-        }
-      }
+    // If we're back to show-all mode and there's a selected issue, zoom to it
+    if (isShowingAll.value && selectedId.value) {
+      recenterOnSelectedIssue();
+    } else if (issuesBbox.value) {
+      setBbox(issuesBbox.value, {
+        padding: [50, 50, 50, 50],
+        duration: 800, // Smooth animation
+      });
     }
   },
   { deep: true }
