@@ -24,6 +24,7 @@
                 <h4 class="mb-3">Kleur</h4>
                 <v-color-picker
                   v-model="editedItem.color"
+                  v-model:mode="mode"
                   show-swatches
                   swatches-max-height="300px"
                 />
@@ -79,6 +80,7 @@ import {
 } from "~/utils/iconCanvas";
 
 const modelValue = defineModel<boolean>("modelValue");
+const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
 
 const { legend = undefined } = defineProps<{
   legend?: Pick<
