@@ -20,15 +20,5 @@
         </ul>
       </v-card>
     </div>
-
-    <div class="mt-4">
-      <v-btn
-        href="https://github.com/fietsersbond-deventer/issues-kaart"
-        target="_blank"
-        variant="text"
-        color="primary"
-        prepend-icon="mdi-github"
-      />
-    </div>
   </div>
 </template>
