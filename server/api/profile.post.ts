@@ -27,6 +27,9 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const query = getQuery(event);
 
+    // Get the real client IP (handles proxies correctly)
+    const clientIP = getClientIP(event);
+
     // Build the Matomo tracker URL
     const trackerUrl = config.matomo?.trackerUrl;
     const targetUrl = trackerUrl?.startsWith('http')
@@ -37,7 +40,8 @@ export default defineEventHandler(async (event) => {
     const params = {
       ...body,
       ...query,
-      token_auth: config.matomo.authToken
+      token_auth: config.matomo.authToken,
+      cip: clientIP, // Client IP - very important for accurate tracking
     };
 
     // Forward the request to Matomo
@@ -49,6 +53,7 @@ export default defineEventHandler(async (event) => {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": event.node.req.headers["user-agent"] || "",
         "Referer": event.node.req.headers["referer"] || "",
+        "X-Forwarded-For": clientIP, // Also pass as header for Matomo server
       },
     });
 
@@ -64,3 +69,29 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
+
+/**
+ * Extract the real client IP address, handling proxies correctly
+ * @ts-ignore - event type issues with H3Event
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getClientIP(event: any): string {
+  // Check X-Forwarded-For first (set by reverse proxies like Nginx)
+  const forwarded = event.node.req.headers["x-forwarded-for"] as string | string[] | undefined;
+  if (forwarded) {
+    // X-Forwarded-For can be a comma-separated list, take the first one
+    const ips = typeof forwarded === "string" 
+      ? forwarded.split(",") 
+      : forwarded;
+    return ips[0]?.trim() || "";
+  }
+
+  // Check X-Real-IP (set by some proxies)
+  const realIP = event.node.req.headers["x-real-ip"] as string | string[] | undefined;
+  if (realIP) {
+    return typeof realIP === "string" ? realIP : realIP[0];
+  }
+
+  // Fallback to the direct connection IP
+  return event.node.req.socket.remoteAddress || "0.0.0.0";
+}

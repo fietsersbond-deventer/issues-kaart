@@ -10,18 +10,11 @@ export default defineNuxtPlugin(() => {
   const route = useRoute();
   const {
     public: { matomo },
-    matomo: matomoServer,
   } = useRuntimeConfig();
 
   // Controleer of Matomo volledig is geconfigureerd
-  // Zowel client-side (siteId) als server-side (url) moet aanwezig zijn
   if (!matomo?.siteId) {
     console.debug("Matomo tracking is disabled - missing site ID");
-    return;
-  }
-
-  if (!matomoServer?.url) {
-    console.debug("Matomo tracking is disabled - missing server configuration");
     return;
   }
 
@@ -40,8 +33,8 @@ export default defineNuxtPlugin(() => {
 
   // Fout handler voor het script
   script.onerror = () => {
-    console.warn(
-      "Failed to load Matomo tracking script - Matomo may not be properly configured"
+    console.error(
+      "Failed to load Matomo tracking script - Matomo may not be properly configured on the server"
     );
   };
 

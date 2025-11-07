@@ -32,11 +32,13 @@ export default defineEventHandler(async (event) => {
     const scriptPath = matomoScriptUrl || "matomo.js";
     const targetUrl = `${matomoUrl.replace(/\/$/, "")}/${scriptPath}`;
 
-    console.debug(`[Matomo Script Proxy] Fetching script from: ${targetUrl}`);
-
-    // Fetch the Matomo script
+    // Fetch the Matomo script with detailed error handling
     const response = await $fetch(targetUrl, {
       method: "GET",
+      timeout: 10000,
+    }).catch((err) => {
+      console.error("[Matomo Script Proxy] Fetch failed:", err.message);
+      throw err;
     });
 
     // Set appropriate headers
