@@ -183,6 +183,8 @@ const { update, create, remove } = useIssuesMethods();
 const { legends } = storeToRefs(useLegends());
 const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
+const { trackEvent } = useMatomoTracking();
+const { data: user } = useAuth();
 
 async function onSubmit() {
   // Prevent submission if connection is lost
@@ -191,11 +193,24 @@ async function onSubmit() {
   }
 
   if (issue.value && valid.value) {
+    const username = user.value?.name || "anonymous";
     if (isExistingIssue(issue.value)) {
       await update(issue.value.id, issue.value);
+      // Track issue modification in Matomo
+      trackEvent(
+        "Issue",
+        "Modified",
+        `Issue #${issue.value.id} by ${username}: ${issue.value.title}`
+      );
     } else {
       const result = await create(issue.value);
       if (isExistingIssue(result)) {
+        // Track issue creation in Matomo
+        trackEvent(
+          "Issue",
+          "Created",
+          `Issue #${result.id} by ${username}: ${result.title}`
+        );
         showDialog.value = false;
         return navigateTo(`/kaart/${result.id}`);
       }
@@ -216,7 +231,14 @@ async function onDelete() {
     if (
       confirm(`Weet je zeker dat je '${issue.value.title}' wilt verwijderen?`)
     ) {
+      const name = user.value?.name || "anonymous";
       await remove(issue.value.id);
+      // Track issue deletion in Matomo
+      trackEvent(
+        "Issue",
+        "Deleted",
+        `Issue #${issue.value.id} by ${name}: ${issue.value.title}`
+      );
       showDialog.value = false;
       return navigateTo("/kaart");
     }
