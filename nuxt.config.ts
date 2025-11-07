@@ -17,8 +17,21 @@ export default defineNuxtConfig({
     "@/assets/css/main.css", // Make sure our CSS is last to take precedence
   ],
   runtimeConfig: {
+    matomo: {
+      // Basis configuratie - leeg betekent Matomo is uitgeschakeld
+      url: process.env.MATOMO_URL || "",
+      // Server-side paths
+      trackerUrl: process.env.MATOMO_TRACKER_URL || "",
+      scriptUrl: process.env.MATOMO_SCRIPT_URL || "",
+      // Auth token voor API toegang
+      authToken: process.env.MATOMO_AUTH_TOKEN || "",
+    },
     public: {
-      adminName: process.env.ADMIN_NAME || "Admin",
+      adminName: process.env.NUXT_PUBLIC_ADMIN_NAME || "Admin",
+      matomo: {
+        // Alleen site ID is nodig in de client
+        siteId: process.env.NUXT_PUBLIC_MATOMO_SITE_ID || "",
+      },
     },
     isProduction: process.env.NODE_ENV === "production",
   },
