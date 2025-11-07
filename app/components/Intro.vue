@@ -22,3 +22,9 @@
     </div>
   </div>
 </template>
+<script setup lang="ts">
+// Set the page title dynamically based on the issue
+useHead(() => ({
+  title: "Fietsersbond Deventer - Onderwerpen",
+}));
+</script>

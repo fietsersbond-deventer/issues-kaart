@@ -2,8 +2,8 @@
 import { useSnackbar } from "~/composables/useSnackbar";
 
 useSeoMeta({
-  title: "Fietsersbond Deventer - Projecten",
-  description: "Projecten op de kaart",
+  title: "Fietsersbond Deventer - Onderwerpen",
+  description: "Onderwerpen op de kaart",
 });
 
 const { snackbar } = useSnackbar();

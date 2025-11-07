@@ -116,16 +116,25 @@ function safeToggleEditing() {
   toggleEditing();
 }
 
+const title = computed(() =>
+  issue.value?.title
+    ? `${issue.value.title} - Fietsersbond Deventer`
+    : "Nieuw onderwerp - Fietsersbond Deventer"
+);
+
 // Set the page title dynamically based on the issue
 useHead(() => ({
-  title: issue.value?.title
-    ? `${issue.value.title} - Fietsersbond`
-    : "Nieuw onderwerp - Fietsersbond",
+  title: title.value,
 }));
 
 watch(issue, () => {
   if (isExistingIssue(issue.value)) {
     useIssueOpenGraph(issue.value);
+  }
+  // Update Matomo tracking with new title
+  if (typeof window !== "undefined" && window._paq) {
+    window._paq.push(["setDocumentTitle", title.value]);
+    window._paq.push(["trackPageView"]);
   }
 });
 
