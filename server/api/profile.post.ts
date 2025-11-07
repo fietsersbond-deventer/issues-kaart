@@ -19,7 +19,8 @@ export default defineEventHandler(async (event) => {
   if (!config.matomo?.authToken) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Matomo auth token is not configured. Set MATOMO_AUTH_TOKEN in your environment.",
+      statusMessage:
+        "Matomo auth token is not configured. Set MATOMO_AUTH_TOKEN in your environment.",
     });
   }
 
@@ -32,7 +33,7 @@ export default defineEventHandler(async (event) => {
 
     // Build the Matomo tracker URL
     const trackerUrl = config.matomo?.trackerUrl;
-    const targetUrl = trackerUrl?.startsWith('http')
+    const targetUrl = trackerUrl?.startsWith("http")
       ? trackerUrl
       : `${matomoUrl.replace(/\/$/, "")}/${trackerUrl || "matomo.php"}`;
 
@@ -52,7 +53,7 @@ export default defineEventHandler(async (event) => {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": event.node.req.headers["user-agent"] || "",
-        "Referer": event.node.req.headers["referer"] || "",
+        Referer: event.node.req.headers["referer"] || "",
         "X-Forwarded-For": clientIP, // Also pass as header for Matomo server
       },
     });
@@ -77,17 +78,22 @@ export default defineEventHandler(async (event) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getClientIP(event: any): string {
   // Check X-Forwarded-For first (set by reverse proxies like Nginx)
-  const forwarded = event.node.req.headers["x-forwarded-for"] as string | string[] | undefined;
+  const forwarded = event.node.req.headers["x-forwarded-for"] as
+    | string
+    | string[]
+    | undefined;
   if (forwarded) {
     // X-Forwarded-For can be a comma-separated list, take the first one
-    const ips = typeof forwarded === "string" 
-      ? forwarded.split(",") 
-      : forwarded;
+    const ips =
+      typeof forwarded === "string" ? forwarded.split(",") : forwarded;
     return ips[0]?.trim() || "";
   }
 
   // Check X-Real-IP (set by some proxies)
-  const realIP = event.node.req.headers["x-real-ip"] as string | string[] | undefined;
+  const realIP = event.node.req.headers["x-real-ip"] as
+    | string
+    | string[]
+    | undefined;
   if (realIP) {
     return typeof realIP === "string" ? realIP : realIP[0];
   }
