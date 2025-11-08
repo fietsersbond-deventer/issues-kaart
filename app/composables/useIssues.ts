@@ -1,19 +1,13 @@
 import { defineStore } from "pinia";
-import {
-  isExistingIssue,
-  isNewIssue,
-  type ExistingIssue,
-  type Issue,
-} from "@/types/Issue";
+import { isExistingIssue, isNewIssue, type Issue } from "@/types/Issue";
+import { enrichIssue } from "@/utils/enrichIssue";
 import { useThrottleFn } from "@vueuse/core";
 
 /**
  * Issues store with optional field selection
  * Use the fields option to request specific fields and reduce payload size
  */
-export function useIssues<T extends ExistingIssue>(options?: {
-  fields?: string;
-}) {
+export function useIssues(options?: { fields?: string }) {
   const fields = options?.fields;
   const storeName = fields ? `issues-${fields.replace(/,/g, "-")}` : "issues";
 
@@ -35,25 +29,6 @@ export function useIssues<T extends ExistingIssue>(options?: {
       fetchOptions
     );
 
-    function processIssue(issue: Issue): Issue {
-      if (issue.geometry && typeof issue.geometry === "string") {
-        issue.geometry = JSON.parse(issue.geometry);
-      }
-
-      // Enrich with legend data if legend_id exists
-      if ("legend_id" in issue && issue.legend_id && legends.value) {
-        const legend = legends.value.find((l) => l.id === issue.legend_id);
-        if (legend) {
-          // Add the full legend object to the issue
-          const enrichedIssue = issue as Issue & { legend: typeof legend };
-          enrichedIssue.legend = legend;
-          return enrichedIssue;
-        }
-      }
-
-      return issue;
-    }
-
     // Subscribe to WebSocket messages
     const unsubscribe = ws.subscribe((parsed) => {
       console.debug(
@@ -63,8 +38,8 @@ export function useIssues<T extends ExistingIssue>(options?: {
 
       switch (parsed.type) {
         case "issue-created": {
-          const issue = processIssue(parsed.payload as Issue);
-          issues.value.push(issue as ExistingIssue);
+          const issue = enrichIssue(parsed.payload as Issue);
+          issues.value.push(issue);
           if (isAuthenticated.value) {
             snackbar.showMessageOnce(`Onderwerp ${issue.title} aangemaakt`);
           }
@@ -72,9 +47,9 @@ export function useIssues<T extends ExistingIssue>(options?: {
         }
         case "issue-modified":
           {
-            const issue = processIssue(parsed.payload as Issue);
+            const issue = enrichIssue(parsed.payload as Issue);
             const existingIndex = issues.value.findIndex(
-              (i) => "id" in i && i.id === (issue as ExistingIssue).id
+              (i) => "id" in i && i.id === (issue as Issue).id
             );
 
             console.debug(
@@ -126,10 +101,10 @@ export function useIssues<T extends ExistingIssue>(options?: {
 
       if (existingIndex !== -1) {
         // Update existing issue in store
-        issues.value[existingIndex] = processIssue(issue);
+        issues.value[existingIndex] = enrichIssue(issue);
       } else {
         // Add new issue to store
-        issues.value.push(processIssue(issue));
+        issues.value.push(enrichIssue(issue));
       }
     }, 100);
 
@@ -149,7 +124,7 @@ export function useIssues<T extends ExistingIssue>(options?: {
       data,
       (newData) => {
         if (newData) {
-          issues.value = newData.map((issue) => processIssue(issue));
+          issues.value = newData.map((issue) => enrichIssue(issue));
         } else {
           issues.value = [];
         }
@@ -162,7 +137,7 @@ export function useIssues<T extends ExistingIssue>(options?: {
       legends,
       () => {
         if (issues.value.length > 0) {
-          issues.value = issues.value.map((issue) => processIssue(issue));
+          issues.value = issues.value.map((issue) => enrichIssue(issue));
         }
       },
       { deep: true }

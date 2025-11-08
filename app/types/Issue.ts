@@ -36,13 +36,17 @@ export type NewIssue = Omit<
 export type MapIssue = Pick<Issue, "id" | "title" | "geometry" | "legend">;
 
 /**
- * Lightweight issue type for admin list display
- * Contains only essential data for the admin table
+ * Server response type for admin list search endpoint
+ * Simple type without needing the full legend object
+ * Includes snippet showing context around search match
  */
-export type AdminListIssue = Pick<
-  Issue,
-  "id" | "title" | "legend_id" | "legend" | "created_at"
->;
+export type AdminListIssueResponse = {
+  id: number;
+  title: string;
+  snippet?: string;
+  legend_id: number | null;
+  created_at: string;
+};
 
 /**
  * Common field combinations for API requests

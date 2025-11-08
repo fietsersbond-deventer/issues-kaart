@@ -4,7 +4,7 @@
     <v-card class="mb-4">
       <v-card-title class="d-flex align-center" style="gap: 16px">
         <v-text-field
-          v-model="state.search"
+          v-model="search"
           label="Zoek"
           dense
           hide-details
@@ -12,19 +12,21 @@
         />
       </v-card-title>
       <v-card-text>
-        <v-data-table
-          v-model:page="state.page"
-          v-model:items-per-page="state.itemsPerPage"
-          v-model:sort-by="state.sortBy"
+        <v-data-table-server
+          v-model:page="page"
+          v-model:items-per-page="itemsPerPage"
+          v-model:sort-by="sortBy"
           :headers="headers"
-          :items="filteredIssues"
+          :items="searchResult?.items"
+          :items-length="searchResult?.total || 0"
           item-value="id"
           class="elevation-1"
           density="compact"
-          :loading="!issues.length"
+          :loading="loading"
           :row-props="lockRow"
           :items-per-page-options="[5, 10, 25, 50]"
           show-current-page
+          @update:options="onDataTableUpdate"
         >
           <template #item.title="{ item }">
             <div>
@@ -37,6 +39,12 @@
                 @focus="notifyEditing(item.id, true)"
                 @blur="notifyEditing(item.id, false)"
               />
+            </div>
+          </template>
+
+          <template #item.snippet="{ item }">
+            <div v-if="item.snippet" class="text-caption text-grey">
+              {{ item.snippet }}
             </div>
           </template>
 
@@ -120,7 +128,7 @@
                 </v-btn>
               </template>
             </div>
-          </template></v-data-table
+          </template></v-data-table-server
         >
       </v-card-text>
     </v-card>
@@ -146,73 +154,52 @@
 </template>
 
 <script setup lang="ts">
-import type { AdminListIssue } from "@/types/Issue";
+import { enrichAdminListItems } from "@/utils/enrichIssue";
 import type { Legend } from "~/types/Legend";
+
+// Type for enriched admin list items
+type EnrichedAdminItem = {
+  id: number;
+  title: string;
+  snippet?: string;
+  legend_id: number | null;
+  created_at: string;
+  legend?: Legend;
+};
 
 definePageMeta({
   title: "Gebruikers",
   middleware: ["sidebase-auth"],
 });
 
-// Use lightweight issues for admin list (only id, title, legend_id, created_at)
-const issuesStore = useIssues({
-  fields: "id,title,legend_id,created_at",
-});
-const { remove } = issuesStore;
-const { issues } = storeToRefs(issuesStore);
+const { remove } = useIssuesMethods();
 
 const locksStore = useIssueLocks();
 const { notifyEditing } = locksStore;
 const { locks } = storeToRefs(locksStore);
 
 const showDeleteDialog = ref(false);
-const loading = ref(false);
-const deleteIssue = ref<AdminListIssue | null>(null);
+const deleteIssue = ref<EnrichedAdminItem | null>(null);
 const snackbar = useSnackbar();
 const { data: availableLegends } = useFetch<Legend[]>("/api/legends");
 
-const existingIssues = computed(() => issues.value || []);
-
-// Persistent state management using Nuxt's useState
-const state = useState("admin-issues-state", () => ({
-  search: "",
-  page: 1,
-  itemsPerPage: 10,
-  sortBy: [{ key: "created_at", order: "desc" }] as {
-    key: string;
-    order: "asc" | "desc";
-  }[],
-}));
-
-// Reset pagination when search changes
-watch(
-  () => state.value.search,
-  (newSearch, oldSearch) => {
-    if (newSearch !== oldSearch) {
-      state.value.page = 1;
-    }
-  }
-);
-
-const filteredIssues = computed(() => {
-  return existingIssues.value.filter(
-    (issue) =>
-      !state.value.search ||
-      issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
-      issue.legend.name
-        ?.toLowerCase()
-        .includes(state.value.search.toLowerCase())
-  );
-});
+// Server-side data table state
+const search = ref("");
+const page = ref(1);
+const itemsPerPage = ref(10);
+const sortBy = ref<{ key: string; order: "asc" | "desc" }[]>([
+  { key: "created_at", order: "desc" },
+]);
 
 const headers = [
-  { title: "Titel", value: "title", sortable: true, width: "50%" },
-  { title: "Categorie", value: "legend_name", sortable: true },
-  { title: "Datum", value: "created_at", sortable: true },
-  { title: "Acties", value: "actions", sortable: false },
+  { title: "Titel", key: "title", sortable: true, width: "30%" },
+  { title: "Match", key: "snippet", sortable: false, width: "40%" },
+  { title: "Categorie", key: "legend_name", sortable: true },
+  { title: "Datum", key: "created_at", sortable: true },
+  { title: "Acties", key: "actions", sortable: false },
 ];
 
-function lockRow(data: { item: AdminListIssue }) {
+function lockRow(data: { item: EnrichedAdminItem }) {
   return {
     class: {
       "locked-row": !!locks.value[data.item.id],
@@ -220,7 +207,52 @@ function lockRow(data: { item: AdminListIssue }) {
   };
 }
 
-function confirmDelete(issue: AdminListIssue) {
+// Fetch data from server using useAsyncData with enrichment
+const {
+  data: searchResult,
+  pending: loading,
+  refresh,
+} = useAsyncData(
+  () => {
+    const sortColumn = sortBy.value[0]?.key || "created_at";
+    const sortOrder = sortBy.value[0]?.order || "desc";
+
+    return $fetch("/api/admin/issues/search", {
+      query: {
+        search: search.value,
+        page: page.value,
+        itemsPerPage: itemsPerPage.value,
+        sortBy: sortColumn,
+        sortOrder: sortOrder,
+      },
+    });
+  },
+  {
+    watch: [search, page, itemsPerPage, sortBy, availableLegends],
+    transform: (result) => ({
+      ...result,
+      items: enrichAdminListItems(result.items, availableLegends.value),
+    }),
+  }
+);
+
+// Handle data table changes
+function onDataTableUpdate(options: {
+  page: number;
+  itemsPerPage: number;
+  sortBy: { key: string; order: "asc" | "desc" }[];
+}) {
+  page.value = options.page;
+  itemsPerPage.value = options.itemsPerPage;
+  sortBy.value = options.sortBy;
+}
+
+// Reset page when searching
+watch(search, () => {
+  page.value = 1;
+});
+
+function confirmDelete(issue: EnrichedAdminItem) {
   deleteIssue.value = issue;
   showDeleteDialog.value = true;
 }
@@ -228,7 +260,6 @@ function confirmDelete(issue: AdminListIssue) {
 async function deleteUserConfirmed() {
   if (!deleteIssue.value) return;
 
-  loading.value = true;
   try {
     await remove(deleteIssue.value.id);
     showDeleteDialog.value = false;
@@ -236,20 +267,26 @@ async function deleteUserConfirmed() {
       `Onderwerp "${deleteIssue.value.title}" is verwijderd!`
     );
     deleteIssue.value = null;
+    await refresh(); // Reload the table
   } catch (error) {
     console.error("Error deleting issue:", error);
     snackbar.showError(
       "Er is een fout opgetreden bij het verwijderen van het onderwerp."
     );
-  } finally {
-    loading.value = false;
   }
 }
 
-async function updateIssue(issue: AdminListIssue) {
+async function updateIssue(item: EnrichedAdminItem) {
   try {
-    await update(issue.id, issue);
-    snackbar.showSuccess(`Onderwerp "${issue.title}" is bijgewerkt`);
+    // Send partial update with only the fields we changed
+    await $fetch(`/api/issues/${item.id}`, {
+      method: "PATCH",
+      body: {
+        title: item.title,
+        legend_id: item.legend_id,
+      },
+    });
+    snackbar.showSuccess(`Onderwerp "${item.title}" is bijgewerkt`);
   } catch (error) {
     console.error("Error updating issue:", error);
     snackbar.showError(
