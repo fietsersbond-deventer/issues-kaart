@@ -15,6 +15,14 @@ export default defineEventHandler(async (event) => {
   const db = getDb();
 
   /**
+   * Remove data URLs from text to avoid matching on image data
+   */
+  function cleanTextForSearch(text: string): string {
+    // Remove data:image/* and other data URLs
+    return text.replace(/data:[a-zA-Z0-9/;,=+]+/g, "");
+  }
+
+  /**
    * Create a snippet showing context around the search match
    */
   function createSnippet(
@@ -24,21 +32,24 @@ export default defineEventHandler(async (event) => {
   ): string | undefined {
     if (!text || !searchTerm) return undefined;
 
-    const lowerText = text.toLowerCase();
+    // Clean the text for searching (remove data URLs)
+    const cleanedText = cleanTextForSearch(text);
+    const lowerText = cleanedText.toLowerCase();
     const lowerSearch = searchTerm.toLowerCase();
     const index = lowerText.indexOf(lowerSearch);
 
     if (index === -1) return undefined;
 
+    // Find the match in the original text to show correct context
     const start = Math.max(0, index - contextLength);
     const end = Math.min(
-      text.length,
+      cleanedText.length,
       index + searchTerm.length + contextLength
     );
 
-    let snippet = text.substring(start, end);
+    let snippet = cleanedText.substring(start, end);
     if (start > 0) snippet = "..." + snippet;
-    if (end < text.length) snippet = snippet + "...";
+    if (end < cleanedText.length) snippet = snippet + "...";
 
     return snippet;
   }
@@ -48,6 +59,7 @@ export default defineEventHandler(async (event) => {
   const params: (string | number)[] = [];
 
   if (search) {
+    // Search in title, description (filtered for data URLs), and legend name
     whereClause += ` AND (
       LOWER(issues.title) LIKE LOWER(?) 
       OR LOWER(issues.description) LIKE LOWER(?)
@@ -106,13 +118,24 @@ export default defineEventHandler(async (event) => {
   }>;
 
   // Format the response - create snippet instead of returning full description
-  const items = rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    snippet: createSnippet(row.description, search),
-    legend_id: row.legend_id,
-    created_at: row.created_at,
-  }));
+  // Filter out false positives where match was only on data URLs
+  const items = rows
+    .map((row) => {
+      const snippet = createSnippet(row.description, search);
+      return {
+        id: row.id,
+        title: row.title,
+        snippet,
+        legend_id: row.legend_id,
+        created_at: row.created_at,
+      };
+    })
+    .filter(
+      (item) =>
+        !search ||
+        item.title.toLowerCase().includes(search.toLowerCase()) ||
+        item.snippet !== undefined
+    );
 
   return {
     items,
