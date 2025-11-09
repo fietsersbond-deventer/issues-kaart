@@ -60,12 +60,10 @@
             :text-color="getContrastColor(issue.legend.color)"
             >{{ issue.legend.name }}</v-chip
           >
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div
-            class="ql-editor viewer"
-            @click="handleImageClick"
-            v-html="issue.description"
-          />
+          <ImageViewer>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div class="ql-editor viewer" v-html="issue.description" />
+          </ImageViewer>
         </template>
       </template>
       <template v-else>
@@ -95,16 +93,6 @@
           @cancel="showEditDialog = false"
         />
       </v-dialog>
-
-      <v-dialog
-        v-model="showImageDialog"
-        :width="imageDialogWidth"
-        class="image-dialog"
-      >
-        <v-card v-if="selectedImage" class="image-card">
-          <img :src="selectedImage" class="dialog-image" />
-        </v-card>
-      </v-dialog>
     </div>
   </div>
 </template>
@@ -116,42 +104,10 @@ const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
-const showImageDialog = ref(false);
-const selectedImage = ref<string | null>(null);
-const imageDialogWidth = ref<string>("90%");
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue } = storeToRefs(useSelectedIssue());
 const { isLockedByOther } = storeToRefs(useIssueLocks());
 const { isConnected } = useConnectionStatus();
-const { mobile } = useDisplay();
-
-// Handle image clicks to open dialog
-function handleImageClick(event: MouseEvent) {
-  const target = event.target as HTMLElement;
-  if (target.tagName === "IMG" && !mobile.value) {
-    const img = target as HTMLImageElement;
-    selectedImage.value = img.src;
-
-    // Get image dimensions to adjust dialog size
-    const tempImg = new Image();
-    tempImg.onload = () => {
-      const maxWidth = window.innerWidth * 0.9;
-      const maxHeight = window.innerHeight * 0.85;
-      let dialogWidth = Math.min(tempImg.width, maxWidth);
-
-      // Adjust if height would exceed max
-      if (tempImg.height > maxHeight) {
-        const ratio = maxHeight / tempImg.height;
-        dialogWidth = Math.min(tempImg.width * ratio, maxWidth);
-      }
-
-      imageDialogWidth.value = `${Math.round(dialogWidth)}px`;
-    };
-    tempImg.src = img.src;
-
-    showImageDialog.value = true;
-  }
-}
 
 // Safe toggle function that checks connection
 function safeToggleEditing() {
@@ -229,20 +185,5 @@ definePageMeta({
 
 .desktop-layout .ql-editor.viewer img {
   cursor: pointer;
-}
-
-.image-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-height: 80vh;
-  padding: 0;
-  margin: 0;
-}
-
-.dialog-image {
-  max-width: 100%;
-  object-fit: contain;
-  display: block;
 }
 </style>
