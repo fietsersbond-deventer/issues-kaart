@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { useSnackbar } from "~/composables/useSnackbar";
 
-useSeoMeta({
-  title: "Fietsersbond Deventer - Onderwerpen",
-  description: "Onderwerpen op de kaart",
-});
-
 const { snackbar } = useSnackbar();
 </script>
 

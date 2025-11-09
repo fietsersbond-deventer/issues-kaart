@@ -30,8 +30,9 @@
 </template>
 
 <script setup lang="ts">
+const pageTitle = "Beheer";
+
 definePageMeta({
-  title: "Beheer",
   navTitle: "Beheer",
 
   middleware: [
@@ -43,5 +44,11 @@ definePageMeta({
     },
   ],
 });
+
+// Set browser tab title
+useHead({
+  title: `${pageTitle} - Fietsersbond Deventer`,
+});
+
 const { isAdmin } = useRoles();
 </script>

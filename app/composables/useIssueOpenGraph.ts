@@ -1,5 +1,3 @@
-import type { ExistingIssue, Issue } from "@/types/Issue";
-
 /**
  * Set Open Graph metadata for an issue page
  */

@@ -60,8 +60,14 @@
 </template>
 
 <script setup lang="ts">
+const pageTitle = "Wachtwoord herstellen";
+
 definePageMeta({
-  title: "Wachtwoord herstellen",
+  title: pageTitle,
+});
+
+useHead({
+  title: `${pageTitle} - Fietsersbond Deventer`,
 });
 
 const {adminName} = useRuntimeConfig().public;

@@ -38,9 +38,10 @@ import type { Legend } from "~/types/Legend";
 import type { LegendUsage } from "~/composables/useLegends";
 
 definePageMeta({
-  title: "Legenda",
   middleware: ["sidebase-auth"],
 });
+
+useTitle("Categorieën");
 
 const legendsStore = useLegends();
 const { getUsage, create, update, remove } = legendsStore;

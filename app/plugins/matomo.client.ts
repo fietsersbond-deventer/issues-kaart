@@ -40,13 +40,14 @@ export default defineNuxtPlugin(() => {
 
   document.head.appendChild(script);
 
-  window._paq.push(["trackPageView"]);
-
+  // Update title in Matomo when it changes (for dynamic pages like [id].vue)
   watch(
-    () => route.fullPath,
-    (path) => {
-      window._paq.push(["setCustomUrl", path]);
+    () => route.meta.title,
+    (newTitle) => {
+      window._paq.push(["setDocumentTitle", newTitle]);
+      window._paq.push(["setCustomUrl", route.fullPath]);
       window._paq.push(["trackPageView"]);
-    }
+    },
+    { immediate: true }
   );
 });
