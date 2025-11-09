@@ -13,8 +13,12 @@
           <LegendIndicator :legend="item" :size="24" />
         </td>
         <td class="text-body-2 text-truncate pa-2">{{ item.name }}</td>
-        <td v-if="item.description">
-          <v-tooltip :text="item.description" location="top">
+        <td>
+          <v-tooltip
+            v-if="item.description"
+            :text="item.description"
+            location="top"
+          >
             <template #activator="{ props }">
               <v-icon
                 v-bind="props"
@@ -24,6 +28,9 @@
               />
             </template>
           </v-tooltip>
+        </td>
+        <td class="ps-2 font-weight-thin">
+          {{ countIssues[item.id] }}
         </td>
       </tr>
     </v-table>
@@ -45,6 +52,15 @@ const visibleLegends = computed(() => {
       .filter((id): id is number => id != null) || []
   );
   return legends.value?.filter((legend) => usedLegendIds.has(legend.id)) ?? [];
+});
+
+const countIssues = computed(() => {
+  const counts: Record<number, number> = {};
+  issues.value.forEach((issue) => {
+    counts[issue.legend_id] = (counts[issue.legend_id] ?? 0) + 1;
+  });
+
+  return counts;
 });
 </script>
 
