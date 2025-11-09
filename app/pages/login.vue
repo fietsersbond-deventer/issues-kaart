@@ -1,13 +1,5 @@
 <script setup lang="ts">
-const pageTitle = "Inloggen";
-
-definePageMeta({
-  title: pageTitle,
-});
-
-useHead({
-  title: `${pageTitle} - Fietsersbond Deventer`,
-});
+useTitle("Inloggen");
 </script>
 
 <template>
