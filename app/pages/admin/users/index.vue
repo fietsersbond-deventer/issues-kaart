@@ -138,8 +138,10 @@
 <script setup lang="ts">
 import type { User } from "~/types/User";
 
+const pageTitle = "Gebruikers";
+
 definePageMeta({
-  title: "Gebruikers",
+  title: pageTitle,
   middleware: [
     "sidebase-auth",
     function () {
@@ -147,6 +149,11 @@ definePageMeta({
       return isAdmin.value || "/admin";
     },
   ],
+});
+
+// Set browser tab title
+useHead({
+  title: `${pageTitle} - Fietsersbond Deventer`,
 });
 
 const { users, create, update, remove } = useUsersApi();

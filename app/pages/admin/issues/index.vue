@@ -149,9 +149,16 @@
 import type { AdminListIssue } from "@/types/Issue";
 import type { Legend } from "~/types/Legend";
 
+const pageTitle = "Onderwerpen";
+
 definePageMeta({
-  title: "Gebruikers",
+  title: pageTitle,
   middleware: ["sidebase-auth"],
+});
+
+// Set browser tab title
+useHead({
+  title: `${pageTitle} - Fietsersbond Deventer`,
 });
 
 // Use lightweight issues for admin list (only id, title, legend_id, created_at)

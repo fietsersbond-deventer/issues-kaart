@@ -118,33 +118,22 @@ function safeToggleEditing() {
   toggleEditing();
 }
 
-const title = computed(() =>
-  issue.value?.title
-    ? `${issue.value.title} - Fietsersbond Deventer`
-    : "Nieuw onderwerp - Fietsersbond Deventer"
-);
-
-// Set the page title dynamically based on the issue
-useHead(() => ({
-  title: title.value,
-}));
-
 watch(issue, () => {
   if (isExistingIssue(issue.value)) {
     useIssueOpenGraph(issue.value);
   }
-  // Update Matomo tracking with new title
-  if (typeof window !== "undefined" && window._paq) {
-    window._paq.push(["setDocumentTitle", title.value]);
-    window._paq.push(["trackPageView"]);
-  }
 });
 
-// Update route meta for breadcrumbs
+// Update route meta for breadcrumbs and page title
 watch(
   () => issue.value?.title,
   (newTitle) => {
-    route.meta.title = newTitle || "Nieuw onderwerp";
+    const title = newTitle || "Nieuw onderwerp";
+    route.meta.title = title;
+    // Also update browser tab title synchronously
+    useHead({
+      title: `${title} - Fietsersbond Deventer`,
+    });
   },
   { immediate: true }
 );
@@ -167,7 +156,7 @@ onUnmounted(() => {
 // });
 
 definePageMeta({
-  title: "kaart",
+  // Title is set dynamically via route.meta.title watcher below
 });
 </script>
 
