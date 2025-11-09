@@ -222,7 +222,6 @@ You are a senior TypeScript programmer with experience in the Nuxt 4 framework a
 ### Nuxt Performance and Optimization
 
 - Use `<ClientOnly>` wrapper for components that should only render on client-side.
-- Use `<NuxtImg>` and `<NuxtPicture>` for optimized image handling (if using @nuxt/image).
 - Lazy-load components with `defineAsyncComponent()` or the `lazy` prefix.
 - Use `<NuxtLink>` instead of `<a>` for internal navigation to enable prefetching.
 - Avoid watchers when computed properties can achieve the same result.
@@ -235,15 +234,6 @@ You are a senior TypeScript programmer with experience in the Nuxt 4 framework a
 - Avoid using `onBeforeMount` or `onServerPrefetch` in SSR contexts unless necessary.
 - Clean up side effects (event listeners, intervals, WebSocket connections) in `onUnmounted`.
 - Use Nuxt hooks (e.g., `app:mounted`) sparingly and only in plugins or app-level code.
-
-### Nuxt SEO and Meta Tags
-
-- Use `useSeoMeta()` composable for SEO meta tags (preferred over `useHead()`).
-- Use `useHead()` for more complex head management (scripts, links).
-- Set page-specific meta tags in page components, not in layouts.
-- Use `definePageMeta` with `title` for simple page titles.
-- For dynamic SEO content, fetch data and set meta tags in the same component.
-- Use Open Graph and Twitter meta tags for better social media sharing.
 
 ### Nuxt Directory Structure
 

@@ -98,8 +98,6 @@
 </template>
 
 <script setup lang="ts">
-import { isExistingIssue } from "@/types/Issue";
-
 const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
@@ -118,25 +116,8 @@ function safeToggleEditing() {
   toggleEditing();
 }
 
-watch(issue, () => {
-  if (isExistingIssue(issue.value)) {
-    useIssueOpenGraph(issue.value);
-  }
-});
-
-// Update route meta for breadcrumbs and page title
-watch(
-  () => issue.value?.title,
-  (newTitle) => {
-    const title = newTitle || "Nieuw onderwerp";
-    route.meta.title = title;
-    // Also update browser tab title synchronously
-    useHead({
-      title: `${title} - Fietsersbond Deventer`,
-    });
-  },
-  { immediate: true }
-);
+const title = computed(() => issue.value?.title ?? "");
+useTitle(title);
 
 if (!id || typeof id !== "string") {
   navigateTo("/kaart");
@@ -146,17 +127,6 @@ if (!id || typeof id !== "string") {
 
 onUnmounted(() => {
   setEditing(false);
-});
-
-// watch([issue, id], ([newIssue, newId]) => {
-//   if (newId && newId !== "new" && newIssue === undefined) {
-//     // If the issue was not found, redirect to the main map page
-//     navigateTo("/kaart");
-//   }
-// });
-
-definePageMeta({
-  // Title is set dynamically via route.meta.title watcher below
 });
 </script>
 

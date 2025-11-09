@@ -1,4 +1,5 @@
 import { defineNuxtPlugin, useRoute, useRuntimeConfig, watch } from "#imports";
+import { useDebounceFn } from "@vueuse/core";
 
 declare global {
   interface Window {
@@ -40,13 +41,24 @@ export default defineNuxtPlugin(() => {
 
   document.head.appendChild(script);
 
+  const { currentTitle } = useTitle("");
+
+  // we krijgen het zetten van de title niet goed onder de knie
+  // bij nieuw issue 3 updates ??
+  // - undefined
+  // - oude titel
+  // - nieuwe titel
+  const debounced = useDebounceFn((title: string) => {
+    window._paq.push(["setDocumentTitle", title]);
+    window._paq.push(["setCustomUrl", route.fullPath]);
+    window._paq.push(["trackPageView"]);
+  }, 500);
+
   // Update title in Matomo when it changes (for dynamic pages like [id].vue)
   watch(
-    () => route.meta.title,
+    currentTitle,
     (newTitle) => {
-      window._paq.push(["setDocumentTitle", newTitle]);
-      window._paq.push(["setCustomUrl", route.fullPath]);
-      window._paq.push(["trackPageView"]);
+      debounced(newTitle as string);
     },
     { immediate: true }
   );

@@ -6,10 +6,6 @@ export function useIssueOpenGraph(issue: ExistingIssue) {
   const baseUrl = requestURL.origin;
 
   useHead(() => {
-    const title = issue.title
-      ? `${issue.title} - Fietsersbond`
-      : "Nieuw onderwerp - Fietsersbond";
-
     const description = issue.description
       ? issue.description.replace(/<[^>]*>/g, "").substring(0, 200)
       : "Bekijk dit onderwerp op de Fietsersbond kaart";

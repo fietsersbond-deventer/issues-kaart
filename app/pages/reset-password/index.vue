@@ -60,17 +60,9 @@
 </template>
 
 <script setup lang="ts">
-const pageTitle = "Wachtwoord herstellen";
+useTitle("Wachtwoord herstellen");
 
-definePageMeta({
-  title: pageTitle,
-});
-
-useHead({
-  title: `${pageTitle} - Fietsersbond Deventer`,
-});
-
-const {adminName} = useRuntimeConfig().public;
+const { adminName } = useRuntimeConfig().public;
 
 const email = ref("");
 const error = ref("");
@@ -87,8 +79,7 @@ async function handleSubmit() {
       method: "POST",
       body: { email: email.value },
     });
-    success.value =
-      `Als dit e-mailadres bij ons bekend is, ontvang je binnen enkele minuten een e-mail met instructies om je wachtwoord te resetten. Neem anders contact op met ${adminName}`;
+    success.value = `Als dit e-mailadres bij ons bekend is, ontvang je binnen enkele minuten een e-mail met instructies om je wachtwoord te resetten. Neem anders contact op met ${adminName}`;
     email.value = "";
   } catch (e) {
     console.error(e);
