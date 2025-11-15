@@ -31,7 +31,10 @@
       :visible="preferredLayer === 'Licht'"
       :base-layer="true"
     >
-      <ol-source-stadia-maps layer="alidade_smooth" />
+      <ol-source-xyz
+        url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+        attributions="&copy; CartoDB"
+      />
     </ol-tile-layer>
 
     <ol-tile-layer

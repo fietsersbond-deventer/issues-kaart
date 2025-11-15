@@ -18,7 +18,9 @@
 
           <!-- Light layer -->
           <ol-tile-layer v-if="layer.name === 'Licht'" :visible="true">
-            <ol-source-stadia-maps layer="alidade_smooth" />
+            <ol-source-xyz
+              url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+            />
           </ol-tile-layer>
 
           <!-- Cycle layer -->

@@ -31,6 +31,6 @@ rsync -avz server/database/ "$DEPLOYMENT_TARGET/server/database/"
 # ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:} && node --import tsx/esm server/database/runMigrations.ts"
 
 echo "Restarting PM2 on remote..."
-ssh "${DEPLOYMENT_TARGET%%:*}" "/home/fietsersbond/.nvm/versions/node/v22.20.0/bin/pm2 restart fietsersbond"
+ssh "${DEPLOYMENT_TARGET%%:*}" "/home/fietsersbond/.nvm/versions/node/v22.20.0/bin/pm2 restart all"
 
 echo "Deployment and restart complete."
