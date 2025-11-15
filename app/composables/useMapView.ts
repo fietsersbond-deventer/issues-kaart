@@ -16,14 +16,15 @@ export interface MapViewState {
 export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
   const { map } = useRuntimeConfig().public;
 
-  // Convert WGS84 (lat, lon) to Web Mercator (EPSG:3857) using proj4
-  const wgs84 = new proj4.Proj("EPSG:4326"); // WGS84
-  const webMercator = new proj4.Proj("EPSG:3857"); // Web Mercator
+  // Parse the string values from env to numbers at runtime
+  const centerLat = parseFloat(String(map.centerLat));
+  const centerLon = parseFloat(String(map.centerLon));
+  const initialZoom = parseInt(String(map.initialZoom));
 
-  const [centerX, centerY] = proj4(wgs84, webMercator, [
-    map.centerLon,
-    map.centerLat,
-  ]);
+  // Convert WGS84 (lat, lon) to Web Mercator (EPSG:3857) using proj4
+  const converter = proj4("EPSG:4326", "EPSG:3857");
+  const [centerX, centerY] = converter.forward([centerLon, centerLat]);
+  
   const center = ref<[number, number]>([centerX, centerY]);
   const zoom = ref(map.initialZoom);
   const rotation = ref(0);
@@ -39,14 +40,13 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
       return;
     }
 
-    // Set initial values
-    const initialCenter = view.getCenter();
-    const initialZoom = view.getZoom();
-    const initialRotation = view.getRotation();
-
-    if (initialCenter) center.value = initialCenter as [number, number];
-    if (initialZoom !== undefined) zoom.value = initialZoom;
-    if (initialRotation !== undefined) rotation.value = initialRotation;
+    // Set the initial center from config - don't overwrite with view's center
+    view.setCenter([centerX, centerY]);
+    view.setZoom(initialZoom);
+    
+    // Get initial rotation from view (but not center/zoom - we just set those)
+    const viewRotation = view.getRotation();
+    if (viewRotation !== undefined) rotation.value = viewRotation;
 
     // Separate listeners for different types of changes
     const updateCenter = useThrottleFn(() => {
