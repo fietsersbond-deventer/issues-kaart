@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useSnackbar } from "~/composables/useSnackbar";
 
-const { snackbar, hide } = useSnackbar();
+const { snackbar } = useSnackbar();
+
+// Initialize issue notifications
+useIssueNotifications();
 </script>
 
 <template>
@@ -24,12 +27,11 @@ const { snackbar, hide } = useSnackbar();
         <!-- Persistent alert for delete notifications -->
         <v-alert
           v-if="snackbar.timeout === -1"
-          :model-value="snackbar.show"
+          v-model="snackbar.show"
           :type="snackbar.color === 'info' ? 'info' : 'warning'"
           closable
           class="position-fixed"
           style="bottom: 16px; left: 16px; max-width: 400px; z-index: 1000"
-          @close="hide"
         >
           {{ snackbar.text }}
         </v-alert>

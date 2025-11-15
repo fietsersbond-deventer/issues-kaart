@@ -1,6 +1,6 @@
 import type { WebSocketPeer } from "#nitro";
 import { defineWebSocketHandler } from "#nitro";
-import type { ExistingIssue } from "~/types/Issue";
+import type { Issue } from "~/types/Issue";
 import type { WebSocketEvents } from "~/types/WebSocketMessages";
 import { getEmitter } from "~~/server/utils/getEmitter";
 
@@ -16,43 +16,50 @@ function createNotifyMessage<T extends keyof WebSocketEvents>(
 const peerListeners = new WeakMap<
   WebSocketPeer,
   {
-    onCreated: (issue: ExistingIssue) => void;
-    onModified: (issue: ExistingIssue) => void;
-    onDeleted: (issueId: number) => void;
+    onCreated: (issue: Issue & { createdBy: string; createdByUserId: number }) => void;
+    onModified: (issue: Issue & { modifiedBy: string; modifiedByUserId: number }) => void;
+    onDeleted: (data: { id: number; title: string; deletedBy: string; deletedByUserId: number }) => void;
   }
 >();
+
+// Keep track of all connected peers for broadcasting
+const connectedPeers = new Set<WebSocketPeer>();
 
 export default defineWebSocketHandler({
   open(peer: WebSocketPeer) {
     console.log(`[ws/notify] Connection opened: ${peer.toString()}`);
-
-    peer.subscribe("notify");
+    connectedPeers.add(peer);
 
     const emitter = getEmitter();
 
     // Create listener functions
-    const onCreated = (issue: ExistingIssue) => {
+    const onCreated = (issue: Issue & { createdBy: string; createdByUserId: number }) => {
       console.log(
         "[ws/notify] Emitting issue:created event for issue ID:",
         issue.id
       );
-      peer.publish("notify", createNotifyMessage("issue-created", issue));
+      const message = createNotifyMessage("issue-created", issue);
+      connectedPeers.forEach((p) => p.send(message));
     };
 
-    const onModified = (issue: ExistingIssue) => {
+    const onModified = (issue: Issue & { modifiedBy: string; modifiedByUserId: number }) => {
       console.log(
         "[ws/notify] Emitting issue:modified event for issue ID:",
         issue.id
       );
-      peer.publish("notify", createNotifyMessage("issue-modified", issue));
+      const message = createNotifyMessage("issue-modified", issue);
+      connectedPeers.forEach((p) => p.send(message));
     };
 
-    const onDeleted = (issueId: number) => {
+    const onDeleted = (data: { id: number; title: string; deletedBy: string; deletedByUserId: number }) => {
       console.log(
         "[ws/notify] Emitting issue:deleted event for issue ID:",
-        issueId
+        data.id,
+        "deleted by:",
+        data.deletedBy
       );
-      peer.publish("notify", createNotifyMessage("issue-deleted", issueId));
+      const message = createNotifyMessage("issue-deleted", data);
+      connectedPeers.forEach((p) => p.send(message));
     };
 
     // Store listeners for this peer
@@ -66,6 +73,7 @@ export default defineWebSocketHandler({
 
   close(peer: WebSocketPeer) {
     console.log(`[ws/notify] Connection closed: ${peer.toString()}`);
+    connectedPeers.delete(peer);
 
     // Clean up event listeners for this peer
     const listeners = peerListeners.get(peer);

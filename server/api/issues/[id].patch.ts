@@ -98,6 +98,17 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found after update`,
     });
   }
-  eventEmitter.emit("issue:modified", row);
+  
+  // Get user info for notification
+  const user = event.context.user;
+  const modifiedBy = user?.name || user?.username || "Onbekend";
+  const modifiedByUserId = user?.id || 0;
+  
+  // Emit with user info
+  eventEmitter.emit("issue:modified", { 
+    ...row, 
+    modifiedBy,
+    modifiedByUserId,
+  });
   return row;
 });
