@@ -302,8 +302,7 @@ const isDrawing = computed(() => {
   return addFeature.value?.isDrawing || false;
 });
 
-const center = ref([687858.9021986299, 6846820.48790154]);
-const { zoom } = useMapView(mapRef);
+const { center, zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes

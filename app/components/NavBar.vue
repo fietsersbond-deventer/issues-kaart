@@ -8,13 +8,13 @@
         max-height="40"
         class="ml-4"
       />
-      <div class="header-link ml-3">Fietsersbond Deventer onderwerpen</div>
+      <div class="header-link ml-3">{{ headerText }}</div>
     </NuxtLink>
     <v-spacer />
 
     <!-- Show online users when authenticated -->
     <template v-if="status === 'authenticated'">
-      <OnlineUsers :avatar-size="28" :max-avatars="4" :show-text class="mr-4" />
+      <OnlineUsers :avatar-size="28" :max-avatars="4" class="mr-4" />
       <v-btn
         v-tooltip:top="'Nieuw onderwerp toevoegen'"
         to="/kaart/new"
@@ -36,14 +36,14 @@
     </template>
     <template v-else>
       <v-btn
-        v-tooltip:top="'Deventer Fietsersbond'"
-        href="https://deventer.fietsersbond.nl/"
+        :v-tooltip:top="organizationTooltip"
+        :href="organization.website"
         variant="text"
         icon="mdi-home"
       />
       <v-btn
         v-tooltip:top="'Contact'"
-        href="https://deventer.fietsersbond.nl/contact/contact-met-de-afdeling/"
+        :href="organization.contactUrl"
         variant="text"
         icon="mdi-email"
       />
@@ -61,6 +61,15 @@
 import { NuxtLink } from "#components";
 
 const { status, signOut } = useAuth();
+const { organization } = useRuntimeConfig().public;
+
+const headerText = computed(() => {
+  return `${organization.name} ${organization.shortName}`;
+});
+
+const organizationTooltip = computed(() => {
+  return organization.name;
+});
 
 async function handleLogout() {
   await signOut({ callbackUrl: "/" });

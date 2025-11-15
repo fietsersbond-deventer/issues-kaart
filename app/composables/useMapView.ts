@@ -1,6 +1,7 @@
 import type { Map } from "ol";
 import type { Ref } from "vue";
 import { useThrottleFn } from "@vueuse/core";
+import proj4 from "proj4";
 
 export interface MapViewState {
   center: [number, number];
@@ -13,8 +14,18 @@ export interface MapViewState {
  * @param mapRef - Template ref to the ol-map component
  */
 export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
-  const center = ref<[number, number]>([687858.9021986299, 6846820.48790154]);
-  const zoom = ref(13);
+  const { map } = useRuntimeConfig().public;
+
+  // Convert WGS84 (lat, lon) to Web Mercator (EPSG:3857) using proj4
+  const wgs84 = new proj4.Proj("EPSG:4326"); // WGS84
+  const webMercator = new proj4.Proj("EPSG:3857"); // Web Mercator
+
+  const [centerX, centerY] = proj4(wgs84, webMercator, [
+    map.centerLon,
+    map.centerLat,
+  ]);
+  const center = ref<[number, number]>([centerX, centerY]);
+  const zoom = ref(map.initialZoom);
   const rotation = ref(0);
 
   // Try to get map from injection first, then from mapRef parameter

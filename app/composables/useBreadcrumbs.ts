@@ -4,12 +4,13 @@ import { useRoute, useRouter } from "vue-router";
 export function useBreadcrumbs() {
   const route = useRoute();
   const router = useRouter();
+  const { organization } = useRuntimeConfig().public;
 
   const breadcrumbs = computed(() => {
     const pathArray = route.path.split("/").filter(Boolean);
     const items = [
       {
-        title: "Deventer onderwerpen",
+        title: `${organization.name} ${organization.shortName}`,
         disabled: route.path === "/",
         to: "/",
       },

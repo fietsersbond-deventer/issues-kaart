@@ -28,6 +28,34 @@ export default defineNuxtConfig({
     },
     public: {
       adminName: process.env.NUXT_PUBLIC_ADMIN_NAME || "Admin",
+      // Organisatie configuratie
+      organization: {
+        name:
+          process.env.NUXT_PUBLIC_ORGANIZATION_NAME || "Fietsersbond Afdeling",
+        shortName:
+          process.env.NUXT_PUBLIC_ORGANIZATION_SHORT_NAME || "Onderwerpen",
+        website:
+          process.env.NUXT_PUBLIC_ORGANIZATION_WEBSITE ||
+          "https://example.fietsersbond.nl/",
+        contactUrl:
+          process.env.NUXT_PUBLIC_ORGANIZATION_CONTACT_URL ||
+          "https://example.fietsersbond.nl/contact/",
+        githubRepoUrl:
+          process.env.NUXT_PUBLIC_GITHUB_REPO_URL ||
+          "https://github.com/organization/repo",
+      },
+      // Kaart configuratie
+      map: {
+        centerLat: parseFloat(
+          process.env.NUXT_PUBLIC_MAP_CENTER_LAT || "52.2511467"
+        ),
+        centerLon: parseFloat(
+          process.env.NUXT_PUBLIC_MAP_CENTER_LON || "6.1574997"
+        ),
+        initialZoom: parseInt(process.env.NUXT_PUBLIC_MAP_INITIAL_ZOOM || "13"),
+        searchBbox:
+          process.env.NUXT_PUBLIC_MAP_SEARCH_BBOX || "6.0,52.1,6.3,52.4",
+      },
       matomo: {
         // Alleen site ID is nodig in de client
         siteId: process.env.NUXT_PUBLIC_MATOMO_SITE_ID || "",

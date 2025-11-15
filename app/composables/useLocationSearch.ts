@@ -67,8 +67,13 @@ export interface SearchProvider {
  */
 export class PhotonSearchProvider implements SearchProvider {
   private readonly baseUrl = "https://photon.komoot.io/api/";
-  private readonly biasLat = "52.2511467"; // Deventer
-  private readonly biasLon = "6.1574997"; // Deventer
+  private readonly biasLat: string;
+  private readonly biasLon: string;
+
+  constructor(biasLat: string, biasLon: string) {
+    this.biasLat = biasLat;
+    this.biasLon = biasLon;
+  }
 
   async search(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
     const params = new URLSearchParams({
