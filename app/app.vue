@@ -38,6 +38,7 @@ useIssueNotifications();
 
         <!-- Regular snackbar for auto-dismiss notifications -->
         <v-snackbar
+          v-if="snackbar.timeout !== -1"
           v-model="snackbar.show"
           :color="snackbar.color"
           :timeout="snackbar.timeout"

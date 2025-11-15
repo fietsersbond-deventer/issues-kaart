@@ -1,7 +1,7 @@
 <template>
   <div class="pa-4 d-flex flex-column" style="height: 100%; position: relative">
     <div class="flex-grow-1">
-      <h1 class="text-h4 mb-4">Welkom bij de Fietsersbond Deventer</h1>
+      <h1 class="text-h4 mb-4">{{ welcomeTitle }}</h1>
       <v-card variant="flat" class="mb-4 pa-4">
         <p class="text-body-1 mb-4">
           Deze kaart toont alle onderwerpen waar we ons mee bezig houden.
@@ -23,5 +23,11 @@
   </div>
 </template>
 <script setup lang="ts">
+const { organization } = useRuntimeConfig().public;
+
+const welcomeTitle = computed(() => {
+  return `Welkom bij de ${organization.name}`;
+});
+
 useTitle("Welkom");
 </script>
