@@ -9,8 +9,6 @@ Deze TODO lijst beschrijft alle stappen om de Fietsersbond Deventer app generiek
 - Organisatie naam "Fietsersbond Deventer" in meerdere bestanden
 - Welkomtekst "Welkom bij de Fietsersbond Deventer"
 - Site titles, descriptions, Open Graph metadata
-- Logo bestanden: `/fietsersbond-logo.webp`, `/fietsersbond.jpeg`
-- GitHub repository links naar `fietsersbond-deventer`
 
 ### Geografische Configuratie
 
@@ -54,41 +52,19 @@ NUXT_PUBLIC_MAP_CENTER_LAT=52.2511467
 NUXT_PUBLIC_MAP_INITIAL_ZOOM=13
 NUXT_PUBLIC_MAP_SEARCH_BBOX="6.0,52.1,6.3,52.4"
 
-# ====== BRANDING ======
-NUXT_PUBLIC_LOGO_PATH="/logo.webp"
-NUXT_PUBLIC_LOGO_ALT="Logo"
-NUXT_PUBLIC_FAVICON_PATH="/favicon.ico"
-```
 
 ### Stap 2: Nuxt Config Aanpassen
 
 #### `nuxt.config.ts` uitbreiden
 
 - Alle nieuwe environment variabelen toevoegen aan `runtimeConfig.public`
-- Favicon path configurabel maken
 - Type conversies toevoegen voor numerieke waarden
 
 ### Stap 3: Composables Aanpassen
 
-#### `app/composables/useLocationSearch.ts`
-
-- `biasLat` en `biasLon` vervangen door config waarden
-- `viewbox` configurabel maken
-- `deventerCoords` vervangen door config waarden
-- Hardcoded coördinaten in sorteerfunctie vervangen
-
 #### `app/composables/useMapView.ts`
 
 - Hardcoded center coördinaten vervangen door config waarden
-
-#### `app/composables/useIssueOpenGraph.ts`
-
-- Hardcoded "Fietsersbond" vervangen door config organisatie naam
-- Site name configurabel maken
-
-#### `app/composables/useBreadcrumbs.ts`
-
-- "Deventer onderwerpen" vervangen door config waarde
 
 ### Stap 4: Components Aanpassen
 
@@ -117,49 +93,4 @@ NUXT_PUBLIC_FAVICON_PATH="/favicon.ico"
 
 #### `app/pages/kaart/[id].vue`
 
-- Page titles configurabel maken
-
-### Stap 6: Deployment & Infrastructure
-
-#### `deploy.sh`
-
-- PM2 app naam configurabel maken
-- Hardcoded paths vervangen door variabelen
-- User path `/home/fietsersbond/` configurabel maken
-
-#### `ecosystem.config.example.cjs`
-
-- App naam configurabel maken
-- Database path placeholder generiek maken
-
-### Stap 9: Configuration Helper
-
-#### Nieuwe bestanden toevoegen
-
-- `config/organization.example.json` - Voorbeeld configuratie
-- `scripts/setup-organization.js` - Script om configuratie te valideren
-- `docs/CONFIGURATION.md` - Uitgebreide configuratie handleiding
-
----
-
-## 🎯 Resultaat
-
-Na het uitvoeren van alle stappen kunnen nieuwe afdelingen:
-
-1. **Repository clonen**
-2. **`.env` bestand aanmaken** met hun specifieke waarden
-3. **Logo bestanden vervangen** in `/public/`
-4. **Database migraties uitvoeren**
-5. **App starten**
-
-De app zal dan volledig branded zijn voor hun organisatie zonder code wijzigingen.
-
----
-
-## 📝 Extra Overwegingen
-
-### Automated Setup (Optioneel)
-
-- CLI tool voor eerste setup
-- Docker container met environment setup
-- GitHub template repository maken
+```

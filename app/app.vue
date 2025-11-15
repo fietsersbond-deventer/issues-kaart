@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSnackbar } from "~/composables/useSnackbar";
 
-const { snackbar } = useSnackbar();
+const { snackbar, hide } = useSnackbar();
 </script>
 
 <template>
@@ -21,7 +21,22 @@ const { snackbar } = useSnackbar();
 
         <NuxtPage />
 
+        <!-- Persistent alert for delete notifications -->
+        <v-alert
+          v-if="snackbar.timeout === -1"
+          :model-value="snackbar.show"
+          :type="snackbar.color === 'info' ? 'info' : 'warning'"
+          closable
+          class="position-fixed"
+          style="bottom: 16px; left: 16px; max-width: 400px; z-index: 1000"
+          @close="hide"
+        >
+          {{ snackbar.text }}
+        </v-alert>
+
+        <!-- Regular snackbar for auto-dismiss notifications -->
         <v-snackbar
+          v-if="snackbar.timeout !== -1"
           v-model="snackbar.show"
           :color="snackbar.color"
           :timeout="snackbar.timeout"

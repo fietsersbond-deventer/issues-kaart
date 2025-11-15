@@ -19,18 +19,32 @@ export default defineNuxtConfig({
   runtimeConfig: {
     matomo: {
       // Basis configuratie - leeg betekent Matomo is uitgeschakeld
-      url: process.env.MATOMO_URL || "",
+      url: process.env.MATOMO_URL,
       // Server-side paths
-      trackerUrl: process.env.MATOMO_TRACKER_URL || "",
-      scriptUrl: process.env.MATOMO_SCRIPT_URL || "",
+      trackerUrl: process.env.MATOMO_TRACKER_URL,
+      scriptUrl: process.env.MATOMO_SCRIPT_URL,
       // Auth token voor API toegang
-      authToken: process.env.MATOMO_AUTH_TOKEN || "",
+      authToken: process.env.MATOMO_AUTH_TOKEN,
     },
     public: {
-      adminName: process.env.NUXT_PUBLIC_ADMIN_NAME || "Admin",
+      adminName: "",
+      // Organisatie configuratie
+      organization: {
+        name: "",
+        shortName: "",
+        website: "",
+        contactUrl: "",
+        githubRepoUrl: "",
+      },
+      // Kaart configuratie
+      map: {
+        centerLat: "",
+        centerLon: "",
+        initialZoom: "",
+        searchBbox: "",
+      },
       matomo: {
-        // Alleen site ID is nodig in de client
-        siteId: process.env.NUXT_PUBLIC_MATOMO_SITE_ID || "",
+        siteId: "",
       },
     },
     isProduction: process.env.NODE_ENV === "production",

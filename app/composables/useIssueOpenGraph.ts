@@ -1,14 +1,18 @@
+import type { Issue } from "~/types/Issue";
+
 /**
  * Set Open Graph metadata for an issue page
  */
-export function useIssueOpenGraph(issue: ExistingIssue) {
+export function useIssueOpenGraph(issue: Issue) {
   const requestURL = useRequestURL();
   const baseUrl = requestURL.origin;
+  const { organization } = useRuntimeConfig().public;
 
   useHead(() => {
+    const title = issue.title || "Onderwerp";
     const description = issue.description
       ? issue.description.replace(/<[^>]*>/g, "").substring(0, 200)
-      : "Bekijk dit onderwerp op de Fietsersbond kaart";
+      : "Bekijk dit onderwerp op de kaart";
 
     const url = `${baseUrl}/kaart/${issue.id}`;
     const imageUrl = issue.imageUrl;
@@ -19,7 +23,7 @@ export function useIssueOpenGraph(issue: ExistingIssue) {
       { property: "og:description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:url", content: url },
-      { property: "og:site_name", content: "Fietsersbond Deventer" },
+      { property: "og:site_name", content: organization.name },
       { name: "description", content: description },
     ];
 
