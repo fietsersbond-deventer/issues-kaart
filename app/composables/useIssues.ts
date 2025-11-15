@@ -2,16 +2,16 @@ import { defineStore } from "pinia";
 import {
   isExistingIssue,
   isNewIssue,
-  type ExistingIssue,
   type Issue,
 } from "@/types/Issue";
+import type { WebSocketMessage } from "@/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
 /**
  * Issues store with optional field selection
  * Use the fields option to request specific fields and reduce payload size
  */
-export function useIssues<T extends ExistingIssue>(options?: {
+export function useIssues(options?: {
   fields?: string;
 }) {
   const fields = options?.fields;
@@ -20,14 +20,9 @@ export function useIssues<T extends ExistingIssue>(options?: {
   return defineStore(storeName, () => {
     const ws = useSharedIssuesWebSocket();
     const issues = ref<Issue[]>([]);
-    const snackbar = useSharedSnackbar();
 
     // Get legends for enriching issues
     const { legends } = storeToRefs(useLegends());
-
-    // Check if user is authenticated (only show notifications to editors)
-    const { status } = useAuth();
-    const isAuthenticated = computed(() => status.value === "authenticated");
 
     const fetchOptions = fields ? { query: { fields } } : {};
     const { data, refresh: refreshIssues } = useFetch<Issue[]>(
@@ -55,59 +50,34 @@ export function useIssues<T extends ExistingIssue>(options?: {
     }
 
     // Subscribe to WebSocket messages
-    const unsubscribe = ws.subscribe((parsed) => {
-      console.debug(
-        `[useIssues(${storeName})] Received WS message:`,
-        parsed.type
-      );
+    const unsubscribe = ws.subscribe((parsed: WebSocketMessage) => {
 
       switch (parsed.type) {
         case "issue-created": {
           const issue = processIssue(parsed.payload as Issue);
-          issues.value.push(issue as ExistingIssue);
-          if (isAuthenticated.value) {
-            snackbar.showMessageOnce(`Onderwerp ${issue.title} aangemaakt`);
+          issues.value.push(issue);
+          break;
+        }
+        case "issue-modified": {
+          const issue = processIssue(parsed.payload as Issue);
+          const existingIndex = issues.value.findIndex(
+            (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined)
+          );
+
+          if (existingIndex !== -1) {
+            issues.value[existingIndex] = issue;
+          } else {
+            issues.value.push(issue);
           }
           break;
         }
-        case "issue-modified":
-          {
-            const issue = processIssue(parsed.payload as Issue);
-            const existingIndex = issues.value.findIndex(
-              (i) => "id" in i && i.id === (issue as ExistingIssue).id
-            );
+        case "issue-deleted": {
+          const payload = (parsed as WebSocketMessage<"issue-deleted">).payload;
+          const issueId = payload.id;
 
-            console.debug(
-              `[useIssues(${storeName})] issue-modified - Found at index:`,
-              existingIndex,
-              "Updating with:",
-              issue
-            );
-
-            if (existingIndex !== -1) {
-              issues.value[existingIndex] = issue;
-              if (isAuthenticated.value) {
-                snackbar.showMessageOnce(`Onderwerp ${issue.title} gewijzigd`);
-              }
-            } else {
-              issues.value.push(issue);
-              if (isAuthenticated.value) {
-                snackbar.showMessageOnce(`Onderwerp ${issue.title} aangemaakt`);
-              }
-            }
-          }
+          issues.value = issues.value.filter((i) => i.id !== issueId);
           break;
-        case "issue-deleted":
-          {
-            const issueId = parsed.payload as number;
-            issues.value = issues.value.filter(
-              (i) => !("id" in i) || i.id !== issueId
-            );
-            if (isAuthenticated.value) {
-              snackbar.showMessageOnce(`Onderwerp ${issueId} verwijderd`);
-            }
-          }
-          break;
+        }
         default:
           console.debug("Unknown WebSocket message type:", parsed.type);
       }

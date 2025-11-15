@@ -65,6 +65,17 @@ export default defineEventHandler(async (event) => {
       message: "Failed to fetch created issue",
     });
   }
-  eventEmitter.emit("issue:created", row);
+  
+  // Get user info for notification
+  const user = event.context.user;
+  const createdBy = user?.name || user?.username || "Onbekend";
+  const createdByUserId = user?.id || 0;
+  
+  // Emit with user info
+  eventEmitter.emit("issue:created", { 
+    ...row, 
+    createdBy,
+    createdByUserId,
+  });
   return row;
 });

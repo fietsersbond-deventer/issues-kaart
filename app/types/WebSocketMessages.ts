@@ -1,6 +1,6 @@
 // Shared WebSocket message types for both client and server
 
-import type { ExistingIssue } from "./Issue";
+import type { Issue } from "./Issue";
 
 export interface OnlineUser {
   peerId: string;
@@ -47,9 +47,14 @@ export interface WebSocketEvents {
   "peer-connected": string; // peer ID
 
   // Issue notification messages
-  "issue-created": ExistingIssue;
-  "issue-modified": ExistingIssue;
-  "issue-deleted": number; // issue ID
+  "issue-created": Issue & { createdBy: string; createdByUserId: number };
+  "issue-modified": Issue & { modifiedBy: string; modifiedByUserId: number };
+  "issue-deleted": {
+    id: number;
+    title: string;
+    deletedBy: string;
+    deletedByUserId: number;
+  };
 }
 
 // Generic message structure
