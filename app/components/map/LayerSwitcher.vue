@@ -46,7 +46,6 @@
 </template>
 
 <script setup lang="ts">
-
 const selectedLayer = defineModel<string>();
 
 // Use the map view composable to sync with main map
