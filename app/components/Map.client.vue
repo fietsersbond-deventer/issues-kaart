@@ -2,7 +2,6 @@
   <ol-map
     ref="mapRef"
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
-    :controls="[]"
   >
     <ol-view ref="view" :center="center" :projection="projection" />
 
@@ -119,6 +118,8 @@
           @modifyend="onModifyEnd"
         /> </ol-source-vector
     ></ol-vector-layer>
+
+    <ol-attribution-control collapsible />
 
     <MapTooltip :is-drawing />
 
@@ -604,13 +605,6 @@ defineExpose({
 </style>
 
 <style>
-/* Hide attribution when map is small - using global style */
-.map-small .ol-attribution,
-.map-small .ol-attribution.ol-uncollapsible,
-.map-small .ol-control.ol-attribution {
-  display: none !important;
-}
-
 .map-icon-container {
   width: 32px;
   height: 32px;
