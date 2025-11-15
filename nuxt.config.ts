@@ -19,12 +19,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     matomo: {
       // Basis configuratie - leeg betekent Matomo is uitgeschakeld
-      url: "",
+      url: process.env.MATOMO_URL,
       // Server-side paths
-      trackerUrl: "",
-      scriptUrl: "",
+      trackerUrl: process.env.MATOMO_TRACKER_URL,
+      scriptUrl: process.env.MATOMO_SCRIPT_URL,
       // Auth token voor API toegang
-      authToken: "",
+      authToken: process.env.MATOMO_AUTH_TOKEN,
     },
     public: {
       adminName: "",
@@ -44,7 +44,6 @@ export default defineNuxtConfig({
         searchBbox: "",
       },
       matomo: {
-        // Alleen site ID is nodig in de client
         siteId: "",
       },
     },
