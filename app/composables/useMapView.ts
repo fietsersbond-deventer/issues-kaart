@@ -24,7 +24,7 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
   // Convert WGS84 (lat, lon) to Web Mercator (EPSG:3857) using proj4
   const converter = proj4("EPSG:4326", "EPSG:3857");
   const [centerX, centerY] = converter.forward([centerLon, centerLat]);
-  
+
   const center = ref<[number, number]>([centerX, centerY]);
   const zoom = ref(map.initialZoom);
   const rotation = ref(0);
@@ -43,7 +43,7 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
     // Set the initial center from config - don't overwrite with view's center
     view.setCenter([centerX, centerY]);
     view.setZoom(initialZoom);
-    
+
     // Get initial rotation from view (but not center/zoom - we just set those)
     const viewRotation = view.getRotation();
     if (viewRotation !== undefined) rotation.value = viewRotation;

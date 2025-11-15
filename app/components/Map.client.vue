@@ -4,7 +4,12 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view ref="view" :center="center" :zoom="zoom" :projection="projection" />
+    <ol-view
+      ref="view"
+      :center="center"
+      :zoom="zoom"
+      :projection="projection"
+    />
 
     <!-- Top-left corner controls -->
     <slot name="top-left-controls">
