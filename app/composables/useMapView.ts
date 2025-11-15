@@ -26,8 +26,8 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
   const [centerX, centerY] = converter.forward([centerLon, centerLat]);
 
   const center = ref<[number, number]>([centerX, centerY]);
-  const zoom = ref(map.initialZoom);
-  const rotation = ref(0);
+  const zoom = ref<number>(initialZoom);
+  const rotation = ref<number>(0);
 
   // Try to get map from injection first, then from mapRef parameter
   let olMap = inject<Map | null>("map", null);
@@ -40,13 +40,9 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
       return;
     }
 
-    // Set the initial center from config - don't overwrite with view's center
+    // Set the initial values from config
     view.setCenter([centerX, centerY]);
     view.setZoom(initialZoom);
-
-    // Get initial rotation from view (but not center/zoom - we just set those)
-    const viewRotation = view.getRotation();
-    if (viewRotation !== undefined) rotation.value = viewRotation;
 
     // Separate listeners for different types of changes
     const updateCenter = useThrottleFn(() => {

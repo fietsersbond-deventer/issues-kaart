@@ -4,12 +4,7 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view
-      ref="view"
-      :center="center"
-      :zoom="zoom"
-      :projection="projection"
-    />
+    <ol-view ref="view" :center="center" :projection="projection" />
 
     <!-- Top-left corner controls -->
     <slot name="top-left-controls">
@@ -264,24 +259,18 @@ const { mobile } = useDisplay();
 // useMapBounds(mapRef);
 
 watch([view, allIssues, selectedIssue], () => {
-  if (!view.value) return;
-
-  if (allIssues.value.length > 0) {
-    // If there are issues, zoom to them
+  if (view.value && allIssues.value.length > 0) {
+    // If there's a selected issue with geometry, zoom to it
     if (selectedIssue.value?.geometry) {
       recenterOnSelectedIssue();
       firstLoad.value = false;
     } else {
       // Otherwise, fit all issues (including filtered ones for initial view)
       const bbox = issuesBbox.value;
-      if (bbox) {
-        setBbox(bbox);
-      }
+      if (!bbox) return;
+      setBbox(bbox);
       firstLoad.value = false;
     }
-  } else if (firstLoad.value) {
-    // No issues yet - zoom to default center/bounds
-    firstLoad.value = false;
   }
 });
 
@@ -313,7 +302,8 @@ const isDrawing = computed(() => {
   return addFeature.value?.isDrawing || false;
 });
 
-const { center, zoom } = useMapView(mapRef);
+const center = ref([687858.9021986299, 6846820.48790154]);
+const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
