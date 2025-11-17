@@ -2,6 +2,7 @@
   <ol-map
     ref="mapRef"
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
+    :controls="[]"
   >
     <ol-view ref="view" :center="center" :projection="projection" />
 
@@ -119,7 +120,7 @@
         /> </ol-source-vector
     ></ol-vector-layer>
 
-    <ol-attribution-control collapsible />
+    <ol-attribution-control :collapsible="mobile" />
 
     <MapTooltip :is-drawing />
 
