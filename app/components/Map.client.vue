@@ -45,7 +45,7 @@
     >
       <ol-source-xyz
         url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
-        attributions='&copy; <a href="http://opencyclemap.org">OpenCycleMap</a>'
+        attributions='&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="http://opencyclemap.org">OpenCycleMap</a>'
       />
     </ol-tile-layer>
 
