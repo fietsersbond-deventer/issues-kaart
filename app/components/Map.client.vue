@@ -33,7 +33,7 @@
     >
       <ol-source-xyz
         url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
-        attributions="&copy; CartoDB"
+        attributions='© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href= "https://carto.com/about-carto/">CARTO</a>'
       />
     </ol-tile-layer>
 
