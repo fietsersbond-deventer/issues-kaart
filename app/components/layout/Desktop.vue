@@ -1,6 +1,9 @@
 <template>
   <v-layout class="desktop-layout">
-    <v-main class="map-main" :style="{ width: 'calc(100% - 600px)' }">
+    <v-main
+      class="map-main"
+      :style="{ width: `calc(100% - ${drawerWidth}px)` }"
+    >
       <Map class="fill-height">
         <!-- Use default slot content for desktop -->
       </Map>
@@ -8,7 +11,7 @@
 
     <v-navigation-drawer
       location="right"
-      width="600"
+      :width="drawerWidth"
       app
       disable-route-watcher
       persistent
@@ -21,6 +24,25 @@
     </v-navigation-drawer>
   </v-layout>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
+
+const drawerWidth = ref(600);
+
+const updateDrawerWidth = () => {
+  drawerWidth.value = Math.min(window.innerWidth * 0.5, 600);
+};
+
+onMounted(() => {
+  updateDrawerWidth();
+  window.addEventListener("resize", updateDrawerWidth);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updateDrawerWidth);
+});
+</script>
 
 <style scoped>
 .desktop-layout {

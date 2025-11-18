@@ -106,7 +106,7 @@ export default defineNuxtConfig({
         messages: { nl },
       },
       display: {
-        mobileBreakpoint: "lg",
+        mobileBreakpoint: "sm",
       },
       theme: {
         defaultTheme: "light",

@@ -222,25 +222,25 @@ watch(legendSize, async () => {
   ];
 });
 
-const mapRef = useTemplateRef("mapRef");
-
 function setBbox(bbox: BBox, options: FitOptions = {}) {
   if (!view.value) return;
-  const padding = options.padding || currentPadding.value;
-  view.value.fit(bbox, { ...options, padding });
-}
+  view.value.fit(bbox, {
+    easing: easeOut,
+    duration: 1000,
 
-const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
+    padding: currentPadding.value,
+    ...options,
+  });
+}
 
 function resetToOriginalExtent() {
   if (!allIssues.value || allIssues.value.length === 0) return;
 
-  if (!issuesBbox.value) return;
+  const bbox = issuesBbox.value;
+  if (!bbox) return;
 
   setBbox(issuesBbox.value, {
     padding: [50, 50, 50, 50],
-    easing: easeOut,
-    duration: 1000,
   });
 }
 
@@ -254,9 +254,13 @@ function updatePadding(controlsSize: Size) {
 }
 
 const view = useTemplateRef("view");
+const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
 
 const { mobile } = useDisplay();
+
+// Initialize bbox composable with mapRef
+const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
 
 // Use the map bounds composable to track bounding box changes
 // useMapBounds(mapRef);
@@ -287,7 +291,6 @@ watch(
     } else if (issuesBbox?.value) {
       setBbox(issuesBbox.value as BBox, {
         padding: [50, 50, 50, 50],
-        duration: 800, // Smooth animation
       });
     }
   },
