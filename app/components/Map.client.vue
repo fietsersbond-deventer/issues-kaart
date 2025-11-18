@@ -175,10 +175,6 @@ const issues = computed(() => {
   );
 });
 
-const issuesBbox = computed(() => {
-  return getIssuesBbox(issues.value);
-});
-
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
   return issue.id === selectedId.value;
@@ -226,19 +222,22 @@ watch(legendSize, async () => {
   ];
 });
 
+const mapRef = useTemplateRef("mapRef");
+
 function setBbox(bbox: BBox, options: FitOptions = {}) {
   if (!view.value) return;
   const padding = options.padding || currentPadding.value;
   view.value.fit(bbox, { ...options, padding });
 }
 
+const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
+
 function resetToOriginalExtent() {
   if (!allIssues.value || allIssues.value.length === 0) return;
 
-  const bbox = getIssuesBbox(allIssues.value);
-  if (!bbox) return;
+  if (!issuesBbox.value) return;
 
-  setBbox(bbox, {
+  setBbox(issuesBbox.value, {
     padding: [50, 50, 50, 50],
     easing: easeOut,
     duration: 1000,
@@ -255,7 +254,6 @@ function updatePadding(controlsSize: Size) {
 }
 
 const view = useTemplateRef("view");
-const mapRef = useTemplateRef("mapRef");
 const firstLoad = ref(true);
 
 const { mobile } = useDisplay();
@@ -271,9 +269,9 @@ watch([view, allIssues, selectedIssue], () => {
       firstLoad.value = false;
     } else {
       // Otherwise, fit all issues (including filtered ones for initial view)
-      const bbox = issuesBbox.value;
+      const bbox = issuesBbox?.value;
       if (!bbox) return;
-      setBbox(bbox);
+      setBbox(bbox as BBox);
       firstLoad.value = false;
     }
   }
@@ -286,8 +284,8 @@ watch(
     // If we're back to show-all mode and there's a selected issue, zoom to it
     if (isShowingAll.value && selectedId.value) {
       recenterOnSelectedIssue();
-    } else if (issuesBbox.value) {
-      setBbox(issuesBbox.value, {
+    } else if (issuesBbox?.value) {
+      setBbox(issuesBbox.value as BBox, {
         padding: [50, 50, 50, 50],
         duration: 800, // Smooth animation
       });
