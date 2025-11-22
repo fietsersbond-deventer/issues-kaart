@@ -150,6 +150,7 @@ import { click } from "ol/events/condition";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
+import { useDebounceFn } from "@vueuse/core";
 
 interface Size {
   width: number;
@@ -255,30 +256,34 @@ function updatePadding(controlsSize: Size) {
 
 const view = useTemplateRef("view");
 const mapRef = useTemplateRef("mapRef");
-const firstLoad = ref(true);
 
 const { mobile } = useDisplay();
 
 // Initialize bbox composable with mapRef
 const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
 
-// Use the map bounds composable to track bounding box changes
-// useMapBounds(mapRef);
-
-watch([view, allIssues, selectedIssue], () => {
-  if (view.value && allIssues.value.length > 0) {
+function moveToIssues() {
+  // console.debug({
+  //   selectedIssue: selectedIssue.value,
+  //   allIssues: allIssues.value?.length,
+  // });
+  if (allIssues.value.length > 0) {
     // If there's a selected issue with geometry, zoom to it
     if (selectedIssue.value?.geometry) {
       recenterOnSelectedIssue();
-      firstLoad.value = false;
     } else {
       // Otherwise, fit all issues (including filtered ones for initial view)
       const bbox = issuesBbox?.value;
       if (!bbox) return;
       setBbox(bbox as BBox);
-      firstLoad.value = false;
     }
   }
+}
+
+const debouncedMoveToIssues = useDebounceFn(moveToIssues);
+
+watch([allIssues, selectedIssue], () => {
+  debouncedMoveToIssues();
 });
 
 // Watch for legend filter changes and zoom to visible issues
