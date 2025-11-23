@@ -75,11 +75,10 @@ function handleResetExtent() {
   }
 }
 
-// Handle controls resize and update map padding
+// Handle controls resize
 function handleControlsResize(newSize: { width: number; height: number }) {
-  if (mapRef.value && mapRef.value.updatePadding) {
-    mapRef.value.updatePadding(newSize);
-  }
+  // Controls resize is now handled automatically by Map component's adaptive padding
+  // No need to manually update padding here
 }
 
 // Close overlays when bottom sheet changes

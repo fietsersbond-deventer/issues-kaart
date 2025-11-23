@@ -147,10 +147,6 @@ import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
-import type { BBox } from "geojson";
-import { easeOut } from "ol/easing";
-import type { FitOptions } from "ol/View";
-import { useDebounceFn } from "@vueuse/core";
 
 interface Size {
   width: number;
@@ -163,7 +159,7 @@ const { issues: allIssues } = storeToRefs(
 );
 
 // Filter issues based on legend visibility
-const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
+const { visibleLegendIds } = storeToRefs(useLegendFilters());
 
 const issues = computed(() => {
   return (
@@ -208,97 +204,27 @@ watchLayerVisibility(light, "Licht");
 watchLayerVisibility(fietskaart, "Fiets");
 watchLayerVisibility(luchtfotoSource, "Foto");
 
-// [top, right, bottom, left]
-const currentPadding = ref<[number, number, number, number]>([50, 50, 50, 50]);
+const view = useTemplateRef("view");
+const mapRef = useTemplateRef("mapRef");
 
-// Handle controls resize and update padding
+// Track controls size for adaptive padding
+const controlsSize = ref<Size>({ width: 0, height: 0 });
+
+// Setup adaptive padding - this composable owns the padding state
+const { currentPadding } = useAdaptivePadding(mapRef, controlsSize);
+
+// Handle controls resize
 function handleControlsResize(newSize: Size) {
-  currentPadding.value = [
-    50, // top
-    50, // right
-    newSize.height + 20, // bottom
-    50, // left
-  ];
-}
-
-function setBbox(bbox: BBox, options: FitOptions = {}) {
-  if (!view.value) return;
-  view.value.fit(bbox, {
-    easing: easeOut,
-    duration: 1000,
-
-    padding: currentPadding.value,
-    ...options,
-  });
+  controlsSize.value = newSize;
+  // Padding will be automatically recalculated by useAdaptivePadding watcher
 }
 
 function resetToOriginalExtent() {
   if (!allIssues.value || allIssues.value.length === 0) return;
-
-  const bbox = issuesBbox.value;
-  if (!bbox) return;
-
-  setBbox(issuesBbox.value, {
-    padding: [50, 50, 50, 50],
-  });
+  zoomToAllIssues(allIssues.value);
 }
-
-function updatePadding(controlsSize: Size) {
-  currentPadding.value = [
-    50, // top
-    50, // right
-    controlsSize.height + 20, // bottom
-    50, // left
-  ];
-}
-
-const view = useTemplateRef("view");
-const mapRef = useTemplateRef("mapRef");
 
 const { mobile } = useDisplay();
-
-// Initialize bbox composable with mapRef
-const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
-
-function moveToIssues() {
-  // console.debug({
-  //   selectedIssue: selectedIssue.value,
-  //   allIssues: allIssues.value?.length,
-  // });
-  if (allIssues.value.length > 0) {
-    // If there's a selected issue with geometry, zoom to it
-    if (selectedIssue.value?.geometry) {
-      recenterOnSelectedIssue();
-    } else {
-      // Otherwise, fit all issues (including filtered ones for initial view)
-      const bbox = issuesBbox?.value;
-      if (!bbox) return;
-      setBbox(bbox as BBox);
-    }
-  }
-}
-
-const debouncedMoveToIssues = useDebounceFn(moveToIssues);
-
-watch([allIssues, selectedIssue], () => {
-  debouncedMoveToIssues();
-});
-
-// Watch for legend filter changes and zoom to visible issues
-watch(
-  visibleLegendIds,
-  () => {
-    // If we're back to show-all mode and there's a selected issue, zoom to it
-    if (isShowingAll.value && selectedId.value) {
-      recenterOnSelectedIssue();
-    } else if (issuesBbox?.value) {
-      setBbox(issuesBbox.value as BBox, {
-        padding: [50, 50, 50, 50],
-      });
-    }
-  },
-  { deep: true }
-);
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {
@@ -315,9 +241,14 @@ const center = ref([687858.9021986299, 6846820.48790154]);
 const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
-// Setup resize observer to handle container size changes
-const { recenterOnSelectedIssue } = useMapResize(mapRef, currentPadding);
+// Setup map size observation
 const { mapHeight } = useMapSize();
+
+// Setup all zoom logic via composable (watchers are auto-started)
+const { zoomToAllIssues } = useMapZoom(
+  mapRef,
+  currentPadding
+);
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
@@ -592,7 +523,6 @@ const emit = defineEmits(["feature-clicked"]);
 defineExpose({
   resetToOriginalExtent,
   preferredLayer,
-  updatePadding,
 });
 </script>
 

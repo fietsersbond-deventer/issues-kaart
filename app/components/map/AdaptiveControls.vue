@@ -109,7 +109,7 @@ watch(
 
     // Debug logging (remove in production)
     if (import.meta.dev) {
-      console.log("AdaptiveControls space check:", {
+      console.debug("AdaptiveControls space check:", {
         mapWidth: mapWidth.value,
         mapHeight: mapHeight.value,
         permanentControlsWidth: permanentControlsSize.value.width,
