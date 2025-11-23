@@ -141,16 +141,16 @@ export function useMapZoom(
       // Calculate offset based on padding to shift the center away from controls
       // Padding is [top, right, bottom, left]
       const [top, right, bottom, left] = paddingRef.value;
-      
+
       // Calculate the visual center offset in pixels
       const horizontalOffset = (right - left) / 2;
       const verticalOffset = (bottom - top) / 2;
-      
+
       // Convert pixel offset to map coordinates at target zoom
       const resolution = view.getResolutionForZoom(targetZoom);
       const offsetX = horizontalOffset * resolution;
       const offsetY = verticalOffset * resolution;
-      
+
       // Apply offset to center (shift away from controls)
       const adjustedCenter: [number, number] = [
         center[0]! + offsetX,
@@ -386,7 +386,7 @@ export function useMapZoom(
         );
         return;
       }
-      
+
       // During initial load WITHOUT selected issue, also wait for stabilization
       if (
         hasChanged &&
@@ -396,29 +396,31 @@ export function useMapZoom(
       ) {
         // Calculate magnitude of padding change
         const maxChange = Math.max(
-          ...newPadding.map((val, idx) => Math.abs(val - (oldPadding?.[idx] ?? 0)))
+          ...newPadding.map((val, idx) =>
+            Math.abs(val - (oldPadding?.[idx] ?? 0))
+          )
         );
-        
+
         // If it's a large change (> 100px), user probably manually opened/closed legend
         if (maxChange > 100) {
           console.debug(
             "[useMapZoom] large padding change detected (no selected issue) - marking complete"
           );
           hasInitialSelectedZoom.value = true;
-          
+
           // Clear any pending stabilization timer
           if (paddingStabilizationTimer) {
             clearTimeout(paddingStabilizationTimer);
             paddingStabilizationTimer = null;
           }
-          
+
           // Re-zoom to all issues
           if (allIssues.value.length > 0) {
             zoomToAllIssues(allIssues.value);
           }
           return;
         }
-        
+
         // Small changes - wait for stabilization
         if (paddingStabilizationTimer) {
           clearTimeout(paddingStabilizationTimer);
@@ -439,17 +441,13 @@ export function useMapZoom(
       }
 
       // Subsequent padding changes - re-zoom (e.g., legend opened/closed)
-      if (
-        hasChanged &&
-        hasInitialSelectedZoom.value &&
-        mapRef.value?.map
-      ) {
+      if (hasChanged && hasInitialSelectedZoom.value && mapRef.value?.map) {
         console.debug("[useMapZoom] re-zooming due to padding change");
-        
+
         // If there's a selected issue, zoom to it
         if (selectedIssue.value?.geometry) {
           zoomToSelectedIssue();
-        } 
+        }
         // Otherwise, zoom to all issues
         else if (allIssues.value.length > 0) {
           zoomToAllIssues(allIssues.value);

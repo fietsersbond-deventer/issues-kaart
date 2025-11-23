@@ -453,10 +453,10 @@ export function useAdaptivePadding(
     selectedIssue,
     (issue) => {
       const geometry = issue?.geometry as Geometry | undefined;
-      
+
       // Invalidate overlap cache when selected issue changes (might affect visible issues)
       cachedOverlapCheck = null;
-      
+
       updatePadding(geometry);
     },
     { deep: true, immediate: true }
@@ -468,7 +468,7 @@ export function useAdaptivePadding(
     () => {
       // Invalidate cache when visible issues change
       cachedOverlapCheck = null;
-      
+
       // Recalculate padding if we're in "all issues" view (no selected issue)
       if (!selectedIssue.value?.geometry) {
         updatePadding(null);
