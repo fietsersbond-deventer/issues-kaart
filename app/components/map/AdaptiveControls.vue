@@ -53,17 +53,10 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-  mapHeight?: number;
-  mapWidth?: number;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  mapHeight: 9999, // Start with large value to show controls until real size is known
-  mapWidth: 9999,
-});
-
 const layer = defineModel<string>();
+
+// Get map size from composable using injection
+const { mapHeight, mapWidth } = useMapSize();
 
 // Track the size of the controls
 const controlsSize = ref<{ width: number; height: number }>({
@@ -86,10 +79,10 @@ const shouldUseButtons = ref(false);
 
 // Watch for size changes and determine if we should switch to buttons
 watch(
-  [() => props.mapWidth, () => props.mapHeight, permanentControlsSize],
+  [mapWidth, mapHeight, permanentControlsSize],
   () => {
     // Skip if map size is not yet known
-    if (props.mapWidth === 0 || props.mapHeight === 0) {
+    if (mapWidth.value === 0 || mapHeight.value === 0) {
       shouldUseButtons.value = false;
       return;
     }
@@ -109,20 +102,20 @@ watch(
     const MAX_HEIGHT_RATIO = 0.35; // % of map height
 
     const controlsTooBig =
-      permanentControlsSize.value.width > props.mapWidth * MAX_WIDTH_RATIO ||
-      permanentControlsSize.value.height > props.mapHeight * MAX_HEIGHT_RATIO;
+      permanentControlsSize.value.width > mapWidth.value * MAX_WIDTH_RATIO ||
+      permanentControlsSize.value.height > mapHeight.value * MAX_HEIGHT_RATIO;
 
     shouldUseButtons.value = controlsTooBig;
 
     // Debug logging (remove in production)
     if (import.meta.dev) {
       console.log("AdaptiveControls space check:", {
-        mapWidth: props.mapWidth,
-        mapHeight: props.mapHeight,
+        mapWidth: mapWidth.value,
+        mapHeight: mapHeight.value,
         permanentControlsWidth: permanentControlsSize.value.width,
         permanentControlsHeight: permanentControlsSize.value.height,
-        maxAllowedWidth: props.mapWidth * MAX_WIDTH_RATIO,
-        maxAllowedHeight: props.mapHeight * MAX_HEIGHT_RATIO,
+        maxAllowedWidth: mapWidth.value * MAX_WIDTH_RATIO,
+        maxAllowedHeight: mapHeight.value * MAX_HEIGHT_RATIO,
         controlsTooBig,
         shouldUseButtons: shouldUseButtons.value,
       });

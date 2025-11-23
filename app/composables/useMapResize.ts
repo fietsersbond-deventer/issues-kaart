@@ -10,8 +10,6 @@ export function useMapResize(
   padding: Ref<[number, number, number, number]>
 ) {
   const { issue: selectedIssue } = storeToRefs(useSelectedIssue());
-  const mapHeight = ref(0);
-  const mapWidth = ref(0);
   const targetCenter = ref<number[] | null>(null);
   const targetGeometry = ref<Geometry | null>(null);
 
@@ -75,37 +73,6 @@ export function useMapResize(
     { immediate: true }
   );
 
-  let resizeObserver: ResizeObserver | null = null;
-
-  // Setup resize observer on mount
-  onMounted(() => {
-    nextTick(() => {
-      const mapComponent = unref(mapRef);
-      if (!mapComponent) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mapContainer = (mapComponent as any).$el as HTMLElement;
-      if (!mapContainer) return;
-
-      resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          mapHeight.value = entry.contentRect.height;
-          mapWidth.value = entry.contentRect.width;
-        }
-
-        if (mapRef.value?.map) {
-          mapRef.value.map.updateSize();
-
-          if (selectedIssue.value?.geometry) {
-            recenterOnSelectedIssue();
-          }
-        }
-      });
-
-      resizeObserver.observe(mapContainer);
-    });
-  });
-
   watch(
     padding,
     () => {
@@ -114,16 +81,7 @@ export function useMapResize(
     { deep: true }
   );
 
-  onUnmounted(() => {
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-      resizeObserver = null;
-    }
-  });
-
   return {
-    mapHeight,
-    mapWidth,
     recenterOnSelectedIssue,
   };
 }

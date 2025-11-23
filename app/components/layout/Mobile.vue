@@ -13,8 +13,6 @@
             <MapAdaptiveControls
               ref="adaptiveControlsRef"
               v-model="preferredLayer"
-              :map-height="mapHeight"
-              :map-width="mapWidth"
               @update:size="handleControlsResize"
             />
           </MapControlContainer>
@@ -59,9 +57,6 @@ const mapRef = ref();
 
 // Get reference to the adaptive controls
 const adaptiveControlsRef = ref();
-
-// Use the map resize composable (it handles recentering automatically)
-const { mapHeight, mapWidth } = useMapResize(mapRef, ref([50, 50, 50, 50]));
 
 // Create a computed property for preferredLayer that syncs with the map
 const preferredLayer = computed({

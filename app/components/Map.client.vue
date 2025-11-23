@@ -18,8 +18,6 @@
       <MapControlContainer v-show="!isMapSmall" position="bottom-left">
         <MapAdaptiveControls
           v-model="preferredLayer"
-          :map-height="mapHeight"
-          :map-width="mapWidth"
           @update:size="handleControlsResize"
         />
       </MapControlContainer>
@@ -318,10 +316,8 @@ const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
-const { mapHeight, mapWidth, recenterOnSelectedIssue } = useMapResize(
-  mapRef,
-  currentPadding
-);
+const { recenterOnSelectedIssue } = useMapResize(mapRef, currentPadding);
+const { mapHeight } = useMapSize();
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
