@@ -87,7 +87,7 @@ export function useMapZoom(
 
     const view = mapRef.value.map.getView();
     view.fit(extent, {
-      padding: [50, 50, 50, 50],
+      padding: paddingRef.value,
       duration: 400,
       maxZoom: 16,
     });
@@ -138,15 +138,37 @@ export function useMapZoom(
       const currentZoom = view.getZoom() || 13;
       const targetZoom = Math.max(currentZoom, 15);
 
+      // Calculate offset based on padding to shift the center away from controls
+      // Padding is [top, right, bottom, left]
+      const [top, right, bottom, left] = paddingRef.value;
+      
+      // Calculate the visual center offset in pixels
+      const horizontalOffset = (right - left) / 2;
+      const verticalOffset = (bottom - top) / 2;
+      
+      // Convert pixel offset to map coordinates at target zoom
+      const resolution = view.getResolutionForZoom(targetZoom);
+      const offsetX = horizontalOffset * resolution;
+      const offsetY = verticalOffset * resolution;
+      
+      // Apply offset to center (shift away from controls)
+      const adjustedCenter: [number, number] = [
+        center[0]! + offsetX,
+        center[1]! - offsetY,
+      ];
+
       console.debug("[useMapZoom] animating to Point", {
         center,
+        adjustedCenter,
         currentZoom,
         targetZoom,
+        padding: paddingRef.value,
+        offset: { horizontal: horizontalOffset, vertical: verticalOffset },
         coordinates: centerPoint.geometry.coordinates,
       });
 
       view.animate({
-        center,
+        center: adjustedCenter,
         zoom: targetZoom,
         duration: 600,
       });
@@ -212,7 +234,13 @@ export function useMapZoom(
           return;
         }
 
-        // Wait a bit to see if a selectedIssue arrives
+        // Check if we're on a route that expects a selected issue (e.g., /kaart/[id])
+        // If so, wait a bit for it to load. Otherwise, zoom immediately.
+        const route = useRoute();
+        const hasIssueIdInRoute = !!route.params.id;
+        const delay = hasIssueIdInRoute ? 100 : 0; // Wait for selectedIssue only if needed
+
+        // Wait (if needed) to see if a selectedIssue arrives
         // If it does, the selectedIssue watcher will cancel this timer
         initialZoomTimer = setTimeout(() => {
           console.debug("[useMapZoom] executing delayed zoom to all issues");
@@ -225,7 +253,7 @@ export function useMapZoom(
             );
           }
           initialZoomTimer = null;
-        }, 100); // 100ms delay to wait for selectedIssue
+        }, delay);
 
         console.debug(
           "[useMapZoom] scheduled delayed zoom to all issues (100ms)"
@@ -333,7 +361,7 @@ export function useMapZoom(
         hasInitialSelectedZoom: hasInitialSelectedZoom.value,
       });
 
-      // During initial load, wait for padding to stabilize before allowing re-zooms
+      // During initial load with selected issue, wait for padding to stabilize
       if (
         hasChanged &&
         !hasInitialSelectedZoom.value &&
@@ -358,16 +386,74 @@ export function useMapZoom(
         );
         return;
       }
+      
+      // During initial load WITHOUT selected issue, also wait for stabilization
+      if (
+        hasChanged &&
+        !hasInitialSelectedZoom.value &&
+        !selectedIssue.value?.geometry &&
+        hasInitialZoom.value
+      ) {
+        // Calculate magnitude of padding change
+        const maxChange = Math.max(
+          ...newPadding.map((val, idx) => Math.abs(val - (oldPadding?.[idx] ?? 0)))
+        );
+        
+        // If it's a large change (> 100px), user probably manually opened/closed legend
+        if (maxChange > 100) {
+          console.debug(
+            "[useMapZoom] large padding change detected (no selected issue) - marking complete"
+          );
+          hasInitialSelectedZoom.value = true;
+          
+          // Clear any pending stabilization timer
+          if (paddingStabilizationTimer) {
+            clearTimeout(paddingStabilizationTimer);
+            paddingStabilizationTimer = null;
+          }
+          
+          // Re-zoom to all issues
+          if (allIssues.value.length > 0) {
+            zoomToAllIssues(allIssues.value);
+          }
+          return;
+        }
+        
+        // Small changes - wait for stabilization
+        if (paddingStabilizationTimer) {
+          clearTimeout(paddingStabilizationTimer);
+        }
+
+        paddingStabilizationTimer = setTimeout(() => {
+          console.debug(
+            "[useMapZoom] padding stabilized (no selected issue) - marking complete"
+          );
+          hasInitialSelectedZoom.value = true;
+          paddingStabilizationTimer = null;
+        }, PADDING_STABILIZATION_MS);
+
+        console.debug(
+          "[useMapZoom] padding changed during initial load (no selected issue) - waiting for stabilization"
+        );
+        return;
+      }
 
       // Subsequent padding changes - re-zoom (e.g., legend opened/closed)
       if (
         hasChanged &&
         hasInitialSelectedZoom.value &&
-        selectedIssue.value?.geometry &&
         mapRef.value?.map
       ) {
         console.debug("[useMapZoom] re-zooming due to padding change");
-        zoomToSelectedIssue();
+        
+        // If there's a selected issue, zoom to it
+        if (selectedIssue.value?.geometry) {
+          zoomToSelectedIssue();
+        } 
+        // Otherwise, zoom to all issues
+        else if (allIssues.value.length > 0) {
+          zoomToAllIssues(allIssues.value);
+        }
       }
     },
     { deep: true }
