@@ -16,10 +16,12 @@
     <!-- Bottom-left corner controls -->
     <slot name="bottom-left-controls" :is-small="isMapSmall">
       <MapControlContainer v-show="!isMapSmall" position="bottom-left">
-        <SizeCalculator v-model="legendSize">
-          <MapLegend />
-          <MapLayerSwitcher v-model="preferredLayer" />
-        </SizeCalculator>
+        <MapAdaptiveControls
+          v-model="preferredLayer"
+          :map-height="mapHeight"
+          :map-width="mapWidth"
+          @update:size="handleControlsResize"
+        />
       </MapControlContainer>
     </slot>
 
@@ -211,17 +213,15 @@ watchLayerVisibility(luchtfotoSource, "Foto");
 // [top, right, bottom, left]
 const currentPadding = ref<[number, number, number, number]>([50, 50, 50, 50]);
 
-const legendSize = ref<Size>({ width: 0, height: 0 });
-
-// Update padding when size changes
-watch(legendSize, async () => {
+// Handle controls resize and update padding
+function handleControlsResize(newSize: Size) {
   currentPadding.value = [
     50, // top
     50, // right
-    legendSize.value.height + 20, // bottom
+    newSize.height + 20, // bottom
     50, // left
   ];
-});
+}
 
 function setBbox(bbox: BBox, options: FitOptions = {}) {
   if (!view.value) return;
@@ -318,7 +318,7 @@ const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
-const { mapHeight, recenterOnSelectedIssue } = useMapResize(
+const { mapHeight, mapWidth, recenterOnSelectedIssue } = useMapResize(
   mapRef,
   currentPadding
 );

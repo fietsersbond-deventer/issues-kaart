@@ -10,48 +10,13 @@
 
         <template #bottom-left-controls="{ isSmall }">
           <MapControlContainer v-show="!isSmall" position="bottom-left">
-            <SizeCalculator v-model="controlsSize">
-              <div class="mobile-controls-container">
-                <!-- Control buttons -->
-                <div class="mobile-control-buttons">
-                  <!-- Layer switcher button -->
-                  <v-btn
-                    icon
-                    size="small"
-                    class="layer-switcher-btn"
-                    @click="showLayerSwitcher = !showLayerSwitcher"
-                  >
-                    <v-icon>mdi-layers</v-icon>
-                    <v-tooltip activator="parent" location="top">
-                      Kaartlagen
-                    </v-tooltip>
-                  </v-btn>
-
-                  <!-- Legend button -->
-                  <v-btn
-                    icon
-                    size="small"
-                    class="legend-btn"
-                    @click="showLegend = !showLegend"
-                  >
-                    <v-icon>mdi-map-legend</v-icon>
-                    <v-tooltip activator="parent" location="top">
-                      Legenda
-                    </v-tooltip>
-                  </v-btn>
-                </div>
-
-                <!-- Layer switcher content -->
-                <div v-if="showLayerSwitcher" class="mobile-control-content">
-                  <MapLayerSwitcher v-model="preferredLayer" />
-                </div>
-
-                <!-- Legend content -->
-                <div v-if="showLegend" class="mobile-control-content">
-                  <MapLegend />
-                </div>
-              </div>
-            </SizeCalculator>
+            <MapAdaptiveControls
+              ref="adaptiveControlsRef"
+              v-model="preferredLayer"
+              :map-height="mapHeight"
+              :map-width="mapWidth"
+              @update:size="handleControlsResize"
+            />
           </MapControlContainer>
         </template>
       </Map>
@@ -89,21 +54,14 @@ const {
   snapPoints: [40, 75],
 });
 
-// Mobile control overlays
-const showLayerSwitcher = ref(false);
-const showLegend = ref(false);
-
-// Size tracking for the mobile controls
-const controlsSize = ref<{ width: number; height: number }>({
-  width: 0,
-  height: 0,
-});
-
 // Get reference to the Map component
 const mapRef = ref();
 
+// Get reference to the adaptive controls
+const adaptiveControlsRef = ref();
+
 // Use the map resize composable (it handles recentering automatically)
-useMapResize(mapRef, ref([50, 50, 50, 50]));
+const { mapHeight, mapWidth } = useMapResize(mapRef, ref([50, 50, 50, 50]));
 
 // Create a computed property for preferredLayer that syncs with the map
 const preferredLayer = computed({
@@ -122,18 +80,18 @@ function handleResetExtent() {
   }
 }
 
-// Watch for controls size changes and update map padding
-watch(controlsSize, (newSize) => {
+// Handle controls resize and update map padding
+function handleControlsResize(newSize: { width: number; height: number }) {
   if (mapRef.value && mapRef.value.updatePadding) {
-    // Update the map's padding based on mobile controls size
     mapRef.value.updatePadding(newSize);
   }
-});
+}
 
-// Close overlays when clicking outside or when bottom sheet changes
+// Close overlays when bottom sheet changes
 watch(sheetHeight, () => {
-  showLayerSwitcher.value = false;
-  showLegend.value = false;
+  if (adaptiveControlsRef.value) {
+    adaptiveControlsRef.value.closeOverlays();
+  }
 });
 </script>
 
@@ -191,31 +149,5 @@ watch(sheetHeight, () => {
 .sheet-content {
   overflow-y: auto;
   height: calc(100% - 24px);
-}
-
-.mobile-controls-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.mobile-control-buttons {
-  display: flex;
-  gap: 4px;
-  padding: 8px;
-  background: white;
-}
-
-.layer-switcher-btn,
-.legend-btn {
-  background: white !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-}
-
-.mobile-control-content {
-  border-top: 1px solid #e0e0e0;
-  padding: 12px;
-  background: white;
 }
 </style>
