@@ -12,10 +12,10 @@ interface ControlsSize {
 /**
  * Composable that manages adaptive padding for map zoom operations
  * based on the geometry position and controls size.
- * 
+ *
  * The controls are in the bottom-left corner, so we calculate where
  * there's most free space around the geometry to avoid overlap.
- * 
+ *
  * This composable owns the padding state and automatically recalculates
  * when controls size changes.
  */
@@ -26,15 +26,15 @@ export function useAdaptivePadding(
   const { mapHeight, mapWidth } = useMapSize();
   const { issue: selectedIssue } = storeToRefs(useSelectedIssue());
   const basePadding = 50; // Minimum padding on all sides
-  
+
   // Current padding state [top, right, bottom, left]
   const currentPadding = ref<[number, number, number, number]>([
     basePadding,
-    basePadding, 
     basePadding,
-    basePadding
+    basePadding,
+    basePadding,
   ]);
-  
+
   // Track last geometry we calculated padding for
   const lastGeometry = ref<Geometry | null>(null);
 
@@ -42,7 +42,9 @@ export function useAdaptivePadding(
    * Calculate optimal padding for a given geometry
    * Returns [top, right, bottom, left] padding in pixels
    */
-  function calculatePadding(geometry: Geometry | null | undefined): [number, number, number, number] {
+  function calculatePadding(
+    geometry: Geometry | null | undefined
+  ): [number, number, number, number] {
     if (!geometry || !mapRef.value?.map) {
       // Default padding when no geometry
       return [
@@ -60,15 +62,15 @@ export function useAdaptivePadding(
     // For LineStrings, analyze the actual line points instead of just the bbox
     if (geometry.type === "LineString") {
       const coordinates = geometry.coordinates as number[][];
-      
-      console.debug('[useAdaptivePadding] analyzing LineString', {
+
+      console.debug("[useAdaptivePadding] analyzing LineString", {
         pointCount: coordinates.length,
         mapWidth: mapWidth.value,
         mapHeight: mapHeight.value,
         controlsWidth,
         controlsHeight,
       });
-      
+
       // Count points in different regions
       let pointsInControlsArea = 0;
       let pointsAboveControls = 0;
@@ -78,20 +80,20 @@ export function useAdaptivePadding(
       for (const coord of coordinates) {
         const transformed = transform(coord, "EPSG:4326", "EPSG:3857");
         const pixel = mapRef.value?.map?.getPixelFromCoordinate(transformed);
-        
+
         if (!pixel) continue;
-        
+
         totalPoints++;
         const x = pixel[0] ?? 0;
         const y = pixel[1] ?? 0;
-        
+
         const inControlsX = x < controlsWidth;
-        const inControlsY = y > (mapHeight.value - controlsHeight);
-        
+        const inControlsY = y > mapHeight.value - controlsHeight;
+
         if (inControlsX && inControlsY) {
           pointsInControlsArea++;
         }
-        if (y < (mapHeight.value - controlsHeight)) {
+        if (y < mapHeight.value - controlsHeight) {
           pointsAboveControls++;
         }
         if (x > controlsWidth) {
@@ -105,7 +107,7 @@ export function useAdaptivePadding(
         const ratioAbove = pointsAboveControls / totalPoints;
         const ratioRight = pointsRightOfControls / totalPoints;
 
-        console.debug('[useAdaptivePadding] LineString analysis', {
+        console.debug("[useAdaptivePadding] LineString analysis", {
           totalPoints,
           pointsInControlsArea,
           pointsAboveControls,
@@ -167,7 +169,7 @@ export function useAdaptivePadding(
           }
         }
       }
-      
+
       // Line doesn't conflict with controls or fits well with default padding
       return [
         basePadding,
@@ -190,7 +192,7 @@ export function useAdaptivePadding(
       (extent[0]! + extent[2]!) / 2,
       (extent[1]! + extent[3]!) / 2,
     ];
-    const centerPixel = view.getResolution() 
+    const centerPixel = view.getResolution()
       ? mapRef.value.map.getPixelFromCoordinate(centerCoord)
       : null;
 
@@ -212,7 +214,7 @@ export function useAdaptivePadding(
     const spaceRight = mapWidth.value - centerX;
 
     // Determine if geometry center is above, below, left, or right of controls
-    const isAboveControls = centerY < (mapHeight.value - controlsHeight);
+    const isAboveControls = centerY < mapHeight.value - controlsHeight;
     const isRightOfControls = centerX > controlsWidth;
 
     const topPadding = basePadding;
@@ -236,7 +238,7 @@ export function useAdaptivePadding(
     else {
       // Geometry is in the bottom-left where controls are
       // Check if there's more space above or to the right
-      
+
       const spaceAboveControls = spaceTop;
       const spaceRightOfControls = spaceRight;
 
@@ -253,42 +255,49 @@ export function useAdaptivePadding(
 
     return [topPadding, rightPadding, bottomPadding, leftPadding];
   }
-  
+
   /**
    * Update padding based on current selected issue geometry
    */
   function updatePadding(geometry: Geometry | null | undefined) {
     if (!geometry) {
       // Reset to default when no geometry
-      currentPadding.value = [basePadding, basePadding, basePadding, basePadding];
+      currentPadding.value = [
+        basePadding,
+        basePadding,
+        basePadding,
+        basePadding,
+      ];
       lastGeometry.value = null;
       return;
     }
-    
+
     const newPadding = calculatePadding(geometry);
-    
+
     // Only update if padding actually changed
-    const hasChanged = newPadding.some((val, idx) => val !== currentPadding.value[idx]);
+    const hasChanged = newPadding.some(
+      (val, idx) => val !== currentPadding.value[idx]
+    );
     if (hasChanged) {
-      console.debug('[useAdaptivePadding] updating padding', {
+      console.debug("[useAdaptivePadding] updating padding", {
         old: currentPadding.value,
         new: newPadding,
       });
       currentPadding.value = newPadding;
     }
-    
+
     lastGeometry.value = geometry;
   }
-  
+
   // Watch for controls size changes and recalculate padding
   watch(
     controlsSize,
     () => {
-      console.debug('[useAdaptivePadding] controlsSize changed', {
+      console.debug("[useAdaptivePadding] controlsSize changed", {
         size: controlsSize.value,
         hasGeometry: !!lastGeometry.value,
       });
-      
+
       // Recalculate padding if we have a geometry
       if (lastGeometry.value) {
         updatePadding(lastGeometry.value);
@@ -296,7 +305,7 @@ export function useAdaptivePadding(
     },
     { deep: true }
   );
-  
+
   // Watch for selected issue changes
   watch(
     selectedIssue,

@@ -10,8 +10,8 @@ import type { Map as OLMap } from "ol";
  */
 export function useMapSize() {
   // Use global shared state - same refs across all components
-  const mapHeight = useState('mapHeight', () => 0);
-  const mapWidth = useState('mapWidth', () => 0);
+  const mapHeight = useState("mapHeight", () => 0);
+  const mapWidth = useState("mapWidth", () => 0);
 
   // Get the map instance via injection (only works inside <ol-map> component tree)
   const map = inject<OLMap | undefined>("map", undefined);
@@ -36,8 +36,8 @@ export function useMapSize() {
         for (const entry of entries) {
           mapHeight.value = entry.contentRect.height;
           mapWidth.value = entry.contentRect.width;
-          
-          console.debug('[useMapSize] ResizeObserver update', {
+
+          console.debug("[useMapSize] ResizeObserver update", {
             width: mapWidth.value,
             height: mapHeight.value,
           });

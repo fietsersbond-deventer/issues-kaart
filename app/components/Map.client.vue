@@ -245,10 +245,7 @@ const projection = ref("EPSG:3857");
 const { mapHeight } = useMapSize();
 
 // Setup all zoom logic via composable (watchers are auto-started)
-const { zoomToAllIssues } = useMapZoom(
-  mapRef,
-  currentPadding
-);
+const { zoomToAllIssues } = useMapZoom(mapRef, currentPadding);
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
