@@ -37,6 +37,10 @@ export function useMapZoom(
   // Timer for delayed initial zoom (to wait for selectedIssue to load)
   let initialZoomTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Timer to detect when padding has stabilized during initial load
+  let paddingStabilizationTimer: ReturnType<typeof setTimeout> | null = null;
+  const PADDING_STABILIZATION_MS = 200; // Wait 200ms after last padding change
+
   console.debug("[useMapZoom] initialized");
 
   /**
@@ -329,17 +333,29 @@ export function useMapZoom(
         hasInitialSelectedZoom: hasInitialSelectedZoom.value,
       });
 
-      // First padding change after initial zoom - this is the controlsSize being measured
-      // Mark it as done but don't re-zoom
+      // During initial load, wait for padding to stabilize before allowing re-zooms
       if (
         hasChanged &&
         !hasInitialSelectedZoom.value &&
         selectedIssue.value?.geometry
       ) {
+        // Clear previous stabilization timer
+        if (paddingStabilizationTimer) {
+          clearTimeout(paddingStabilizationTimer);
+        }
+
+        // Wait for padding to stabilize (no changes for PADDING_STABILIZATION_MS)
+        paddingStabilizationTimer = setTimeout(() => {
+          console.debug(
+            "[useMapZoom] padding stabilized - marking hasInitialSelectedZoom as complete"
+          );
+          hasInitialSelectedZoom.value = true;
+          paddingStabilizationTimer = null;
+        }, PADDING_STABILIZATION_MS);
+
         console.debug(
-          "[useMapZoom] first padding update - marking initial zoom complete"
+          "[useMapZoom] padding changed during initial load - waiting for stabilization"
         );
-        hasInitialSelectedZoom.value = true;
         return;
       }
 

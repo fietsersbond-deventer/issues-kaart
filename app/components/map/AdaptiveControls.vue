@@ -98,8 +98,8 @@ watch(
 
     // Check if permanent controls don't take up too much of the map
     // Controls are in the bottom-left corner, so we're more lenient with width
-    const MAX_WIDTH_RATIO = 0.3; // % of map width
-    const MAX_HEIGHT_RATIO = 0.35; // % of map height
+    const MAX_WIDTH_RATIO = 0.35; // 35% of map width
+    const MAX_HEIGHT_RATIO = 0.45; // 45% of map height
 
     const controlsTooBig =
       permanentControlsSize.value.width > mapWidth.value * MAX_WIDTH_RATIO ||

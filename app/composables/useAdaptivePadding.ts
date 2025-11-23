@@ -38,6 +38,10 @@ export function useAdaptivePadding(
   // Track last geometry we calculated padding for
   const lastGeometry = ref<Geometry | null>(null);
 
+  // Debounce timer for padding updates
+  let paddingDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  const PADDING_DEBOUNCE_MS = 150; // Wait 150ms after last change
+
   /**
    * Calculate optimal padding for a given geometry
    * Returns [top, right, bottom, left] padding in pixels
@@ -261,6 +265,12 @@ export function useAdaptivePadding(
    */
   function updatePadding(geometry: Geometry | null | undefined) {
     if (!geometry) {
+      // Clear any pending debounce
+      if (paddingDebounceTimer) {
+        clearTimeout(paddingDebounceTimer);
+        paddingDebounceTimer = null;
+      }
+
       // Reset to default when no geometry
       currentPadding.value = [
         basePadding,
@@ -278,12 +288,26 @@ export function useAdaptivePadding(
     const hasChanged = newPadding.some(
       (val, idx) => val !== currentPadding.value[idx]
     );
+
     if (hasChanged) {
-      console.debug("[useAdaptivePadding] updating padding", {
+      console.debug("[useAdaptivePadding] padding calculated (debouncing)", {
         old: currentPadding.value,
         new: newPadding,
       });
-      currentPadding.value = newPadding;
+
+      // Clear previous debounce timer
+      if (paddingDebounceTimer) {
+        clearTimeout(paddingDebounceTimer);
+      }
+
+      // Debounce: only update currentPadding after changes have stabilized
+      paddingDebounceTimer = setTimeout(() => {
+        currentPadding.value = newPadding;
+        console.debug("[useAdaptivePadding] padding ref updated (stable)", {
+          padding: newPadding,
+        });
+        paddingDebounceTimer = null;
+      }, PADDING_DEBOUNCE_MS);
     }
 
     lastGeometry.value = geometry;
