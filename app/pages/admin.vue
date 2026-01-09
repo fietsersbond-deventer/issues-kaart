@@ -1,6 +1,6 @@
 <template>
   <v-layout>
-    <v-navigation-drawer permanent>
+    <v-navigation-drawer v-if="!isPrinting" permanent class="noprint" :width="256">
       <v-list>
         <v-list-item
           prepend-icon="mdi-file-document"
@@ -13,12 +13,14 @@
           to="/admin/legends"
         />
       </v-list>
-      <v-list-item
-        v-if="isAdmin"
-        prepend-icon="mdi-account-group"
-        title="Gebruikers"
-        to="/admin/users"
-      />
+      <v-list>
+        <v-list-item
+          v-if="isAdmin"
+          prepend-icon="mdi-account-group"
+          title="Gebruikers"
+          to="/admin/users"
+        />
+      </v-list>
     </v-navigation-drawer>
 
     <v-main>
@@ -30,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
+
 definePageMeta({
   navTitle: "Beheer",
 
@@ -44,4 +48,6 @@ definePageMeta({
 });
 useTitle("Beheer");
 const { isAdmin } = useRoles();
+
+const isPrinting = useMediaQuery('print')
 </script>

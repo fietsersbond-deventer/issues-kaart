@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { useSnackbar } from "~/composables/useSnackbar";
+import { useMediaQuery } from '@vueuse/core'
+
 
 const { snackbar } = useSnackbar();
+const isPrinting = useMediaQuery('print')
+
 
 // Initialize issue notifications
 useIssueNotifications();
@@ -12,7 +16,7 @@ useIssueNotifications();
     <NuxtLoadingIndicator />
 
     <v-app>
-      <NavBar />
+      <NavBar v-if="!isPrinting" />
       <v-main>
         <NuxtErrorBoundary>
           <!-- You use the default slot to render your content -->

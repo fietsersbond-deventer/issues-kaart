@@ -2,7 +2,7 @@
 <template>
   <div>
     <v-card class="mb-4">
-      <v-card-title class="d-flex align-center" style="gap: 16px">
+      <v-card-title v-if="!isPrinting" class="d-flex align-center" style="gap: 16px">
         <v-text-field
           v-model="state.search"
           label="Zoek"
@@ -14,8 +14,8 @@
       <v-card-text>
         <v-data-table
           v-model:page="state.page"
-          v-model:items-per-page="state.itemsPerPage"
           v-model:sort-by="state.sortBy"
+          :items-per-page="isPrinting ? 9999 : state.itemsPerPage"
           :headers="headers"
           :items="filteredIssues"
           item-value="id"
@@ -43,7 +43,7 @@
           <template #item.legend_name="{ item }">
             <div>
               <CategorySelect
-                v-if="availableLegends"
+                v-if="!isPrinting && availableLegends"
                 v-model="item.legend_id"
                 :legends="availableLegends"
                 :disabled="!!locks[item.id]"
@@ -51,11 +51,12 @@
                 @focus="notifyEditing(item.id, true)"
                 @blur="notifyEditing(item.id, false)"
               />
+              <span v-else>{{ item.legend.name }}</span>
             </div>
           </template>
 
           <template #item.created_at="{ item }">
-            <div>
+            <div class="noprint">
               {{
                 new Date(item.created_at).toLocaleDateString("nl-NL", {
                   year: "numeric",
@@ -67,7 +68,7 @@
           </template>
 
           <template #item.actions="{ item }">
-            <div>
+            <div class="noprint"> 
               <template v-if="locks[item.id]">
                 <div
                   class="d-flex align-center justify-center lock-icon-container"
@@ -146,6 +147,7 @@
 </template>
 
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import type { AdminListIssue } from "@/types/Issue";
 import type { Legend } from "~/types/Legend";
 
@@ -154,6 +156,8 @@ useTitle("Onderwerpen");
 definePageMeta({
   middleware: ["sidebase-auth"],
 });
+
+const isPrinting = useMediaQuery('print')
 
 // Use lightweight issues for admin list (only id, title, legend_id, created_at)
 const issuesStore = useIssues({
@@ -206,12 +210,23 @@ const filteredIssues = computed(() => {
   );
 });
 
-const headers = [
-  { title: "Titel", value: "title", sortable: true, width: "50%" },
-  { title: "Categorie", value: "legend_name", sortable: true },
-  { title: "Datum", value: "created_at", sortable: true },
-  { title: "Acties", value: "actions", sortable: false },
-];
+const headers = computed(() => {
+  const baseHeaders = [
+    { title: "Titel", value: "title", sortable: true, width: isPrinting.value ? "80%" : "50%" },
+    { title: "Categorie", value: "legend_name", sortable: true },
+  ];
+  
+  if (!isPrinting.value) {
+    baseHeaders.push(
+      { title: "Datum", value: "created_at", sortable: true },
+      { title: "Acties", value: "actions", sortable: false }
+    );
+  } else {
+    baseHeaders.unshift({title: "Id", value: "id", sortable: false})
+  }
+  
+  return baseHeaders;
+});
 
 function lockRow(data: { item: AdminListIssue }) {
   return {
