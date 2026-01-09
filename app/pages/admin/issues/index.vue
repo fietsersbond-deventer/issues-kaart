@@ -29,6 +29,7 @@
           <template #item.title="{ item }">
             <div>
               <v-text-field
+                v-if="!isPrinting"
                 v-model="item.title"
                 dense
                 hide-details
@@ -37,6 +38,7 @@
                 @focus="notifyEditing(item.id, true)"
                 @blur="notifyEditing(item.id, false)"
               />
+              <span v-else>{{ item.title }}</span>
             </div>
           </template>
 
@@ -55,8 +57,12 @@
             </div>
           </template>
 
+          <template #item.imageUrl="{ item }">
+            <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail"></img>           
+          </template>
+
           <template #item.created_at="{ item }">
-            <div class="noprint">
+            <div>
               {{
                 new Date(item.created_at).toLocaleDateString("nl-NL", {
                   year: "numeric",
@@ -68,7 +74,7 @@
           </template>
 
           <template #item.actions="{ item }">
-            <div class="noprint"> 
+            <div> 
               <template v-if="locks[item.id]">
                 <div
                   class="d-flex align-center justify-center lock-icon-container"
@@ -161,7 +167,7 @@ const isPrinting = useMediaQuery('print')
 
 // Use lightweight issues for admin list (only id, title, legend_id, created_at)
 const issuesStore = useIssues({
-  fields: "id,title,legend_id,created_at",
+  fields: "id,title,legend_id,created_at,imageUrl",
 });
 const { remove } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
@@ -212,6 +218,7 @@ const filteredIssues = computed(() => {
 
 const headers = computed(() => {
   const baseHeaders = [
+    {title: "", value:"imageUrl", sortable: false},
     { title: "Titel", value: "title", sortable: true, width: isPrinting.value ? "80%" : "50%" },
     { title: "Categorie", value: "legend_name", sortable: true },
   ];
@@ -293,4 +300,13 @@ async function updateIssue(issue: AdminListIssue) {
 .locked-row .lock-icon-container {
   pointer-events: auto !important;
 }
+
+.thumbnail {
+  max-width: 100px;
+  max-height: 100px;
+  display: block;
+  margin: 0.5rem auto 0.5rem auto;
+  text-align: center;
+}
+
 </style>
