@@ -20,7 +20,7 @@ rsync -avz package.json "$DEPLOYMENT_TARGET/package.json"
 
 
 # Update .output contents on remote (server/, public/, nitro.json), excluding server/node_modules
-rsync -avz --exclude='node_modules' .output/server/ "$DEPLOYMENT_TARGET/server/"
+rsync -avz --delete --exclude='node_modules' .output/server/ "$DEPLOYMENT_TARGET/server/"
 rsync -avz .output/public/ "$DEPLOYMENT_TARGET/public/"
 rsync -avz .output/nitro.json "$DEPLOYMENT_TARGET/nitro.json"
 
@@ -29,6 +29,9 @@ rsync -avz server/database/ "$DEPLOYMENT_TARGET/server/database/"
 
 # echo "Running database migrations on remote..."
 # ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:} && node --import tsx/esm server/database/runMigrations.ts"
+
+echo "Installing production server dependencies on remote..."
+ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:}/server && npm install --omit=dev"
 
 echo "Restarting PM2 on remote..."
 ssh "${DEPLOYMENT_TARGET%%:*}" "/home/fietsersbond/.nvm/versions/node/v22.20.0/bin/pm2 restart all"
