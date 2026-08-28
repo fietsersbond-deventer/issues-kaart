@@ -10,7 +10,7 @@ describe("HTML Sanitization Security Tests", () => {
         "<h2>Title</h2><p>Content with <strong>bold</strong> and <em>italic</em> text</p>";
       const result = sanitizeHtml(input);
       expect(result).toBe(
-        "<h2>Title</h2><p>Content with <strong>bold</strong> and <em>italic</em> text</p>"
+        "<h2>Title</h2><p>Content with <strong>bold</strong> and <em>italic</em> text</p>",
       );
     });
 
@@ -19,7 +19,7 @@ describe("HTML Sanitization Security Tests", () => {
         "<ul><li>Item 1</li><li>Item 2</li></ul><ol><li>First</li><li>Second</li></ol>";
       const result = sanitizeHtml(input);
       expect(result).toBe(
-        "<ul><li>Item 1</li><li>Item 2</li></ul><ol><li>First</li><li>Second</li></ol>"
+        "<ul><li>Item 1</li><li>Item 2</li></ul><ol><li>First</li><li>Second</li></ol>",
       );
     });
 
@@ -249,7 +249,7 @@ describe("HTML Sanitization Security Tests", () => {
       expect(result).toContain("<em>Italic text</em>");
       expect(result).toContain('<a href="https://example.com">Link</a>');
       expect(result).toContain(
-        '<img src="https://example.com/image.jpg" alt="Image" />'
+        '<img src="https://example.com/image.jpg" alt="Image" />',
       );
       expect(result).toContain("<ol><li>Ordered list item</li></ol>");
       expect(result).toContain("<ul><li>Unordered list item</li></ul>");
