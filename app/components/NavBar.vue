@@ -18,6 +18,7 @@
       <v-btn
         v-tooltip:top="'Nieuw onderwerp toevoegen'"
         to="/kaart/new"
+        aria-label="Nieuw onderwerp toevoegen"
         variant="text"
         icon="mdi-plus-circle"
       />
@@ -25,10 +26,12 @@
         v-tooltip:top="'Beheer'"
         to="/admin"
         variant="text"
+        aria-label="Beheer"
         icon="mdi-cog"
       />
       <v-btn
         v-tooltip:top="'Uitloggen'"
+        aria-label="Uitloggen"
         variant="text"
         icon="mdi-logout"
         @click="handleLogout"
@@ -40,18 +43,21 @@
         :href="organization.website"
         variant="text"
         icon="mdi-home"
+        aria-label="Organisatie website"
       />
       <v-btn
         v-tooltip:top="'Contact'"
         :href="organization.contactUrl"
         variant="text"
         icon="mdi-email"
+        aria-label="Contact"
       />
       <v-btn
         v-tooltip:top="'Inloggen beheer'"
         to="/login"
         variant="text"
         icon="mdi-login"
+        aria-label="Inloggen beheer"
       />
     </template>
   </v-app-bar>

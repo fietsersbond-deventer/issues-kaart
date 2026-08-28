@@ -22,6 +22,7 @@
             icon="mdi-pencil"
             variant="text"
             :disabled="!isConnected"
+            aria-label="Bewerken"
             @click="safeToggleEditing()"
           />
         </template>
@@ -29,11 +30,13 @@
           <v-btn
             icon="mdi-pencil-remove"
             variant="text"
+            aria-label="Bewerken annuleren"
             @click="safeToggleEditing()"
           />
           <v-btn
             icon="mdi-fullscreen"
             variant="text"
+            aria-label="Volledig scherm bewerken"
             @click="showEditDialog = !showEditDialog"
           />
         </template>
