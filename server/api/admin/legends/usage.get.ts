@@ -1,7 +1,6 @@
 import { getDb } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
-  // Make sure only admins can access usage information
   requireUserSession(event);
 
   const db = getDb();
@@ -21,7 +20,7 @@ export default defineEventHandler(async (event) => {
     FROM legend l
     LEFT JOIN issues i ON i.legend_id = l.id
     GROUP BY l.id
-  `
+  `,
     )
     .all() as Array<{
     id: number;
@@ -43,7 +42,7 @@ export default defineEventHandler(async (event) => {
         id,
         usage_count,
         used_by_issues,
-      }: { id: number; usage_count: number; used_by_issues: string }
+      }: { id: number; usage_count: number; used_by_issues: string },
     ) => {
       acc[id] = {
         usage_count,
@@ -52,6 +51,6 @@ export default defineEventHandler(async (event) => {
       };
       return acc;
     },
-    {}
+    {},
   );
 });
