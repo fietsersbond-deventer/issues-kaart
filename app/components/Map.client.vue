@@ -32,7 +32,7 @@
       :base-layer="true"
     >
       <ol-source-xyz
-        url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+        url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=cb1_2g3h_1_01ad081dc8ac0a49f3be7436"
         attributions='© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href= "https://carto.com/about-carto/">CARTO</a>'
       />
     </ol-tile-layer>
@@ -72,13 +72,12 @@
     >
       <ol-source-wmts
         ref="lufolabels-source"
-        url="https://service.pdok.nl/bzk/luchtfotolabels/wmts/v1_0"
-        layer="lufolabels"
+        url="https://service.pdok.nl/kadaster/brt-achtergrondkaart/wmts/v2_0?TILEMATRIXSET=EPSG:28992"
+        layer="labels"
         :projection="rdProjection"
-        matrix-set="EPSG:28992"
         format="image/png"
+        style="default"
         :display-in-layer-switcher="false"
-        :preview="getPreview('/preview-lufolabels.png')"
       />
     </ol-tile-layer>
 
@@ -159,7 +158,7 @@ interface Size {
 
 // Use lightweight map issues for rendering (only essential fields)
 const { issues: allIssues } = storeToRefs(
-  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const })
+  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const }),
 );
 
 // Filter issues based on legend visibility
@@ -299,7 +298,7 @@ watch(
       });
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 const { isEditing } = useIsEditing();
@@ -320,7 +319,7 @@ const projection = ref("EPSG:3857");
 // Setup resize observer to handle container size changes
 const { mapHeight, recenterOnSelectedIssue } = useMapResize(
   mapRef,
-  currentPadding
+  currentPadding,
 );
 
 // Hide controls based on actual map height (available space for the map)
@@ -400,7 +399,7 @@ function style(feature: Feature) {
       // Clamp to min/max bounds
       const clampedRadius = Math.max(
         minRadius,
-        Math.min(maxRadius, finalRadius)
+        Math.min(maxRadius, finalRadius),
       );
 
       const circleStyle = new Style({
@@ -491,7 +490,7 @@ function style(feature: Feature) {
 
 proj4.defs(
   "EPSG:28992",
-  "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.9999079 +x_0=155000 +y_0=463000 +ellps=bessel +towgs84=565.417,50.3319,465.552,-0.398957,0.343988,-1.8774,4.0725 +units=m +no_defs"
+  "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.9999079 +x_0=155000 +y_0=463000 +ellps=bessel +towgs84=565.417,50.3319,465.552,-0.398957,0.343988,-1.8774,4.0725 +units=m +no_defs",
 );
 register(proj4);
 const rdProjection = new Projection({
@@ -519,14 +518,14 @@ function toPointCoords(issue: MapIssue) {
 function toLineCoords(issue: MapIssue) {
   if (issue.geometry.type !== "LineString") return [[0, 0]];
   return issue.geometry.coordinates.map((coord) =>
-    transform(coord, "EPSG:4326", "EPSG:3857")
+    transform(coord, "EPSG:4326", "EPSG:3857"),
   );
 }
 
 function toPolygonCoords(issue: MapIssue) {
   if (issue.geometry.type !== "Polygon") return [[[0, 0]]];
   return issue.geometry.coordinates.map((ring) =>
-    ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857"))
+    ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857")),
   );
 }
 
@@ -541,7 +540,7 @@ function navigateToIssue(issue: MapIssue) {
 
 // Fallback function to create a simple circle icon if icon_data_url is missing
 const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
-  new Collection()
+  new Collection(),
 );
 
 function onFeatureSelect(event: SelectEvent) {
@@ -582,7 +581,7 @@ function onModifyEnd(event: ModifyEvent) {
   // ALSO update the geometry in the issues array (which the map renders from)
   // This prevents the map from reverting to the old geometry
   const issueIndex = issues.value.findIndex(
-    (i) => "id" in i && i.id === selectedId.value
+    (i) => "id" in i && i.id === selectedId.value,
   );
   if (issueIndex !== -1) {
     // @ts-expect-error - geometry type is complex
