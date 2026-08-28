@@ -1,17 +1,13 @@
-// Calculate contrast color based on background luminance
+import Color from "color";
+
+// Calculate contrast color based on WCAG relative luminance
 export function getContrastColor(hexColor: string): string {
-  // Remove # if present
-  const hex = hexColor.replace("#", "");
+  const color = Color(hexColor);
 
-  // Convert to RGB
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
+  // Calculate WCAG contrast ratios with white and black
+  const contrastWithWhite = color.contrast(Color("#ffffff"));
+  const contrastWithBlack = color.contrast(Color("#000000"));
 
-  // Calculate relative luminance using WCAG formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  // Return black for light backgrounds, white for dark backgrounds
-  // Adjusted threshold to 0.6 to ensure colors like #32CD32 get white text
-  return luminance > 0.6 ? "#000000" : "#ffffff";
+  // Return the color with highest contrast
+  return contrastWithWhite > contrastWithBlack ? "#ffffff" : "#000000";
 }
