@@ -47,7 +47,9 @@ export const useSharedAuthWebSocket = (() => {
       // Include JWT token as query parameter for authentication
       // Strip "Bearer " prefix if present - JWT verification expects raw token
       const cleanToken = token.value?.replace(/^Bearer\s+/i, "") || "";
-      const tokenParam = cleanToken ? `?token=${encodeURIComponent(cleanToken)}` : "";
+      const tokenParam = cleanToken
+        ? `?token=${encodeURIComponent(cleanToken)}`
+        : "";
       const websocketUrl = `${protocol}://${window.location.host}/ts/auth${tokenParam}`;
 
       eventBus = createAuthWebSocketEventBus();
@@ -59,7 +61,7 @@ export const useSharedAuthWebSocket = (() => {
           delay: 1000,
           onFailed() {
             console.error(
-              "Auth WebSocket verbinding herstellen mislukt na meerdere pogingen"
+              "Auth WebSocket verbinding herstellen mislukt na meerdere pogingen",
             );
           },
         },
@@ -67,14 +69,14 @@ export const useSharedAuthWebSocket = (() => {
           console.debug("Auth WebSocket verbonden met", websocketUrl);
           console.debug(
             "WebSocket status na verbinding:",
-            wsInstance?.status.value
+            wsInstance?.status.value,
           );
         },
         onDisconnected() {
           console.debug("Auth WebSocket verbinding verbroken");
           console.debug(
             "WebSocket status na verbreking:",
-            wsInstance?.status.value
+            wsInstance?.status.value,
           );
           // Clear peer ID on disconnect
           peerId.value = null;
@@ -96,7 +98,7 @@ export const useSharedAuthWebSocket = (() => {
               if (message.type === "error") {
                 console.error(
                   "Auth WebSocket fout:",
-                  message.payload?.message || "Onbekende fout"
+                  message.payload?.message || "Onbekende fout",
                 );
                 // Close the connection if there's an auth error
                 wsInstance?.close();
@@ -112,7 +114,7 @@ export const useSharedAuthWebSocket = (() => {
             }
             eventBus!.publish(data as string);
           }
-        }
+        },
       );
     }
 
@@ -121,7 +123,7 @@ export const useSharedAuthWebSocket = (() => {
     // Type-safe send method
     const sendMessage = <T extends keyof WebSocketEvents>(
       type: T,
-      payload: WebSocketEvents[T]
+      payload: WebSocketEvents[T],
     ) => {
       const message = { type, payload };
       wsInstance!.send(JSON.stringify(message));

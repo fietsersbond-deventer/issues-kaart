@@ -22,7 +22,7 @@ export default defineWebSocketHandler({
     // Extract token from query parameters
     const url = new URL(
       peer.request?.url || "",
-      `http://${peer.request?.headers.get("host") || "localhost"}`
+      `http://${peer.request?.headers.get("host") || "localhost"}`,
     );
     const token = url.searchParams.get("token");
 
@@ -32,7 +32,7 @@ export default defineWebSocketHandler({
         JSON.stringify({
           type: "error",
           payload: { message: "Unauthorized: No token provided" },
-        })
+        }),
       );
       peer.close();
       return;
@@ -43,7 +43,7 @@ export default defineWebSocketHandler({
 
     // Debug: log token format (first/last 10 chars only for security)
     console.debug(
-      `[ws/auth] Token ontvangen: ${cleanToken.substring(0, 10)}...${cleanToken.substring(cleanToken.length - 10)} (lengte: ${cleanToken.length})`
+      `[ws/auth] Token ontvangen: ${cleanToken.substring(0, 10)}...${cleanToken.substring(cleanToken.length - 10)} (lengte: ${cleanToken.length})`,
     );
 
     // Verify JWT token
@@ -54,7 +54,7 @@ export default defineWebSocketHandler({
       setPeerSession(peer.toString(), user);
 
       console.log(
-        `[ws/auth] Gebruiker ${user.name || user.username} geauthenticeerd (${peer.toString()})`
+        `[ws/auth] Gebruiker ${user.name || user.username} geauthenticeerd (${peer.toString()})`,
       );
 
       // Send peer ID immediately when connection opens
@@ -62,7 +62,7 @@ export default defineWebSocketHandler({
         JSON.stringify({
           type: "peer-connected",
           payload: peer.toString(),
-        })
+        }),
       );
 
       // Initialize both lock and presence functionality
@@ -79,7 +79,7 @@ export default defineWebSocketHandler({
         } else if (error.message.includes("JWS")) {
           errorMessage = "Unauthorized: Malformed token";
           console.error(
-            "[ws/auth] JWT formaat fout - mogelijk bevat token ongeldige karakters of encoding problemen"
+            "[ws/auth] JWT formaat fout - mogelijk bevat token ongeldige karakters of encoding problemen",
           );
         }
       }
@@ -88,7 +88,7 @@ export default defineWebSocketHandler({
         JSON.stringify({
           type: "error",
           payload: { message: errorMessage },
-        })
+        }),
       );
       peer.close();
       return;

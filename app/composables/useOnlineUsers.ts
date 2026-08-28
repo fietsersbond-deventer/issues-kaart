@@ -64,7 +64,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
         onlineUsers.value = []; // Clear online users when not authenticated
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Subscribe to WebSocket messages
@@ -96,12 +96,12 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
       // Find users who joined
       const joinedUsers = newUsers.filter(
-        (user) => user.userId !== currentUserId && !oldUserIds.has(user.userId)
+        (user) => user.userId !== currentUserId && !oldUserIds.has(user.userId),
       );
 
       // Find users who left
       const leftUsers = oldUsers.filter(
-        (user) => user.userId !== currentUserId && !newUserIds.has(user.userId)
+        (user) => user.userId !== currentUserId && !newUserIds.has(user.userId),
       );
 
       // Show notifications for joined users
@@ -118,7 +118,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
       previousOnlineUsers.value = [...newUsers];
     },
-    { deep: true }
+    { deep: true },
   );
 
   // Watch for connection events to re-register user
@@ -128,7 +128,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
       if (status === "OPEN" && prevStatus !== "OPEN" && isAuthenticated.value) {
         notifyUserOnline();
       }
-    }
+    },
   );
 
   // Computed properties for easier use
@@ -141,7 +141,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
     // Count how many peers (sessions) the current user has
     const mySessionCount = onlineUsers.value.filter(
-      (user) => user.userId === currentUserId
+      (user) => user.userId === currentUserId,
     ).length;
 
     // Helper function to deduplicate users by userId (keep most recent)
@@ -161,7 +161,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
 
     // Get deduplicated other users (excluding current user)
     const otherUsers = onlineUsers.value.filter(
-      (user) => user.userId !== currentUserId
+      (user) => user.userId !== currentUserId,
     );
     const deduplicatedOtherUsers = deduplicateUsers(otherUsers);
 
@@ -169,7 +169,7 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     // If user has only one session, show only other users
     if (mySessionCount > 1) {
       const selfUser = onlineUsers.value.find(
-        (user) => user.peerId === myPeerId.value
+        (user) => user.peerId === myPeerId.value,
       );
 
       return selfUser

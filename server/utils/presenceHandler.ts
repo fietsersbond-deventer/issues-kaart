@@ -11,7 +11,7 @@ function getPublicUserList(): OnlineUser[] {
 
 export function handlePresenceMessage(
   peer: WebSocketPeer,
-  data: unknown
+  data: unknown,
 ): boolean {
   const message = data as {
     type: string;
@@ -26,7 +26,7 @@ export function handlePresenceMessage(
     const session = getPeerSession(peerId);
     if (!session) {
       console.error(
-        "[ws/presence] Geen geverifieerde sessie gevonden voor peer"
+        "[ws/presence] Geen geverifieerde sessie gevonden voor peer",
       );
       return false;
     }
@@ -52,7 +52,7 @@ export function handlePresenceMessage(
       JSON.stringify({
         type: "online-users",
         payload: userList,
-      })
+      }),
     );
 
     // Also send to the connecting user
@@ -60,7 +60,7 @@ export function handlePresenceMessage(
       JSON.stringify({
         type: "online-users",
         payload: userList,
-      })
+      }),
     );
 
     return true; // Message handled
@@ -79,7 +79,7 @@ export function handlePresenceMessage(
         JSON.stringify({
           type: "online-users",
           payload: userList,
-        })
+        }),
       );
     }
 
@@ -111,7 +111,7 @@ export function cleanupPresenceForPeer(peer: WebSocketPeer) {
         JSON.stringify({
           type: "online-users",
           payload: userList,
-        })
+        }),
       );
     }, 1000);
   }

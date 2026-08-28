@@ -50,7 +50,7 @@ export interface WebSocketEvents {
 
 // Generic message structure
 export interface WebSocketMessage<
-  T extends keyof WebSocketEvents = keyof WebSocketEvents
+  T extends keyof WebSocketEvents = keyof WebSocketEvents,
 > {
   type: T;
   payload: WebSocketEvents[T];
@@ -76,7 +76,7 @@ export type IssueDeletedMessage = WebSocketMessage<"issue-deleted">;
 // Helper functions for type-safe message creation
 export function createWebSocketMessage<T extends keyof WebSocketEvents>(
   type: T,
-  payload: WebSocketEvents[T]
+  payload: WebSocketEvents[T],
 ): WebSocketMessage<T> {
   return { type, payload };
 }
@@ -93,33 +93,33 @@ export function isLockMessage(message: unknown): message is LockMessage {
     message !== null &&
     "type" in message &&
     ["lockIssue", "unlockIssue", "clearMyLocks"].includes(
-      (message as Record<string, unknown>).type as string
+      (message as Record<string, unknown>).type as string,
     )
   );
 }
 
 export function isOnlineUserMessage(
-  message: unknown
+  message: unknown,
 ): message is OnlineUserMessage {
   return (
     typeof message === "object" &&
     message !== null &&
     "type" in message &&
     ["user-online", "user-offline"].includes(
-      (message as Record<string, unknown>).type as string
+      (message as Record<string, unknown>).type as string,
     )
   );
 }
 
 export function isIssueMessage(
-  message: unknown
+  message: unknown,
 ): message is IssueCreatedMessage | IssueModifiedMessage | IssueDeletedMessage {
   return (
     typeof message === "object" &&
     message !== null &&
     "type" in message &&
     ["issue-created", "issue-modified", "issue-deleted"].includes(
-      (message as Record<string, unknown>).type as string
+      (message as Record<string, unknown>).type as string,
     )
   );
 }
@@ -127,7 +127,7 @@ export function isIssueMessage(
 // Type-safe message checker
 export function isMessageOfType<T extends keyof WebSocketEvents>(
   message: unknown,
-  type: T
+  type: T,
 ): message is WebSocketMessage<T> {
   return (
     typeof message === "object" &&

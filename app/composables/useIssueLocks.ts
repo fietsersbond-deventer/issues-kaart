@@ -35,7 +35,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       }
       // Don't close connection here - let useOnlineUsers handle it
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   const editingUsers = ref<
@@ -68,7 +68,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
           authWs.sendMessage("clearMyLocks", {});
         }
       }
-    }
+    },
   );
 
   watch(
@@ -76,7 +76,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     (_newId, oldId) => {
       if (oldId && isEditing.value) notifyEditing(oldId, false);
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   watch(
@@ -86,7 +86,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
         notifyEditing(selectedId.value, newIsEditing);
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Subscribe to WebSocket messages for lock status updates
@@ -143,7 +143,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   // Warn about unsafe editing when connection is lost
   const isEditingUnsafe = computed(
-    () => isAuthenticated.value && !isConnected.value
+    () => isAuthenticated.value && !isConnected.value,
   );
 
   // Cleanup function

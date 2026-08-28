@@ -67,7 +67,7 @@ export function cleanupStaleSessions(maxIdleMs: number = 1000 * 60 * 60): void {
     if (now - session.lastActivity > maxIdleMs) {
       peerSessions.delete(peerId);
       console.log(
-        `[peerSession] Verwijderde verlopen sessie voor ${session.user.username}`
+        `[peerSession] Verwijderde verlopen sessie voor ${session.user.username}`,
       );
     }
   }

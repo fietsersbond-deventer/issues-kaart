@@ -25,7 +25,7 @@ setInterval(() => {
     if (editor && now - editor.lockedAt > LOCK_IDLE_TIMEOUT_MS) {
       const issueTitle = getIssueTitle(Number(issueId));
       console.log(
-        `[lockHandler] Lock op ${issueTitle} door ${editor.displayName} verlopen na idle timeout`
+        `[lockHandler] Lock op ${issueTitle} door ${editor.displayName} verlopen na idle timeout`,
       );
 
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
@@ -36,7 +36,7 @@ setInterval(() => {
 
   if (cleanedCount > 0) {
     console.log(
-      `[lockHandler] ${cleanedCount} verlopen locks opgeruimd na idle timeout`
+      `[lockHandler] ${cleanedCount} verlopen locks opgeruimd na idle timeout`,
     );
   }
 }, 60 * 1000); // Check every minute
@@ -67,7 +67,7 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
       JSON.stringify({
         type: "peer-connected",
         payload: peer.toString(),
-      })
+      }),
     );
     return true; // Message handled
   }
@@ -79,7 +79,7 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
 
     if (!session) {
       console.error(
-        "[lockHandler] Geen geverifieerde sessie gevonden voor peer"
+        "[lockHandler] Geen geverifieerde sessie gevonden voor peer",
       );
       return false;
     }
@@ -108,13 +108,13 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
       const now = Date.now();
       if (now - currentEditor.lockedAt > LOCK_IDLE_TIMEOUT_MS) {
         console.log(
-          `[lockHandler] Lock op issue ${issueId} door ${currentEditor.displayName} was verlopen, wordt overschreven`
+          `[lockHandler] Lock op issue ${issueId} door ${currentEditor.displayName} was verlopen, wordt overschreven`,
         );
         // Lock has expired, allow new lock
       } else {
         // Send current editing status to inform client about the existing lock
         peer.send(
-          JSON.stringify({ type: "editing-status", payload: editingStatus })
+          JSON.stringify({ type: "editing-status", payload: editingStatus }),
         );
         return false; // Message handled but rejected - different peer is editing
       }
@@ -140,12 +140,12 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
     // Broadcast the updated editing status to all peers
     peer.publish(
       "editing-status",
-      JSON.stringify({ type: "editing-status", payload: editingStatus })
+      JSON.stringify({ type: "editing-status", payload: editingStatus }),
     );
 
     // Send the updated editing status back to the sender
     peer.send(
-      JSON.stringify({ type: "editing-status", payload: editingStatus })
+      JSON.stringify({ type: "editing-status", payload: editingStatus }),
     );
 
     return true; // Message handled
@@ -156,7 +156,7 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
     const session = getPeerSession(peerId);
     if (!session) {
       console.error(
-        "[lockHandler] Geen geverifieerde sessie gevonden voor peer"
+        "[lockHandler] Geen geverifieerde sessie gevonden voor peer",
       );
       return false;
     }
@@ -178,19 +178,19 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
     if (removedIssues.length > 0) {
       console.log(
         `${displayName} cleared locks for issues: ${removedIssues.join(
-          ", "
-        )} (reconnected without selected issue)`
+          ", ",
+        )} (reconnected without selected issue)`,
       );
 
       // Broadcast the updated editing status to all peers
       peer.publish(
         "editing-status",
-        JSON.stringify({ type: "editing-status", payload: editingStatus })
+        JSON.stringify({ type: "editing-status", payload: editingStatus }),
       );
 
       // Send the updated editing status back to the sender
       peer.send(
-        JSON.stringify({ type: "editing-status", payload: editingStatus })
+        JSON.stringify({ type: "editing-status", payload: editingStatus }),
       );
     }
 
@@ -222,7 +222,7 @@ export function cleanupLockForPeer(peer: WebSocketPeer) {
       if (editor && editor.peer === peerId) {
         const issueTitle = getIssueTitle(Number(issueId));
         console.log(
-          `${editor.username} stopped editing ${issueTitle} (disconnected)`
+          `${editor.username} stopped editing ${issueTitle} (disconnected)`,
         );
 
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
@@ -236,7 +236,7 @@ export function cleanupLockForPeer(peer: WebSocketPeer) {
       JSON.stringify({
         type: "editing-status",
         payload: editingStatus,
-      })
+      }),
     );
   }, 500);
 }
