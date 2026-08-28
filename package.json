@@ -80,8 +80,7 @@
     "vite-plugin-vuetify": "^2.1.1",
     "vitest": "^3.2.3",
     "vue-tsc": "^2.2.10",
-    "vuetify": "^3.8.8",
-    "wrangler": "4.14.4"
+    "vuetify": "^3.8.8"
   },
   "packageManager": "pnpm@10.11.0",
   "pnpm": {
@@ -90,7 +89,6 @@
       "esbuild",
       "sharp",
       "unrs-resolver",
-      "workerd",
       "bcrypt"
     ],
     "ignoredBuiltDependencies": [
