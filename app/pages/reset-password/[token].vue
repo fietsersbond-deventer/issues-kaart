@@ -54,6 +54,8 @@
 </template>
 
 <script setup lang="ts">
+useTitle("Nieuw wachtwoord instellen");
+
 const route = useRoute();
 
 const password = ref("");
