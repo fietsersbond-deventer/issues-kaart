@@ -2,10 +2,10 @@ import { EventEmitter } from "events";
 
 const eventEmitter = new EventEmitter();
 
-// Increase max listeners to support many concurrent WebSocket connections
-// Each connection adds 3 listeners (issue:created, issue:modified, issue:deleted)
-// Default is 10, so we increase to support at least 50 concurrent connections
-eventEmitter.setMaxListeners(150);
+// Note: Event listeners are registered once at module level (not per connection)
+// Only 3 listeners total: issue:created, issue:modified, issue:deleted
+// Default maxListeners (10) is sufficient, but we keep a higher limit for extensibility
+eventEmitter.setMaxListeners(20);
 
 export function getEmitter() {
   return eventEmitter;
