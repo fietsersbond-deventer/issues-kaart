@@ -9,6 +9,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [{ rel: "icon", type: "image/jpeg", href: "/fietsersbond.jpeg" }],
+      htmlAttrs: {
+        lang: "nl",
+      },
     },
   },
   css: [
@@ -58,6 +61,8 @@ export default defineNuxtConfig({
     "nuxt-mdi",
     "vuetify-nuxt-module",
     "@pinia/nuxt",
+    "@jfungus/ratelimit-nuxt",
+    "nuxt-security",
   ],
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
@@ -75,7 +80,6 @@ export default defineNuxtConfig({
       endpoints: {
         signIn: { path: "/login", method: "post" },
         signOut: { path: "/logout", method: "post" },
-        signUp: { path: "/register", method: "post" },
         getSession: { path: "/session", method: "get" },
       },
       refresh: {
@@ -92,6 +96,10 @@ export default defineNuxtConfig({
       openAPI: true,
       websocket: true,
     },
+  },
+  ratelimit: {
+    limit: 100,
+    windowMs: 60000, // 1 minute in milliseconds
   },
   devtools: { enabled: true },
   vuetify: {

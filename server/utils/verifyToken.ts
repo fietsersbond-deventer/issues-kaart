@@ -1,6 +1,10 @@
 import * as jose from "jose";
 import type { User } from "../database/schema";
-const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
+const JWT_SECRET = process.env.NUXT_JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT geheim is niet geconfigureerd");
+}
 
 export async function verifyToken(token: string): Promise<User> {
   if (!JWT_SECRET) {
@@ -12,8 +16,8 @@ export async function verifyToken(token: string): Promise<User> {
     return payload as User;
   } catch (err) {
     if (err instanceof jose.errors.JWTExpired) {
-      const error = new Error('Token is verlopen');
-      error.name = 'TokenExpiredError';
+      const error = new Error("Token is verlopen");
+      error.name = "TokenExpiredError";
       throw error;
     }
     console.error("Token verificatie mislukt:", err);
