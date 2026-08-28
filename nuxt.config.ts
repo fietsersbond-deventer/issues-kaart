@@ -62,7 +62,7 @@ export default defineNuxtConfig({
     "vuetify-nuxt-module",
     "@pinia/nuxt",
     "@jfungus/ratelimit-nuxt",
-    "nuxt-security",
+    // "nuxt-security",
   ],
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
@@ -101,6 +101,39 @@ export default defineNuxtConfig({
     limit: 100,
     windowMs: 60000, // 1 minute in milliseconds
   },
+  // security: {
+  //   headers: {
+  //     contentSecurityPolicy: {
+  //       "default-src": ["'self'"],
+  //       "script-src": ["'self'"],
+  //       "style-src": [
+  //         "'self'",
+  //         "'unsafe-inline'",
+  //         "https://fonts.googleapis.com",
+  //       ],
+  //       "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+  //       "img-src": [
+  //         "'self'",
+  //         "data:",
+  //         "blob:",
+  //         "https://*.global.ssl.fastly.net",
+  //         "https://*.tile-cyclosm.openstreetmap.fr",
+  //         "https://service.pdok.nl",
+  //       ],
+  //       "connect-src": [
+  //         "'self'",
+  //         "https://photon.komoot.io",
+  //         "https://nominatim.openstreetmap.org",
+  //         "https://service.pdok.nl",
+  //       ],
+  //       "worker-src": ["'self'", "blob:"],
+  //       "frame-ancestors": ["'none'"],
+  //       "base-uri": ["'self'"],
+  //       "object-src": ["'none'"],
+  //       "form-action": ["'self'"],
+  //     },
+  //   },
+  // },
   devtools: { enabled: true },
   vuetify: {
     moduleOptions: {
