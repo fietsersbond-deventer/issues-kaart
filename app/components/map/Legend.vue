@@ -7,7 +7,12 @@
         class="legend-item clickable"
         :class="{ 'legend-item--disabled': !isLegendVisible(item.id) }"
         density="compact"
+        tabindex="0"
+        role="checkbox"
+        :aria-checked="isLegendVisible(item.id)"
         @click="toggleLegendVisibility(item.id)"
+        @keydown.enter.prevent="toggleLegendVisibility(item.id)"
+        @keydown.space.prevent="toggleLegendVisibility(item.id)"
       >
         <td>
           <LegendIndicator :legend="item" :size="24" />
@@ -49,7 +54,7 @@ const visibleLegends = computed(() => {
   const usedLegendIds = new Set(
     issues.value
       ?.map((issue) => issue.legend_id)
-      .filter((id): id is number => id != null) || []
+      .filter((id): id is number => id != null) || [],
   );
   return legends.value?.filter((legend) => usedLegendIds.has(legend.id)) ?? [];
 });
@@ -83,7 +88,9 @@ const countIssues = computed(() => {
   min-height: 28px !important;
   height: 28px !important;
   padding: 0 8px !important;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .legend-item.clickable {
@@ -92,6 +99,11 @@ const countIssues = computed(() => {
 
 .legend-item.clickable:hover {
   background-color: rgba(0, 0, 0, 0.04);
+}
+
+.legend-item:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 .legend-item--disabled {

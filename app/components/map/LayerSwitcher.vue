@@ -6,7 +6,13 @@
         :key="layer.name"
         class="mini-map-container"
         :class="{ active: selectedLayer === layer.name }"
+        tabindex="0"
+        role="button"
+        :aria-pressed="selectedLayer === layer.name"
+        :aria-label="`Kaartlaag ${layer.name}`"
         @click="selectLayer(layer.name)"
+        @keydown.enter.prevent="selectLayer(layer.name)"
+        @keydown.space.prevent="selectLayer(layer.name)"
       >
         <ol-map class="mini-map" :controls="[]">
           <ol-view
@@ -81,6 +87,11 @@ function selectLayer(layerName: string) {
 
 .mini-map-container:hover {
   border-color: rgba(0, 0, 0, 0.2);
+}
+
+.mini-map-container:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 
 .mini-map-container.active {

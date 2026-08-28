@@ -60,14 +60,27 @@
     <div class="bottom-sheet" :style="{ height: `${sheetHeight}%` }">
       <div
         class="drag-handle"
+        tabindex="0"
+        role="button"
+        :aria-pressed="isSheetExpanded"
+        aria-controls="mobile-bottom-sheet-content"
+        :aria-label="
+          isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'
+        "
         @touchstart="startDrag"
         @touchmove="onDrag"
         @touchend="endDrag"
         @mousedown="startDragMouse"
+        @keydown.enter.prevent="toggleSheetHeight"
+        @keydown.space.prevent="toggleSheetHeight"
       >
         <div class="drag-indicator" />
       </div>
-      <div ref="sheetContentRef" class="sheet-content">
+      <div
+        id="mobile-bottom-sheet-content"
+        ref="sheetContentRef"
+        class="sheet-content"
+      >
         <NuxtPage />
       </div>
     </div>
@@ -82,6 +95,7 @@ const {
   onDrag,
   endDrag,
   startDragMouse,
+  setHeight,
 } = useBottomSheet({
   defaultHeight: 50,
   minHeight: 20,
@@ -92,6 +106,11 @@ const {
 // Mobile control overlays
 const showLayerSwitcher = ref(false);
 const showLegend = ref(false);
+const collapsedSheetHeight = 40;
+const expandedSheetHeight = 75;
+const isSheetExpanded = computed(
+  () => sheetHeight.value >= expandedSheetHeight,
+);
 
 // Size tracking for the mobile controls
 const controlsSize = ref<{ width: number; height: number }>({
@@ -120,6 +139,10 @@ function handleResetExtent() {
   if (mapRef.value) {
     mapRef.value.resetToOriginalExtent();
   }
+}
+
+function toggleSheetHeight() {
+  setHeight(isSheetExpanded.value ? collapsedSheetHeight : expandedSheetHeight);
 }
 
 // Watch for controls size changes and update map padding
@@ -179,6 +202,11 @@ watch(sheetHeight, () => {
 
 .drag-handle:active {
   cursor: grabbing;
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 .drag-indicator {
