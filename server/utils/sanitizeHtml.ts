@@ -58,6 +58,19 @@ export function sanitizeHtml(html: string): string {
     selfClosing: ["img", "br"],
     disallowedTagsMode: "discard",
     transformTags: {
+      // Enforce rel="noopener noreferrer" on links with target to prevent reverse tabnabbing
+      a: function (tagName, attribs) {
+        if (attribs.target) {
+          return {
+            tagName,
+            attribs: {
+              ...attribs,
+              rel: "noopener noreferrer",
+            },
+          };
+        }
+        return { tagName, attribs };
+      },
       img: function (tagName, attribs) {
         if (
           attribs.src &&

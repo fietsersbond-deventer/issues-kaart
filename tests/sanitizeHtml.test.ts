@@ -29,7 +29,30 @@ describe("HTML Sanitization Security Tests", () => {
       const result = sanitizeHtml(input);
       expect(result).toContain('<a href="https://example.com"');
       expect(result).toContain('target="_blank"');
-      expect(result).toContain('rel="noopener"');
+      expect(result).toContain('rel="noopener noreferrer"');
+    });
+
+    it("should enforce rel='noopener noreferrer' on links with target to prevent reverse tabnabbing", () => {
+      const input = '<a href="https://example.com" target="_blank">Link</a>';
+      const result = sanitizeHtml(input);
+      expect(result).toContain('<a href="https://example.com"');
+      expect(result).toContain('target="_blank"');
+      expect(result).toContain('rel="noopener noreferrer"');
+    });
+
+    it("should enforce rel='noopener noreferrer' even if another rel value is provided", () => {
+      const input =
+        '<a href="https://example.com" target="_blank" rel="external">Link</a>';
+      const result = sanitizeHtml(input);
+      expect(result).toContain('rel="noopener noreferrer"');
+      expect(result).not.toContain('rel="external"');
+    });
+
+    it("should not add rel to links without target attribute", () => {
+      const input = '<a href="https://example.com">Link</a>';
+      const result = sanitizeHtml(input);
+      expect(result).toBe('<a href="https://example.com">Link</a>');
+      expect(result).not.toContain("rel=");
     });
 
     it("should allow images with safe attributes", () => {
