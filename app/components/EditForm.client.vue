@@ -35,7 +35,7 @@
               <v-text-field
                 v-model.trim="issue.title"
                 label="Titel"
-                :rules="[(v:string) => !!v || 'Titel is verplicht']"
+                :rules="[(v: string) => !!v || 'Titel is verplicht']"
                 required
               />
             </v-col>
@@ -118,7 +118,6 @@ import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import { isExistingIssue, type Issue } from "~/types/Issue";
 import { imageCompressor } from "quill-image-compress";
-import BlotFormatter from "quill-blot-formatter";
 
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
@@ -147,13 +146,13 @@ const canSubmit = computed(() => {
 });
 
 const modules = [
-  {
-    name: "blotFormatter",
-    module: BlotFormatter,
-    options: {
-      /* options */
-    },
-  },
+  // {
+  //   name: "blotFormatter",
+  //   module: BlotFormatter,
+  //   options: {
+  //     /* options */
+  //   },
+  // },
   {
     name: "compress",
     module: imageCompressor,
@@ -200,7 +199,7 @@ async function onSubmit() {
       trackEvent(
         "Issue",
         "Modified",
-        `Issue #${issue.value.id} by ${username}: ${issue.value.title}`
+        `Issue #${issue.value.id} by ${username}: ${issue.value.title}`,
       );
     } else {
       const result = await create(issue.value);
@@ -209,7 +208,7 @@ async function onSubmit() {
         trackEvent(
           "Issue",
           "Created",
-          `Issue #${result.id} by ${username}: ${result.title}`
+          `Issue #${result.id} by ${username}: ${result.title}`,
         );
         showDialog.value = false;
         return navigateTo(`/kaart/${result.id}`);
@@ -237,7 +236,7 @@ async function onDelete() {
       trackEvent(
         "Issue",
         "Deleted",
-        `Issue #${issue.value.id} by ${name}: ${issue.value.title}`
+        `Issue #${issue.value.id} by ${name}: ${issue.value.title}`,
       );
       showDialog.value = false;
       return navigateTo("/kaart");
