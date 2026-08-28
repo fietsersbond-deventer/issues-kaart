@@ -24,9 +24,9 @@ module.exports = {
         NUXT_PUBLIC_MAP_INITIAL_ZOOM: "13",
         NUXT_PUBLIC_MAP_SEARCH_BBOX: "6.0,52.1,6.3,52.4",
         // Matomo server-side configuration (optional)
-        MATOMO_URL: "https://matomo.example.com",
-        MATOMO_TRACKER_URL: "matomo.php",
-        MATOMO_AUTH_TOKEN: "your-matomo-auth-token-here",
+        NUXT_MATOMO_URL: "https://matomo.example.com",
+        NUXT_MATOMO_TRACKER_URL: "matomo.php",
+        NUXT_MATOMO_AUTH_TOKEN: "your-matomo-auth-token-here",
         // Matomo client-side configuration (optional)
         NUXT_PUBLIC_MATOMO_SITE_ID: "1",
         NUXT_PUBLIC_MATOMO_SCRIPT_URL: "matomo.js",
