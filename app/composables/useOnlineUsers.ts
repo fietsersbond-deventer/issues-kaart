@@ -76,6 +76,11 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     }
   });
 
+  // Properly cleanup subscription when store is disposed
+  onScopeDispose(() => {
+    unsubscribe();
+  });
+
   // Watch for changes in online users to show notifications
   watch(
     onlineUsers,
@@ -213,17 +218,6 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     return "#424242"; // Material Design grey-800, matches button text color
   }
 
-  // Cleanup on unmount
-  function cleanup() {
-    notifyUserOffline();
-    unsubscribe();
-  }
-
-  // Clean up when navigating away
-  if (typeof window !== "undefined") {
-    window.addEventListener("beforeunload", cleanup);
-  }
-
   return {
     onlineUsers,
     displayedOnlineUsers,
@@ -236,6 +230,5 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
     getUserAvatarColor,
     notifyUserOnline,
     notifyUserOffline,
-    cleanup,
   };
 });
