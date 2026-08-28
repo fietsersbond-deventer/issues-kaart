@@ -169,7 +169,7 @@ const isPrinting = useMediaQuery('print')
 const issuesStore = useIssues({
   fields: "id,title,legend_id,created_at,imageUrl",
 });
-const { remove } = issuesStore;
+const { remove, update } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
 
 const locksStore = useIssueLocks();
