@@ -11,37 +11,28 @@ export interface OnlineUser {
 }
 
 // Define payload types for each message type
+// Updated: Server derives user info from verified JWT token
 export interface WebSocketEvents {
-  // Lock/editing messages
+  // Lock/editing messages (server derives user info from JWT)
   lockIssue: {
     issueId: number;
-    username: string;
-    displayName?: string;
   };
   unlockIssue: {
     issueId: number;
-    username: string;
-    displayName?: string;
   };
-  clearMyLocks: {
-    username: string;
-    displayName?: string;
-  };
+  clearMyLocks: Record<string, never>; // Empty payload
   "editing-status": Record<
     string,
     {
       peer: string;
       username: string;
       displayName: string;
+      lockedAt: number;
     }
   >;
 
-  // Presence messages
-  "user-online": {
-    username: string;
-    name?: string | null;
-    userId: number;
-  };
+  // Presence messages (server derives user info from JWT)
+  "user-online": Record<string, never>; // Empty payload
   "user-offline": Record<string, never>; // Empty payload
   "online-users": OnlineUser[];
   "peer-connected": string; // peer ID

@@ -1,5 +1,6 @@
 import type { WebSocketPeer } from "#nitro";
 import type { OnlineUser } from "../../app/types/WebSocketMessages";
+import { getPeerSession } from "./peerSession";
 
 const onlineUsers = new Map<string, OnlineUser>();
 
@@ -19,31 +20,30 @@ export function handlePresenceMessage(
   };
 
   if (message.type === "user-online") {
-    // Handle new message format with payload
-    const payload = message.payload || message; // Fallback for old format
-    const { username, name, userId } = payload as {
-      username: string;
-      name?: string | null;
-      userId: number;
-    };
+    const peerId = peer.toString();
 
-    if (!username || userId === undefined) {
-      console.log("[ws/presence] Ontbrekende gebruikersgegevens");
+    // Get verified user data from peer session (server-side)
+    const session = getPeerSession(peerId);
+    if (!session) {
+      console.error(
+        "[ws/presence] Geen geverifieerde sessie gevonden voor peer"
+      );
       return false;
     }
 
-    const peerId = peer.toString();
+    // Use server-verified user data, not client payload
+    const { user } = session;
 
     // Add user to online list
     onlineUsers.set(peerId, {
       peerId,
-      username,
-      name: name || null,
-      userId,
+      username: user.username,
+      name: user.name || null,
+      userId: user.id,
       connectedAt: Date.now(),
     });
 
-    console.log(`${name} is nu online`);
+    console.log(`${user.name || user.username} is nu online`);
 
     // Broadcast updated user list to all connected peers
     const userList = getPublicUserList();

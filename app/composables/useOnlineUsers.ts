@@ -40,11 +40,8 @@ export const useOnlineUsers = defineStore("onlineUsers", () => {
       return;
     }
 
-    authWs.sendMessage("user-online", {
-      username: authData.value.username,
-      name: authData.value.name,
-      userId: Number(authData.value.id),
-    });
+    // Server will derive user info from verified JWT token
+    authWs.sendMessage("user-online", {});
   }
 
   // Notify server that user is offline

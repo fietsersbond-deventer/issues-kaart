@@ -41,8 +41,14 @@ export const useSharedAuthWebSocket = (() => {
 
   return () => {
     if (!wsInstance) {
+      const { token } = useAuth();
       const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const websocketUrl = `${protocol}://${window.location.host}/ts/auth`;
+
+      // Include JWT token as query parameter for authentication
+      // Strip "Bearer " prefix if present - JWT verification expects raw token
+      const cleanToken = token.value?.replace(/^Bearer\s+/i, "") || "";
+      const tokenParam = cleanToken ? `?token=${encodeURIComponent(cleanToken)}` : "";
+      const websocketUrl = `${protocol}://${window.location.host}/ts/auth${tokenParam}`;
 
       eventBus = createAuthWebSocketEventBus();
 
@@ -85,6 +91,18 @@ export const useSharedAuthWebSocket = (() => {
           if (data) {
             try {
               const message = JSON.parse(data as string);
+
+              // Handle authentication errors
+              if (message.type === "error") {
+                console.error(
+                  "Auth WebSocket fout:",
+                  message.payload?.message || "Onbekende fout"
+                );
+                // Close the connection if there's an auth error
+                wsInstance?.close();
+                return;
+              }
+
               // Store peer ID centrally when received
               if (message.type === "peer-connected") {
                 peerId.value = message.payload as string;

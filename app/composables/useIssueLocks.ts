@@ -7,8 +7,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   const { isEditing } = useIsEditing();
   const { selectedId } = storeToRefs(useSelectedIssue());
 
-  // Extract the user's name and authentication status
-  const { data: authData, status } = useAuth();
+  // Extract authentication status
+  const { status } = useAuth();
   const isAuthenticated = computed(() => status.value === "authenticated");
 
   // Use shared WebSocket connection
@@ -38,13 +38,11 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     { immediate: true }
   );
 
-  const userName = computed(() => authData.value?.username || "unknown");
-  const displayName = computed(
-    () => authData.value?.name || authData.value?.username || "Unknown"
-  );
-
   const editingUsers = ref<
-    Record<string, { peer: string; username: string; displayName: string }>
+    Record<
+      string,
+      { peer: string; username: string; displayName: string; lockedAt: number }
+    >
   >({});
 
   // Use centrally stored peer ID from shared WebSocket
@@ -66,10 +64,8 @@ export const useIssueLocks = defineStore("issueLocks", () => {
           notifyEditing(selectedId.value, isEditing.value);
         } else if (isAuthenticated.value) {
           // No selected issue, but we might have had locks - clear any stale locks
-          authWs.sendMessage("clearMyLocks", {
-            username: userName.value,
-            displayName: displayName.value,
-          });
+          // Server will derive user info from verified JWT token
+          authWs.sendMessage("clearMyLocks", {});
         }
       }
     }
@@ -96,11 +92,7 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   // Subscribe to WebSocket messages for lock status updates
   const unsubscribe = authWs.subscribe((message) => {
     if (message.type === "editing-status") {
-      editingUsers.value =
-        (message.payload as Record<
-          string,
-          { peer: string; username: string; displayName: string }
-        >) || {};
+      editingUsers.value = message.payload || {};
     }
     // peer-connected is now handled centrally in useSharedAuthWebSocket
   });
@@ -111,17 +103,14 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       return;
     }
 
+    // Server will derive user info from verified JWT token
     if (isEditing) {
       authWs.sendMessage("lockIssue", {
         issueId,
-        username: userName.value,
-        displayName: displayName.value,
       });
     } else {
       authWs.sendMessage("unlockIssue", {
         issueId,
-        username: userName.value,
-        displayName: displayName.value,
       });
     }
   }

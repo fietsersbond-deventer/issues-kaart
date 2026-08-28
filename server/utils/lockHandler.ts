@@ -1,14 +1,45 @@
 import type { WebSocketPeer } from "#nitro";
 import { getDb } from "./db";
+import { getPeerSession } from "./peerSession";
 
-// Store editing status: { issueId: { peer: string, username: string, displayName: string } }
+// Store editing status: { issueId: { peer: string, username: string, displayName: string, lockedAt: number } }
 type PeerInfo = {
   peer: string;
   username: string;
   displayName: string;
+  lockedAt: number;
 };
 
 const editingStatus: Record<string, PeerInfo | undefined> = {};
+
+// Idle timeout for locks (15 minutes)
+const LOCK_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+
+// Periodically check for stale locks
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+
+  Object.keys(editingStatus).forEach((issueId) => {
+    const editor = editingStatus[issueId];
+    if (editor && now - editor.lockedAt > LOCK_IDLE_TIMEOUT_MS) {
+      const issueTitle = getIssueTitle(Number(issueId));
+      console.log(
+        `[lockHandler] Lock op ${issueTitle} door ${editor.displayName} verlopen na idle timeout`
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete editingStatus[issueId];
+      cleanedCount++;
+    }
+  });
+
+  if (cleanedCount > 0) {
+    console.log(
+      `[lockHandler] ${cleanedCount} verlopen locks opgeruimd na idle timeout`
+    );
+  }
+}, 60 * 1000); // Check every minute
 
 // Helper function to get issue title
 function getIssueTitle(issueId: number): string {
@@ -42,12 +73,25 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
   }
 
   if (message.type === "lockIssue" || message.type === "unlockIssue") {
+    // Get verified user data from peer session (server-side)
+    const peerId = peer.toString();
+    const session = getPeerSession(peerId);
+
+    if (!session) {
+      console.error(
+        "[lockHandler] Geen geverifieerde sessie gevonden voor peer"
+      );
+      return false;
+    }
+
+    // Use server-verified user data, not client payload
+    const { user } = session;
+    const displayName = user.name || user.username;
+
     // Handle new message format with payload
     const payload = message.payload || message; // Fallback for old format
-    const { issueId, username, displayName } = payload as {
+    const { issueId } = payload as {
       issueId: number;
-      username: string;
-      displayName?: string;
     };
 
     if (!issueId) {
@@ -56,33 +100,41 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
     }
 
     const isEditing = message.type === "lockIssue";
-    const peerId = peer.toString();
 
     // Check if a different peer is already editing this issue
     const currentEditor = editingStatus[Number(issueId)];
     if (currentEditor && currentEditor.peer !== peerId) {
-      // Send current editing status to inform client about the existing lock
-      peer.send(
-        JSON.stringify({ type: "editing-status", payload: editingStatus })
-      );
-      return false; // Message handled but rejected - different peer is editing
+      // Check if the existing lock has expired
+      const now = Date.now();
+      if (now - currentEditor.lockedAt > LOCK_IDLE_TIMEOUT_MS) {
+        console.log(
+          `[lockHandler] Lock op issue ${issueId} door ${currentEditor.displayName} was verlopen, wordt overschreven`
+        );
+        // Lock has expired, allow new lock
+      } else {
+        // Send current editing status to inform client about the existing lock
+        peer.send(
+          JSON.stringify({ type: "editing-status", payload: editingStatus })
+        );
+        return false; // Message handled but rejected - different peer is editing
+      }
     }
 
-    // Get issue title for logging - use display name for logs
+    // Get issue title for logging
     const issueTitle = getIssueTitle(issueId);
-    const logName = displayName || username;
 
     if (isEditing) {
       editingStatus[Number(issueId)] = {
         peer: peerId,
-        username,
-        displayName: displayName || username,
+        username: user.username,
+        displayName: displayName,
+        lockedAt: Date.now(),
       };
-      console.log(`${logName} is editing ${issueTitle}`);
+      console.log(`${displayName} is editing ${issueTitle}`);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete editingStatus[Number(issueId)];
-      console.log(`${logName} stopped editing ${issueTitle}`);
+      console.log(`${displayName} stopped editing ${issueTitle}`);
     }
 
     // Broadcast the updated editing status to all peers
@@ -98,14 +150,19 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
 
     return true; // Message handled
   } else if (message.type === "clearMyLocks") {
-    // Handle new message format with payload
-    const payload = message.payload || message; // Fallback for old format
-    const { username, displayName } = payload as {
-      username: string;
-      displayName?: string;
-    };
     const peerId = peer.toString();
-    const logName = displayName || username;
+
+    // Get verified user data from peer session (server-side)
+    const session = getPeerSession(peerId);
+    if (!session) {
+      console.error(
+        "[lockHandler] Geen geverifieerde sessie gevonden voor peer"
+      );
+      return false;
+    }
+
+    const { user } = session;
+    const displayName = user.name || user.username;
 
     // Find and remove all locks for this peer
     const removedIssues: number[] = [];
@@ -120,7 +177,7 @@ export function handleLockMessage(peer: WebSocketPeer, data: unknown): boolean {
 
     if (removedIssues.length > 0) {
       console.log(
-        `${logName} cleared locks for issues: ${removedIssues.join(
+        `${displayName} cleared locks for issues: ${removedIssues.join(
           ", "
         )} (reconnected without selected issue)`
       );
