@@ -91,6 +91,10 @@ async function handleLogout() {
   line-height: 1;
 }
 
+a.v-btn {
+  text-decoration: none;
+}
+
 .logo {
   background-color: white;
   height: 100%;
