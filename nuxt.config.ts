@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   },
   css: [
     "ol/ol.css",
-    "vue3-openlayers/dist/vue3-openlayers.css",
+    "vue3-openlayers/vue3-openlayers.css",
     "@/assets/css/main.css", // Make sure our CSS is last to take precedence
   ],
   runtimeConfig: {
