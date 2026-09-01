@@ -9,22 +9,11 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
-        <v-btn
-          v-if="'id' in issue"
-          color="error"
-          variant="flat"
-          @click="onDelete"
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -51,10 +40,7 @@
                     class="quill-editor"
                   />
                 </div>
-                <div
-                  v-if="!issue.description"
-                  class="text-error text-caption mt-1"
-                >
+                <div v-if="!issue.description" class="text-error text-caption mt-1">
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -62,6 +48,7 @@
 
             <v-col cols="12">
               <CategorySelect
+                v-if="legends"
                 v-model="issue.legend_id"
                 :legends="legends"
                 label="Categorie"
@@ -80,8 +67,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen
-                bovenin de kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
+                kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -90,16 +77,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
