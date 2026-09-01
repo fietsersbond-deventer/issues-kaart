@@ -11,19 +11,19 @@
   >
     <template #selection="{ item: legend }">
       <div class="d-flex align-center" style="gap: 8px">
-        <LegendIndicator :legend="legend.raw" :size="20" />
-        <span>{{ legend.raw.name }}</span>
+        <LegendIndicator :legend="legend" :size="20" />
+        <span>{{ legend.name }}</span>
       </div>
     </template>
 
     <template #item="{ props: itemProps, item: legend }">
       <v-list-item
         v-bind="itemProps"
-        :subtitle="legend.raw.description || undefined"
+        :subtitle="legend.description || undefined"
       >
         <template #prepend>
           <div class="me-2">
-            <LegendIndicator :legend="legend.raw" :size="20" />
+            <LegendIndicator :legend="legend" :size="20" />
           </div>
         </template>
       </v-list-item>
