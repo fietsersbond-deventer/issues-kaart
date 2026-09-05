@@ -5,14 +5,18 @@
         v-for="item in visibleLegends"
         :key="item.id"
         class="legend-item clickable"
-        :class="{ 'legend-item--disabled': !isLegendVisible(item.id) }"
+        :class="{
+          'legend-item--disabled': !isLegendVisible(item.id),
+          'legend-item--unavailable': !availableLegendIds.has(item.id),
+        }"
         density="compact"
         tabindex="0"
         role="checkbox"
         :aria-checked="isLegendVisible(item.id)"
-        @click="toggleLegendVisibility(item.id)"
-        @keydown.enter.prevent="toggleLegendVisibility(item.id)"
-        @keydown.space.prevent="toggleLegendVisibility(item.id)"
+        :aria-disabled="!availableLegendIds.has(item.id)"
+        @click="toggleLegendIfAvailable(item.id)"
+        @keydown.enter.prevent="toggleLegendIfAvailable(item.id)"
+        @keydown.space.prevent="toggleLegendIfAvailable(item.id)"
       >
         <td>
           <LegendIndicator :legend="item" :size="24" />
@@ -41,22 +45,24 @@
       <tr v-if="usedTags.length" class="section-heading">
         <td colspan="4" class="text-caption text-medium-emphasis">Tags</td>
       </tr>
-      <tr
-        v-for="tag in usedTags"
-        :key="tag.tag"
-        class="tag-item clickable"
-        :class="{ 'tag-item--selected': hasTag(tag.tag) }"
-        tabindex="0"
-        role="checkbox"
-        :aria-checked="hasTag(tag.tag)"
-        @click="toggleTag(tag.tag)"
-        @keydown.enter.prevent="toggleTag(tag.tag)"
-        @keydown.space.prevent="toggleTag(tag.tag)"
-      >
-        <td colspan="3">
-          <Tag :tag="tag" />
+      <tr v-if="usedTags.length">
+        <td colspan="4">
+          <div class="tag-grid">
+            <Tag
+              v-for="tag in usedTags"
+              :key="tag.tag"
+              :tag="tag"
+              stretch
+              :active="hasTag(tag.tag)"
+              :disabled="!hasTag(tag.tag) && !availableTagSlugs.has(tag.tag)"
+              @click="toggleTagIfAvailable(tag.tag)"
+            >
+              <template #append>
+                <span class="tag-count">{{ tagCounts[tag.tag] ?? 0 }}</span>
+              </template>
+            </Tag>
+          </div>
         </td>
-        <td class="ps-2 font-weight-thin">{{ tagCounts[tag.tag] }}</td>
       </tr>
     </v-table>
   </div>
@@ -67,32 +73,62 @@ const { legends } = storeToRefs(useLegends());
 const { toggleLegendVisibility, isLegendVisible } = useLegendFilters();
 const { tags } = useTagsApi();
 const { hasTag, toggleTag } = useTagFilters();
-
-// Only need legend_id to determine which legends are visible
-const { issues } = storeToRefs(useIssues({ fields: "id,legend_id,tags" }));
+const { allIssues, selectedIssues } = storeToRefs(useMapIssueSelection());
+const { selectedTagSlugs: selectedTagFilterSlugs } = storeToRefs(
+  useTagFilters(),
+);
 
 // Only show legends that are actually used in the map
 const visibleLegends = computed(() => {
   const usedLegendIds = new Set(
-    issues.value
+    allIssues.value
       ?.map((issue) => issue.legend_id)
       .filter((id): id is number => id != null) || [],
   );
   return legends.value?.filter((legend) => usedLegendIds.has(legend.id)) ?? [];
 });
 
+const availableLegendIds = computed(() => {
+  const ids = new Set<number>();
+  for (const issue of allIssues.value) {
+    const matchesTags = [...selectedTagFilterSlugs.value].every((tag) =>
+      issue.tags?.includes(tag),
+    );
+    if (matchesTags && issue.legend_id != null) ids.add(issue.legend_id);
+  }
+  return ids;
+});
+
+function toggleLegendIfAvailable(legendId: number) {
+  if (!availableLegendIds.value.has(legendId)) return;
+  toggleLegendVisibility(legendId);
+}
+
 const countIssues = computed(() => {
   const counts: Record<number, number> = {};
-  issues.value.forEach((issue) => {
+  allIssues.value.forEach((issue) => {
+    const matchesTags = [...selectedTagFilterSlugs.value].every((tag) =>
+      issue.tags?.includes(tag),
+    );
+    if (!matchesTags) return;
+
     counts[issue.legend_id] = (counts[issue.legend_id] ?? 0) + 1;
   });
 
   return counts;
 });
 
+const availableTagSlugs = computed(() => {
+  const slugs = new Set<string>();
+  for (const issue of selectedIssues.value) {
+    for (const tag of issue.tags ?? []) slugs.add(tag);
+  }
+  return slugs;
+});
+
 const tagCounts = computed(() => {
   const counts: Record<string, number> = {};
-  for (const issue of issues.value) {
+  for (const issue of selectedIssues.value) {
     for (const tag of issue.tags ?? []) {
       counts[tag] = (counts[tag] ?? 0) + 1;
     }
@@ -100,9 +136,29 @@ const tagCounts = computed(() => {
   return counts;
 });
 
+const globallyUsedTagSlugs = computed(() => {
+  const slugs = new Set<string>();
+  for (const issue of allIssues.value) {
+    for (const tag of issue.tags ?? []) slugs.add(tag);
+  }
+  return slugs;
+});
+
 const usedTags = computed(() =>
-  (tags.value ?? []).filter((tag) => (tagCounts.value[tag.tag] ?? 0) > 0),
+  (tags.value ?? []).filter((tag) =>
+    globallyUsedTagSlugs.value.has(tag.tag),
+  ),
 );
+
+function toggleTagIfAvailable(tag: string) {
+  if (
+    !selectedTagFilterSlugs.value.has(tag) &&
+    !availableTagSlugs.value.has(tag)
+  ) {
+    return;
+  }
+  toggleTag(tag);
+}
 </script>
 
 <style scoped>
@@ -150,26 +206,26 @@ const usedTags = computed(() =>
   background-color: rgba(0, 0, 0, 0.08);
 }
 
-.tag-item {
-  min-height: 36px !important;
-  height: 36px !important;
-  padding: 0 8px !important;
-  transition:
-    opacity 0.2s ease,
-    background-color 0.2s ease;
+.legend-item--unavailable {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
-.tag-item:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+.legend-item--unavailable:hover {
+  background-color: transparent;
 }
 
-.tag-item--selected {
-  background-color: rgba(var(--v-theme-primary), 0.12);
-  box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
+.tag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+  padding: 8px;
 }
 
-.tag-item--selected:hover {
-  background-color: rgba(var(--v-theme-primary), 0.18);
+.tag-count {
+  min-width: 1.25em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .color-preview {
