@@ -12,6 +12,7 @@ export function useMapFraming(options: {
   selectedIssue: Ref<Issue | NewIssue | null>;
   selectedId: Ref<number | null>;
   fitExtent: (extent: BBox, fitOptions?: FitOptions) => void;
+  centerPoint: (issue: MapIssue) => void;
   recenterSelectedIssue: () => void;
 }) {
   type CameraIntent = "initial" | "filter" | "select" | "resize" | "reset";
@@ -54,16 +55,31 @@ export function useMapFraming(options: {
     }
 
     if (options.selectedIssuesExtent.value) {
+      const onlyIssue =
+        options.selectedIssues.value.length === 1
+          ? options.selectedIssues.value[0]
+          : undefined;
+      const fitOptions =
+        onlyIssue?.geometry?.type === "Point" ? { maxZoom: 15 } : undefined;
+
       log("fit visible issues", {
         intent,
         generation,
         issueCount: options.selectedIssues.value.length,
+        geometryType: onlyIssue?.geometry?.type,
         extent: options.selectedIssuesExtent.value,
       });
-      options.fitExtent(
-        options.selectedIssuesExtent.value,
-        options.selectedIssues.value.length === 1 ? { maxZoom: 15 } : undefined,
-      );
+      if (onlyIssue?.geometry?.type === "Point") {
+        log("center filtered point", {
+          intent,
+          generation,
+          issueId: onlyIssue.id,
+        });
+        options.centerPoint(onlyIssue);
+        return;
+      }
+
+      options.fitExtent(options.selectedIssuesExtent.value, fitOptions);
       return;
     }
 
@@ -287,6 +303,13 @@ export function useMapFraming(options: {
       const selectedNewIssue = selectedId !== previousSelectedId;
       const selectedIssueChanged = issueId !== previousIssueId;
       const geometryBecameAvailable = !previousGeometry && Boolean(geometry);
+
+      if (selectedNewIssue && selectedId === null) {
+        log("issue deselected: refit current filter");
+        requestFilter();
+        return;
+      }
+
       if (selectedNewIssue || selectedIssueChanged || geometryBecameAvailable) {
         requestSelect();
       } else log("selection change ignored");
