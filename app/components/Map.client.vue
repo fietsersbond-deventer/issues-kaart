@@ -83,11 +83,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -209,7 +205,7 @@ watch(legendSize, async () => {
     50, // top
     50, // right
     50, // legendSize.value.height + 20, // bottom
-    20 + legendSize.value.width,
+    50 + legendSize.value.width,
   ];
 });
 
@@ -234,6 +230,30 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
   });
 }
 
+function centerPoint(issue: MapIssue) {
+  if (!view.value || issue.geometry.type !== "Point") return;
+
+  const center = transform(
+    issue.geometry.coordinates,
+    "EPSG:4326",
+    "EPSG:3857",
+  );
+  const currentZoom = view.value.getZoom() ?? 13;
+
+  console.debug("[map-camera] center filtered point requested", {
+    issueId: issue.id,
+    currentZoom,
+    targetZoom: Math.max(currentZoom, 15),
+  });
+  view.value.cancelAnimations();
+  view.value.animate({
+    center,
+    zoom: Math.max(currentZoom, 15),
+    duration: 1000,
+    easing: easeOut,
+  });
+}
+
 function resetToOriginalExtent() {
   requestReset();
 }
@@ -243,7 +263,7 @@ function updatePadding(controlsSize: Size) {
     50, // top
     50, // right
     50,
-    controlsSize.width + 20, // left
+    controlsSize.width + 50, // left
   ];
 }
 
@@ -293,6 +313,7 @@ const mapFraming = useMapFraming({
   selectedIssue,
   selectedId,
   fitExtent: (extent) => setBbox(extent),
+  centerPoint,
   recenterSelectedIssue: recenterOnSelectedIssue,
 });
 
