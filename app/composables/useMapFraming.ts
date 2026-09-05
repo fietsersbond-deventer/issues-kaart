@@ -26,10 +26,17 @@ export function useMapFraming(options: {
   let resizeRequest = 0;
   let skipNextResize = false;
   let startupSettling = false;
+  let resizePendingAfterStartup = false;
 
   const finishStartupSettling = useDebounceFn(() => {
     startupSettling = false;
     log("startup settled");
+
+    if (resizePendingAfterStartup) {
+      resizePendingAfterStartup = false;
+      log("applying pending startup resize");
+      applyResize(true);
+    }
   }, 300);
 
   function getSelectedIssueId() {
@@ -224,21 +231,40 @@ export function useMapFraming(options: {
       return;
     }
 
+    applyResize();
+  }, 100);
+
+  function applyResize(isStartupResize = false) {
     generation += 1;
+    const geometry = options.selectedIssue.value?.geometry;
     log("resize action", {
       generation,
       selectedId: options.selectedId.value,
-      hasGeometry: Boolean(options.selectedIssue.value?.geometry),
+      hasGeometry: Boolean(geometry),
     });
-    if (options.selectedIssue.value?.geometry) {
-      options.recenterSelectedIssue();
+
+    if (isStartupResize && geometry?.type === "Point") {
+      log("startup resize skipped: selected point already centered");
+      return;
     }
-  }, 100);
+
+    if (geometry) {
+      options.recenterSelectedIssue();
+      return;
+    }
+
+    fitVisibleIssues("resize", generation);
+  }
 
   function requestResize() {
     resizeRequest += 1;
     log("resize requested", { resizeRequest });
-    if (!initialized || startupSettling) {
+    if (!initialized) {
+      log("resize deferred: startup not settled");
+      return;
+    }
+    if (startupSettling) {
+      resizePendingAfterStartup = true;
       log("resize deferred: startup not settled");
       return;
     }
