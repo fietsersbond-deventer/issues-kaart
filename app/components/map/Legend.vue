@@ -23,18 +23,9 @@
         </td>
         <td class="text-body-2 text-truncate pa-2">{{ item.name }}</td>
         <td>
-          <v-tooltip
-            v-if="item.description"
-            :text="item.description"
-            location="top"
-          >
+          <v-tooltip v-if="item.description" :text="item.description" location="top">
             <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
+              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
             </template>
           </v-tooltip>
         </td>
@@ -74,16 +65,14 @@ const { toggleLegendVisibility, isLegendVisible } = useLegendFilters();
 const { tags } = useTagsApi();
 const { hasTag, toggleTag } = useTagFilters();
 const { allIssues, selectedIssues } = storeToRefs(useMapIssueSelection());
-const { selectedTagSlugs: selectedTagFilterSlugs } = storeToRefs(
-  useTagFilters(),
-);
+const { selectedTagSlugs: selectedTagFilterSlugs } = storeToRefs(useTagFilters());
 
 // Only show legends that are actually used in the map
 const visibleLegends = computed(() => {
   const usedLegendIds = new Set(
     allIssues.value
       ?.map((issue) => issue.legend_id)
-      .filter((id): id is number => id != null) || [],
+      .filter((id): id is number => id != null) || []
   );
   return legends.value?.filter((legend) => usedLegendIds.has(legend.id)) ?? [];
 });
@@ -92,7 +81,7 @@ const availableLegendIds = computed(() => {
   const ids = new Set<number>();
   for (const issue of allIssues.value) {
     const matchesTags = [...selectedTagFilterSlugs.value].every((tag) =>
-      issue.tags?.includes(tag),
+      issue.tags?.includes(tag)
     );
     if (matchesTags && issue.legend_id != null) ids.add(issue.legend_id);
   }
@@ -108,7 +97,7 @@ const countIssues = computed(() => {
   const counts: Record<number, number> = {};
   allIssues.value.forEach((issue) => {
     const matchesTags = [...selectedTagFilterSlugs.value].every((tag) =>
-      issue.tags?.includes(tag),
+      issue.tags?.includes(tag)
     );
     if (!matchesTags) return;
 
@@ -145,16 +134,11 @@ const globallyUsedTagSlugs = computed(() => {
 });
 
 const usedTags = computed(() =>
-  (tags.value ?? []).filter((tag) =>
-    globallyUsedTagSlugs.value.has(tag.tag),
-  ),
+  (tags.value ?? []).filter((tag) => globallyUsedTagSlugs.value.has(tag.tag))
 );
 
 function toggleTagIfAvailable(tag: string) {
-  if (
-    !selectedTagFilterSlugs.value.has(tag) &&
-    !availableTagSlugs.value.has(tag)
-  ) {
+  if (!selectedTagFilterSlugs.value.has(tag) && !availableTagSlugs.value.has(tag)) {
     return;
   }
   toggleTag(tag);
@@ -180,9 +164,7 @@ function toggleTagIfAvailable(tag: string) {
   min-height: 28px !important;
   height: 28px !important;
   padding: 0 8px !important;
-  transition:
-    opacity 0.2s ease,
-    background-color 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
 }
 
 .legend-item.clickable {
