@@ -63,6 +63,7 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "@jfungus/ratelimit-nuxt",
     // "nuxt-security",
+    "nuxt-db-migrations",
   ],
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
@@ -176,5 +177,12 @@ export default defineNuxtConfig({
     server: {
       allowedHosts: true,
     },
+  },
+  dbMigrations: {
+    dir: "./server/database/migrations",
+    autoMigrate: true,
+    table: "_hub_migrations",
+    lockTimeout: 30000,
+    baseline: "0001_initial_schema.sql",
   },
 });
