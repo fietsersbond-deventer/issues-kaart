@@ -22,9 +22,7 @@
                     @click="showLayerSwitcher = !showLayerSwitcher"
                   >
                     <v-icon>mdi-layers</v-icon>
-                    <v-tooltip activator="parent" location="top">
-                      Kaartlagen
-                    </v-tooltip>
+                    <v-tooltip activator="parent" location="top"> Kaartlagen </v-tooltip>
                   </v-btn>
 
                   <!-- Legend button -->
@@ -35,9 +33,7 @@
                     @click="showLegend = !showLegend"
                   >
                     <v-icon>mdi-map-legend</v-icon>
-                    <v-tooltip activator="parent" location="top">
-                      Legenda
-                    </v-tooltip>
+                    <v-tooltip activator="parent" location="top"> Legenda </v-tooltip>
                   </v-btn>
                 </div>
 
@@ -64,9 +60,7 @@
         role="button"
         :aria-pressed="isSheetExpanded"
         aria-controls="mobile-bottom-sheet-content"
-        :aria-label="
-          isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'
-        "
+        :aria-label="isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'"
         @touchstart="startDrag"
         @touchmove="onDrag"
         @touchend="endDrag"
@@ -76,11 +70,7 @@
       >
         <div class="drag-indicator" />
       </div>
-      <div
-        id="mobile-bottom-sheet-content"
-        ref="sheetContentRef"
-        class="sheet-content"
-      >
+      <div id="mobile-bottom-sheet-content" ref="sheetContentRef" class="sheet-content">
         <NuxtPage />
       </div>
     </div>
@@ -108,9 +98,7 @@ const showLayerSwitcher = ref(false);
 const showLegend = ref(false);
 const collapsedSheetHeight = 40;
 const expandedSheetHeight = 75;
-const isSheetExpanded = computed(
-  () => sheetHeight.value >= expandedSheetHeight,
-);
+const isSheetExpanded = computed(() => sheetHeight.value >= expandedSheetHeight);
 
 // Size tracking for the mobile controls
 const controlsSize = ref<{ width: number; height: number }>({
