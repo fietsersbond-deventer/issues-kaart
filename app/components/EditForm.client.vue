@@ -49,9 +49,23 @@
             <v-col cols="12">
               <CategorySelect
                 v-if="legends"
-                v-model="issue.legend_id"
+                v-model="legendIdModel"
                 :legends="legends"
                 label="Categorie"
+              />
+            </v-col>
+
+            <v-col cols="12">
+              <v-combobox
+                v-model="issue.tags"
+                :items="availableTags"
+                label="Tags"
+                multiple
+                chips
+                closable-chips
+                clearable
+                hide-selected
+                @update:model-value="normalizeIssueTags"
               />
             </v-col>
 
@@ -97,12 +111,12 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import { isExistingIssue, type Issue } from "~/types/Issue";
+import { isExistingIssue, type Issue, type NewIssue } from "~/types/Issue";
 import { imageCompressor } from "quill-image-compress";
 
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
-const issue = defineModel<Issue>({ required: true });
+const issue = defineModel<Issue | NewIssue>({ required: true });
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
@@ -120,6 +134,13 @@ const geometryRules = [
     !!issue.value?.geometry ||
     "Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de kaart.",
 ];
+
+const legendIdModel = computed({
+  get: () => issue.value.legend_id ?? null,
+  set: (value: number | null) => {
+    issue.value.legend_id = value ?? undefined;
+  },
+});
 
 // Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
 const canSubmit = computed(() => {
@@ -165,6 +186,35 @@ const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
 const { data: user } = useAuth();
+const { data: tagData } = useFetch<string[]>("/api/tags", { default: () => [] });
+const availableTags = computed(() => tagData.value ?? []);
+
+function normalizeTag(tag: unknown): string | null {
+  if (typeof tag !== "string") return null;
+
+  const normalized = tag
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    .slice(0, 30)
+    .replace(/-+$/g, "");
+
+  return normalized || null;
+}
+
+function normalizeIssueTags() {
+  issue.value.tags = [
+    ...new Set(
+      (issue.value.tags ?? [])
+        .map((tag) => normalizeTag(tag))
+        .filter((tag): tag is string => Boolean(tag)),
+    ),
+  ].slice(0, 10);
+}
 
 async function onSubmit() {
   // Prevent submission if connection is lost

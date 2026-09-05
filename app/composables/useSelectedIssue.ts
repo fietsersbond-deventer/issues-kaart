@@ -7,7 +7,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
 
   const selectedId = ref<number | null>(null);
 
-  const issue = ref<Issue | null>(null);
+  const issue = ref<Issue | NewIssue | null>(null);
 
   // Use shared WebSocket to receive updates for the selected issue
   const ws = useSharedIssuesWebSocket();
@@ -51,7 +51,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         issue.value = updatedIssue;
       }
     } else if (parsed.type === "issue-deleted") {
-      const deletedId = parsed.payload as number;
+      const deletedId = parsed.payload.id;
       // If the issue we're viewing was deleted, navigate away
       if (deletedId === selectedId.value) {
         navigateTo("/kaart");
@@ -85,6 +85,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   const newIssue: NewIssue = {
     title: "",
     description: "",
+    tags: [],
   };
 
   watch(

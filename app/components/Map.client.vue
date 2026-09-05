@@ -158,8 +158,15 @@ interface Size {
 
 // Use lightweight map issues for rendering (only essential fields)
 const { issues: allIssues } = storeToRefs(
-  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const }),
+  useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
 );
+
+const route = useRoute();
+const activeTag = computed(() => {
+  return route.path.startsWith("/kaart/tag/") && typeof route.params.tag === "string"
+    ? route.params.tag
+    : null;
+});
 
 // Filter issues based on legend visibility
 const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
@@ -167,6 +174,10 @@ const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
 const issues = computed(() => {
   return (
     allIssues.value?.filter((issue) => {
+      if (activeTag.value && !issue.tags?.includes(activeTag.value)) {
+        return false;
+      }
+
       // If issue has no legend_id, show it by default
       if (!issue.legend_id) return true;
       // Otherwise, check if the legend is visible

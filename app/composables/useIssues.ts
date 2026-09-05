@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import {
   isExistingIssue,
-  isNewIssue,
   type Issue,
+  type NewIssue,
 } from "@/types/Issue";
 import type { WebSocketMessage } from "@/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
@@ -85,13 +85,11 @@ export function useIssues(options?: {
 
     // any changes to the selected issue should be reflected in this store
     const { issue } = storeToRefs(useSelectedIssue());
-    const throttledUpdate = useThrottleFn((issue: Issue | null) => {
-      if (!issue) return;
+    const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
+      if (!isExistingIssue(issue)) return;
 
       const existingIndex = issues.value.findIndex(
-        (i) =>
-          (isNewIssue(issue) && isNewIssue(i)) ||
-          (isExistingIssue(issue) && isExistingIssue(i) && i.id === issue.id)
+        (i) => isExistingIssue(i) && i.id === issue.id
       );
 
       if (existingIndex !== -1) {

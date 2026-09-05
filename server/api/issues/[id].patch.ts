@@ -3,6 +3,7 @@ import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
+import { getTagsForIssueId, replaceTagsForIssue } from "~~/server/utils/issueTags";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -20,6 +21,7 @@ export default defineEventHandler(async (event) => {
     description: string;
     legend_id: number | null;
     geometry: Geometry;
+    tags: unknown[];
   }> = await readBody(event);
 
   // Check if any valid fields are being updated
@@ -78,10 +80,31 @@ export default defineEventHandler(async (event) => {
   values.push(id);
 
   const db = getDb();
-  const updateStmt = db.prepare(
-    `UPDATE issues SET ${updateFields.join(", ")} WHERE id = ?`
-  );
-  const result = updateStmt.run(...values);
+  let normalizedTags: string[] | null = null;
+  let result;
+
+  db.exec("BEGIN");
+  try {
+    if (updateFields.length > 0) {
+      const updateStmt = db.prepare(
+        `UPDATE issues SET ${updateFields.join(", ")} WHERE id = ?`
+      );
+      result = updateStmt.run(...values);
+    } else {
+      const issueExists = db.prepare("SELECT id FROM issues WHERE id = ?").get(id);
+      result = { changes: issueExists ? 1 : 0 };
+    }
+
+    if (updates.tags !== undefined) {
+      normalizedTags = replaceTagsForIssue(db, id, updates.tags);
+    }
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+
   if (result.changes === 0) {
     throw createError({
       statusCode: 404,
@@ -98,6 +121,7 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found after update`,
     });
   }
+  const currentTags = normalizedTags ?? getTagsForIssueId(db, id);
   
   // Get user info for notification
   const user = event.context.user;
@@ -105,10 +129,11 @@ export default defineEventHandler(async (event) => {
   const modifiedByUserId = user?.id || 0;
   
   // Emit with user info
-  eventEmitter.emit("issue:modified", { 
-    ...row, 
+  eventEmitter.emit("issue:modified", {
+    ...row,
+    tags: currentTags,
     modifiedBy,
     modifiedByUserId,
   });
-  return row;
+  return { ...row, tags: currentTags };
 });

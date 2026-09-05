@@ -1,5 +1,15 @@
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getTagsForIssueIds, normalizeTag } from "~~/server/utils/issueTags";
+
+type IssueRow = {
+  id?: number;
+  title?: string;
+  description?: string;
+  legend_id?: number;
+  geometry?: string;
+  created_at?: string;
+};
 
 /**
  * Flexible endpoint to fetch issues with optional field selection
@@ -16,6 +26,7 @@ export default defineEventHandler(async (event) => {
   const db = getDb();
   const query = getQuery(event);
   const requestedFields = query.fields ? String(query.fields).split(",") : null;
+  const requestedTag = normalizeTag(query.tag);
 
   // Define available fields and their SQL expressions
   const availableFields = {
@@ -26,11 +37,13 @@ export default defineEventHandler(async (event) => {
     geometry: "i.geometry",
     created_at: "i.created_at",
     imageUrl: "i.description", // Special field - will be processed
+    tags: "i.id", // Special field - will be processed
   };
 
   let selectFields: string;
   let includeGeometry = true;
   let includeImageUrl = false;
+  let includeTags = false;
 
   if (requestedFields && requestedFields.length > 0) {
     // Validate and build SELECT clause from requested fields
@@ -47,11 +60,15 @@ export default defineEventHandler(async (event) => {
 
     // Check if imageUrl is requested
     includeImageUrl = validFields.includes("imageUrl");
+    includeTags = validFields.includes("tags");
 
     // Build select fields, replacing imageUrl with description temporarily
     const sqlFields = validFields.map((field) => {
       if (field.trim() === "imageUrl") {
-        return "i.description"; // We'll process this after fetching
+        return "i.id, i.description"; // We'll process this after fetching
+      }
+      if (field.trim() === "tags") {
+        return "i.id"; // We'll process this after fetching
       }
       return availableFields[field.trim() as keyof typeof availableFields];
     });
@@ -63,15 +80,35 @@ export default defineEventHandler(async (event) => {
     // Return all fields if none specified
     selectFields = `i.id, i.title, i.description, i.legend_id, i.geometry, i.created_at`;
     includeImageUrl = true; // Include imageUrl processing for full data
+    includeTags = true;
   }
+
+  const whereClause = requestedTag
+    ? `WHERE EXISTS (
+        SELECT 1
+        FROM issue_tags it
+        WHERE it.issue_id = i.id AND it.tag = ?
+      )`
+    : "";
+  const values = requestedTag ? [requestedTag] : [];
 
   const rows = db
     .prepare(
       `SELECT ${selectFields}
-     FROM issues i 
+     FROM issues i
+     ${whereClause}
      ORDER BY i.created_at DESC`
     )
-    .all();
+    .all(...values) as IssueRow[];
+
+  const tagsByIssueId = includeTags
+    ? getTagsForIssueIds(
+        db,
+        rows
+          .map((issue) => issue.id)
+          .filter((id): id is number => typeof id === "number"),
+      )
+    : new Map<number, string[]>();
 
   // Process results
   return rows.map((issue) => {
@@ -83,7 +120,11 @@ export default defineEventHandler(async (event) => {
     }
 
     // Add imageUrl if requested (returns URL path, not actual data)
-    if (includeImageUrl && typeof issue.description === "string") {
+    if (
+      includeImageUrl &&
+      typeof issue.id === "number" &&
+      typeof issue.description === "string"
+    ) {
       // Check if issue has an image in description
       const hasImage = extractImageUrl(issue.description) !== null;
       result.imageUrl = hasImage ? `/api/issues/${issue.id}/image` : null;
@@ -92,6 +133,10 @@ export default defineEventHandler(async (event) => {
       if (requestedFields && !requestedFields.includes("description")) {
         delete result.description;
       }
+    }
+
+    if (includeTags) {
+      result.tags = typeof issue.id === "number" ? tagsByIssueId.get(issue.id) ?? [] : [];
     }
 
     return result;
