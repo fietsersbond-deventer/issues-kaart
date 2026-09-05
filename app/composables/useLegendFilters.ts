@@ -4,21 +4,38 @@ export const useLegendFilters = defineStore("legendFilters", () => {
 
   // Initialize with all available legends when legends are loaded
   const { legends } = storeToRefs(useLegends());
+  const route = useRoute();
+  const { updateQuery } = useMapFilters();
+  const { selectedTagSlugs } = storeToRefs(useMapFilters());
 
-  // Initialize visibleLegendIds when legends are first loaded
+  function queryLegendIds() {
+    if (typeof route.query.legend !== "string") return [];
+    return route.query.legend
+      .split(",")
+      .map(Number)
+      .filter((id) => Number.isInteger(id));
+  }
+
+  function syncFromQuery(newLegends: typeof legends.value) {
+    if (!newLegends?.length) return;
+
+    const selectedIds = queryLegendIds();
+    visibleLegendIds.value = new Set(
+      selectedIds.length > 0
+        ? selectedIds.filter((id) =>
+            newLegends.some((legend) => legend.id === id),
+          )
+        : newLegends.map((legend) => legend.id),
+    );
+  }
+
+  // Keep the selection synchronized when navigating or changing the URL.
   watch(
-    legends,
-    (newLegends) => {
-      if (
-        newLegends &&
-        newLegends.length > 0 &&
-        visibleLegendIds.value.size === 0
-      ) {
-        // Initialize with all legend IDs visible
-        visibleLegendIds.value = new Set(newLegends.map((legend) => legend.id));
-      }
+    [legends, () => route.path, () => route.query.legend],
+    ([newLegends]) => {
+      syncFromQuery(newLegends);
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Computed: determine if we're showing all legends based on the current selection
@@ -62,6 +79,11 @@ export const useLegendFilters = defineStore("legendFilters", () => {
         visibleLegendIds.value = new Set(visibleLegendIds.value);
       }
     }
+
+    void updateQuery(
+      [...visibleLegendIds.value].sort((a, b) => a - b),
+      [...selectedTagSlugs.value].sort(),
+    );
   }
 
   /**
@@ -78,6 +100,10 @@ export const useLegendFilters = defineStore("legendFilters", () => {
     if (legends.value) {
       visibleLegendIds.value = new Set(
         legends.value.map((legend) => legend.id)
+      );
+      void updateQuery(
+        [...visibleLegendIds.value].sort((a, b) => a - b),
+        [...selectedTagSlugs.value].sort(),
       );
     }
   }

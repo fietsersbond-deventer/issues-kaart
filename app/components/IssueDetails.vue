@@ -17,7 +17,7 @@
         v-for="tag in issue.tags"
         :key="tag"
         :tag="getTag(tag)"
-        :to="`/kaart/tag/${encodeURIComponent(tag)}`"
+        :to="`/kaart?tag=${encodeURIComponent(tag)}`"
       />
     </div>
 

@@ -38,6 +38,26 @@
           {{ countIssues[item.id] }}
         </td>
       </tr>
+      <tr v-if="usedTags.length" class="section-heading">
+        <td colspan="4" class="text-caption text-medium-emphasis">Tags</td>
+      </tr>
+      <tr
+        v-for="tag in usedTags"
+        :key="tag.tag"
+        class="tag-item clickable"
+        :class="{ 'tag-item--selected': hasTag(tag.tag) }"
+        tabindex="0"
+        role="checkbox"
+        :aria-checked="hasTag(tag.tag)"
+        @click="toggleTag(tag.tag)"
+        @keydown.enter.prevent="toggleTag(tag.tag)"
+        @keydown.space.prevent="toggleTag(tag.tag)"
+      >
+        <td colspan="3">
+          <Tag :tag="tag" />
+        </td>
+        <td class="ps-2 font-weight-thin">{{ tagCounts[tag.tag] }}</td>
+      </tr>
     </v-table>
   </div>
 </template>
@@ -45,9 +65,11 @@
 <script setup lang="ts">
 const { legends } = storeToRefs(useLegends());
 const { toggleLegendVisibility, isLegendVisible } = useLegendFilters();
+const { tags } = useTagsApi();
+const { hasTag, toggleTag } = useMapFilters();
 
 // Only need legend_id to determine which legends are visible
-const { issues } = storeToRefs(useIssues({ fields: "id,legend_id" }));
+const { issues } = storeToRefs(useIssues({ fields: "id,legend_id,tags" }));
 
 // Only show legends that are actually used in the map
 const visibleLegends = computed(() => {
@@ -67,6 +89,20 @@ const countIssues = computed(() => {
 
   return counts;
 });
+
+const tagCounts = computed(() => {
+  const counts: Record<string, number> = {};
+  for (const issue of issues.value) {
+    for (const tag of issue.tags ?? []) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  return counts;
+});
+
+const usedTags = computed(() =>
+  (tags.value ?? []).filter((tag) => (tagCounts.value[tag.tag] ?? 0) > 0),
+);
 </script>
 
 <style scoped>
@@ -114,6 +150,28 @@ const countIssues = computed(() => {
   background-color: rgba(0, 0, 0, 0.08);
 }
 
+.tag-item {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 8px !important;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.tag-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.tag-item--selected {
+  background-color: rgba(var(--v-theme-primary), 0.12);
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
+}
+
+.tag-item--selected:hover {
+  background-color: rgba(var(--v-theme-primary), 0.18);
+}
+
 .color-preview {
   width: 16px;
   height: 16px;
@@ -127,4 +185,5 @@ const countIssues = computed(() => {
   border-radius: 50%;
   object-fit: cover;
 }
+
 </style>

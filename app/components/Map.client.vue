@@ -157,13 +157,7 @@ const { issues: allIssues } = storeToRefs(
   useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
 );
 
-const route = useRoute();
-const activeTag = computed(() => {
-  return route.path.startsWith("/kaart/tag/") &&
-    typeof route.params.tag === "string"
-    ? route.params.tag
-    : null;
-});
+const { selectedTagSlugs } = storeToRefs(useMapFilters());
 
 // Filter issues based on legend visibility
 const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
@@ -171,7 +165,10 @@ const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
 const issues = computed(() => {
   return (
     allIssues.value?.filter((issue) => {
-      if (activeTag.value && !issue.tags?.includes(activeTag.value)) {
+      if (
+        selectedTagSlugs.value.size > 0 &&
+        ![...selectedTagSlugs.value].every((tag) => issue.tags?.includes(tag))
+      ) {
         return false;
       }
 
