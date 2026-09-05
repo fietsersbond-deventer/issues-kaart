@@ -18,7 +18,7 @@ console.log(`DB Path: ${DB_PATH}`);
 // test whether
 const MIGRATIONS_DIR = path.resolve(
   process.cwd(),
-  "server/database/migrations"
+  "server/database/migrations",
 );
 const QUERIES_DIR = path.resolve(process.cwd(), "server/database/queries");
 
