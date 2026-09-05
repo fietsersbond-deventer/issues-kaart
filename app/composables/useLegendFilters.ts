@@ -83,6 +83,7 @@ export const useLegendFilters = defineStore("legendFilters", () => {
     void updateQuery(
       [...visibleLegendIds.value].sort((a, b) => a - b),
       [...selectedTagSlugs.value].sort(),
+      !isShowingAll.value,
     );
   }
 
@@ -104,8 +105,17 @@ export const useLegendFilters = defineStore("legendFilters", () => {
       void updateQuery(
         [...visibleLegendIds.value].sort((a, b) => a - b),
         [...selectedTagSlugs.value].sort(),
+        false,
       );
     }
+  }
+
+  async function resetFilters() {
+    if (!legends.value) return;
+
+    visibleLegendIds.value = new Set(legends.value.map((legend) => legend.id));
+    await useMapFilters().clearTags(false);
+    await updateQuery([], [], false);
   }
 
   return {
@@ -114,5 +124,6 @@ export const useLegendFilters = defineStore("legendFilters", () => {
     toggleLegendVisibility,
     isLegendVisible,
     showAllLegends,
+    resetFilters,
   };
 });

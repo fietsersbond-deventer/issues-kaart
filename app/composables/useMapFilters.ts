@@ -3,7 +3,6 @@ export const useMapFilters = defineStore("mapFilters", () => {
   const router = useRouter();
   const selectedTagSlugs = ref<Set<string>>(new Set());
   const initialized = ref(false);
-  const { legends } = storeToRefs(useLegends());
 
   function parseList(value: unknown): string[] {
     if (typeof value !== "string") return [];
@@ -34,15 +33,14 @@ export const useMapFilters = defineStore("mapFilters", () => {
     { immediate: true },
   );
 
-  async function updateQuery(legendIds: number[], tagSlugs: string[]) {
+  async function updateQuery(
+    legendIds: number[],
+    tagSlugs: string[],
+    includeLegend = true,
+  ) {
     const query = { ...route.query };
-    const allLegendIds = legends.value.map((legend) => legend.id);
-    const hasAllLegends =
-      allLegendIds.length > 0 &&
-      allLegendIds.length === legendIds.length &&
-      allLegendIds.every((id) => legendIds.includes(id));
 
-    if (legendIds.length > 0 && !hasAllLegends) {
+    if (legendIds.length > 0 && includeLegend) {
       query.legend = legendIds.join(",");
     } else delete query.legend;
 
@@ -62,10 +60,23 @@ export const useMapFilters = defineStore("mapFilters", () => {
     else nextTags.add(tag);
 
     selectedTagSlugs.value = nextTags;
-    const { visibleLegendIds } = storeToRefs(useLegendFilters());
+    const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
     await updateQuery(
       [...visibleLegendIds.value].sort((a, b) => a - b),
       [...nextTags].sort(),
+      !isShowingAll.value,
+    );
+  }
+
+  async function clearTags(updateUrl = true) {
+    selectedTagSlugs.value = new Set();
+    if (!updateUrl) return;
+
+    const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
+    await updateQuery(
+      [...visibleLegendIds.value].sort((a, b) => a - b),
+      [],
+      !isShowingAll.value,
     );
   }
 
@@ -75,6 +86,7 @@ export const useMapFilters = defineStore("mapFilters", () => {
     syncFromQuery,
     hasTag,
     toggleTag,
+    clearTags,
     updateQuery,
   };
 });

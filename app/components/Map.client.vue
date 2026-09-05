@@ -13,6 +13,8 @@
       </MapControlContainer>
     </slot>
 
+    <MapFilterSummary :count="issues.length" />
+
     <!-- Bottom-left corner controls -->
     <slot name="bottom-left-controls" :is-small="isMapSmall">
       <MapControlContainer v-show="!isMapSmall" position="bottom-left">
@@ -161,28 +163,13 @@ const { issues: allIssues } = storeToRefs(
   useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
 );
 
-const { selectedTagSlugs } = storeToRefs(useMapFilters());
+const route = useRoute();
 
-// Filter issues based on legend visibility
-const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
-
-const issues = computed(() => {
-  return (
-    allIssues.value?.filter((issue) => {
-      if (
-        selectedTagSlugs.value.size > 0 &&
-        ![...selectedTagSlugs.value].every((tag) => issue.tags?.includes(tag))
-      ) {
-        return false;
-      }
-
-      // If issue has no legend_id, show it by default
-      if (!issue.legend_id) return true;
-      // Otherwise, check if the legend is visible
-      return visibleLegendIds.value.has(issue.legend_id);
-    }) ?? []
-  );
-});
+const { selectedIssues: issues } = useMapIssueSelection(allIssues);
+const legendFilters = useLegendFilters();
+const { visibleLegendIds, isShowingAll } = storeToRefs(legendFilters);
+const mapFilters = useMapFilters();
+const { selectedTagSlugs } = storeToRefs(mapFilters);
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
@@ -268,7 +255,10 @@ const mapRef = useTemplateRef("mapRef");
 const { mobile } = useDisplay();
 
 // Initialize bbox composable with mapRef
-const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
+const { bbox: issuesBbox, issuesBbox: selectedIssuesBbox } = useIssuesBbox(
+  issues,
+  mapRef,
+);
 
 function moveToIssues() {
   // console.debug({
@@ -296,15 +286,20 @@ watch([allIssues, selectedIssue], () => {
 
 // Watch for legend filter changes and zoom to visible issues
 watch(
-  visibleLegendIds,
+  [visibleLegendIds, selectedTagSlugs],
   () => {
     // If we're back to show-all mode and there's a selected issue, zoom to it
     if (isShowingAll.value && selectedId.value) {
       recenterOnSelectedIssue();
-    } else if (issuesBbox?.value) {
-      setBbox(issuesBbox.value as BBox, {
-        padding: [50, 50, 50, 50],
-      });
+    } else if (selectedIssuesBbox?.value) {
+      setBbox(
+        (hasActiveFilters.value
+          ? selectedIssuesBbox.value
+          : issuesBbox.value) as BBox,
+        {
+          padding: [50, 50, 50, 50],
+        },
+      );
     }
   },
   { deep: true },
@@ -544,7 +539,10 @@ function getPolygonFillColor(issue: MapIssue) {
 }
 
 function navigateToIssue(issue: MapIssue) {
-  navigateTo(`/kaart/${issue.id}`);
+  navigateTo({
+    path: `/kaart/${issue.id}`,
+    query: route.query,
+  });
 }
 
 // Fallback function to create a simple circle icon if icon_data_url is missing
@@ -675,3 +673,4 @@ defineExpose({
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>
+

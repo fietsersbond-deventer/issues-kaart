@@ -137,5 +137,10 @@ export function useIssuesBbox(
 
   return {
     bbox,
+    issuesBbox: computed(() =>
+      issuesBbox.value
+        ? transformBboxToOpenLayers(issuesBbox.value)
+        : undefined,
+    ),
   };
 }
