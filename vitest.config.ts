@@ -8,9 +8,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "~~": resolve(__dirname, "."),
-      "~": resolve(__dirname, "."),
-      "@": resolve(__dirname, "."),
+      "~~": resolve(import.meta.dirname, "."),
+      "~": resolve(import.meta.dirname, "."),
+      "@": resolve(import.meta.dirname, "."),
     },
   },
 });
