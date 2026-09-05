@@ -1,0 +1,34 @@
+{
+  "name": "nuxt-db-migrations",
+  "version": "0.1.0",
+  "description": "A Nuxt module for managing database migrations without requiring an ORM",
+  "repository": "rrd108/nuxt-db-migrations",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "main": "./dist/module.mjs",
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types.d.mts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "nuxt-db-migrations": "./dist/cli.mjs"
+  },
+  "dependencies": {
+    "@nuxt/kit": "^4.2.2",
+    "citty": "^0.1.6",
+    "consola": "^3.2.3",
+    "defu": "^6.1.4"
+  }
+}

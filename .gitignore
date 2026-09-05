@@ -5,6 +5,8 @@
 .nitro
 .cache
 dist
+!/vendor/nuxt-db-migrations/dist
+!/vendor/nuxt-db-migrations/dist/**
 .wrangler
 backup/
 *.db
