@@ -55,7 +55,6 @@
     "mitt": "^3.0.1",
     "morgan": "^1.10.0",
     "nuxt": "^4.5.2",
-    "nuxt-db-migrations": "file:./vendor/nuxt-db-migrations",
     "nuxt-mdi": "2.1.1",
     "nuxt-security": "2.6.0",
     "ol": "^10.5.0",

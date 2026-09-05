@@ -22,7 +22,7 @@ const MIGRATIONS_DIR = path.resolve(
 );
 const QUERIES_DIR = path.resolve(process.cwd(), "server/database/queries");
 
-function runMigrations() {
+export function runMigrations() {
   console.log("--- Migration Runner ---");
   console.log(`DB Path: ${DB_PATH}`);
   console.log(`Migrations Dir: ${MIGRATIONS_DIR}`);
@@ -94,4 +94,6 @@ function runMigrations() {
   console.log(`Total: ${allFiles.length}`);
 }
 
-runMigrations();
+if (import.meta.main) {
+  runMigrations();
+}
