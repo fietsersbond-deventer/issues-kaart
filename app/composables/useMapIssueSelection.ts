@@ -2,7 +2,7 @@ import type { MapIssue } from "~~/shared/types/Issue";
 import { filterMapIssues } from "~/utils/filterMapIssues";
 
 export const useMapIssueSelection = defineStore("mapIssueSelection", () => {
-  const { issues: allIssues } = storeToRefs(
+  const { issues: allIssues, isLoaded: issuesReady } = storeToRefs(
     useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
   );
   const { selectedTagSlugs } = storeToRefs(useTagFilters());
@@ -18,6 +18,7 @@ export const useMapIssueSelection = defineStore("mapIssueSelection", () => {
 
   return {
     allIssues,
+    issuesReady,
     selectedIssues,
   };
 });

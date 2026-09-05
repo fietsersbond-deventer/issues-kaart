@@ -23,10 +23,11 @@ export function useIssues(options?: { fields?: string }) {
     const { legends } = storeToRefs(useLegends());
 
     const fetchOptions = fields ? { query: { fields } } : {};
-    const { data, refresh: refreshIssues } = useFetch<Issue[]>(
-      "/api/issues",
-      fetchOptions,
-    );
+    const {
+      data,
+      refresh: refreshIssues,
+      status,
+    } = useFetch<Issue[]>("/api/issues", fetchOptions);
 
     function processIssue(issue: Issue): Issue {
       if (issue.geometry && typeof issue.geometry === "string") {
@@ -137,11 +138,14 @@ export function useIssues(options?: { fields?: string }) {
       refreshIssues();
     }
 
+    const isLoaded = computed(() => status.value === "success");
+
     // Expose CRUD methods (WebSocket handles updates automatically)
     const methods = useIssuesMethods();
 
     return {
       issues,
+      isLoaded,
       refresh,
       ...methods,
     };

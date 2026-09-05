@@ -83,7 +83,11 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -204,13 +208,23 @@ watch(legendSize, async () => {
   currentPadding.value = [
     50, // top
     50, // right
-    legendSize.value.height + 20, // bottom
-    50, // left
+    50, // legendSize.value.height + 20, // bottom
+    20 + legendSize.value.width,
   ];
 });
 
 function setBbox(bbox: BBox, options: FitOptions = {}) {
-  if (!view.value) return;
+  if (!view.value) {
+    console.debug("[map-camera] fit skipped: view unavailable");
+    return;
+  }
+  console.debug("[map-camera] fit requested", {
+    bbox,
+    options,
+    padding: currentPadding.value,
+    currentZoom: view.value.getZoom(),
+  });
+  view.value.cancelAnimations();
   view.value.fit(bbox, {
     easing: easeOut,
     duration: 1000,
@@ -221,20 +235,15 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
 }
 
 function resetToOriginalExtent() {
-  const bbox = selectedIssuesExtent.value ?? defaultMapExtent.value;
-  if (!bbox) return;
-
-  setBbox(bbox, {
-    padding: [50, 50, 50, 50],
-  });
+  requestReset();
 }
 
 function updatePadding(controlsSize: Size) {
   currentPadding.value = [
     50, // top
     50, // right
-    controlsSize.height + 20, // bottom
-    50, // left
+    50,
+    controlsSize.width + 20, // left
   ];
 }
 
@@ -268,16 +277,37 @@ const projection = ref("EPSG:3857");
 const { mapHeight, recenterOnSelectedIssue } = useMapResize(
   mapRef,
   currentPadding,
+  () => requestResize(),
 );
 
-useMapFraming({
+let requestResize = () => {};
+let requestReset = () => {};
+
+const mapFraming = useMapFraming({
+  mapReady: () =>
+    Boolean(mapRef.value?.map?.getSize()?.every((size: number) => size > 0)),
+  issuesReady: computed(() => mapIssueSelection.issuesReady),
   selectedIssues: issues,
   selectedIssuesExtent,
   defaultMapExtent,
   selectedIssue,
+  selectedId,
   fitExtent: (extent) => setBbox(extent),
   recenterSelectedIssue: recenterOnSelectedIssue,
 });
+
+requestResize = mapFraming.requestResize;
+requestReset = mapFraming.requestReset;
+
+watch([selectedTagSlugs, visibleLegendIds], () => mapFraming.requestFilter(), {
+  deep: true,
+});
+
+watch(
+  () => mapRef.value?.map,
+  () => mapFraming.requestInitial(),
+  { immediate: true },
+);
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
