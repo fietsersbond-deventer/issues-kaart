@@ -81,11 +81,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -134,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MapIssue } from "~/types/Issue";
+import type { MapIssue } from "~~/shared/types/Issue";
 import { register } from "ol/proj/proj4.js";
 import { transform } from "ol/proj";
 import proj4 from "proj4";
@@ -163,7 +159,8 @@ const { issues: allIssues } = storeToRefs(
 
 const route = useRoute();
 const activeTag = computed(() => {
-  return route.path.startsWith("/kaart/tag/") && typeof route.params.tag === "string"
+  return route.path.startsWith("/kaart/tag/") &&
+    typeof route.params.tag === "string"
     ? route.params.tag
     : null;
 });

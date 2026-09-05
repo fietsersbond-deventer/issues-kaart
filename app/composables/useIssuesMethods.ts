@@ -1,4 +1,4 @@
-import type { AdminListIssue, Issue, NewIssue } from "@/types/Issue";
+import type { AdminListIssue, Issue, NewIssue } from "~~/shared/types/Issue";
 
 /**
  * CRUD methods for issues - available without creating a store
@@ -32,7 +32,10 @@ export function useIssuesMethods() {
     return issue;
   }
 
-  async function update(id: number, body: Issue | AdminListIssue | Partial<Issue>) {
+  async function update(
+    id: number,
+    body: Issue | AdminListIssue | Partial<Issue>,
+  ) {
     const issue = await $fetch<Issue>(`/api/issues/${id}`, {
       method: "PATCH",
       body,

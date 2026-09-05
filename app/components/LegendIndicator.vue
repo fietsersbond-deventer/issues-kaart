@@ -32,11 +32,7 @@
         />
       </div>
       <!-- Line/polygon indicator -->
-      <v-icon
-        icon="mdi-chart-line-variant"
-        :color="legend.color"
-        :size="size"
-      />
+      <v-icon icon="mdi-chart-line-variant" :color="legend.color" :size="size" />
     </template>
     <div
       v-else
@@ -53,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 
 interface Props {
   legend: Pick<Legend, "name" | "color" | "icon" | "icon_data_url"> & {

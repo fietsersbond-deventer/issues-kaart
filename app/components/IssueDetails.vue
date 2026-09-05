@@ -13,17 +13,12 @@
         {{ issue.legend.name }}
       </v-chip>
 
-      <v-chip
+      <Tag
         v-for="tag in issue.tags"
         :key="tag"
-        :to="`/kaart/tag/${tag}`"
-        label
-        variant="tonal"
-        size="small"
-        prepend-icon="mdi-tag-outline"
-      >
-        {{ tag }}
-      </v-chip>
+        :tag="getTag(tag)"
+        :to="`/kaart/tag/${encodeURIComponent(tag)}`"
+      />
     </div>
 
     <ImageViewer>
@@ -34,9 +29,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Issue } from "~/types/Issue";
+import type { Issue } from "~~/shared/types/Issue";
 
-defineProps<{
+const props = defineProps<{
   issue: Issue;
 }>();
+
+const { getTag } = useTagsApi();
 </script>

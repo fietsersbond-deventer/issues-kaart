@@ -111,7 +111,11 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import { isExistingIssue, type Issue, type NewIssue } from "~/types/Issue";
+import {
+  isExistingIssue,
+  type Issue,
+  type NewIssue,
+} from "~~/shared/types/Issue";
 import { imageCompressor } from "quill-image-compress";
 
 const valid = ref(true);
@@ -186,8 +190,12 @@ const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
 const { data: user } = useAuth();
-const { data: tagData } = useFetch<string[]>("/api/tags", { default: () => [] });
-const availableTags = computed(() => tagData.value ?? []);
+const { data: tagData } = useFetch<
+  Array<{ tag: string; description: string | null }>
+>("/api/tags", { default: () => [] });
+const availableTags = computed(
+  () => tagData.value?.map((tag) => tag.tag) ?? [],
+);
 
 function normalizeTag(tag: unknown): string | null {
   if (typeof tag !== "string") return null;

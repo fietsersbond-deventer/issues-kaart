@@ -3,17 +3,15 @@ import {
   isExistingIssue,
   type Issue,
   type NewIssue,
-} from "@/types/Issue";
-import type { WebSocketMessage } from "@/types/WebSocketMessages";
+} from "~~/shared/types/Issue";
+import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
 /**
  * Issues store with optional field selection
  * Use the fields option to request specific fields and reduce payload size
  */
-export function useIssues(options?: {
-  fields?: string;
-}) {
+export function useIssues(options?: { fields?: string }) {
   const fields = options?.fields;
   const storeName = fields ? `issues-${fields.replace(/,/g, "-")}` : "issues";
 
@@ -27,7 +25,7 @@ export function useIssues(options?: {
     const fetchOptions = fields ? { query: { fields } } : {};
     const { data, refresh: refreshIssues } = useFetch<Issue[]>(
       "/api/issues",
-      fetchOptions
+      fetchOptions,
     );
 
     function processIssue(issue: Issue): Issue {
@@ -51,7 +49,6 @@ export function useIssues(options?: {
 
     // Subscribe to WebSocket messages
     const unsubscribe = ws.subscribe((parsed: WebSocketMessage) => {
-
       switch (parsed.type) {
         case "issue-created": {
           const issue = processIssue(parsed.payload as Issue);
@@ -61,7 +58,7 @@ export function useIssues(options?: {
         case "issue-modified": {
           const issue = processIssue(parsed.payload as Issue);
           const existingIndex = issues.value.findIndex(
-            (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined)
+            (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined),
           );
 
           if (existingIndex !== -1) {
@@ -89,7 +86,7 @@ export function useIssues(options?: {
       if (!isExistingIssue(issue)) return;
 
       const existingIndex = issues.value.findIndex(
-        (i) => isExistingIssue(i) && i.id === issue.id
+        (i) => isExistingIssue(i) && i.id === issue.id,
       );
 
       if (existingIndex !== -1) {
@@ -107,7 +104,7 @@ export function useIssues(options?: {
       (updatedIssue) => {
         throttledUpdate(updatedIssue);
       },
-      { deep: true }
+      { deep: true },
     );
 
     // Cleanup subscription when store is disposed
@@ -122,7 +119,7 @@ export function useIssues(options?: {
           issues.value = [];
         }
       },
-      { immediate: true }
+      { immediate: true },
     );
 
     // Reprocess issues when legends change
@@ -133,7 +130,7 @@ export function useIssues(options?: {
           issues.value = issues.value.map((issue) => processIssue(issue));
         }
       },
-      { deep: true }
+      { deep: true },
     );
 
     function refresh() {

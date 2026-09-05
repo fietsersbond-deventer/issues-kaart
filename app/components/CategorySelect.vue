@@ -17,10 +17,7 @@
     </template>
 
     <template #item="{ props: itemProps, item: legend }">
-      <v-list-item
-        v-bind="itemProps"
-        :subtitle="legend.description || undefined"
-      >
+      <v-list-item v-bind="itemProps" :subtitle="legend.description || undefined">
         <template #prepend>
           <div class="me-2">
             <LegendIndicator :legend="legend" :size="20" />
@@ -32,7 +29,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 
 const legend_id = defineModel<number | null>({ required: true });
 const { legends } = defineProps<{ legends: Legend[] }>();

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
-import type { OnlineUser } from "@/types/WebSocketMessages";
+import type { OnlineUser } from "~~/shared/types/WebSocketMessages";
 
 export const useOnlineUsers = defineStore("onlineUsers", () => {
   // Extract the user's authentication data

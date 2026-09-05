@@ -1,7 +1,7 @@
 import type { WebSocketPeer } from "#nitro";
 import { defineWebSocketHandler } from "#nitro";
-import type { Issue } from "~/types/Issue";
-import type { WebSocketEvents } from "~/types/WebSocketMessages";
+import type { Issue } from "~~/shared/types/Issue";
+import type { WebSocketEvents } from "~~/shared/types/WebSocketMessages";
 import { getEmitter } from "~~/server/utils/getEmitter";
 
 // Helper function to create type-safe WebSocket messages

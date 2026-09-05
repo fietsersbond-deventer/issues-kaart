@@ -1,5 +1,5 @@
 import { useWebSocket } from "@vueuse/core";
-import type { AnyWebSocketMessage } from "@/types/WebSocketMessages";
+import type { AnyWebSocketMessage } from "~~/shared/types/WebSocketMessages";
 
 /**
  * WebSocket message event bus
@@ -61,7 +61,7 @@ export const useSharedIssuesWebSocket = (() => {
           if (data) {
             eventBus!.publish(data as string);
           }
-        }
+        },
       );
     }
     return {

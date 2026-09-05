@@ -1,5 +1,5 @@
 import type { WebSocketPeer } from "#nitro";
-import type { OnlineUser } from "../../app/types/WebSocketMessages";
+import type { OnlineUser } from "~~/shared/types/WebSocketMessages";
 import { getPeerSession } from "./peerSession";
 
 const onlineUsers = new Map<string, OnlineUser>();

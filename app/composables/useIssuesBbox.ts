@@ -1,4 +1,4 @@
-import type { MapIssue } from "~/types/Issue";
+import type { MapIssue } from "~~/shared/types/Issue";
 import toBbox from "@turf/bbox";
 import { featureCollection } from "@turf/helpers";
 import type { BBox } from "geojson";
@@ -15,7 +15,7 @@ function calculateBboxFromCenter(
   centerLat: number,
   zoomLevel: number,
   viewportWidth: number,
-  viewportHeight: number
+  viewportHeight: number,
 ): BBox {
   // Convert center to Web Mercator
   const centerMercator = fromLonLat([centerLon, centerLat]);
@@ -87,7 +87,7 @@ function extendMinimumBbox(issuesBbox: BBox, minBbox: BBox): BBox {
  */
 export function useIssuesBbox(
   issues: ComputedRef<MapIssue[]>,
-  mapRef: Ref<{ map?: OLMap } | null | undefined>
+  mapRef: Ref<{ map?: OLMap } | null | undefined>,
 ) {
   const issuesBbox = computed(() => {
     if (!issues.value) return undefined;
@@ -116,14 +116,14 @@ export function useIssuesBbox(
 
     const [viewportWidth, viewportHeight] = mapRef.value.map.getSize() as [
       number,
-      number
+      number,
     ];
     return calculateBboxFromCenter(
       lon,
       lat,
       zoom,
       viewportWidth,
-      viewportHeight
+      viewportHeight,
     );
   });
 

@@ -1,5 +1,3 @@
-// Shared WebSocket message types for both client and server
-
 import type { Issue } from "./Issue";
 
 export interface OnlineUser {
@@ -10,17 +8,10 @@ export interface OnlineUser {
   connectedAt: number;
 }
 
-// Define payload types for each message type
-// Updated: Server derives user info from verified JWT token
 export interface WebSocketEvents {
-  // Lock/editing messages (server derives user info from JWT)
-  lockIssue: {
-    issueId: number;
-  };
-  unlockIssue: {
-    issueId: number;
-  };
-  clearMyLocks: Record<string, never>; // Empty payload
+  lockIssue: { issueId: number };
+  unlockIssue: { issueId: number };
+  clearMyLocks: Record<string, never>;
   "editing-status": Record<
     string,
     {
@@ -30,14 +21,10 @@ export interface WebSocketEvents {
       lockedAt: number;
     }
   >;
-
-  // Presence messages (server derives user info from JWT)
-  "user-online": Record<string, never>; // Empty payload
-  "user-offline": Record<string, never>; // Empty payload
+  "user-online": Record<string, never>;
+  "user-offline": Record<string, never>;
   "online-users": OnlineUser[];
-  "peer-connected": string; // peer ID
-
-  // Issue notification messages
+  "peer-connected": string;
   "issue-created": Issue & { createdBy: string; createdByUserId: number };
   "issue-modified": Issue & { modifiedBy: string; modifiedByUserId: number };
   "issue-deleted": {
@@ -48,7 +35,6 @@ export interface WebSocketEvents {
   };
 }
 
-// Generic message structure
 export interface WebSocketMessage<
   T extends keyof WebSocketEvents = keyof WebSocketEvents,
 > {
@@ -56,16 +42,13 @@ export interface WebSocketMessage<
   payload: WebSocketEvents[T];
 }
 
-// Specific message types (for backwards compatibility and convenience)
 export type LockMessage =
   | WebSocketMessage<"lockIssue">
   | WebSocketMessage<"unlockIssue">
   | WebSocketMessage<"clearMyLocks">;
-
 export type OnlineUserMessage =
   | WebSocketMessage<"user-online">
   | WebSocketMessage<"user-offline">;
-
 export type EditingStatusMessage = WebSocketMessage<"editing-status">;
 export type OnlineUsersMessage = WebSocketMessage<"online-users">;
 export type PeerConnectedMessage = WebSocketMessage<"peer-connected">;
@@ -73,7 +56,6 @@ export type IssueCreatedMessage = WebSocketMessage<"issue-created">;
 export type IssueModifiedMessage = WebSocketMessage<"issue-modified">;
 export type IssueDeletedMessage = WebSocketMessage<"issue-deleted">;
 
-// Helper functions for type-safe message creation
 export function createWebSocketMessage<T extends keyof WebSocketEvents>(
   type: T,
   payload: WebSocketEvents[T],
@@ -81,12 +63,10 @@ export function createWebSocketMessage<T extends keyof WebSocketEvents>(
   return { type, payload };
 }
 
-// Union type for all possible messages
 export type AnyWebSocketMessage = {
   [K in keyof WebSocketEvents]: WebSocketMessage<K>;
 }[keyof WebSocketEvents];
 
-// Helper type guards with proper typing
 export function isLockMessage(message: unknown): message is LockMessage {
   return (
     typeof message === "object" &&
@@ -124,7 +104,6 @@ export function isIssueMessage(
   );
 }
 
-// Type-safe message checker
 export function isMessageOfType<T extends keyof WebSocketEvents>(
   message: unknown,
   type: T,

@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS tags (
+  tag TEXT PRIMARY KEY,
+  description TEXT,
+  icon TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);

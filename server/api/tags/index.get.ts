@@ -9,19 +9,24 @@ export default defineEventHandler((event) => {
   const rows = search
     ? db
         .prepare(
-          `SELECT DISTINCT tag
-           FROM issue_tags
+          `SELECT tag, label, description, icon
+           FROM tags
            WHERE tag LIKE ?
            ORDER BY tag ASC`,
         )
         .all(`%${search}%`)
     : db
         .prepare(
-          `SELECT DISTINCT tag
-           FROM issue_tags
+          `SELECT tag, label, description, icon
+           FROM tags
            ORDER BY tag ASC`,
         )
         .all();
 
-  return rows.map((row) => row.tag);
+  return rows.map((row) => ({
+    tag: String(row.tag),
+    label: row.label ?? String(row.tag),
+    description: row.description ?? null,
+    icon: row.icon ?? null,
+  }));
 });
