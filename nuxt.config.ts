@@ -63,7 +63,7 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "@jfungus/ratelimit-nuxt",
     // "nuxt-security",
-    "nuxt-db-migrations",
+    // "nuxt-db-migrations",
   ],
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
