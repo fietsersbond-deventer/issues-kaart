@@ -61,25 +61,6 @@ export function transformBboxToOpenLayers(bbox: BBox): BBox {
 }
 
 /**
- * Extends the minimum bounding box to include the issues bounding box
- * @param issuesBbox - The bounding box of the issues
- * @param minBbox - The minimum bounding box [west, south, east, north]
- * @returns The extended bounding box that includes both areas
- */
-function extendMinimumBbox(issuesBbox: BBox, minBbox: BBox): BBox {
-  const [issuesWest, issuesSouth, issuesEast, issuesNorth] = issuesBbox;
-  const [minWest, minSouth, minEast, minNorth] = minBbox;
-
-  // Take the minimum west/south and maximum east/north to include both areas
-  return [
-    Math.min(issuesWest, minWest), // westmost point
-    Math.min(issuesSouth, minSouth), // southmost point
-    Math.max(issuesEast, minEast), // eastmost point
-    Math.max(issuesNorth, minNorth), // northmost point
-  ];
-}
-
-/**
  * Composable to calculate bounding box for a list of issues
  * Injects the map from vue3-openlayers to get actual viewport dimensions
  * Returns a function to calculate the extended bounding box in OpenLayers coordinates,
@@ -89,7 +70,7 @@ export function useIssuesBbox(
   issues: ComputedRef<MapIssue[]>,
   mapRef: Ref<{ map?: OLMap } | null | undefined>,
 ) {
-  const issuesBbox = computed(() => {
+  const selectedIssuesWgs84Bbox = computed(() => {
     if (!issues.value) return undefined;
     // Filter out issues without geometry
     const issuesWithGeometry = issues.value.filter((issue) => issue.geometry);
@@ -127,20 +108,19 @@ export function useIssuesBbox(
     );
   });
 
-  const bbox = computed(() => {
-    if (!minBbox.value) return undefined;
-    const expandedBbox = issuesBbox.value
-      ? extendMinimumBbox(issuesBbox.value, minBbox.value)
-      : minBbox.value;
-    return transformBboxToOpenLayers(expandedBbox);
-  });
+  const defaultMapExtent = computed(() =>
+    minBbox.value ? transformBboxToOpenLayers(minBbox.value) : undefined,
+  );
+
+  const selectedIssuesExtent = computed(() =>
+    selectedIssuesWgs84Bbox.value
+      ? transformBboxToOpenLayers(selectedIssuesWgs84Bbox.value)
+      : undefined,
+  );
 
   return {
-    bbox,
-    issuesBbox: computed(() =>
-      issuesBbox.value
-        ? transformBboxToOpenLayers(issuesBbox.value)
-        : undefined,
-    ),
+    selectedIssuesWgs84Bbox,
+    selectedIssuesExtent,
+    defaultMapExtent,
   };
 }

@@ -5,8 +5,7 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   // Initialize with all available legends when legends are loaded
   const { legends } = storeToRefs(useLegends());
   const route = useRoute();
-  const { updateQuery } = useMapFilters();
-  const { selectedTagSlugs } = storeToRefs(useMapFilters());
+  const router = useRouter();
 
   function queryLegendIds() {
     if (typeof route.query.legend !== "string") return [];
@@ -80,11 +79,7 @@ export const useLegendFilters = defineStore("legendFilters", () => {
       }
     }
 
-    void updateQuery(
-      [...visibleLegendIds.value].sort((a, b) => a - b),
-      [...selectedTagSlugs.value].sort(),
-      !isShowingAll.value,
-    );
+    void updateLegendQuery();
   }
 
   /**
@@ -97,25 +92,31 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   /**
    * Reset to show-all mode
    */
-  function showAllLegends() {
+  function showAllLegends(updateUrl = true) {
     if (legends.value) {
       visibleLegendIds.value = new Set(
         legends.value.map((legend) => legend.id),
       );
-      void updateQuery(
-        [...visibleLegendIds.value].sort((a, b) => a - b),
-        [...selectedTagSlugs.value].sort(),
-        false,
-      );
+      if (updateUrl) void updateLegendQuery();
     }
   }
 
-  async function resetFilters() {
-    if (!legends.value) return;
+  async function updateLegendQuery() {
+    const query = { ...route.query };
+    const allLegendIds = legends.value?.map((legend) => legend.id) ?? [];
+    const selectedIds = [...visibleLegendIds.value].sort((a, b) => a - b);
+    const hasAllLegends =
+      allLegendIds.length > 0 &&
+      allLegendIds.length === selectedIds.length &&
+      allLegendIds.every((id) => selectedIds.includes(id));
 
-    visibleLegendIds.value = new Set(legends.value.map((legend) => legend.id));
-    await useMapFilters().clearTags(false);
-    await updateQuery([], [], false);
+    if (selectedIds.length > 0 && !hasAllLegends) {
+      query.legend = selectedIds.join(",");
+    } else {
+      delete query.legend;
+    }
+
+    await router.replace({ query });
   }
 
   return {
@@ -124,6 +125,5 @@ export const useLegendFilters = defineStore("legendFilters", () => {
     toggleLegendVisibility,
     isLegendVisible,
     showAllLegends,
-    resetFilters,
   };
 });

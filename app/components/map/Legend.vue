@@ -66,7 +66,7 @@
 const { legends } = storeToRefs(useLegends());
 const { toggleLegendVisibility, isLegendVisible } = useLegendFilters();
 const { tags } = useTagsApi();
-const { hasTag, toggleTag } = useMapFilters();
+const { hasTag, toggleTag } = useTagFilters();
 
 // Only need legend_id to determine which legends are visible
 const { issues } = storeToRefs(useIssues({ fields: "id,legend_id,tags" }));

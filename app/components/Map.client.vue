@@ -83,11 +83,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -151,25 +147,20 @@ import { click } from "ol/events/condition";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
-import { useDebounceFn } from "@vueuse/core";
+import { useMapIssueSelection } from "~/composables/useMapIssueSelection";
 
 interface Size {
   width: number;
   height: number;
 }
 
-// Use lightweight map issues for rendering (only essential fields)
-const { issues: allIssues } = storeToRefs(
-  useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
-);
-
 const route = useRoute();
 
-const { selectedIssues: issues } = useMapIssueSelection(allIssues);
-const legendFilters = useLegendFilters();
-const { visibleLegendIds, isShowingAll } = storeToRefs(legendFilters);
-const mapFilters = useMapFilters();
-const { selectedTagSlugs } = storeToRefs(mapFilters);
+const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
+const { selectedTagSlugs } = storeToRefs(useTagFilters());
+const mapIssueSelection = useMapIssueSelection();
+const allIssues = computed(() => mapIssueSelection.allIssues);
+const issues = computed(() => mapIssueSelection.selectedIssues);
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
@@ -230,12 +221,10 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
 }
 
 function resetToOriginalExtent() {
-  if (!allIssues.value || allIssues.value.length === 0) return;
-
-  const bbox = issuesBbox.value;
+  const bbox = selectedIssuesExtent.value ?? defaultMapExtent.value;
   if (!bbox) return;
 
-  setBbox(issuesBbox.value, {
+  setBbox(bbox, {
     padding: [50, 50, 50, 50],
   });
 }
@@ -255,54 +244,9 @@ const mapRef = useTemplateRef("mapRef");
 const { mobile } = useDisplay();
 
 // Initialize bbox composable with mapRef
-const { bbox: issuesBbox, issuesBbox: selectedIssuesBbox } = useIssuesBbox(
+const { selectedIssuesExtent, defaultMapExtent } = useIssuesBbox(
   issues,
   mapRef,
-);
-
-function moveToIssues() {
-  // console.debug({
-  //   selectedIssue: selectedIssue.value,
-  //   allIssues: allIssues.value?.length,
-  // });
-  if (allIssues.value.length > 0) {
-    // If there's a selected issue with geometry, zoom to it
-    if (selectedIssue.value?.geometry) {
-      recenterOnSelectedIssue();
-    } else {
-      // Otherwise, fit all issues (including filtered ones for initial view)
-      const bbox = issuesBbox?.value;
-      if (!bbox) return;
-      setBbox(bbox as BBox);
-    }
-  }
-}
-
-const debouncedMoveToIssues = useDebounceFn(moveToIssues);
-
-watch([allIssues, selectedIssue], () => {
-  debouncedMoveToIssues();
-});
-
-// Watch for legend filter changes and zoom to visible issues
-watch(
-  [visibleLegendIds, selectedTagSlugs],
-  () => {
-    // If we're back to show-all mode and there's a selected issue, zoom to it
-    if (isShowingAll.value && selectedId.value) {
-      recenterOnSelectedIssue();
-    } else if (selectedIssuesBbox?.value) {
-      setBbox(
-        (hasActiveFilters.value
-          ? selectedIssuesBbox.value
-          : issuesBbox.value) as BBox,
-        {
-          padding: [50, 50, 50, 50],
-        },
-      );
-    }
-  },
-  { deep: true },
 );
 
 const { isEditing } = useIsEditing();
@@ -325,6 +269,15 @@ const { mapHeight, recenterOnSelectedIssue } = useMapResize(
   mapRef,
   currentPadding,
 );
+
+useMapFraming({
+  selectedIssues: issues,
+  selectedIssuesExtent,
+  defaultMapExtent,
+  selectedIssue,
+  fitExtent: (extent) => setBbox(extent),
+  recenterSelectedIssue: recenterOnSelectedIssue,
+});
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
@@ -560,7 +513,6 @@ function onFeatureSelect(event: SelectEvent) {
       selectedFeatures.value.push(feature);
       return;
     } else {
-      selectedId.value = issueId;
       navigateToIssue({ id: issueId } as MapIssue);
       emit("feature-clicked");
     }
@@ -673,4 +625,3 @@ defineExpose({
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>
-

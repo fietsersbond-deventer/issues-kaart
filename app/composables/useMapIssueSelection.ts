@@ -1,22 +1,23 @@
 import type { MapIssue } from "~~/shared/types/Issue";
+import { filterMapIssues } from "~/utils/filterMapIssues";
 
-export function useMapIssueSelection(allIssues: Ref<MapIssue[]>) {
-  const { selectedTagSlugs } = storeToRefs(useMapFilters());
+export const useMapIssueSelection = defineStore("mapIssueSelection", () => {
+  const { issues: allIssues } = storeToRefs(
+    useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
+  );
+  const { selectedTagSlugs } = storeToRefs(useTagFilters());
   const { visibleLegendIds } = storeToRefs(useLegendFilters());
 
   const selectedIssues = computed(() =>
-    allIssues.value.filter((issue) => {
-      const hasSelectedTags = [...selectedTagSlugs.value].every((tag) =>
-        issue.tags?.includes(tag),
-      );
-
-      if (!hasSelectedTags) return false;
-      if (!issue.legend_id) return true;
-      return visibleLegendIds.value.has(issue.legend_id);
-    }),
+    filterMapIssues(
+      allIssues.value,
+      selectedTagSlugs.value,
+      visibleLegendIds.value,
+    ),
   );
 
   return {
+    allIssues,
     selectedIssues,
   };
-}
+});

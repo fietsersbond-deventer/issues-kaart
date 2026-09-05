@@ -12,12 +12,15 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute();
+const router = useRouter();
+
 defineProps<{
   count: number;
 }>();
 
 const legendFilters = useLegendFilters();
-const mapFilters = useMapFilters();
+const mapFilters = useTagFilters();
 const { isShowingAll } = storeToRefs(legendFilters);
 const { selectedTagSlugs } = storeToRefs(mapFilters);
 
@@ -26,7 +29,13 @@ const hasActiveFilters = computed(
 );
 
 function resetFilters() {
-  void legendFilters.resetFilters();
+  legendFilters.showAllLegends(false);
+  void mapFilters.clearTags(false).then(() => {
+    const query = { ...route.query };
+    delete query.legend;
+    delete query.tag;
+    return router.replace({ query });
+  });
 }
 </script>
 
