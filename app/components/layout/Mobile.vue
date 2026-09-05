@@ -121,9 +121,6 @@ const controlsSize = ref<{ width: number; height: number }>({
 // Get reference to the Map component
 const mapRef = ref();
 
-// Use the map resize composable (it handles recentering automatically)
-useMapResize(mapRef, ref([50, 50, 50, 50]));
-
 // Create a computed property for preferredLayer that syncs with the map
 const preferredLayer = computed({
   get: () => mapRef.value?.preferredLayer || "Licht",
