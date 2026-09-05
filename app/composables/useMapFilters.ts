@@ -44,8 +44,7 @@ export const useMapFilters = defineStore("mapFilters", () => {
 
     if (legendIds.length > 0 && !hasAllLegends) {
       query.legend = legendIds.join(",");
-    }
-    else delete query.legend;
+    } else delete query.legend;
 
     if (tagSlugs.length > 0) query.tag = tagSlugs.join("+");
     else delete query.tag;

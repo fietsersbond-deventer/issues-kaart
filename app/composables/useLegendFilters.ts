@@ -71,7 +71,7 @@ export const useLegendFilters = defineStore("legendFilters", () => {
       if (visibleLegendIds.value.size === 0) {
         if (legends.value) {
           visibleLegendIds.value = new Set(
-            legends.value.map((legend) => legend.id)
+            legends.value.map((legend) => legend.id),
           );
         }
       } else {
@@ -99,7 +99,7 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   function showAllLegends() {
     if (legends.value) {
       visibleLegendIds.value = new Set(
-        legends.value.map((legend) => legend.id)
+        legends.value.map((legend) => legend.id),
       );
       void updateQuery(
         [...visibleLegendIds.value].sort((a, b) => a - b),

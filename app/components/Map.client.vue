@@ -81,7 +81,11 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
