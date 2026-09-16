@@ -13,7 +13,10 @@
         color="primary"
         :aria-label="tool.label"
         @click="startDrawing(tool.type)"
-      />
+      >
+        <v-icon :icon="tool.icon" />
+        <v-tooltip activator="parent" :text="tool.label" location="top" />
+      </v-btn>
     </div>
   </div>
 </template>
