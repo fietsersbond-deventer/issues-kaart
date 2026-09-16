@@ -33,9 +33,6 @@
           {{ countIssues[item.id] }}
         </td>
       </tr>
-      <tr v-if="usedTags.length" class="section-heading">
-        <td colspan="4" class="text-caption text-medium-emphasis">Tags</td>
-      </tr>
       <tr v-if="usedTags.length">
         <td colspan="4">
           <div class="tag-grid">
@@ -152,6 +149,7 @@ function toggleTagIfAvailable(tag: string) {
   flex-direction: column;
   background: white;
   overflow: hidden; /* Contain the overflow */
+  padding: 0.5em;
 }
 
 .legend-list {
