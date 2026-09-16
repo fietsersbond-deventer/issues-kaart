@@ -83,11 +83,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -152,6 +148,7 @@ import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
 import { useDebounceFn } from "@vueuse/core";
+import Color from "color";
 
 interface Size {
   width: number;
@@ -544,8 +541,8 @@ function toPolygonCoords(issue: MapIssue) {
 }
 
 function getPolygonFillColor(issue: MapIssue) {
-  const color = issue.legend?.color || "#000000";
-  return color + "40"; // 40 is 25% opacity in hex
+  const color = new Color(issue.legend?.color || "#000000");
+  return color.fade(0.5);
 }
 
 function navigateToIssue(issue: MapIssue) {
