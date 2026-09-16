@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 import {
   createIconCanvasDataUrl,
   createFallbackIconDataUrl,
@@ -115,7 +115,7 @@ const editedItem = ref<LegendFormData>(
         icon: legend.icon,
         icon_data_url: legend.icon_data_url,
       }
-    : { ...defaultItem }
+    : { ...defaultItem },
 );
 const isEdit = computed(() => !!legend);
 
@@ -124,13 +124,13 @@ async function setIcon() {
     try {
       const dataUrl = await createIconCanvasDataUrl(
         editedItem.value.icon,
-        editedItem.value.color
+        editedItem.value.color,
       );
       editedItem.value.icon_data_url = dataUrl;
     } catch (error) {
       console.warn("Failed to generate icon canvas, using fallback:", error);
       editedItem.value.icon_data_url = createFallbackIconDataUrl(
-        editedItem.value.color
+        editedItem.value.color,
       );
     }
   } else {
@@ -152,7 +152,7 @@ watch(
       editedItem.value = { ...defaultItem };
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 async function save() {

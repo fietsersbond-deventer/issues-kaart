@@ -35,3 +35,9 @@ export type Issue = {
   geometry: string; // GeoJSON stored as string
   created_at: Date;
 };
+
+export type IssueTag = {
+  issue_id: number;
+  tag: string;
+  created_at: Date;
+};

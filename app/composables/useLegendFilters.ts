@@ -4,21 +4,37 @@ export const useLegendFilters = defineStore("legendFilters", () => {
 
   // Initialize with all available legends when legends are loaded
   const { legends } = storeToRefs(useLegends());
+  const route = useRoute();
+  const router = useRouter();
 
-  // Initialize visibleLegendIds when legends are first loaded
+  function queryLegendIds() {
+    if (typeof route.query.legend !== "string") return [];
+    return route.query.legend
+      .split(",")
+      .map(Number)
+      .filter((id) => Number.isInteger(id));
+  }
+
+  function syncFromQuery(newLegends: typeof legends.value) {
+    if (!newLegends?.length) return;
+
+    const selectedIds = queryLegendIds();
+    visibleLegendIds.value = new Set(
+      selectedIds.length > 0
+        ? selectedIds.filter((id) =>
+            newLegends.some((legend) => legend.id === id),
+          )
+        : newLegends.map((legend) => legend.id),
+    );
+  }
+
+  // Keep the selection synchronized when navigating or changing the URL.
   watch(
-    legends,
-    (newLegends) => {
-      if (
-        newLegends &&
-        newLegends.length > 0 &&
-        visibleLegendIds.value.size === 0
-      ) {
-        // Initialize with all legend IDs visible
-        visibleLegendIds.value = new Set(newLegends.map((legend) => legend.id));
-      }
+    [legends, () => route.path, () => route.query.legend],
+    ([newLegends]) => {
+      syncFromQuery(newLegends);
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Computed: determine if we're showing all legends based on the current selection
@@ -54,7 +70,7 @@ export const useLegendFilters = defineStore("legendFilters", () => {
       if (visibleLegendIds.value.size === 0) {
         if (legends.value) {
           visibleLegendIds.value = new Set(
-            legends.value.map((legend) => legend.id)
+            legends.value.map((legend) => legend.id),
           );
         }
       } else {
@@ -62,6 +78,8 @@ export const useLegendFilters = defineStore("legendFilters", () => {
         visibleLegendIds.value = new Set(visibleLegendIds.value);
       }
     }
+
+    void updateLegendQuery();
   }
 
   /**
@@ -74,12 +92,31 @@ export const useLegendFilters = defineStore("legendFilters", () => {
   /**
    * Reset to show-all mode
    */
-  function showAllLegends() {
+  function showAllLegends(updateUrl = true) {
     if (legends.value) {
       visibleLegendIds.value = new Set(
-        legends.value.map((legend) => legend.id)
+        legends.value.map((legend) => legend.id),
       );
+      if (updateUrl) void updateLegendQuery();
     }
+  }
+
+  async function updateLegendQuery() {
+    const query = { ...route.query };
+    const allLegendIds = legends.value?.map((legend) => legend.id) ?? [];
+    const selectedIds = [...visibleLegendIds.value].sort((a, b) => a - b);
+    const hasAllLegends =
+      allLegendIds.length > 0 &&
+      allLegendIds.length === selectedIds.length &&
+      allLegendIds.every((id) => selectedIds.includes(id));
+
+    if (selectedIds.length > 0 && !hasAllLegends) {
+      query.legend = selectedIds.join(",");
+    } else {
+      delete query.legend;
+    }
+
+    await router.replace({ query });
   }
 
   return {

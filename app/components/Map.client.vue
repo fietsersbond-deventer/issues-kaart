@@ -13,6 +13,8 @@
       </MapControlContainer>
     </slot>
 
+    <MapFilterSummary :count="issues.length" />
+
     <!-- Bottom-left corner controls -->
     <slot name="bottom-left-controls" :is-small="isMapSmall">
       <MapControlContainer v-show="!isMapSmall" position="bottom-left">
@@ -81,11 +83,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -134,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MapIssue } from "~/types/Issue";
+import type { MapIssue } from "~~/shared/types/Issue";
 import { register } from "ol/proj/proj4.js";
 import { transform } from "ol/proj";
 import proj4 from "proj4";
@@ -149,31 +147,20 @@ import { click } from "ol/events/condition";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
-import { useDebounceFn } from "@vueuse/core";
+import { useMapIssueSelection } from "~/composables/useMapIssueSelection";
 
 interface Size {
   width: number;
   height: number;
 }
 
-// Use lightweight map issues for rendering (only essential fields)
-const { issues: allIssues } = storeToRefs(
-  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const }),
-);
+const route = useRoute();
 
-// Filter issues based on legend visibility
 const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
-
-const issues = computed(() => {
-  return (
-    allIssues.value?.filter((issue) => {
-      // If issue has no legend_id, show it by default
-      if (!issue.legend_id) return true;
-      // Otherwise, check if the legend is visible
-      return visibleLegendIds.value.has(issue.legend_id);
-    }) ?? []
-  );
-});
+const { selectedTagSlugs } = storeToRefs(useTagFilters());
+const mapIssueSelection = useMapIssueSelection();
+const allIssues = computed(() => mapIssueSelection.allIssues);
+const issues = computed(() => mapIssueSelection.selectedIssues);
 
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 function isSelected(issue: MapIssue) {
@@ -217,13 +204,23 @@ watch(legendSize, async () => {
   currentPadding.value = [
     50, // top
     50, // right
-    legendSize.value.height + 20, // bottom
-    50, // left
+    50, // legendSize.value.height + 20, // bottom
+    50 + legendSize.value.width,
   ];
 });
 
 function setBbox(bbox: BBox, options: FitOptions = {}) {
-  if (!view.value) return;
+  if (!view.value) {
+    console.debug("[map-camera] fit skipped: view unavailable");
+    return;
+  }
+  console.debug("[map-camera] fit requested", {
+    bbox,
+    options,
+    padding: currentPadding.value,
+    currentZoom: view.value.getZoom(),
+  });
+  view.value.cancelAnimations();
   view.value.fit(bbox, {
     easing: easeOut,
     duration: 1000,
@@ -233,23 +230,40 @@ function setBbox(bbox: BBox, options: FitOptions = {}) {
   });
 }
 
-function resetToOriginalExtent() {
-  if (!allIssues.value || allIssues.value.length === 0) return;
+function centerPoint(issue: MapIssue) {
+  if (!view.value || issue.geometry.type !== "Point") return;
 
-  const bbox = issuesBbox.value;
-  if (!bbox) return;
+  const center = transform(
+    issue.geometry.coordinates,
+    "EPSG:4326",
+    "EPSG:3857",
+  );
+  const currentZoom = view.value.getZoom() ?? 13;
 
-  setBbox(issuesBbox.value, {
-    padding: [50, 50, 50, 50],
+  console.debug("[map-camera] center filtered point requested", {
+    issueId: issue.id,
+    currentZoom,
+    targetZoom: Math.max(currentZoom, 15),
   });
+  view.value.cancelAnimations();
+  view.value.animate({
+    center,
+    zoom: Math.max(currentZoom, 15),
+    duration: 1000,
+    easing: easeOut,
+  });
+}
+
+function resetToOriginalExtent() {
+  requestReset();
 }
 
 function updatePadding(controlsSize: Size) {
   currentPadding.value = [
     50, // top
     50, // right
-    controlsSize.height + 20, // bottom
-    50, // left
+    50,
+    controlsSize.width + 50, // left
   ];
 }
 
@@ -259,46 +273,9 @@ const mapRef = useTemplateRef("mapRef");
 const { mobile } = useDisplay();
 
 // Initialize bbox composable with mapRef
-const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
-
-function moveToIssues() {
-  // console.debug({
-  //   selectedIssue: selectedIssue.value,
-  //   allIssues: allIssues.value?.length,
-  // });
-  if (allIssues.value.length > 0) {
-    // If there's a selected issue with geometry, zoom to it
-    if (selectedIssue.value?.geometry) {
-      recenterOnSelectedIssue();
-    } else {
-      // Otherwise, fit all issues (including filtered ones for initial view)
-      const bbox = issuesBbox?.value;
-      if (!bbox) return;
-      setBbox(bbox as BBox);
-    }
-  }
-}
-
-const debouncedMoveToIssues = useDebounceFn(moveToIssues);
-
-watch([allIssues, selectedIssue], () => {
-  debouncedMoveToIssues();
-});
-
-// Watch for legend filter changes and zoom to visible issues
-watch(
-  visibleLegendIds,
-  () => {
-    // If we're back to show-all mode and there's a selected issue, zoom to it
-    if (isShowingAll.value && selectedId.value) {
-      recenterOnSelectedIssue();
-    } else if (issuesBbox?.value) {
-      setBbox(issuesBbox.value as BBox, {
-        padding: [50, 50, 50, 50],
-      });
-    }
-  },
-  { deep: true },
+const { selectedIssuesExtent, defaultMapExtent } = useIssuesBbox(
+  issues,
+  mapRef,
 );
 
 const { isEditing } = useIsEditing();
@@ -320,6 +297,37 @@ const projection = ref("EPSG:3857");
 const { mapHeight, recenterOnSelectedIssue } = useMapResize(
   mapRef,
   currentPadding,
+  () => requestResize(),
+);
+
+let requestResize = () => {};
+let requestReset = () => {};
+
+const mapFraming = useMapFraming({
+  mapReady: () =>
+    Boolean(mapRef.value?.map?.getSize()?.every((size: number) => size > 0)),
+  issuesReady: computed(() => mapIssueSelection.issuesReady),
+  selectedIssues: issues,
+  selectedIssuesExtent,
+  defaultMapExtent,
+  selectedIssue,
+  selectedId,
+  fitExtent: (extent) => setBbox(extent),
+  centerPoint,
+  recenterSelectedIssue: recenterOnSelectedIssue,
+});
+
+requestResize = mapFraming.requestResize;
+requestReset = mapFraming.requestReset;
+
+watch([selectedTagSlugs, visibleLegendIds], () => mapFraming.requestFilter(), {
+  deep: true,
+});
+
+watch(
+  () => mapRef.value?.map,
+  () => mapFraming.requestInitial(),
+  { immediate: true },
 );
 
 // Hide controls based on actual map height (available space for the map)
@@ -535,7 +543,10 @@ function getPolygonFillColor(issue: MapIssue) {
 }
 
 function navigateToIssue(issue: MapIssue) {
-  navigateTo(`/kaart/${issue.id}`);
+  navigateTo({
+    path: `/kaart/${issue.id}`,
+    query: route.query,
+  });
 }
 
 // Fallback function to create a simple circle icon if icon_data_url is missing
@@ -553,7 +564,6 @@ function onFeatureSelect(event: SelectEvent) {
       selectedFeatures.value.push(feature);
       return;
     } else {
-      selectedId.value = issueId;
       navigateToIssue({ id: issueId } as MapIssue);
       emit("feature-clicked");
     }

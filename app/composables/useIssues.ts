@@ -1,19 +1,17 @@
 import { defineStore } from "pinia";
 import {
   isExistingIssue,
-  isNewIssue,
   type Issue,
-} from "@/types/Issue";
-import type { WebSocketMessage } from "@/types/WebSocketMessages";
+  type NewIssue,
+} from "~~/shared/types/Issue";
+import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
 /**
  * Issues store with optional field selection
  * Use the fields option to request specific fields and reduce payload size
  */
-export function useIssues(options?: {
-  fields?: string;
-}) {
+export function useIssues(options?: { fields?: string }) {
   const fields = options?.fields;
   const storeName = fields ? `issues-${fields.replace(/,/g, "-")}` : "issues";
 
@@ -25,10 +23,11 @@ export function useIssues(options?: {
     const { legends } = storeToRefs(useLegends());
 
     const fetchOptions = fields ? { query: { fields } } : {};
-    const { data, refresh: refreshIssues } = useFetch<Issue[]>(
-      "/api/issues",
-      fetchOptions
-    );
+    const {
+      data,
+      refresh: refreshIssues,
+      status,
+    } = useFetch<Issue[]>("/api/issues", fetchOptions);
 
     function processIssue(issue: Issue): Issue {
       if (issue.geometry && typeof issue.geometry === "string") {
@@ -51,7 +50,6 @@ export function useIssues(options?: {
 
     // Subscribe to WebSocket messages
     const unsubscribe = ws.subscribe((parsed: WebSocketMessage) => {
-
       switch (parsed.type) {
         case "issue-created": {
           const issue = processIssue(parsed.payload as Issue);
@@ -61,7 +59,7 @@ export function useIssues(options?: {
         case "issue-modified": {
           const issue = processIssue(parsed.payload as Issue);
           const existingIndex = issues.value.findIndex(
-            (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined)
+            (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined),
           );
 
           if (existingIndex !== -1) {
@@ -85,13 +83,11 @@ export function useIssues(options?: {
 
     // any changes to the selected issue should be reflected in this store
     const { issue } = storeToRefs(useSelectedIssue());
-    const throttledUpdate = useThrottleFn((issue: Issue | null) => {
-      if (!issue) return;
+    const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
+      if (!isExistingIssue(issue)) return;
 
       const existingIndex = issues.value.findIndex(
-        (i) =>
-          (isNewIssue(issue) && isNewIssue(i)) ||
-          (isExistingIssue(issue) && isExistingIssue(i) && i.id === issue.id)
+        (i) => isExistingIssue(i) && i.id === issue.id,
       );
 
       if (existingIndex !== -1) {
@@ -109,7 +105,7 @@ export function useIssues(options?: {
       (updatedIssue) => {
         throttledUpdate(updatedIssue);
       },
-      { deep: true }
+      { deep: true },
     );
 
     // Cleanup subscription when store is disposed
@@ -124,7 +120,7 @@ export function useIssues(options?: {
           issues.value = [];
         }
       },
-      { immediate: true }
+      { immediate: true },
     );
 
     // Reprocess issues when legends change
@@ -135,18 +131,21 @@ export function useIssues(options?: {
           issues.value = issues.value.map((issue) => processIssue(issue));
         }
       },
-      { deep: true }
+      { deep: true },
     );
 
     function refresh() {
       refreshIssues();
     }
 
+    const isLoaded = computed(() => status.value === "success");
+
     // Expose CRUD methods (WebSocket handles updates automatically)
     const methods = useIssuesMethods();
 
     return {
       issues,
+      isLoaded,
       refresh,
       ...methods,
     };
