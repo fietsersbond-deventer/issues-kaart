@@ -25,7 +25,7 @@
           <!-- Light layer -->
           <ol-tile-layer v-if="layer.name === 'Licht'" :visible="true">
             <ol-source-xyz
-              url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+              url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=cb1_2g3h_1_01ad081dc8ac0a49f3be7436"
             />
           </ol-tile-layer>
 

@@ -55,12 +55,14 @@
       :visible="preferredLayer === 'Foto'"
       :base-layer="true"
     >
-      <ol-source-tile-wms
+      <ol-source-wmts
         ref="luchtfoto-source"
-        url="https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0"
-        layers="Actueel_ortho25"
+        url="https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0?TILEMATRIXSET=EPSG:28992"
+        layer="Actueel_orthoHR"
+        :projection="rdProjection"
         attributions='&copy; <a href="https://www.kadaster.nl">Kadaster</a>'
-        :preview="getPreview('/preview-luchtfoto.png')"
+        format="image/png"
+        style="default"
       />
     </ol-tile-layer>
 
@@ -81,11 +83,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -158,8 +156,16 @@ interface Size {
 
 // Use lightweight map issues for rendering (only essential fields)
 const { issues: allIssues } = storeToRefs(
-  useIssues({ fields: "id,title,legend_id,geometry,imageUrl" as const }),
+  useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
 );
+
+const route = useRoute();
+const activeTag = computed(() => {
+  return route.path.startsWith("/kaart/tag/") &&
+    typeof route.params.tag === "string"
+    ? route.params.tag
+    : null;
+});
 
 // Filter issues based on legend visibility
 const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
@@ -167,6 +173,10 @@ const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
 const issues = computed(() => {
   return (
     allIssues.value?.filter((issue) => {
+      if (activeTag.value && !issue.tags?.includes(activeTag.value)) {
+        return false;
+      }
+
       // If issue has no legend_id, show it by default
       if (!issue.legend_id) return true;
       // Otherwise, check if the legend is visible
