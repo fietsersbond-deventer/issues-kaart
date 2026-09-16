@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasActiveFilters" class="map-filter-summary">
-    <span>{{ count }} plekken op de kaart</span>
+    <span>{{ count }} plek{{ count !== 1 ? "ken" : "" }} op de kaart</span>
     <v-btn
       icon="mdi-filter-off-outline"
       variant="text"
@@ -25,7 +25,7 @@ const { isShowingAll } = storeToRefs(legendFilters);
 const { selectedTagSlugs } = storeToRefs(mapFilters);
 
 const hasActiveFilters = computed(
-  () => !isShowingAll.value || selectedTagSlugs.value.size > 0,
+  () => !isShowingAll.value || selectedTagSlugs.value.size > 0
 );
 
 function resetFilters() {
