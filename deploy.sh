@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Deployment script for fietsersbond app
 # Usage: DEPLOYMENT_TARGET=user@host:/path/to/deploy ./deploy.sh
@@ -30,10 +30,13 @@ rsync -avz server/database/ "$DEPLOYMENT_TARGET/server/database/"
 # echo "Running database migrations on remote..."
 # ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:} && node --import tsx/esm server/database/runMigrations.ts"
 
+# ssh runs a non-interactive shell, which skips ~/.bashrc (and thus nvm) by default, so source nvm explicitly
+NVM_INIT='export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
+
 echo "Installing production server dependencies on remote..."
-ssh "${DEPLOYMENT_TARGET%%:*}" "cd ${DEPLOYMENT_TARGET##*:}/server && npm install --omit=dev"
+ssh "${DEPLOYMENT_TARGET%%:*}" "$NVM_INIT; cd ${DEPLOYMENT_TARGET##*:}/server && pnpm install --prod"
 
 echo "Restarting PM2 on remote..."
-ssh "${DEPLOYMENT_TARGET%%:*}" "/home/fietsersbond/.nvm/versions/node/v22.20.0/bin/pm2 restart all"
+ssh "${DEPLOYMENT_TARGET%%:*}" "$NVM_INIT; pm2 restart all"
 
 echo "Deployment and restart complete."
