@@ -151,11 +151,20 @@ describe("HTML Sanitization Security Tests", () => {
       expect(result).not.toContain("alert");
     });
 
-    it("should handle iframe injection", () => {
+    it("should handle iframe injection with a javascript: URL", () => {
       const input = "<iframe src=\"javascript:alert('XSS')\"></iframe>";
       const result = sanitizeHtml(input);
-      expect(result).not.toContain("iframe");
+      // Disallowed iframe src is stripped down to an empty span, not left as an iframe
+      expect(result).not.toContain("<iframe");
       expect(result).not.toContain("javascript:");
+      expect(result).not.toContain("alert");
+    });
+
+    it("should strip iframes pointing to arbitrary/untrusted domains", () => {
+      const input = '<iframe src="https://evil.example.com/phishing"></iframe>';
+      const result = sanitizeHtml(input);
+      expect(result).not.toContain("<iframe");
+      expect(result).not.toContain("evil.example.com");
     });
 
     it("should handle meta tag injection", () => {
@@ -269,6 +278,101 @@ describe("HTML Sanitization Security Tests", () => {
       expect(result).not.toContain("<table>");
       expect(result).not.toContain("<video>");
       expect(result).not.toContain("<audio>");
+    });
+  });
+
+  describe("Iframe Embed Allowlist", () => {
+    it("should allow a Google Maps embed iframe", () => {
+      const input =
+        '<iframe src="https://www.google.com/maps/embed?pb=!4v1789804577588!6m8!1m7!1sGHINSMl0_mS34ThUp_G7Dg" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+      const result = sanitizeHtml(input);
+
+      expect(result).toContain("<iframe");
+      expect(result).toContain(
+        'src="https://www.google.com/maps/embed?pb=!4v1789804577588!6m8!1m7!1sGHINSMl0_mS34ThUp_G7Dg"',
+      );
+      expect(result).toContain('width="600"');
+      expect(result).toContain('height="450"');
+      expect(result).toContain('style="border:0"');
+      expect(result).toContain('loading="lazy"');
+    });
+
+    it("should allow a YouTube embed iframe", () => {
+      const input =
+        '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" width="560" height="315"></iframe>';
+      const result = sanitizeHtml(input);
+
+      expect(result).toContain("<iframe");
+      expect(result).toContain(
+        'src="https://www.youtube.com/embed/dQw4w9WgXcQ"',
+      );
+    });
+
+    it("should allow a Vimeo embed iframe", () => {
+      const input =
+        '<iframe src="https://player.vimeo.com/video/123456789"></iframe>';
+      const result = sanitizeHtml(input);
+
+      expect(result).toContain("<iframe");
+      expect(result).toContain(
+        'src="https://player.vimeo.com/video/123456789"',
+      );
+    });
+
+    it("should strip an iframe with no src attribute", () => {
+      const input = "<iframe></iframe>";
+      const result = sanitizeHtml(input);
+      expect(result).not.toContain("<iframe");
+    });
+
+    it("should strip an insecure (http) iframe even if the host would otherwise be allowed", () => {
+      const input =
+        '<iframe src="http://www.google.com/maps/embed?pb=123"></iframe>';
+      const result = sanitizeHtml(input);
+      expect(result).not.toContain("<iframe");
+    });
+
+    it("should strip an iframe whose src merely contains an allowed prefix as a substring elsewhere", () => {
+      const input =
+        '<iframe src="https://evil.example.com/?redirect=https://www.google.com/maps/embed"></iframe>';
+      const result = sanitizeHtml(input);
+      expect(result).not.toContain("<iframe");
+      expect(result).not.toContain("evil.example.com");
+    });
+
+    it("should fill in safe defaults for missing iframe attributes", () => {
+      const input = '<iframe src="https://www.google.com/maps/embed?pb=123"></iframe>';
+      const result = sanitizeHtml(input);
+
+      expect(result).toContain('width="600"');
+      expect(result).toContain('height="450"');
+      expect(result).toContain('frameborder="0"');
+      expect(result).toContain('loading="lazy"');
+      expect(result).toContain('allowfullscreen="true"');
+      expect(result).toContain(
+        'referrerpolicy="no-referrer-when-downgrade"',
+      );
+    });
+
+    it("should drop unsafe style values on an otherwise-allowed iframe", () => {
+      const input =
+        '<iframe src="https://www.google.com/maps/embed?pb=123" style="background:url(javascript:alert(1))"></iframe>';
+      const result = sanitizeHtml(input);
+
+      expect(result).toContain("<iframe");
+      expect(result).not.toContain("javascript:");
+      expect(result).not.toContain("alert");
+    });
+
+    it("should not allow iframe attributes outside the safe subset (e.g. srcdoc, sandbox bypass)", () => {
+      const input =
+        '<iframe src="https://www.google.com/maps/embed?pb=123" srcdoc="<script>alert(1)</script>" onload="alert(2)"></iframe>';
+      const result = sanitizeHtml(input);
+
+      expect(result).toContain("<iframe");
+      expect(result).not.toContain("srcdoc");
+      expect(result).not.toContain("onload");
+      expect(result).not.toContain("alert");
     });
   });
 });

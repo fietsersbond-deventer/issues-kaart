@@ -1,4 +1,4 @@
-import sanitizeHtmlLib from "sanitize-html";
+import sanitizeHtmlLib, { type Tag } from "sanitize-html";
 
 /**
  * Sanitizes HTML content based on the allowed elements from the Quill editor configuration.
@@ -16,8 +16,20 @@ export function sanitizeHtml(html: string): string {
     return "";
   }
 
+  // Hardcoded for now — list of allowed iframe URL prefixes (must be HTTPS).
+  // Update this array to permit additional embed sources.
+  const allowedIframeUrls = [
+    "https://www.google.com/maps/embed",
+    "https://www.google.nl/maps/embed",
+    "https://www.youtube.com/embed",
+    "https://www.youtube-nocookie.com/embed",
+    "https://player.vimeo.com/video",
+  ];
+
   return sanitizeHtmlLib(html, {
     allowedTags: [
+      // Allow embedded iframes (src validated against `allowedIframeUrls` below)
+      "iframe",
       // Headers
       "h2",
       "h3",
@@ -47,12 +59,26 @@ export function sanitizeHtml(html: string): string {
       a: ["href", "target", "rel"],
       // Image attributes
       img: ["src", "alt", "width", "height"],
+      // Restrict iframe attributes to a safe subset
+      iframe: [
+        "src",
+        "width",
+        "height",
+        "frameborder",
+        "style",
+        "allow",
+        "allowfullscreen",
+        "loading",
+        "referrerpolicy",
+        "title",
+      ],
       // General attributes that Quill might use
       "*": ["class"],
     },
     allowedSchemes: ["http", "https", "mailto", "tel"],
     allowedSchemesByTag: {
       img: ["http", "https", "data"],
+      iframe: ["http", "https"],
     },
     allowProtocolRelative: false,
     selfClosing: ["img", "br"],
@@ -85,6 +111,48 @@ export function sanitizeHtml(html: string): string {
           };
         }
         return { tagName, attribs };
+      },
+      iframe: function (tagName, attribs): Tag {
+        if (!attribs || !attribs.src) {
+          return { tagName: "span", attribs: {} };
+        }
+
+        const src = attribs.src;
+        const isAllowed =
+          src.startsWith("https:") &&
+          allowedIframeUrls.some((prefix) => src.startsWith(prefix));
+
+        if (!isAllowed) {
+          return { tagName: "span", attribs: {} };
+        }
+
+        // Only allow a very restrictive, safe style value (no url(), expression(), etc.)
+        const safeStyle =
+          attribs.style && /^[a-zA-Z0-9:;.\s-]*$/.test(attribs.style)
+            ? attribs.style
+            : undefined;
+
+        return {
+          tagName: "iframe",
+          attribs: {
+            src,
+            width: attribs.width || "600",
+            height: attribs.height || "450",
+            frameborder: attribs.frameborder || "0",
+            ...(safeStyle ? { style: safeStyle } : {}),
+            allow:
+              attribs.allow ||
+              "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+            allowfullscreen:
+              attribs.allowfullscreen !== undefined
+                ? attribs.allowfullscreen
+                : "true",
+            loading: attribs.loading || "lazy",
+            referrerpolicy:
+              attribs.referrerpolicy || "no-referrer-when-downgrade",
+            title: attribs.title || "Embedded content",
+          },
+        };
       },
     },
   });

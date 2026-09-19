@@ -33,12 +33,23 @@
               <div class="mb-4">
                 <div class="quill-editor-container">
                   <QuillEditor
+                    ref="quillEditorRef"
                     v-model:content="issue.description"
                     content-type="html"
                     :toolbar
                     :modules="modules"
                     class="quill-editor"
                   />
+                </div>
+                <div class="d-flex justify-end mt-1">
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    prepend-icon="mdi-code-tags"
+                    @click="openHtmlDialog"
+                  >
+                    HTML invoegen
+                  </v-btn>
                 </div>
                 <div v-if="!issue.description" class="text-error text-caption mt-1">
                   Beschrijving is verplicht
@@ -92,7 +103,34 @@
       </v-card-actions>
     </v-card>
   </v-form>
-</template>
+
+    <v-dialog v-model="showHtmlDialog" max-width="600">
+      <v-card>
+        <v-card-title>HTML invoegen</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-2">
+            Plak hier een embed-code (bijv. een Google Maps/Street View iframe). Alleen
+            toegestane bronnen worden bij het opslaan bewaard, andere iframes worden
+            verwijderd.
+          </p>
+          <v-textarea
+            v-model="htmlCode"
+            label="HTML code"
+            rows="6"
+            auto-grow
+            spellcheck="false"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showHtmlDialog = false">Annuleren</v-btn>
+          <v-btn color="primary" variant="flat" :disabled="!htmlCode.trim()" @click="insertHtml">
+            Invoegen
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </template>
 
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
@@ -158,6 +196,41 @@ const toolbar = [
   [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
   [{ indent: "-1" }, { indent: "+1" }], // outdent/indent
 ];
+
+// Ref to the QuillEditor component instance, used to access the underlying Quill API
+const quillEditorRef = ref<InstanceType<typeof QuillEditor> | null>(null);
+const showHtmlDialog = ref(false);
+const htmlCode = ref("");
+
+function openHtmlDialog() {
+  htmlCode.value = "";
+  showHtmlDialog.value = true;
+}
+
+function insertHtml() {
+  const code = htmlCode.value.trim();
+  if (!code) {
+    showHtmlDialog.value = false;
+    return;
+  }
+
+  // Note: the QuillEditor component's own `pasteHTML` method replaces the
+  // *entire* document content, so we use the underlying Quill instance's
+  // clipboard API instead to insert the HTML at the current cursor position.
+  const quill = quillEditorRef.value?.getQuill();
+  if (quill) {
+    const range = quill.getSelection(true) ?? {
+      index: quill.getLength(),
+      length: 0,
+    };
+    quill.clipboard.dangerouslyPasteHTML(range.index, code, "user");
+  } else if (issue.value) {
+    // Fallback: append to the end of the description if the Quill instance isn't available
+    issue.value.description = `${issue.value.description ?? ""}${code}`;
+  }
+
+  showHtmlDialog.value = false;
+}
 
 const { update, create, remove } = useIssuesMethods();
 const { legends } = storeToRefs(useLegends());
