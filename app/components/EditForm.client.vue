@@ -9,11 +9,22 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!canSubmit"
+          variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
-        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
+        <v-btn
+          v-if="'id' in issue"
+          color="error"
+          variant="flat"
+          @click="onDelete"
+        >
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -51,7 +62,10 @@
                     HTML invoegen
                   </v-btn>
                 </div>
-                <div v-if="!issue.description" class="text-error text-caption mt-1">
+                <div
+                  v-if="!issue.description"
+                  class="text-error text-caption mt-1"
+                >
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -78,8 +92,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
-                kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen
+                bovenin de kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -88,10 +102,16 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!canSubmit"
+          variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
@@ -104,33 +124,38 @@
     </v-card>
   </v-form>
 
-    <v-dialog v-model="showHtmlDialog" max-width="600">
-      <v-card>
-        <v-card-title>HTML invoegen</v-card-title>
-        <v-card-text>
-          <p class="text-body-2 mb-2">
-            Plak hier een embed-code (bijv. een Google Maps/Street View iframe). Alleen
-            toegestane bronnen worden bij het opslaan bewaard, andere iframes worden
-            verwijderd.
-          </p>
-          <v-textarea
-            v-model="htmlCode"
-            label="HTML code"
-            rows="6"
-            auto-grow
-            spellcheck="false"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="showHtmlDialog = false">Annuleren</v-btn>
-          <v-btn color="primary" variant="flat" :disabled="!htmlCode.trim()" @click="insertHtml">
-            Invoegen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </template>
+  <v-dialog v-model="showHtmlDialog" max-width="600">
+    <v-card>
+      <v-card-title>HTML invoegen</v-card-title>
+      <v-card-text>
+        <p class="text-body-2 mb-2">
+          Plak hier een embed-code (bijv. een Google Maps/Street View iframe).
+          Alleen toegestane bronnen worden bij het opslaan bewaard, andere
+          iframes worden verwijderd.
+        </p>
+        <v-textarea
+          v-model="htmlCode"
+          label="HTML code"
+          rows="6"
+          auto-grow
+          spellcheck="false"
+        />
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" @click="showHtmlDialog = false">Annuleren</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          :disabled="!htmlCode.trim()"
+          @click="insertHtml"
+        >
+          Invoegen
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+</template>
 
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";

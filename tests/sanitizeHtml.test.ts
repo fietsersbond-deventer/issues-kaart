@@ -341,7 +341,8 @@ describe("HTML Sanitization Security Tests", () => {
     });
 
     it("should fill in safe defaults for missing iframe attributes", () => {
-      const input = '<iframe src="https://www.google.com/maps/embed?pb=123"></iframe>';
+      const input =
+        '<iframe src="https://www.google.com/maps/embed?pb=123"></iframe>';
       const result = sanitizeHtml(input);
 
       expect(result).toContain('width="600"');
@@ -349,9 +350,7 @@ describe("HTML Sanitization Security Tests", () => {
       expect(result).toContain('frameborder="0"');
       expect(result).toContain('loading="lazy"');
       expect(result).toContain('allowfullscreen="true"');
-      expect(result).toContain(
-        'referrerpolicy="no-referrer-when-downgrade"',
-      );
+      expect(result).toContain('referrerpolicy="no-referrer-when-downgrade"');
     });
 
     it("should drop unsafe style values on an otherwise-allowed iframe", () => {
