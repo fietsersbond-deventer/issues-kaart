@@ -209,17 +209,21 @@ const filteredIssues = computed(() => {
   return existingIssues.value.filter(
     (issue) =>
       !state.value.search ||
+      issue.id.toString().includes(state.value.search) ||
       issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
       issue.legend.name
         ?.toLowerCase()
         .includes(state.value.search.toLowerCase())
+
   );
 });
 
 const headers = computed(() => {
   const baseHeaders = [
+
+    {title: "id", value: "id", sortable: true},  
     {title: "", value:"imageUrl", sortable: false},
-    { title: "Titel", value: "title", sortable: true, width: isPrinting.value ? "80%" : "50%" },
+    { title: "Titel", value: "title", sortable: true, width: "50%" },
     { title: "Categorie", value: "legend_name", sortable: true },
   ];
   
@@ -228,8 +232,6 @@ const headers = computed(() => {
       { title: "Datum", value: "created_at", sortable: true },
       { title: "Acties", value: "actions", sortable: false }
     );
-  } else {
-    baseHeaders.unshift({title: "Id", value: "id", sortable: false})
   }
   
   return baseHeaders;
