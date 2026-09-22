@@ -52,7 +52,7 @@
                     class="quill-editor"
                   />
                 </div>
-                <div class="d-flex justify-end mt-1">
+                <!-- <div class="d-flex justify-end mt-1">
                   <v-btn
                     size="small"
                     variant="text"
@@ -61,7 +61,7 @@
                   >
                     HTML invoegen
                   </v-btn>
-                </div>
+                </div> -->
                 <div
                   v-if="!issue.description"
                   class="text-error text-caption mt-1"
