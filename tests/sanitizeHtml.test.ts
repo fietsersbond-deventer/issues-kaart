@@ -241,9 +241,7 @@ describe("HTML Sanitization Security Tests", () => {
         <h2>Header 2</h2>
         <h3>Header 3</h3>
         <h4>Header 4</h4>
-      expect(result).toContain('<a href="/issues/123">Relative</a>');
-      expect(result).not.toContain('target="_blank"');
-      expect(result).not.toContain('rel="noopener"');
+        <p><strong>Bold text</strong></p>
         <p><em>Italic text</em></p>
         <p><a href="https://example.com">Link</a></p>
         <p><img src="https://example.com/image.jpg" alt="Image"></p>
