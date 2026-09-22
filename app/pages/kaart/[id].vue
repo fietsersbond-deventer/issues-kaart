@@ -71,7 +71,11 @@
           >
           <ImageViewer>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="ql-editor viewer" v-html="issue.description" />
+            <div
+              class="ql-editor viewer"
+              v-html="issue.description"
+              @click="handleLocalLinks"
+            />
           </ImageViewer>
         </template>
       </template>
@@ -121,6 +125,30 @@ function safeToggleEditing() {
     return;
   }
   toggleEditing();
+}
+
+// if a link is relative, use navigateTo()
+function handleLocalLinks(event: MouseEvent) {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  const link = target.closest("a");
+  const href = link?.getAttribute("href");
+  if (
+    !link ||
+    !href ||
+    /^[a-z][a-z\d+.-]*:/i.test(href) ||
+    href.startsWith("//") ||
+    href.startsWith("#")
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  const destination = new URL(href, window.location.href);
+  navigateTo(`${destination.pathname}${destination.search}${destination.hash}`);
 }
 
 const title = computed(() => issue.value?.title ?? "");
