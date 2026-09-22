@@ -21,9 +21,6 @@ export function sanitizeHtml(html: string): string {
   const allowedIframeUrls = [
     "https://www.google.com/maps/embed",
     "https://www.google.nl/maps/embed",
-    "https://www.youtube.com/embed",
-    "https://www.youtube-nocookie.com/embed",
-    "https://player.vimeo.com/video",
   ];
 
   return sanitizeHtmlLib(html, {

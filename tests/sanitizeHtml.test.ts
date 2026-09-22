@@ -241,7 +241,9 @@ describe("HTML Sanitization Security Tests", () => {
         <h2>Header 2</h2>
         <h3>Header 3</h3>
         <h4>Header 4</h4>
-        <p><strong>Bold text</strong></p>
+      expect(result).toContain('<a href="/issues/123">Relative</a>');
+      expect(result).not.toContain('target="_blank"');
+      expect(result).not.toContain('rel="noopener"');
         <p><em>Italic text</em></p>
         <p><a href="https://example.com">Link</a></p>
         <p><img src="https://example.com/image.jpg" alt="Image"></p>
@@ -295,28 +297,6 @@ describe("HTML Sanitization Security Tests", () => {
       expect(result).toContain('height="450"');
       expect(result).toContain('style="border:0"');
       expect(result).toContain('loading="lazy"');
-    });
-
-    it("should allow a YouTube embed iframe", () => {
-      const input =
-        '<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" width="560" height="315"></iframe>';
-      const result = sanitizeHtml(input);
-
-      expect(result).toContain("<iframe");
-      expect(result).toContain(
-        'src="https://www.youtube.com/embed/dQw4w9WgXcQ"',
-      );
-    });
-
-    it("should allow a Vimeo embed iframe", () => {
-      const input =
-        '<iframe src="https://player.vimeo.com/video/123456789"></iframe>';
-      const result = sanitizeHtml(input);
-
-      expect(result).toContain("<iframe");
-      expect(result).toContain(
-        'src="https://player.vimeo.com/video/123456789"',
-      );
     });
 
     it("should strip an iframe with no src attribute", () => {
