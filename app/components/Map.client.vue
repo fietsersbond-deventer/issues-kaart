@@ -58,7 +58,7 @@
       <ol-source-wmts
         ref="luchtfoto-source"
         url="https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0?TILEMATRIXSET=EPSG:28992"
-        layer="Actueel_orthoHR"
+        layer="Actueel_ortho25"
         :projection="rdProjection"
         attributions='&copy; <a href="https://www.kadaster.nl">Kadaster</a>'
         format="image/png"
@@ -70,7 +70,6 @@
       ref="lufolabels"
       title="Straatnamen"
       :visible="preferredLayer === 'Foto'"
-      :display-in-layer-switcher="false"
     >
       <ol-source-wmts
         ref="lufolabels-source"
@@ -79,11 +78,14 @@
         :projection="rdProjection"
         format="image/png"
         style="default"
-        :display-in-layer-switcher="false"
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
