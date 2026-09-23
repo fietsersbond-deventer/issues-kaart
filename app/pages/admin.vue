@@ -12,6 +12,11 @@
           title="Categorieën"
           to="/admin/legends"
         />
+        <v-list-item
+          prepend-icon="mdi-text"
+          title="Teksten"
+          to="/admin/texts"
+        />
       </v-list>
       <v-list>
         <v-list-item
