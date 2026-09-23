@@ -39,15 +39,15 @@
     </template>
     <template v-else>
       <v-btn
-        :v-tooltip:top="organizationTooltip"
-        :href="organization.website"
+        :v-tooltip:top="headerText"
+        :href="websiteUrl"
         variant="text"
         icon="mdi-home"
         aria-label="Organisatie website"
       />
       <v-btn
         v-tooltip:top="'Contact'"
-        :href="organization.contactUrl"
+        :href="contactUrl"
         variant="text"
         icon="mdi-email"
         aria-label="Contact"
@@ -67,14 +67,18 @@
 import { NuxtLink } from "#components";
 
 const { status, signOut } = useAuth();
-const { organization } = useRuntimeConfig().public;
+const { getText } = useTexts();
 
 const headerText = computed(() => {
-  return `${organization.name} ${organization.shortName}`;
+  return getText("navbar.header")?.text ?? "";
 });
 
-const organizationTooltip = computed(() => {
-  return organization.name;
+const websiteUrl = computed(() => {
+  return getText("navbar.websiteUrl")?.text ?? "";
+});
+
+const contactUrl = computed(() => {
+  return getText("navbar.contactUrl")?.text ?? "";
 });
 
 async function handleLogout() {

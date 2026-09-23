@@ -35,3 +35,14 @@ export type Issue = {
   geometry: string; // GeoJSON stored as string
   created_at: Date;
 };
+
+export type TextType = "plain" | "rich" | "url";
+
+export type TextEntry = {
+  key: string;
+  text: string;
+  text_type: TextType;
+  updated_by_user_id: number | null;
+  created_at: string;
+  updated_at: string;
+};

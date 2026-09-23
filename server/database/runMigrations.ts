@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "fs";
 import path from "path";
+import { pathToFileURL } from "node:url";
 import { config } from "dotenv";
 
 // Load environment variables from .env file
@@ -22,7 +23,7 @@ const MIGRATIONS_DIR = path.resolve(
 );
 const QUERIES_DIR = path.resolve(process.cwd(), "server/database/queries");
 
-export function runMigrations() {
+export async function runMigrations() {
   console.log("--- Migration Runner ---");
   console.log(`DB Path: ${DB_PATH}`);
   console.log(`Migrations Dir: ${MIGRATIONS_DIR}`);
@@ -43,7 +44,7 @@ export function runMigrations() {
 
   const migrationFiles = fs
     .readdirSync(MIGRATIONS_DIR)
-    .filter((f) => f.endsWith(".sql"))
+    .filter((file) => file.endsWith(".sql") || file.endsWith(".js"))
     .sort();
   const queryFiles = fs.existsSync(QUERIES_DIR)
     ? fs
@@ -67,17 +68,22 @@ export function runMigrations() {
   let skippedCount = 0;
   for (const file of allFiles) {
     let name = path.basename(file);
-    if (name.endsWith(".sql")) {
-      name = name.slice(0, -4);
-    }
+    name = path.parse(name).name;
     if (applied.has(name)) {
       console.log(`Skipped (already applied): ${name}`);
       skippedCount++;
       continue;
     }
-    const sql = fs.readFileSync(file, "utf8");
     try {
-      db.exec(sql);
+      if (file.endsWith(".sql")) {
+        db.exec(fs.readFileSync(file, "utf8"));
+      } else {
+        const migration = await import(pathToFileURL(file).href);
+        if (typeof migration.default !== "function") {
+          throw new Error("JavaScript migration must have a default function export");
+        }
+        await migration.default(db);
+      }
       db.prepare(`INSERT INTO ${MIGRATION_TABLE} (name) VALUES (?)`).run(name);
       console.log(`Migration applied: ${name}`);
       appliedCount++;
@@ -87,6 +93,7 @@ export function runMigrations() {
       throw err;
     }
   }
+
   db.close();
   console.log(`--- Migration Summary ---`);
   console.log(`Applied: ${appliedCount}`);
@@ -95,5 +102,8 @@ export function runMigrations() {
 }
 
 if (import.meta.main) {
-  runMigrations();
+  runMigrations().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

@@ -28,6 +28,7 @@ export function sanitizeHtml(html: string): string {
       // Allow embedded iframes (src validated against `allowedIframeUrls` below)
       "iframe",
       // Headers
+      "h1",
       "h2",
       "h3",
       "h4",
@@ -71,6 +72,7 @@ export function sanitizeHtml(html: string): string {
       ],
       // General attributes that Quill might use
       "*": ["class"],
+      li: ["data-list"],
     },
     allowedSchemes: ["http", "https", "mailto", "tel"],
     allowedSchemesByTag: {
