@@ -39,13 +39,15 @@
     </template>
     <template v-else>
       <v-btn
-        :v-tooltip:top="headerText"
+        v-if="websiteUrl"
+        v-tooltip:top="'Afdeling'"
         :href="websiteUrl"
         variant="text"
         icon="mdi-home"
-        aria-label="Organisatie website"
+        aria-label="Afdeling"
       />
       <v-btn
+        v-if="contactUrl"
         v-tooltip:top="'Contact'"
         :href="contactUrl"
         variant="text"
