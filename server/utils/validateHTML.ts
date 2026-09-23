@@ -24,7 +24,7 @@ export function validateHTML(text: string, textType: TextType): string {
       throw new Error("Invalid URL");
     }
 
-    if (!['https:', 'http:', 'mailto:'].includes(url.protocol)) {
+    if (!["https:", "http:", "mailto:"].includes(url.protocol)) {
       throw new Error("Invalid URL protocol");
     }
   }

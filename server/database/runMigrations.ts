@@ -80,7 +80,9 @@ export async function runMigrations() {
       } else {
         const migration = await import(pathToFileURL(file).href);
         if (typeof migration.default !== "function") {
-          throw new Error("JavaScript migration must have a default function export");
+          throw new Error(
+            "JavaScript migration must have a default function export",
+          );
         }
         await migration.default(db);
       }

@@ -58,8 +58,13 @@ function openEditor(entry: AdminTextEntry) {
 }
 
 function preview(text: string) {
-  const normalized = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-  return normalized.length > 100 ? `${normalized.slice(0, 100)}...` : normalized;
+  const normalized = text
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return normalized.length > 100
+    ? `${normalized.slice(0, 100)}...`
+    : normalized;
 }
 
 function textTypeLabel(type: AdminTextEntry["text_type"]) {
