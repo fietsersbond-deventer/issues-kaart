@@ -10,29 +10,27 @@ describe("validateHTML", () => {
   });
 
   it("keeps an H1 for the intro title", () => {
-    expect(validateHTML("<h1>Welkom</h1>", "rich")).toBe(
-      "<h1>Welkom</h1>",
-    );
+    expect(validateHTML("<h1>Welkom</h1>", "rich")).toBe("<h1>Welkom</h1>");
   });
 
   it("keeps Quill list metadata for rich text", () => {
     expect(
-      validateHTML(
-        '<ol><li data-list="bullet">Eerste item</li></ol>',
-        "rich",
-      ),
+      validateHTML('<ol><li data-list="bullet">Eerste item</li></ol>', "rich"),
     ).toBe('<ol><li data-list="bullet">Eerste item</li></ol>');
   });
 
   it("removes unsafe markup from rich text", () => {
-    expect(validateHTML("<p>Tekst</p><script>alert('xss')</script>", "rich")).toBe(
-      "<p>Tekst</p>",
-    );
+    expect(
+      validateHTML("<p>Tekst</p><script>alert('xss')</script>", "rich"),
+    ).toBe("<p>Tekst</p>");
   });
 
   it("removes all HTML from plain text", () => {
     expect(
-      validateHTML("<strong>Kop</strong><em>tekst</em><script>alert('xss')</script>", "plain"),
+      validateHTML(
+        "<strong>Kop</strong><em>tekst</em><script>alert('xss')</script>",
+        "plain",
+      ),
     ).toBe("Koptekst");
   });
 
