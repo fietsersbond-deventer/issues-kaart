@@ -9,11 +9,22 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!canSubmit"
+          variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
-        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
+        <v-btn
+          v-if="'id' in issue"
+          color="error"
+          variant="flat"
+          @click="onDelete"
+        >
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -41,17 +52,23 @@
                     class="quill-editor"
                   />
                 </div>
-                <!-- <div class="d-flex justify-end mt-1">
+                <!-- Knop om de "Street View toevoegen"-dialoog te openen. Voegt
+                     GEEN embed-HTML rechtstreeks in - dat gebeurt pas na een
+                     geslaagde /api/streetview/parse-aanroep, zie script. -->
+                <div class="d-flex justify-end mt-1">
                   <v-btn
                     size="small"
                     variant="text"
-                    prepend-icon="mdi-code-tags"
-                    @click="openHtmlDialog"
+                    prepend-icon="mdi-google-street-view"
+                    @click="openStreetViewDialog"
                   >
-                    HTML invoegen
+                    Street View toevoegen
                   </v-btn>
-                </div> -->
-                <div v-if="!issue.description" class="text-error text-caption mt-1">
+                </div>
+                <div
+                  v-if="!issue.description"
+                  class="text-error text-caption mt-1"
+                >
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -78,8 +95,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
-                kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen
+                bovenin de kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -88,10 +105,16 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!canSubmit"
+          variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
@@ -104,32 +127,45 @@
     </v-card>
   </v-form>
 
-  <v-dialog v-model="showHtmlDialog" max-width="600">
+  <v-dialog v-model="showStreetViewDialog" max-width="600">
     <v-card>
-      <v-card-title>HTML invoegen</v-card-title>
+      <v-card-title>Street View toevoegen</v-card-title>
       <v-card-text>
         <p class="text-body-2 mb-2">
-          Plak hier een embed-code (bijv. een Google Maps/Street View iframe). Alleen
-          toegestane bronnen worden bij het opslaan bewaard, andere iframes worden
-          verwijderd.
+          Plak hier een Street View link (gebruik de Deel-knop in Google Maps
+          terwijl je in Street View staat). Gewone kaartlocaties worden niet
+          ondersteund.
         </p>
-        <v-textarea
-          v-model="htmlCode"
-          label="HTML code"
-          rows="6"
-          auto-grow
+        <v-text-field
+          v-model.trim="streetViewUrl"
+          label="Street View link"
+          :disabled="isParsing || !!parsedPreview"
+          :error-messages="parseError ? [parseError] : []"
           spellcheck="false"
+          @keydown.enter.prevent="fetchStreetViewPreview"
         />
+        <div v-if="parsedPreview" class="text-center mt-2">
+          <img
+            :src="parsedPreview.previewDataUrl"
+            alt="Street View voorvertoning"
+            class="streetview-dialog-preview"
+          />
+        </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="showHtmlDialog = false">Annuleren</v-btn>
+        <v-btn variant="text" @click="closeStreetViewDialog">Annuleren</v-btn>
         <v-btn
+          v-if="!parsedPreview"
           color="primary"
           variant="flat"
-          :disabled="!htmlCode.trim()"
-          @click="insertHtml"
+          :loading="isParsing"
+          :disabled="!streetViewUrl.trim() || isParsing"
+          @click="fetchStreetViewPreview"
         >
+          Ophalen
+        </v-btn>
+        <v-btn v-else color="primary" variant="flat" @click="insertStreetView">
           Invoegen
         </v-btn>
       </v-card-actions>
@@ -142,6 +178,16 @@ import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import { isExistingIssue, type Issue } from "~/types/Issue";
 import { imageCompressor } from "quill-image-compress";
+import {
+  ensureStreetViewEmbedBlotRegistered,
+  type StreetViewEmbedValue,
+} from "~/utils/streetViewEmbedBlot";
+
+// Start zo vroeg mogelijk met het laden van Quill en het registreren van onze
+// eigen streetview-embed, nog vóórdat de editor hieronder gemount wordt. Zo is
+// de registratie al klaar tegen de tijd dat de editor een eerder opgeslagen
+// omschrijving (die mogelijk al zo'n embed bevat) gaat inlezen.
+void ensureStreetViewEmbedBlotRegistered();
 
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
@@ -204,37 +250,107 @@ const toolbar = [
 
 // Ref to the QuillEditor component instance, used to access the underlying Quill API
 const quillEditorRef = ref<InstanceType<typeof QuillEditor> | null>(null);
-const showHtmlDialog = ref(false);
-const htmlCode = ref("");
 
-function openHtmlDialog() {
-  htmlCode.value = "";
-  showHtmlDialog.value = true;
+// Status/inhoud van de "Street View toevoegen"-dialoog.
+const showStreetViewDialog = ref(false);
+// De ruwe, door de gebruiker geplakte deel-link.
+const streetViewUrl = ref("");
+// True zolang het /api/streetview/parse-verzoek loopt (voor de laad-indicator
+// op de "Ophalen"-knop).
+const isParsing = ref(false);
+// Foutmelding van de server (of een generieke fallback), getoond onder het
+// invoerveld.
+const parseError = ref("");
+// Resultaat van een geslaagde aanroep: bevat o.a. de al opgehaalde
+// voorvertoning (previewDataUrl) en de kant-en-klare embed-URL (embedSrc).
+// Zolang dit gevuld is, tonen we de voorvertoning + "Invoegen"-knop i.p.v. het
+// invoerveld + "Ophalen"-knop.
+const parsedPreview = ref<StreetViewEmbedValue | null>(null);
+
+// Opent de dialoog met een schone lei (leeg veld, geen fout, geen eerdere
+// voorvertoning).
+function openStreetViewDialog() {
+  streetViewUrl.value = "";
+  parseError.value = "";
+  parsedPreview.value = null;
+  showStreetViewDialog.value = true;
 }
 
-function insertHtml() {
-  const code = htmlCode.value.trim();
-  if (!code) {
-    showHtmlDialog.value = false;
+function closeStreetViewDialog() {
+  showStreetViewDialog.value = false;
+}
+
+// Wordt aangeroepen door de "Ophalen"-knop (of Enter in het invoerveld): stuurt
+// de geplakte link naar de server, die de redirect(s) volgt, de gegevens uit de
+// URL haalt en de voorvertoning éénmalig ophaalt. Er wordt hier nog NIETS
+// opgeslagen - dat gebeurt pas bij "Invoegen" hieronder, en uiteindelijk pas
+// echt in de database wanneer het hele issue wordt opgeslagen.
+async function fetchStreetViewPreview() {
+  const url = streetViewUrl.value.trim();
+  if (!url || isParsing.value) {
     return;
   }
 
-  // Note: the QuillEditor component's own `pasteHTML` method replaces the
-  // *entire* document content, so we use the underlying Quill instance's
-  // clipboard API instead to insert the HTML at the current cursor position.
+  isParsing.value = true;
+  parseError.value = "";
+  try {
+    parsedPreview.value = await $fetch<StreetViewEmbedValue>(
+      "/api/streetview/parse",
+      {
+        method: "POST",
+        body: { url },
+        headers: authHeaders.value,
+      },
+    );
+  } catch (error) {
+    parsedPreview.value = null;
+    // Nuxt/ofetch geeft de JSON-body van de server-fout terug via `error.data`
+    // - daarin zit de nette, Nederlandstalige foutmelding uit streetView.ts.
+    const fetchError = error as { data?: { message?: string } };
+    parseError.value =
+      fetchError?.data?.message ?? "Kon de Street View link niet verwerken";
+  } finally {
+    isParsing.value = false;
+  }
+}
+
+// Wordt aangeroepen door de "Invoegen"-knop, zodra er een geldige
+// voorvertoning is opgehaald. Voegt de embed toe aan de Quill-inhoud.
+async function insertStreetView() {
+  const preview = parsedPreview.value;
+  if (!preview) {
+    return;
+  }
+
+  // insertEmbed (niet dangerouslyPasteHTML) is hier vereist: Quill bewaart
+  // alleen elementen die het herkent als een geregistreerd blot. Een gewone
+  // <div> met data-* attributen zou anders teruggebracht worden tot enkel de
+  // binnenste <img> (zie streetViewEmbedBlot.ts voor de volledige uitleg).
+  await ensureStreetViewEmbedBlotRegistered();
   const quill = quillEditorRef.value?.getQuill();
   if (quill) {
     const range = quill.getSelection(true) ?? {
       index: quill.getLength(),
       length: 0,
     };
-    quill.clipboard.dangerouslyPasteHTML(range.index, code, "user");
+    quill.insertEmbed(range.index, "streetviewEmbed", preview, "user");
+    // Cursor achter de zojuist ingevoegde embed plaatsen.
+    quill.setSelection(range.index + 1, 0, "user");
   } else if (issue.value) {
-    // Fallback: append to the end of the description if the Quill instance isn't available
+    // Fallback: voeg de equivalente HTML rechtstreeks toe als de Quill-instantie
+    // (nog) niet beschikbaar is. Dit levert dezelfde structuur op als het blot
+    // hierboven zou opbouwen, dus wordt bij het opnieuw openen van de editor
+    // alsnog correct als embed herkend.
+    const code =
+      `<div class="streetview-embed" data-lat="${preview.lat}" ` +
+      `data-lng="${preview.lng}" data-heading="${preview.heading}" ` +
+      `data-pitch="${preview.pitch}" data-fov="${preview.fov}" ` +
+      `data-pano-id="${preview.panoId}" data-embed-src="${preview.embedSrc}">` +
+      `<img src="${preview.previewDataUrl}" alt="Street View voorvertoning" /></div>`;
     issue.value.description = `${issue.value.description ?? ""}${code}`;
   }
 
-  showHtmlDialog.value = false;
+  showStreetViewDialog.value = false;
 }
 
 const { update, create, remove } = useIssuesMethods();
@@ -242,7 +358,17 @@ const { legends } = storeToRefs(useLegends());
 const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
-const { data: user } = useAuth();
+const { data: user, token } = useAuth();
+
+// Zelfde patroon als useIssuesMethods.ts: de server herkent een ingelogde
+// gebruiker via een "Authorization: Bearer <token>"-header (geen cookies),
+// dus die header moeten we hier ook zelf meesturen bij het aanroepen van
+// /api/streetview/parse.
+const authHeaders = computed(() => {
+  if (!token.value) return undefined;
+  const cleanToken = token.value.replace(/^Bearer\s+/i, "");
+  return { Authorization: `Bearer ${cleanToken}` };
+});
 
 async function onSubmit() {
   // Prevent submission if connection is lost
@@ -331,5 +457,11 @@ async function onDelete() {
 /* Force Quill editor to fit within container */
 :deep(.ql-container) {
   height: calc(100% - 42px) !important; /* 42px is the toolbar height */
+}
+
+.streetview-dialog-preview {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 4px;
 }
 </style>

@@ -352,4 +352,59 @@ describe("HTML Sanitization Security Tests", () => {
       expect(result).not.toContain("alert");
     });
   });
+
+  describe("Street View Embed Placeholder", () => {
+    const validAttribs = {
+      "data-lat": "52.1833412",
+      "data-lng": "6.0548965",
+      "data-heading": "49.61",
+      "data-pitch": "0",
+      "data-fov": "75",
+      "data-pano-id": "BjdrQCpk2ioh8cKo77VL8A",
+      "data-embed-src":
+        "https://www.google.com/maps/embed?pb=!1m0!3m2!1sen!2sus!4v0!6m8!1m7!1sBjdrQCpk2ioh8cKo77VL8A!2m2!1d52.1833412!2d6.0548965!3f49.61!4f0!5f75",
+    };
+    function buildDiv(overrides: Partial<typeof validAttribs> = {}) {
+      const attribs = { ...validAttribs, ...overrides };
+      const attrString = Object.entries(attribs)
+        .map(([key, value]) => `${key}="${value}"`)
+        .join(" ");
+      return `<div class="streetview-embed" ${attrString}><img src="data:image/jpeg;base64,abc" alt="Street View voorvertoning" /></div>`;
+    }
+
+    it("should allow a well-formed streetview-embed div with all data attributes", () => {
+      const result = sanitizeHtml(buildDiv());
+      expect(result).toContain('class="streetview-embed"');
+      expect(result).toContain('data-lat="52.1833412"');
+      expect(result).toContain('data-pano-id="BjdrQCpk2ioh8cKo77VL8A"');
+      expect(result).toContain(
+        'data-embed-src="https://www.google.com/maps/embed?pb=',
+      );
+      expect(result).toContain('<img src="data:image/jpeg;base64,abc"');
+    });
+
+    it("should downgrade to a span if a numeric attribute is not numeric", () => {
+      const result = sanitizeHtml(buildDiv({ "data-lat": "not-a-number" }));
+      expect(result).not.toContain("streetview-embed");
+      expect(result).not.toContain("<div");
+    });
+
+    it("should downgrade to a span if data-embed-src is not a Maps embed URL", () => {
+      const result = sanitizeHtml(
+        buildDiv({ "data-embed-src": "https://evil.example.com/x" }),
+      );
+      expect(result).not.toContain("streetview-embed");
+      expect(result).not.toContain("evil.example.com");
+    });
+
+    it("should strip all attributes except class from an unrelated div", () => {
+      const result = sanitizeHtml(
+        '<div class="something-else" data-lat="1" onclick="alert(1)">text</div>',
+      );
+      expect(result).toContain('class="something-else"');
+      expect(result).not.toContain("data-lat");
+      expect(result).not.toContain("onclick");
+      expect(result).not.toContain("alert");
+    });
+  });
 });

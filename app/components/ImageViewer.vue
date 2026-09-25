@@ -23,7 +23,14 @@ const { mobile } = useDisplay();
 // Handle image clicks to open dialog
 function handleImageClick(event: MouseEvent) {
   const target = event.target as HTMLElement;
-  if (target.tagName === "IMG" && !mobile.value) {
+  if (
+    target.tagName === "IMG" &&
+    !mobile.value &&
+    // Voorkomt dat een klik op de statische Street View-voorvertoning de
+    // gewone afbeelding-lightbox opent i.p.v. (of naast) het "klik om te
+    // laden"-gedrag uit useStreetViewEmbeds.ts.
+    !target.closest(".streetview-embed")
+  ) {
     const img = target as HTMLImageElement;
     selectedImage.value = img.src;
 

@@ -27,6 +27,12 @@ export function sanitizeHtml(html: string): string {
     allowedTags: [
       // Allow embedded iframes (src validated against `allowedIframeUrls` below)
       "iframe",
+      // Toegestaan t.b.v. de "klik om te laden"-Street View-placeholder (zie
+      // transformTags.div hieronder voor de daadwerkelijke validatie). Deze
+      // toevoeging is bewust additief: de bestaande iframe-ondersteuning
+      // hierboven blijft ongewijzigd, zodat er in de toekomst eventueel ook
+      // andere embed-types op eenzelfde manier toegevoegd kunnen worden.
+      "div",
       // Headers
       "h1",
       "h2",
@@ -69,6 +75,20 @@ export function sanitizeHtml(html: string): string {
         "loading",
         "referrerpolicy",
         "title",
+      ],
+      // Alleen bedoeld voor de streetview-embed wrapper (div.streetview-embed);
+      // de daadwerkelijke inhoud van elk attribuut wordt streng gevalideerd in
+      // transformTags.div hieronder (regex per veld) - deze lijst bepaalt enkel
+      // welke attribuutnamen er ÜBERHAUPT mogen blijven staan.
+      div: [
+        "class",
+        "data-lat",
+        "data-lng",
+        "data-heading",
+        "data-pitch",
+        "data-fov",
+        "data-pano-id",
+        "data-embed-src",
       ],
       // General attributes that Quill might use
       "*": ["class"],
@@ -152,6 +172,46 @@ export function sanitizeHtml(html: string): string {
             title: attribs.title || "Embedded content",
           },
         };
+      },
+      // Consent-gated Street View placeholder: bewaart alléén de exacte
+      // numerieke/id-attributen die deze placeholder nodig heeft, zodat er via
+      // een `div` niets anders "binnengesmokkeld" kan worden (bijv. een
+      // kwaadaardige data-embed-src die naar een ander domein wijst).
+      div: function (tagName, attribs): Tag {
+        // Elke andere <div> dan onze eigen wrapper (Quill genereert er normaal
+        // gesproken geen) wordt gestript tot alleen de class - onschadelijk.
+        if (attribs.class !== "streetview-embed") {
+          return { tagName, attribs: { class: attribs.class ?? "" } };
+        }
+
+        // Strikte, per-veld validatie (whitelist-patronen):
+        // - lat/lng/heading/pitch/fov: een getal (evt. negatief, evt. decimaal).
+        // - pano-id: alleen letters/cijfers/underscore/streepje, 10-40 tekens.
+        // - embed-src: moet exact beginnen met de verwachte Google embed-URL en
+        //   daarna alleen het karakterbereik van het `pb`-formaat bevatten -
+        //   zo kan dit veld nooit misbruikt worden om naar een ander domein of
+        //   naar een `javascript:`-achtige waarde te verwijzen.
+        const numberPattern = /^-?\d{1,3}(\.\d+)?$/;
+        const panoIdPattern = /^[\w-]{10,40}$/;
+        const embedSrcPattern =
+          /^https:\/\/www\.google\.(com|nl)\/maps\/embed\?pb=[\w!.,-]+$/;
+
+        if (
+          !numberPattern.test(attribs["data-lat"] ?? "") ||
+          !numberPattern.test(attribs["data-lng"] ?? "") ||
+          !numberPattern.test(attribs["data-heading"] ?? "") ||
+          !numberPattern.test(attribs["data-pitch"] ?? "") ||
+          !numberPattern.test(attribs["data-fov"] ?? "") ||
+          !panoIdPattern.test(attribs["data-pano-id"] ?? "") ||
+          !embedSrcPattern.test(attribs["data-embed-src"] ?? "")
+        ) {
+          // Eén van de velden klopt niet: degradeer naar een onschadelijke
+          // <span> zonder attributen, in plaats van de placeholder half-geldig
+          // door te laten.
+          return { tagName: "span", attribs: {} };
+        }
+
+        return { tagName, attribs };
       },
     },
   });

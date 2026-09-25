@@ -220,7 +220,7 @@ importers:
         version: 2.19.10
       quill-image-compress:
         specifier: ^2.0.3
-        version: 2.0.3(quill@2.0.2)
+        version: 2.0.3(quill@2.0.3)
       sanitize-html:
         specifier: '>=2.17.5'
         version: 2.17.7
@@ -4145,6 +4145,10 @@ packages:
 
   quill@2.0.2:
     resolution: {integrity: sha512-QfazNrhMakEdRG57IoYFwffUIr04LWJxbS/ZkidRFXYCQt63c1gK6Z7IHUXMx/Vh25WgPBU42oBaNzQ0K1R/xw==}
+    engines: {npm: '>=8.2.3'}
+
+  quill@2.0.3:
+    resolution: {integrity: sha512-xEYQBqfYx/sfb33VJiKnSJp8ehloavImQ2A6564GAbqG55PGw1dAWUn1MUbQB62t0azawUS2CZZhWCjO8gRvTw==}
     engines: {npm: '>=8.2.3'}
 
   radix3@1.1.2:
@@ -9779,11 +9783,18 @@ snapshots:
       lodash.clonedeep: 4.5.0
       lodash.isequal: 4.5.0
 
-  quill-image-compress@2.0.3(quill@2.0.2):
+  quill-image-compress@2.0.3(quill@2.0.3):
     dependencies:
-      quill: 2.0.2
+      quill: 2.0.3
 
   quill@2.0.2:
+    dependencies:
+      eventemitter3: 5.0.4
+      lodash-es: 4.18.1
+      parchment: 3.0.0
+      quill-delta: 5.1.0
+
+  quill@2.0.3:
     dependencies:
       eventemitter3: 5.0.4
       lodash-es: 4.18.1
