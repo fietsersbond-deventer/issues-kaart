@@ -35,7 +35,9 @@
             @click="safeToggleEditing()"
           >
             <v-icon>mdi-pencil-remove</v-icon>
-            <v-tooltip activator="parent" location="top"> Stop bewerken </v-tooltip>
+            <v-tooltip activator="parent" location="top">
+              Stop bewerken
+            </v-tooltip>
           </v-btn>
           <v-btn
             variant="text"
@@ -43,7 +45,9 @@
             @click="showEditDialog = !showEditDialog"
           >
             <v-icon icon="mdi-fullscreen"></v-icon>
-            <v-tooltip activator="parent" location="top"> Volledig scherm </v-tooltip>
+            <v-tooltip activator="parent" location="top">
+              Volledig scherm
+            </v-tooltip>
           </v-btn>
         </template>
       </Toolbar>
@@ -72,9 +76,10 @@
           <ImageViewer>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div
+              ref="descriptionRef"
               class="ql-editor viewer"
               v-html="issue.description"
-              @click="handleLocalLinks"
+              @click="onDescriptionClick"
             />
           </ImageViewer>
         </template>
@@ -88,7 +93,9 @@
             @cancel="setEditing(false)"
           />
         </template>
-        <div v-else>Klik op de edit knop om een nieuw onderwerp toe te voegen</div>
+        <div v-else>
+          Klik op de edit knop om een nieuw onderwerp toe te voegen
+        </div>
       </template>
 
       <v-dialog
@@ -154,6 +161,46 @@ function handleLocalLinks(event: MouseEvent) {
 const title = computed(() => issue.value?.title ?? "");
 useTitle(title);
 
+// Referentie naar de container waarin de omschrijving (via v-html) gerenderd
+// wordt. Nodig omdat we daarna handmatig door de resulterende DOM moeten lopen
+// (v-html-inhoud is voor Vue "onzichtbare" platte HTML, geen component-tree).
+const descriptionRef = ref<HTMLElement | null>(null);
+const {
+  activate: activateStreetViewEmbeds,
+  handleClick: handleStreetViewClick,
+} = useStreetViewEmbeds();
+
+// Eén gecombineerde click-handler op de omschrijving-container: zowel interne
+// links (handleLocalLinks) als het "klik om Street View te laden"-gedrag
+// worden op hetzelfde click-event afgehandeld.
+function onDescriptionClick(event: MouseEvent) {
+  handleLocalLinks(event);
+  handleStreetViewClick(event);
+}
+
+// Bij eerste keer tonen: verrijk alle streetview-embeds in de zojuist
+// gerenderde omschrijving met hun "klik om te laden"-knop.
+onMounted(() => {
+  if (descriptionRef.value) {
+    activateStreetViewEmbeds(descriptionRef.value);
+  }
+});
+
+// De omschrijving-<div> wordt conditioneel getoond/verborgen (bewerken vs.
+// bekijken) en de inhoud kan wijzigen (na opslaan) - telkens wanneer dat
+// gebeurt, moet de zojuist opnieuw gerenderde HTML weer verrijkt worden.
+// flush: "post" zorgt ervoor dat dit pas draait NADAT Vue de DOM heeft
+// bijgewerkt, zodat descriptionRef.value de nieuwe inhoud al bevat.
+watch(
+  () => [issue.value?.description, isEditing.value] as const,
+  () => {
+    if (descriptionRef.value) {
+      activateStreetViewEmbeds(descriptionRef.value);
+    }
+  },
+  { flush: "post" },
+);
+
 if (!id || typeof id !== "string") {
   navigateTo("/kaart");
 } else if (id === "new") {
@@ -179,5 +226,45 @@ onUnmounted(() => {
 
 .desktop-layout .ql-editor.viewer img {
   cursor: pointer;
+}
+
+/* Wrapper-element voor een streetview-embed: bevat afwisselend de statische
+   voorvertoning + knop, of (na een klik) het live Google-iframe. */
+.streetview-embed {
+  position: relative;
+  display: block;
+}
+
+/* Zelfde beeldverhouding (8:5 = 640:400) als de server-side opgehaalde
+   voorvertoning, zodat het live iframe na het klikken exact hetzelfde stukje
+   van de panoramafoto laat zien (een afwijkende beeldverhouding zorgt voor een
+   ander effectief gezichtsveld, ook bij identieke heading/pitch/fov). */
+.streetview-embed iframe {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 5;
+}
+
+/* "Klik om Street View te laden"-overlay, precies over de voorvertoning heen. */
+.streetview-load-btn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Zodra geladen wordt de knop door useStreetViewEmbeds.ts al helemaal uit de
+   DOM verwijderd (replaceChildren) - deze regel is puur een extra vangnet. */
+.streetview-embed[data-loaded="true"] .streetview-load-btn {
+  display: none;
 }
 </style>
