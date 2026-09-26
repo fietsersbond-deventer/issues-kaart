@@ -36,9 +36,13 @@ export function useStreetViewEmbeds() {
       button.type = "button";
       button.className = "streetview-load-btn";
       button.setAttribute("aria-label", "Klik om Street View te laden");
-      button.innerHTML =
-        '<span class="mdi mdi-google-street-view" aria-hidden="true"></span>' +
-        "<span>Klik om Street View te laden</span>";
+      button.innerHTML = `
+        <div>
+        <span class="mdi mdi-google-street-view" aria-hidden="true"></span>
+        <span>Klik om Street View te laden</span>
+        </div>
+        <span class="warning">je gegevens worden naar Google gestuurd</span>
+        `;
       embed.appendChild(button);
     });
   }

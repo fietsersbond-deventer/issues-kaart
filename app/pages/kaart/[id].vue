@@ -252,6 +252,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -260,6 +261,15 @@ onUnmounted(() => {
   border: none;
   font: inherit;
   cursor: pointer;
+
+  /* dit overrides een setting van quill-editor */
+  white-space: initial;
+}
+
+.streetview-load-btn .warning {
+  font-style: italic;
+  font-size: x-small;
+  display: block;
 }
 
 /* Zodra geladen wordt de knop door useStreetViewEmbeds.ts al helemaal uit de
