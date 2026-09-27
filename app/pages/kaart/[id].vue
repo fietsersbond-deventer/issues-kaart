@@ -64,15 +64,10 @@
         />
         <template v-else>
           <h1 class="mb-4">{{ issue.title }}</h1>
-          <v-chip
+          <CategoryChip
             :style="{ marginLeft: '12px' }"
-            label
-            variant="flat"
-            size="small"
-            :color="issue.legend.color"
-            :text-color="getContrastColor(issue.legend.color)"
-            >{{ issue.legend.name }}</v-chip
-          >
+            :legend="issue.legend"
+          />
           <ImageViewer>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div
