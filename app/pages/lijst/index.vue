@@ -79,8 +79,7 @@ const { issues } = storeToRefs(issuesStore);
 
 const existingIssues = computed(() => issues.value || []);
 
-function gotoIssue(_, { item }: { item: Issue }) {
-  console.log(item);
+function gotoIssue(_event: Event, { item }: { item: Issue }) {
   navigateTo(`/kaart/${item.id}`)
 }
 
@@ -109,9 +108,8 @@ const filteredIssues = computed(() => {
   return existingIssues.value.filter(
     (issue) =>
       !state.value.search ||
-      issue.id.toString().includes(state.value.search) ||
       issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
-      issue.legend.name
+      issue.legend?.name
         ?.toLowerCase()
         .includes(state.value.search.toLowerCase())
 
