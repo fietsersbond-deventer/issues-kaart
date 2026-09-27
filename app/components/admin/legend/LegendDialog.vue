@@ -1,9 +1,11 @@
 <template>
-  <v-dialog v-model="modelValue" max-width="90%" persistent>
+  <v-dialog v-model="modelValue" max-width="90%">
     <keep-alive>
       <v-card v-show="modelValue">
         <v-card-title>
-          <span>{{ isEdit ? "Legenda item aanpassen" : "Nieuw Legenda item" }}</span>
+          <span>{{
+            isEdit ? "Legenda item aanpassen" : "Nieuw Legenda item"
+          }}</span>
         </v-card-title>
         <v-card-actions>
           <v-spacer />
@@ -18,7 +20,10 @@
                 <v-text-field v-model="editedItem.name" label="Naam" required />
               </v-col>
               <v-col cols="6">
-                <v-text-field v-model="editedItem.description" label="Omschrijving" />
+                <v-text-field
+                  v-model="editedItem.description"
+                  label="Omschrijving"
+                />
               </v-col>
               <v-col cols="4">
                 <h4 class="mb-3">Kleur</h4>
@@ -31,29 +36,29 @@
               </v-col>
               <v-col cols="8">
                 <h4 class="mb-3">Icoon</h4>
+                <!-- Preview section -->
+                <div v-if="editedItem.icon" class="mb-4">
+                  <div class="d-flex align-center gap-4 flex-wrap">
+                    <img
+                      v-if="editedItem.icon_data_url"
+                      :src="editedItem.icon_data_url"
+                      alt="Map icon preview"
+                      style="width: 36px; height: 36px; border-radius: 50%"
+                    />
+                    <v-chip v-else color="grey" size="small"
+                      >Genereren...</v-chip
+                    >
+                    <v-chip class="ml-3">
+                      {{ editedItem.icon }}
+                    </v-chip>
+                  </div>
+                </div>
+
                 <div class="mb-4">
                   <IconSelector
                     v-model="editedItem.icon"
                     :preview-color="editedItem.color"
                   />
-                </div>
-
-                <!-- Preview section -->
-                <div v-if="editedItem.icon" class="mt-4">
-                  <v-divider class="mb-4" />
-                  <h4 class="mb-2">Voorvertoning:</h4>
-                  <div class="d-flex align-center gap-4 flex-wrap">
-                    <div class="text-caption">In legenda:</div>
-                    <LegendIndicator :legend="editedItem" :size="24" />
-                    <div class="text-caption">Op kaart:</div>
-                    <img
-                      v-if="editedItem.icon_data_url"
-                      :src="editedItem.icon_data_url"
-                      alt="Map icon preview"
-                      style="width: 32px; height: 32px; border-radius: 50%"
-                    />
-                    <v-chip v-else color="grey" size="small">Genereren...</v-chip>
-                  </div>
                 </div>
               </v-col>
             </v-row>
@@ -72,7 +77,10 @@
 
 <script setup lang="ts">
 import type { Legend } from "~/types/Legend";
-import { createIconCanvasDataUrl, createFallbackIconDataUrl } from "~/utils/iconCanvas";
+import {
+  createIconCanvasDataUrl,
+  createFallbackIconDataUrl,
+} from "~/utils/iconCanvas";
 
 const modelValue = defineModel<boolean>("modelValue");
 const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
@@ -110,7 +118,7 @@ const editedItem = ref<LegendFormData>(
         icon: legend.icon,
         icon_data_url: legend.icon_data_url,
       }
-    : { ...defaultItem }
+    : { ...defaultItem },
 );
 const isEdit = computed(() => !!legend);
 
@@ -119,12 +127,14 @@ async function setIcon() {
     try {
       const dataUrl = await createIconCanvasDataUrl(
         editedItem.value.icon,
-        editedItem.value.color
+        editedItem.value.color,
       );
       editedItem.value.icon_data_url = dataUrl;
     } catch (error) {
       console.warn("Failed to generate icon canvas, using fallback:", error);
-      editedItem.value.icon_data_url = createFallbackIconDataUrl(editedItem.value.color);
+      editedItem.value.icon_data_url = createFallbackIconDataUrl(
+        editedItem.value.color,
+      );
     }
   } else {
     editedItem.value.icon_data_url = undefined;
@@ -145,7 +155,7 @@ watch(
       editedItem.value = { ...defaultItem };
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 async function save() {

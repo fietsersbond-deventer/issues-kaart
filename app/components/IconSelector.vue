@@ -21,19 +21,6 @@
       </v-col>
     </v-row>
 
-    <v-row v-if="selectedIcon && !paginatedIcons.includes(selectedIcon)">
-      <v-col cols="12" class="text-center">
-        <v-chip color="primary" variant="outlined">
-          <LegendIndicator
-            :legend="{ icon: selectedIcon, color: previewColor }"
-            :size="16"
-            class="mr-2"
-          />
-          {{ selectedIcon }}
-        </v-chip>
-      </v-col>
-    </v-row>
-
     <v-row v-if="loading">
       <v-col cols="12" class="text-center">
         <v-progress-circular indeterminate />
@@ -73,7 +60,11 @@
 
     <v-row v-if="totalPages > 1">
       <v-col cols="12" class="d-flex justify-center">
-        <v-pagination v-model="currentPage" :length="totalPages" :total-visible="7" />
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+        />
       </v-col>
     </v-row>
   </div>
@@ -100,7 +91,7 @@ const selectedIcon = defineModel<string | undefined>({ required: true });
 const searchQuery = ref("");
 const selectedCategory = ref<string | undefined>();
 const currentPage = ref(1);
-const iconsPerPage = 20;
+const iconsPerPage = 32;
 const loading = ref(false);
 const loadingMessage = ref("Loading all MDI icons...");
 const allIcons = ref<MdiIcon[]>([]);
