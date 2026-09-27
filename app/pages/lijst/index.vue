@@ -34,6 +34,14 @@
             <category-chip :legend="item.legend" />           
           </template>
 
+          <template #item.title="{item}">
+            <span v-html="emphasizeFilter(item.title)" />
+          </template>
+
+          <template #item.description="{item}">
+            <span v-html="emphasizeFilter(displayDescription(item.description))" /> 
+          </template>
+
 
           <template #item.actions="{ item }">
             <div> 
@@ -73,7 +81,7 @@ const isPrinting = useMediaQuery('print')
 
 // Use lightweight issues for admin list (only id, title, legend_id, created_at)
 const issuesStore = useIssues({
-  fields: "id,title,legend_id,created_at,imageUrl",
+  fields: "id,title,legend_id,created_at,imageUrl, description",
 });
 const { issues } = storeToRefs(issuesStore);
 
@@ -104,17 +112,35 @@ watch(
   }
 );
 
+const filters = computed(() =>
+  state.value.search.split(" ").filter((s) => s.length > 1)
+);
+
+const { filterRegex, emphasizeFilter } = useFilter(filters);
+
+
 const filteredIssues = computed(() => {
   return existingIssues.value.filter(
     (issue) =>
+
       !state.value.search ||
-      issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
+      issue.title?.match(filterRegex.value) ||
+      issue.description?.match(filterRegex.value) ||
       issue.legend?.name
-        ?.toLowerCase()
-        .includes(state.value.search.toLowerCase())
+        ?.match(filterRegex.value)
 
   );
 });
+
+function displayDescription(description: string) {
+  // no match, don't display
+  if (!description) return "";
+  if (filters.value.length === 0) return "";
+  return filters.value
+    .map((filter) => getMatch(description, filter, 5))
+    .join(" ");
+}
+
 
 function sortCategory(a: Legend, b: Legend) {
   return a.name.localeCompare(b.name);
@@ -126,6 +152,7 @@ const headers = computed(() => {
     {title: "", value:"imageUrl", sortable: false},
     { title: "Titel", value: "title", sortable: true, width: "50%" },
     { title: "Categorie", value: "legend", sort: sortCategory },
+    { title: "", value: "description", sortable: false}
   ];
 });
 
