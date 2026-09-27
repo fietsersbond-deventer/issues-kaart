@@ -39,6 +39,20 @@
     </template>
     <template v-else>
       <v-btn
+        v-tooltip:top="'Kaart'"
+        to="/kaart"
+        variant="text"
+        aria-label="Ga naar kaart"
+        icon="mdi-map"
+      />
+      <v-btn
+        v-tooltip:top="'Lijst'"
+        to="/lijst"
+        variant="text"
+        aria-label="Ga naar lijst"
+        icon="mdi-list-box-outline"
+      />
+      <v-btn
         v-if="websiteUrl"
         v-tooltip:top="'Afdeling'"
         :href="websiteUrl"
