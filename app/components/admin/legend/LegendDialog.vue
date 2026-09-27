@@ -3,22 +3,22 @@
     <keep-alive>
       <v-card v-show="modelValue">
         <v-card-title>
-          <span>{{
-            isEdit ? "Legend Item aanpassen" : "Nieuw Legenda Item"
-          }}</span>
+          <span>{{ isEdit ? "Legenda item aanpassen" : "Nieuw Legenda item" }}</span>
         </v-card-title>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" variant="text" @click="save"> Opslaan </v-btn>
+          <v-btn color="error" variant="text" @click="close"> Annuleren </v-btn>
+        </v-card-actions>
 
         <v-card-text>
           <v-container>
             <v-row>
-              <v-col cols="12">
+              <v-col cols="6">
                 <v-text-field v-model="editedItem.name" label="Naam" required />
               </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.description"
-                  label="Omschrijving"
-                />
+              <v-col cols="6">
+                <v-text-field v-model="editedItem.description" label="Omschrijving" />
               </v-col>
               <v-col cols="4">
                 <h4 class="mb-3">Kleur</h4>
@@ -26,11 +26,11 @@
                   v-model="editedItem.color"
                   v-model:mode="mode"
                   show-swatches
-                  swatches-max-height="300px"
+                  swatches-max-height="150px"
                 />
               </v-col>
               <v-col cols="8">
-                <h4 class="mb-3">Icoon (optioneel)</h4>
+                <h4 class="mb-3">Icoon</h4>
                 <div class="mb-4">
                   <IconSelector
                     v-model="editedItem.icon"
@@ -52,9 +52,7 @@
                       alt="Map icon preview"
                       style="width: 32px; height: 32px; border-radius: 50%"
                     />
-                    <v-chip v-else color="grey" size="small"
-                      >Genereren...</v-chip
-                    >
+                    <v-chip v-else color="grey" size="small">Genereren...</v-chip>
                   </div>
                 </div>
               </v-col>
@@ -74,10 +72,7 @@
 
 <script setup lang="ts">
 import type { Legend } from "~/types/Legend";
-import {
-  createIconCanvasDataUrl,
-  createFallbackIconDataUrl,
-} from "~/utils/iconCanvas";
+import { createIconCanvasDataUrl, createFallbackIconDataUrl } from "~/utils/iconCanvas";
 
 const modelValue = defineModel<boolean>("modelValue");
 const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
@@ -129,9 +124,7 @@ async function setIcon() {
       editedItem.value.icon_data_url = dataUrl;
     } catch (error) {
       console.warn("Failed to generate icon canvas, using fallback:", error);
-      editedItem.value.icon_data_url = createFallbackIconDataUrl(
-        editedItem.value.color
-      );
+      editedItem.value.icon_data_url = createFallbackIconDataUrl(editedItem.value.color);
     }
   } else {
     editedItem.value.icon_data_url = undefined;

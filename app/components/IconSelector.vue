@@ -23,18 +23,13 @@
 
     <v-row v-if="selectedIcon && !paginatedIcons.includes(selectedIcon)">
       <v-col cols="12" class="text-center">
-        <v-chip
-          color="primary"
-          variant="outlined"
-          class="cursor-pointer"
-          @click="showSelectedIcon"
-        >
+        <v-chip color="primary" variant="outlined">
           <LegendIndicator
             :legend="{ icon: selectedIcon, color: previewColor }"
             :size="16"
             class="mr-2"
           />
-          Huidig geselecteerd (klik om te tonen)
+          {{ selectedIcon }}
         </v-chip>
       </v-col>
     </v-row>
@@ -78,22 +73,7 @@
 
     <v-row v-if="totalPages > 1">
       <v-col cols="12" class="d-flex justify-center">
-        <v-pagination
-          v-model="currentPage"
-          :length="totalPages"
-          :total-visible="7"
-        />
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col cols="12">
-        <p class="text-caption text-center">
-          {{ validIcons.length }} iconen beschikbaar
-          <span v-if="validIcons.length !== paginatedIcons.length">
-            - {{ paginatedIcons.length }} weergegeven
-          </span>
-        </p>
+        <v-pagination v-model="currentPage" :length="totalPages" :total-visible="7" />
       </v-col>
     </v-row>
   </div>
@@ -120,7 +100,7 @@ const selectedIcon = defineModel<string | undefined>({ required: true });
 const searchQuery = ref("");
 const selectedCategory = ref<string | undefined>();
 const currentPage = ref(1);
-const iconsPerPage = 50;
+const iconsPerPage = 20;
 const loading = ref(false);
 const loadingMessage = ref("Loading all MDI icons...");
 const allIcons = ref<MdiIcon[]>([]);
@@ -194,7 +174,7 @@ onMounted(async () => {
 
   try {
     const response = await fetch(
-      "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json"
+      "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json",
     );
     const icons = await response.json();
 
@@ -209,7 +189,7 @@ onMounted(async () => {
         tags: icon.tags || [],
         category: icon.category || "uncategorized",
         aliases: icon.aliases || [],
-      })
+      }),
     );
   } catch (error) {
     console.error("Failed to load full icon set:", error);
@@ -223,7 +203,7 @@ const showSelectedIcon = () => {
   if (selectedIcon.value) {
     const iconIndex = filteredIcons.value.indexOf(selectedIcon.value);
     if (iconIndex >= 0) {
-      currentPage.value = Math.floor(iconIndex / ICONS_PER_PAGE) + 1;
+      currentPage.value = Math.floor(iconIndex / iconsPerPage) + 1;
     }
   }
 };
@@ -246,7 +226,7 @@ watch(
       }
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function selectIcon(icon: string) {
