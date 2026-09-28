@@ -12,16 +12,17 @@
         />
       </v-card-title>
       <v-card-text>
-        <v-data-table
+        <v-data-table-server
           v-model:page="state.page"
           v-model:sort-by="state.sortBy"
-          :items-per-page="isPrinting ? 9999 : state.itemsPerPage"
+          v-model:items-per-page="state.itemsPerPage"
           :headers="headers"
-          :items="filteredIssues"
+          :items="issues"
+          :items-length="totalItems"
           item-value="id"
           class="elevation-1"
           density="compact"
-          :loading="!issues.length"
+          :loading="pending"
           @click:row="gotoIssue"
           :items-per-page-options="[5, 10, 25, 50]"
           show-current-page
@@ -31,7 +32,15 @@
           </template>
 
           <template #item.legend="{ item }">
-            <category-chip :legend="item.legend" />           
+            <category-chip v-if="item.legend" :legend="item.legend" />
+          </template>
+
+          <template #item.title="{ item }">
+            <span v-html="emphasizeFilter(item.title)" />
+          </template>
+
+          <template #item.snippets="{ item }">
+            <span v-html="emphasizeFilter(item.snippets.join(' '))" />
           </template>
 
 
@@ -53,7 +62,7 @@
                 </v-btn>
               </template>
             </div>
-          </template></v-data-table
+          </template></v-data-table-server
         >
       </v-card-text>
     </v-card>
@@ -64,24 +73,12 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 import CategoryChip from '~/components/CategoryChip.vue';
-import type { Issue } from '~/types/Issue';
+import { parseSearchTerms } from '~/utils/parseSearchTerms';
 import type { Legend } from '~/types/Legend';
 
 useTitle("Onderwerpen");
 
 const isPrinting = useMediaQuery('print')
-
-// Use lightweight issues for admin list (only id, title, legend_id, created_at)
-const issuesStore = useIssues({
-  fields: "id,title,legend_id,created_at,imageUrl",
-});
-const { issues } = storeToRefs(issuesStore);
-
-const existingIssues = computed(() => issues.value || []);
-
-function gotoIssue(_event: Event, { item }: { item: Issue }) {
-  navigateTo(`/kaart/${item.id}`)
-}
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -94,6 +91,21 @@ const state = useState("issues-state", () => ({
   }[],
 }));
 
+type SearchIssue = {
+  id: number;
+  title: string;
+  legend_id: number;
+  created_at: string;
+  imageUrl: string | null;
+  snippets: string[];
+  legend?: Legend;
+};
+
+type SearchResponse = {
+  items: SearchIssue[];
+  total: number;
+};
+
 // Reset pagination when search changes
 watch(
   () => state.value.search,
@@ -104,28 +116,42 @@ watch(
   }
 );
 
-const filteredIssues = computed(() => {
-  return existingIssues.value.filter(
-    (issue) =>
-      !state.value.search ||
-      issue.title.toLowerCase().includes(state.value.search.toLowerCase()) ||
-      issue.legend?.name
-        ?.toLowerCase()
-        .includes(state.value.search.toLowerCase())
+const query = computed(() => ({
+  page: state.value.page,
+  itemsPerPage: state.value.itemsPerPage,
+  orderBy: state.value.sortBy[0]?.key ?? "created_at",
+  order: state.value.sortBy[0]?.order ?? "desc",
+  search: state.value.search ?? "",
+}));
+const filters = computed(() =>
+  parseSearchTerms(query.value.search)
+    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+);
+const { emphasizeFilter } = useFilter(filters);
+const { data: searchResponse, pending } = await useFetch<SearchResponse>(
+  "/api/issues/search",
+  { query }
+);
 
-  );
-});
+const { legends } = storeToRefs(useLegends());
+const issues = computed(() =>
+  (searchResponse.value?.items ?? []).map((issue) => ({
+    ...issue,
+    legend: legends.value?.find((legend) => legend.id === issue.legend_id),
+  }))
+);
+const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
-function sortCategory(a: Legend, b: Legend) {
-  return a.name.localeCompare(b.name);
+function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
+  navigateTo(`/kaart/${item.id}`)
 }
 
 const headers = computed(() => {
-  return  [
-
-    {title: "", value:"imageUrl", sortable: false},
-    { title: "Titel", value: "title", sortable: true, width: "50%" },
-    { title: "Categorie", value: "legend", sort: sortCategory },
+  return [
+    { title: "", value: "imageUrl", sortable: false },
+    { title: "Titel", value: "title", sortable: true, width: "40%" },
+    { title: "Categorie", value: "legend", sortable: true },
+    { title: "Gevonden tekst", value: "snippets", sortable: false, width: "20%" },
   ];
 });
 
