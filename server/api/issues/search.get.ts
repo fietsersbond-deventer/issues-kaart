@@ -2,7 +2,11 @@ import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
 import { getMatch } from "~~/app/utils/getMatch";
 import { parseSearchTerms } from "~~/app/utils/parseSearchTerms";
-import sanitizeHtml from "sanitize-html";
+
+// Escape LIKE wildcards so search terms are matched literally.
+function escapeLikePattern(term: string): string {
+  return term.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
 
 /**
  * Search endpoint
@@ -75,36 +79,46 @@ export default defineEventHandler(async (event) => {
   }
 
   const searchTerms = parseSearchTerms(search);
-  const sqlStatement = `SELECT i.id, i.title, i.description, i.legend_id, i.created_at,
+
+  // Every term must match at least one of title/plain_text/legend name (matches previous OR-of-terms behaviour).
+  const searchConditions = searchTerms.map(
+    () =>
+      "(i.title LIKE ? ESCAPE '\\' COLLATE NOCASE OR i.plain_text LIKE ? ESCAPE '\\' COLLATE NOCASE OR l.name LIKE ? ESCAPE '\\' COLLATE NOCASE)",
+  );
+  const whereClause = searchConditions.length
+    ? `WHERE ${searchConditions.join(" OR ")}`
+    : "";
+  const likeParams = searchTerms.flatMap((term) => {
+    const pattern = `%${escapeLikePattern(term)}%`;
+    return [pattern, pattern, pattern];
+  });
+
+  const countRow = db
+    .prepare(
+      `SELECT COUNT(*) AS total
+       FROM issues i
+       LEFT JOIN legend l ON l.id = i.legend_id
+       ${whereClause}`,
+    )
+    .get(...likeParams) as { total: number };
+
+  const offset = (page - 1) * itemsPerPage;
+  const sqlStatement = `SELECT i.id, i.title, i.description, i.plain_text, i.legend_id, i.created_at,
       l.name AS legend_name
      FROM issues i
      LEFT JOIN legend l ON l.id = i.legend_id
+     ${whereClause}
      ORDER BY ${orderBy} ${requestedOrder}
+     LIMIT ? OFFSET ?
      `;
-  const rows = db.prepare(sqlStatement).all();
+  const rows = db
+    .prepare(sqlStatement)
+    .all(...likeParams, itemsPerPage, offset);
 
-  // Process results
-  const matchingItems = rows.flatMap((issue) => {
-    const { description, legend_name, ...issueFields } = issue;
+  const items = rows.map((issue) => {
+    const { description, plain_text, legend_name, ...issueFields } = issue;
     const plainTextDescription =
-      typeof description === "string"
-        ? sanitizeHtml(description, {
-            allowedTags: [],
-            allowedAttributes: {},
-            textFilter: (text) => `${text} `,
-          }).trim()
-        : "";
-    const matchesSearch =
-      searchTerms.length === 0 ||
-      searchTerms.some((term) => {
-        const normalizedTerm = term.toLowerCase();
-        return [issue.title, plainTextDescription, legend_name].some(
-          (value) =>
-            typeof value === "string" &&
-            value.toLowerCase().includes(normalizedTerm),
-        );
-      });
-    if (!matchesSearch) return [];
+      typeof plain_text === "string" ? plain_text : "";
 
     const result: Record<string, unknown> = {
       ...issueFields,
@@ -120,12 +134,11 @@ export default defineEventHandler(async (event) => {
       result.imageUrl = hasImage ? `/api/issues/${issue.id}/image` : null;
     }
 
-    return [result];
+    return result;
   });
 
-  const offset = (page - 1) * itemsPerPage;
   return {
-    items: matchingItems.slice(offset, offset + itemsPerPage),
-    total: matchingItems.length,
+    items,
+    total: countRow.total,
   };
 });

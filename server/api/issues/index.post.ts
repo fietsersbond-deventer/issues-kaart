@@ -1,6 +1,7 @@
 import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
+import { getPlainText } from "~~/server/utils/getPlainText";
 import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
 
@@ -47,16 +48,17 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const insertStmt = db.prepare(
-    "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?, ?, ?, ?)"
+    "INSERT INTO issues (title, description, plain_text, legend_id, geometry) VALUES (?, ?, ?, ?, ?)",
   );
   const result = insertStmt.run(
     title,
     sanitizedDescription,
+    getPlainText(sanitizedDescription),
     legend_id,
-    JSON.stringify(geometry)
+    JSON.stringify(geometry),
   );
   const selectStmt = db.prepare(
-    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?"
+    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?",
   );
   const row = selectStmt.get(result.lastInsertRowid);
   if (!row) {
@@ -65,15 +67,15 @@ export default defineEventHandler(async (event) => {
       message: "Failed to fetch created issue",
     });
   }
-  
+
   // Get user info for notification
   const user = event.context.user;
   const createdBy = user?.name || user?.username || "Onbekend";
   const createdByUserId = user?.id || 0;
-  
+
   // Emit with user info
-  eventEmitter.emit("issue:created", { 
-    ...row, 
+  eventEmitter.emit("issue:created", {
+    ...row,
     createdBy,
     createdByUserId,
   });

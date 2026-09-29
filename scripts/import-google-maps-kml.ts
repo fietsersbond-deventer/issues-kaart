@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sanitizeHtml } from "../server/utils/sanitizeHtml";
+import { getPlainText } from "../server/utils/getPlainText";
 
 const DEFAULT_LEGEND_COLOR = "#2196F3";
 const DEFAULT_STYLE_ID = "default";
@@ -428,13 +429,13 @@ async function main(args: string[]): Promise<void> {
       "INSERT INTO legend (name, description, color) VALUES (?, ?, ?)",
     );
     const insertIssue = db.prepare(
-      "INSERT INTO issues (title, description, legend_id, geometry) VALUES (?, ?, ?, ?)",
+      "INSERT INTO issues (title, description, plain_text, legend_id, geometry) VALUES (?, ?, ?, ?, ?)",
     );
     const findExistingIssue = db.prepare(
       "SELECT id FROM issues WHERE title = ? AND geometry = ?",
     );
     const updateIssue = db.prepare(
-      "UPDATE issues SET description = ?, legend_id = ? WHERE id = ?",
+      "UPDATE issues SET description = ?, plain_text = ?, legend_id = ? WHERE id = ?",
     );
     db.exec("BEGIN");
     try {
@@ -475,6 +476,7 @@ async function main(args: string[]): Promise<void> {
         if (existingIssue) {
           updateIssue.run(
             issue.description,
+            getPlainText(issue.description),
             legendIds.get(issue.legendId),
             existingIssue.id,
           );
@@ -484,6 +486,7 @@ async function main(args: string[]): Promise<void> {
         insertIssue.run(
           issue.title,
           issue.description,
+          getPlainText(issue.description),
           legendIds.get(issue.legendId),
           geometry,
         );

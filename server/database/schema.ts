@@ -31,6 +31,7 @@ export type Issue = {
   id: number;
   title: string;
   description: string;
+  plain_text: string; // description with HTML/images stripped, kept in sync for search
   legend_id: number | null;
   geometry: string; // GeoJSON stored as string
   created_at: Date;

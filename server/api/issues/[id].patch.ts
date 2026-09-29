@@ -1,6 +1,7 @@
 import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
+import { getPlainText } from "~~/server/utils/getPlainText";
 import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
 
@@ -63,6 +64,8 @@ export default defineEventHandler(async (event) => {
   if (updates.description !== undefined) {
     updateFields.push(`description = ?`);
     values.push(updates.description);
+    updateFields.push(`plain_text = ?`);
+    values.push(getPlainText(updates.description));
   }
   if (updates.legend_id !== undefined) {
     updateFields.push(`legend_id = ?`);
@@ -79,7 +82,7 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const updateStmt = db.prepare(
-    `UPDATE issues SET ${updateFields.join(", ")} WHERE id = ?`
+    `UPDATE issues SET ${updateFields.join(", ")} WHERE id = ?`,
   );
   const result = updateStmt.run(...values);
   if (result.changes === 0) {
@@ -89,7 +92,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   const selectStmt = db.prepare(
-    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?"
+    "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?",
   );
   const row = selectStmt.get(id);
   if (!row) {
@@ -98,15 +101,15 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found after update`,
     });
   }
-  
+
   // Get user info for notification
   const user = event.context.user;
   const modifiedBy = user?.name || user?.username || "Onbekend";
   const modifiedByUserId = user?.id || 0;
-  
+
   // Emit with user info
-  eventEmitter.emit("issue:modified", { 
-    ...row, 
+  eventEmitter.emit("issue:modified", {
+    ...row,
     modifiedBy,
     modifiedByUserId,
   });
