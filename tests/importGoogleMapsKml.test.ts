@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { extractKmlIssues, inlineImageUrls } from "../scripts/import-google-maps-kml";
+import {
+  extractKmlIssues,
+  inlineImageUrls,
+} from "../scripts/import-google-maps-kml";
 
 const sampleKml = `<?xml version="1.0"?>
 <kml xmlns="http://www.opengis.net/kml/2.2"><Document>
@@ -45,7 +48,9 @@ describe("Google Maps KML importer", () => {
     expect(result.issues[0].description).toContain("<h3>Waar</h3>");
     expect(result.issues[0].description).toContain("<h3>Wat</h3>");
     expect(result.issues[0].description).toContain("Een situatie");
-    expect(result.issues[0].description).toContain('<img src="https://example.com/photo.jpg"');
+    expect(result.issues[0].description).toContain(
+      '<img src="https://example.com/photo.jpg"',
+    );
     expect(result.issues[0].description).not.toContain("<h2>");
     expect(result.issues[0].description).not.toContain("GPS locatie");
     expect(result.issues[0].description).not.toContain("gx_media_links");
@@ -70,7 +75,9 @@ describe("Google Maps KML importer", () => {
   });
 
   it("downloads remote image URLs and stores them as data images", async () => {
-    const downloadImage = vi.fn().mockResolvedValue("data:image/jpeg;base64,YWJj");
+    const downloadImage = vi
+      .fn()
+      .mockResolvedValue("data:image/jpeg;base64,YWJj");
 
     const result = await inlineImageUrls(
       '<p>Photo</p><img src="https://example.com/photo.jpg" />',

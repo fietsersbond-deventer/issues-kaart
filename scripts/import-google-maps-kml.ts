@@ -64,7 +64,10 @@ function parseCoordinates(text: string): Position[] {
     .filter(Boolean)
     .map((coordinate) => {
       const values = coordinate.split(",").slice(0, 3).map(Number);
-      if (values.length < 2 || values.some((value) => !Number.isFinite(value))) {
+      if (
+        values.length < 2 ||
+        values.some((value) => !Number.isFinite(value))
+      ) {
         throw new Error(`Invalid KML coordinate: ${coordinate}`);
       }
       return values as Position;
@@ -76,7 +79,9 @@ function geometryFromElement(element: Element): Geometry | null {
     const geometries = elementChildren(element)
       .map(geometryFromElement)
       .filter((geometry): geometry is Geometry => geometry !== null);
-    return geometries.length ? { type: "GeometryCollection", geometries } : null;
+    return geometries.length
+      ? { type: "GeometryCollection", geometries }
+      : null;
   }
 
   if (element.localName === "Point" || element.localName === "LineString") {
@@ -156,17 +161,26 @@ function styleColor(
   if (!style) return DEFAULT_LEGEND_COLOR;
 
   if (style.localName === "StyleMap") {
-    const pairs = elementChildren(style).filter((child) => child.localName === "Pair");
+    const pairs = elementChildren(style).filter(
+      (child) => child.localName === "Pair",
+    );
     const pair =
-      pairs.find((candidate) => childNamed(candidate, "key")?.textContent.trim() === "normal") ??
-      pairs[0];
-    const styleUrl = pair ? childNamed(pair, "styleUrl")?.textContent.trim() : undefined;
-    if (styleUrl) return styleColor(styleUrl.split("#").at(-1)!, stylesById, seen);
+      pairs.find(
+        (candidate) =>
+          childNamed(candidate, "key")?.textContent.trim() === "normal",
+      ) ?? pairs[0];
+    const styleUrl = pair
+      ? childNamed(pair, "styleUrl")?.textContent.trim()
+      : undefined;
+    if (styleUrl)
+      return styleColor(styleUrl.split("#").at(-1)!, stylesById, seen);
   }
 
   for (const styleName of ["IconStyle", "LineStyle", "PolyStyle"]) {
     const styleDetails = childNamed(style, styleName);
-    const color = styleDetails ? childNamed(styleDetails, "color")?.textContent : undefined;
+    const color = styleDetails
+      ? childNamed(styleDetails, "color")?.textContent
+      : undefined;
     const parsedColor = colorFromKml(color);
     if (parsedColor) return parsedColor;
   }
@@ -213,7 +227,9 @@ export function extractKmlIssues(xml: string): KmlParseResult {
     const geometry = geometryFromPlacemark(placemark);
 
     if (!title) {
-      skipped.push(`${placemarkName || "(unnamed)"}: Data name="Waar" is empty`);
+      skipped.push(
+        `${placemarkName || "(unnamed)"}: Data name="Waar" is empty`,
+      );
       continue;
     }
     if (!geometry) {
@@ -242,10 +258,16 @@ export function extractKmlIssues(xml: string): KmlParseResult {
     legend.styleIds.add(styleId);
     legendsById.set(legendId, legend);
 
-    const sourceDescription = childNamed(placemark, "description")?.textContent ?? "";
+    const sourceDescription =
+      childNamed(placemark, "description")?.textContent ?? "";
     const sourceImages = sourceDescription.match(/<img\b[^>]*>/gi) ?? [];
     const metadata = fields
-      .filter(({ name }) => !["gps locatie", "gx_media_links"].includes(name.trim().toLowerCase()))
+      .filter(
+        ({ name }) =>
+          !["gps locatie", "gx_media_links"].includes(
+            name.trim().toLowerCase(),
+          ),
+      )
       .map(
         ({ name, value }) =>
           `<h3>${escapeHtml(name)}</h3><p>${escapeHtml(value).replace(/\r?\n/g, "<br>")}</p>`,
@@ -253,7 +275,9 @@ export function extractKmlIssues(xml: string): KmlParseResult {
       .join("");
     issues.push({
       title,
-      description: sanitizeHtml([...sourceImages, metadata].filter(Boolean).join("<br>")),
+      description: sanitizeHtml(
+        [...sourceImages, metadata].filter(Boolean).join("<br>"),
+      ),
       geometry,
       legendId,
     });
@@ -285,7 +309,9 @@ async function downloadImageAsDataUrl(url: string): Promise<string> {
     .trim()
     .toLowerCase();
   if (!contentType || !IMAGE_TYPES.has(contentType)) {
-    throw new Error(`Unsupported image type "${contentType ?? "unknown"}": ${url}`);
+    throw new Error(
+      `Unsupported image type "${contentType ?? "unknown"}": ${url}`,
+    );
   }
 
   const bytes = Buffer.from(await response.arrayBuffer());
@@ -323,7 +349,9 @@ export async function inlineImageUrls(
       dataUrl = await downloadImage(url);
       downloaded.set(url, dataUrl);
     }
-    const escapedDataUrl = dataUrl.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+    const escapedDataUrl = dataUrl
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;");
     output += tag.replace(
       source[0],
       `${source[1]}${source[2]}${escapedDataUrl}${source[2]}`,
@@ -474,7 +502,10 @@ async function main(args: string[]): Promise<void> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
   main(process.argv.slice(2)).catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error);
     console.error("Usage: pnpm import:kml -- <file.kml> [--dry-run]");
