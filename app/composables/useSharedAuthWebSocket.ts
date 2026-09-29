@@ -2,7 +2,7 @@ import { useWebSocket } from "@vueuse/core";
 import type {
   AnyWebSocketMessage,
   WebSocketEvents,
-} from "@/types/WebSocketMessages";
+} from "~~/shared/types/WebSocketMessages";
 
 /**
  * WebSocket message event bus for authenticated user features

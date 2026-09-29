@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import type { OnlineUser } from "~/types/WebSocketMessages";
+import type { OnlineUser } from "~~/shared/types/WebSocketMessages";
 
 interface Props {
   avatarSize?: number;

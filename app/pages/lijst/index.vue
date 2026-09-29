@@ -74,7 +74,7 @@
 import { useMediaQuery, refDebounced } from '@vueuse/core'
 import CategoryChip from '~/components/CategoryChip.vue';
 import { parseSearchTerms } from '~/utils/parseSearchTerms';
-import type { Legend } from '~/types/Legend';
+import type { Legend } from '~~/shared/types/Legend';
 
 useTitle("Onderwerpen");
 

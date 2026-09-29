@@ -154,8 +154,8 @@
 
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
-import type { AdminListIssue } from "@/types/Issue";
-import type { Legend } from "~/types/Legend";
+import type { AdminListIssue } from "~~/shared/types/Issue";
+import type { Legend } from "~~/shared/types/Legend";
 
 useTitle("Onderwerpen");
 

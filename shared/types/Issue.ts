@@ -1,3 +1,4 @@
+import { ExistingIssue } from "~/types/Issue";
 import type { LineString, Point, Polygon } from "geojson";
 import type { Legend } from "./Legend";
 
@@ -35,6 +36,8 @@ export type NewIssue = Omit<
  */
 export type MapIssue = Pick<Issue, "id" | "title" | "geometry" | "legend">;
 
+export type ExistingIssue = Issue;
+
 /**
  * Lightweight issue type for admin list display
  * Contains only essential data for the admin table
@@ -59,8 +62,8 @@ export type ParseFields<T extends string> =
   T extends `${infer Field},${infer Rest}`
     ? (Field extends keyof BaseIssue ? Field : never) | ParseFields<Rest>
     : T extends keyof BaseIssue
-    ? T
-    : never;
+      ? T
+      : never;
 
 /**
  * Type-safe issue fields based on comma-separated string

@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AdminTextEntry } from "~/types/Text";
+import type { AdminTextEntry } from "~~/shared/types/Text";
 
 useTitle("Teksten");
 

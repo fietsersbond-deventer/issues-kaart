@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import type { Legend as DbLegend } from "~~/server/database/schema";
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 import type { LegendUsage } from "~/composables/useLegends";
 
 definePageMeta({
@@ -75,7 +75,7 @@ async function deleteItem() {
     await remove(itemToDelete.value.id);
     if (legends.value) {
       legends.value = legends.value.filter(
-        (item) => item.id !== itemToDelete.value?.id
+        (item) => item.id !== itemToDelete.value?.id,
       );
     }
     dialogDelete.value = false;
@@ -92,7 +92,7 @@ async function save(
   legendItem: Pick<Legend, "name" | "description" | "color"> & {
     icon?: string;
     icon_data_url?: string;
-  }
+  },
 ) {
   try {
     if (editedLegend.value) {

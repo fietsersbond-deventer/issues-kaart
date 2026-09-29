@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 
 const { legend } = defineProps<{ legend: Legend }>();
 </script>
