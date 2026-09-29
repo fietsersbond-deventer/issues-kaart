@@ -75,54 +75,59 @@
         </v-card-title>
 
         <v-card-text>
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="form.label"
-                label="Label"
-                hint="Gebruikersvriendelijke naam"
-                persistent-hint
-              />
-            </v-col>
+          <v-form v-model="valid">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="form.label"
+                  label="Label"
+                  hint="Gebruikersvriendelijke naam"
+                  persistent-hint
+                  :rules="[requiredRule]"
+                />
+              </v-col>
 
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="form.tag"
-                label="Slug / key"
-                :disabled="isEditing"
-                hint="Wordt automatisch genormaliseerd"
-                persistent-hint
-              />
-            </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="form.tag"
+                  label="Slug / key"
+                  :disabled="true"
+                  hint="Wordt automatisch genormaliseerd"
+                  persistent-hint
+                />
+              </v-col>
 
-            <v-col cols="12">
-              <div class="text-subtitle-2 mb-2">Icoon</div>
-              <div class="d-flex align-center ga-2">
-                <v-icon :icon="form.icon || 'mdi-tag-outline'" size="24" color="grey" />
-                <span class="text-caption text-medium-emphasis">
-                  {{ form.icon || "Geen icoon" }}
-                </span>
-              </div>
-            </v-col>
+              <v-col cols="12">
+                <div class="text-subtitle-2 mb-2">Icoon</div>
+                <div class="d-flex align-center ga-2">
+                  <v-icon :icon="form.icon || 'mdi-tag-outline'" size="24" color="grey" />
+                  <span class="text-caption text-medium-emphasis">
+                    {{ form.icon || "Geen icoon" }}
+                  </span>
+                </div>
+              </v-col>
 
-            <v-col cols="12">
-              <v-textarea
-                v-model="form.description"
-                label="Omschrijving"
-                rows="3"
-                auto-grow
-              />
-            </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="form.description"
+                  label="Omschrijving"
+                  rows="3"
+                  auto-grow
+                />
+              </v-col>
 
-            <v-col cols="12">
-              <IconSelector v-model="form.icon" :preview-color="'#808080'" />
-            </v-col>
-          </v-row>
+              <v-col cols="12">
+                <IconSelector v-model="form.icon" :preview-color="'#808080'" />
+              </v-col>
+            </v-row>
+          </v-form>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer />
-          <v-btn color="primary" @click="saveTag" :loading="saving"> Opslaan </v-btn>
+          <v-btn color="primary" @click="saveTag" :loading="saving" :disabled="!valid">
+            Opslaan
+          </v-btn>
           <v-btn variant="text" @click="dialog = false">Annuleren</v-btn>
         </v-card-actions>
       </v-card>
@@ -188,6 +193,8 @@ const form = ref<TagForm>({
   icon: undefined,
 });
 
+const valid = ref(false);
+
 function openCreateDialog() {
   isEditing.value = false;
   form.value = { tag: "", label: "", description: "", icon: undefined };
@@ -222,6 +229,13 @@ function normalizeTagValue(tag: string) {
     .slice(0, 30)
     .replace(/-+$/g, "");
 }
+
+watch(
+  () => form.value.label,
+  (label) => {
+    form.value.tag = normalizeTagValue(label);
+  }
+);
 
 async function saveTag() {
   const tagValue = normalizeTagValue(form.value.tag || "");

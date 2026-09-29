@@ -87,7 +87,9 @@ export function useIssues(options?: { fields?: string }) {
       if (!isExistingIssue(issue)) return;
 
       const existingIndex = issues.value.findIndex(
-        (i) => isExistingIssue(i) && i.id === issue.id,
+        (i) =>
+          (isNewIssue(issue) && isNewIssue(i)) ||
+          (isExistingIssue(issue) && isExistingIssue(i) && i.id === issue.id),
       );
 
       if (existingIndex !== -1) {
