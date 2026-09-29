@@ -22,7 +22,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ci": "vitest run --reporter=verbose --coverage.enabled=false",
-    "migrate": "tsx server/database/runMigrations.ts"
+    "migrate": "tsx server/database/runMigrations.ts",
+    "import:kml": "tsx scripts/import-google-maps-kml.ts"
   },
   "dependencies": {
     "@auth/core": "^0.39.1",
@@ -73,6 +74,7 @@
     "@types/sanitize-html": "^2.16.0",
     "@vitest/coverage-v8": "^4.1.11",
     "@vitest/ui": "^4.1.11",
+    "@xmldom/xmldom": "^0.9.12",
     "eslint": "^10.9.1",
     "tsx": "^4.20.3",
     "vite-plugin-vuetify": "^2.1.3",

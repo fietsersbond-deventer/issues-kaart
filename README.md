@@ -81,6 +81,17 @@ pnpm run test:coverage
 pnpm run test:ui
 ```
 
+### Google Maps KML importeren
+
+Importeer placemarks uit alle folders in het KML-bestand. `NUXT_DB_PATH` moet naar de SQLite-database wijzen. De importer maakt legenda's op basis van de foldernaam en `Urgentie`-waarde, met de kleur uit de gebruikte KML-stijl. Items zonder urgency krijgen een legenda op basis van hun stijl.
+
+```bash
+pnpm import:kml -- "Knelpunten Rhenen 2023.kml" --dry-run
+pnpm import:kml -- "Knelpunten Rhenen 2023.kml"
+```
+
+`--dry-run` toont de legendanamen, kleuren en placemarks die worden verwerkt zonder rijen toe te voegen. Nieuwe legenda's krijgen de omschrijving `Dummy tekst`. Placemark-titels komen uit `Data name="Waar"`; alle relevante `Data`-velden worden als H3-secties toegevoegd. Afbeeldingen in de KML-description worden gedownload en als base64-data-afbeelding opgeslagen. Een herhaalde import werkt bestaande issues met dezelfde titel en geometrie bij in plaats van ze dubbel toe te voegen.
+
 ## 🏗️ Build voor productie
 
 ```bash
