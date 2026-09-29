@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
+import { useMediaQuery, refDebounced } from '@vueuse/core'
 import CategoryChip from '~/components/CategoryChip.vue';
 import { parseSearchTerms } from '~/utils/parseSearchTerms';
 import type { Legend } from '~/types/Legend';
@@ -116,12 +116,18 @@ watch(
   }
 );
 
+// Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
+const debouncedSearch = refDebounced(
+  computed(() => state.value.search ?? ""),
+  300
+);
+
 const query = computed(() => ({
   page: state.value.page,
   itemsPerPage: state.value.itemsPerPage,
   orderBy: state.value.sortBy[0]?.key ?? "created_at",
   order: state.value.sortBy[0]?.order ?? "desc",
-  search: state.value.search ?? "",
+  search: debouncedSearch.value,
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search)
@@ -130,7 +136,7 @@ const filters = computed(() =>
 const { emphasizeFilter } = useFilter(filters);
 const { data: searchResponse, pending } = await useFetch<SearchResponse>(
   "/api/issues/search",
-  { query }
+  { query, dedupe: "cancel" }
 );
 
 const { legends } = storeToRefs(useLegends());
