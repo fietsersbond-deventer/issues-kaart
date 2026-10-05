@@ -1,5 +1,9 @@
 import { defineStore } from "pinia";
-import { isExistingIssue, isNewIssue, type Issue } from "~~/shared/types/Issue";
+import {
+  isExistingIssue,
+  type Issue,
+  type NewIssue,
+} from "~~/shared/types/Issue";
 import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
@@ -19,10 +23,11 @@ export function useIssues(options?: { fields?: string }) {
     const { legends } = storeToRefs(useLegends());
 
     const fetchOptions = fields ? { query: { fields } } : {};
-    const { data, refresh: refreshIssues } = useFetch<Issue[]>(
-      "/api/issues",
-      fetchOptions,
-    );
+    const {
+      data,
+      refresh: refreshIssues,
+      status,
+    } = useFetch<Issue[]>("/api/issues", fetchOptions);
 
     function processIssue(issue: Issue): Issue {
       if (issue.geometry && typeof issue.geometry === "string") {
@@ -78,13 +83,11 @@ export function useIssues(options?: { fields?: string }) {
 
     // any changes to the selected issue should be reflected in this store
     const { issue } = storeToRefs(useSelectedIssue());
-    const throttledUpdate = useThrottleFn((issue: Issue | null) => {
-      if (!issue) return;
+    const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
+      if (!isExistingIssue(issue)) return;
 
       const existingIndex = issues.value.findIndex(
-        (i) =>
-          (isNewIssue(issue) && isNewIssue(i)) ||
-          (isExistingIssue(issue) && isExistingIssue(i) && i.id === issue.id),
+        (i) => isExistingIssue(i) && i.id === issue.id,
       );
 
       if (existingIndex !== -1) {
@@ -135,11 +138,14 @@ export function useIssues(options?: { fields?: string }) {
       refreshIssues();
     }
 
+    const isLoaded = computed(() => status.value === "success");
+
     // Expose CRUD methods (WebSocket handles updates automatically)
     const methods = useIssuesMethods();
 
     return {
       issues,
+      isLoaded,
       refresh,
       ...methods,
     };
