@@ -1,88 +1,83 @@
 import type { Map as OLMap } from "ol";
 import type { Ref } from "vue";
 import { transform, transformExtent } from "ol/proj";
-import { easeOut } from "ol/easing";
+import centroid from "@turf/centroid";
 import bbox from "@turf/bbox";
 import type { Geometry } from "geojson";
 
 export function useMapResize(
   mapRef: Ref<{ map?: OLMap } | null | undefined>,
   padding: Ref<[number, number, number, number]>,
-  onResize: () => void = () => {},
 ) {
-  const log = (event: string, details: Record<string, unknown> = {}) => {
-    console.debug(`[map-camera] ${event}`, details);
-  };
-  const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
+  const { issue: selectedIssue } = storeToRefs(useSelectedIssue());
   const mapHeight = ref(0);
   const mapWidth = ref(0);
+  const targetCenter = ref<number[] | null>(null);
+  const targetGeometry = ref<Geometry | null>(null);
 
   function recenterOnSelectedIssue() {
     if (!selectedIssue.value?.geometry) return;
 
-    const issueId = "id" in selectedIssue.value ? selectedIssue.value.id : null;
-    if (selectedId.value !== issueId) {
-      log("recenter skipped: stale selected issue", {
-        selectedId: selectedId.value,
-        issueId,
-      });
-      return;
-    }
-
     const geometry = selectedIssue.value.geometry as Geometry;
+    targetGeometry.value = geometry;
 
-    const view = mapRef.value?.map?.getView();
-    if (!view) {
-      log("select/resize skipped: view unavailable");
-      return;
-    }
+    // Use Turf to calculate the centroid
+    const centerPoint = centroid(geometry);
 
-    log("recenter issue", {
-      issueId:
-        selectedIssue.value && "id" in selectedIssue.value
-          ? selectedIssue.value.id
-          : null,
-      geometryType: geometry.type,
-      currentZoom: view.getZoom(),
-    });
+    // Transform from EPSG:4326 (GeoJSON) to EPSG:3857 (map projection)
+    const newCenter = transform(
+      centerPoint.geometry.coordinates,
+      "EPSG:4326",
+      "EPSG:3857",
+    );
 
-    // For points, zoom to a specific level
-    if (geometry.type === "Point") {
-      const newTarget = transform(
-        geometry.coordinates,
-        "EPSG:4326",
-        "EPSG:3857",
-      );
-      view.cancelAnimations();
-      const currentZoom = view.getZoom() || 13;
-      const targetZoom = Math.max(currentZoom, 15);
-
-      view.animate({
-        center: newTarget,
-        zoom: targetZoom,
-        duration: 1000,
-        easing: easeOut,
-      });
-    } else {
-      const [minLng, minLat, maxLng, maxLat] = bbox(geometry);
-
-      const extent = transformExtent(
-        [minLng, minLat, maxLng, maxLat],
-        "EPSG:4326",
-        "EPSG:3857",
-      );
-
-      view.cancelAnimations();
-      view.fit(extent, {
-        padding: padding.value,
-        duration: 600,
-        maxZoom: 17,
-      });
-    }
+    // Store the target center to trigger animation
+    targetCenter.value = newCenter;
   }
+
+  // Watch for target center changes and animate to it
+  watch(
+    targetCenter,
+    (newTarget) => {
+      if (!newTarget || !mapRef.value?.map || !targetGeometry.value) return;
+
+      const view = mapRef.value.map.getView();
+      const geometry = targetGeometry.value;
+
+      // For points, zoom to a specific level
+      if (geometry.type === "Point") {
+        const currentZoom = view.getZoom() || 13;
+        const targetZoom = Math.max(currentZoom, 15); // Zoom to at least level 15
+
+        view.animate({
+          center: newTarget,
+          zoom: targetZoom,
+          duration: 600,
+        });
+      } else {
+        // For LineStrings and Polygons, fit to bounding box with margin
+        const [minLng, minLat, maxLng, maxLat] = bbox(geometry);
+
+        // Transform bbox from EPSG:4326 to EPSG:3857
+        const extent = transformExtent(
+          [minLng, minLat, maxLng, maxLat],
+          "EPSG:4326",
+          "EPSG:3857",
+        );
+
+        view.fit(extent, {
+          padding: padding.value,
+          duration: 600,
+          maxZoom: 17, // Don't zoom in too close
+        });
+      }
+    },
+    { immediate: true },
+  );
 
   let resizeObserver: ResizeObserver | null = null;
 
+  // Setup resize observer on mount
   onMounted(() => {
     nextTick(() => {
       const mapComponent = unref(mapRef);
@@ -99,12 +94,11 @@ export function useMapResize(
         }
 
         if (mapRef.value?.map) {
-          log("map resized", {
-            width: mapWidth.value,
-            height: mapHeight.value,
-          });
           mapRef.value.map.updateSize();
-          onResize();
+
+          if (selectedIssue.value?.geometry) {
+            recenterOnSelectedIssue();
+          }
         }
       });
 
@@ -115,8 +109,7 @@ export function useMapResize(
   watch(
     padding,
     () => {
-      log("padding changed", { padding: padding.value });
-      onResize();
+      recenterOnSelectedIssue();
     },
     { deep: true },
   );
