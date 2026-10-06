@@ -19,9 +19,9 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const tag = setTagMetadata(db, normalizedTag, {
-    label: body.label,
-    description: body.description,
-    icon: body.icon,
+    label: body.label === undefined ? normalizedTag : body.label,
+    description: body.description ?? null,
+    icon: body.icon ?? null,
   });
 
   const row = db

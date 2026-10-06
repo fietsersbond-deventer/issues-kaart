@@ -79,7 +79,6 @@
                 closable-chips
                 clearable
                 hide-selected
-                @update:model-value="normalizeIssueTags"
               />
             </v-col>
 

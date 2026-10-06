@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
 
     // Check if imageUrl is requested
     includeImageUrl = validFields.includes("imageUrl");
-    includeTags = validFields.includes("tags");
+    includeTags = validFields.some((field) => field.trim() === "tags");
 
     // Build select fields, replacing imageUrl with description temporarily
     const sqlFields = validFields.map((field) => {

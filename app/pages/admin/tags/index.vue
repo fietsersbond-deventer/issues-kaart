@@ -51,12 +51,14 @@
                 variant="text"
                 color="primary"
                 size="small"
+                aria-label="`${item.tag} bewerken`"
                 @click="openEditDialog(item)"
               />
               <v-btn
                 icon="mdi-delete"
                 variant="text"
                 color="error"
+                aria-label="`${item.tag} verwijderen`"
                 size="small"
                 @click="confirmDelete(item)"
               />

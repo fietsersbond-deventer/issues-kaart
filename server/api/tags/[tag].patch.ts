@@ -20,10 +20,22 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const nextTag = normalizeTag(body.tag ?? normalizedTag) ?? normalizedTag;
+  const existing = db
+    .prepare("SELECT label, description, icon FROM tags WHERE tag = ?")
+    .get(normalizedTag) as
+    | { label: string | null; description: string | null; icon: string | null }
+    | undefined;
   const updatedTag = setTagMetadata(db, nextTag, {
-    label: body.label,
-    description: body.description,
-    icon: body.icon,
+    label:
+      body.label === undefined
+        ? existing
+          ? existing.label
+          : normalizedTag
+        : body.label,
+    description: body.description === undefined
+      ? existing?.description ?? null
+      : body.description,
+    icon: body.icon === undefined ? existing?.icon ?? null : body.icon,
   });
 
   if (!updatedTag) {

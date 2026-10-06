@@ -35,6 +35,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (updates.tags !== undefined && !Array.isArray(updates.tags)) {
+    throw createError({
+      statusCode: 400,
+      message: "Tags must be an array",
+    });
+  }
+
   // Sanitize HTML content if description is being updated
   if (updates.description !== undefined) {
     updates.description = sanitizeHtml(updates.description);
@@ -102,7 +109,7 @@ export default defineEventHandler(async (event) => {
       result = { changes: issueExists ? 1 : 0 };
     }
 
-    if (updates.tags !== undefined) {
+    if (updates.tags !== undefined && result.changes > 0) {
       normalizedTags = replaceTagsForIssue(db, id, updates.tags);
     }
 

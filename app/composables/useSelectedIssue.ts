@@ -85,6 +85,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   const newIssue: NewIssue = {
     title: "",
     description: "",
+    tags: [],
   };
 
   watch(

@@ -58,21 +58,17 @@ export function ensureTagMetadata(db: DatabaseSync, tags: unknown): string[] {
 export function setTagMetadata(
   db: DatabaseSync,
   tag: unknown,
-  metadata: { label?: unknown; description?: unknown; icon?: unknown } = {},
+  metadata: { label: string | null; description: string | null; icon: string | null },
 ): string | null {
   const normalizedTag = normalizeTag(tag);
   if (!normalizedTag) return null;
 
   const cleanLabel =
-    typeof metadata.label === "string"
-      ? metadata.label.trim() || normalizedTag
-      : normalizedTag;
+    metadata.label === null ? null : metadata.label.trim() || normalizedTag;
   const cleanDescription =
-    typeof metadata.description === "string"
-      ? metadata.description.trim() || null
-      : null;
+    metadata.description?.trim() || null;
   const cleanIcon =
-    typeof metadata.icon === "string" ? metadata.icon.trim() || null : null;
+    metadata.icon?.trim() || null;
 
   db.prepare(
     `INSERT INTO tags (tag, label, description, icon)
@@ -89,9 +85,22 @@ export function setTagMetadata(
 export function setTagDescription(
   db: DatabaseSync,
   tag: unknown,
-  description: unknown,
+  description: string | null,
 ): string | null {
-  return setTagMetadata(db, tag, { description });
+  const normalizedTag = normalizeTag(tag);
+  if (!normalizedTag) return null;
+
+  const existing = db
+    .prepare("SELECT label, icon FROM tags WHERE tag = ?")
+    .get(normalizedTag) as
+    | { label: string | null; icon: string | null }
+    | undefined;
+
+  return setTagMetadata(db, normalizedTag, {
+    label: existing ? existing.label : normalizedTag,
+    description,
+    icon: existing?.icon ?? null,
+  });
 }
 
 export function getTagMetadata(
