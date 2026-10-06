@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 import {
   createIconCanvasDataUrl,
   createFallbackIconDataUrl,

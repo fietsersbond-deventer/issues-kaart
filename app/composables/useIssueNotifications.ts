@@ -1,4 +1,4 @@
-import type { Issue } from "@/types/Issue";
+import type { Issue } from "~~/shared/types/Issue";
 
 /**
  * Handles notifications for issue mutations
@@ -17,9 +17,13 @@ export function useIssueNotifications() {
 
     switch (parsed.type) {
       case "issue-created": {
-        const payload = parsed.payload as Issue & { createdBy: string; createdByUserId: number };
-        const isOwnAction = Number(authData.value?.id) === payload.createdByUserId;
-        
+        const payload = parsed.payload as Issue & {
+          createdBy: string;
+          createdByUserId: number;
+        };
+        const isOwnAction =
+          Number(authData.value?.id) === payload.createdByUserId;
+
         if (isOwnAction) {
           // Short confirmation for editor
           snackbar.showMessage("Onderwerp aangemaakt");
@@ -27,15 +31,19 @@ export function useIssueNotifications() {
           // Full info for others
           snackbar.showPersistent(
             `Onderwerp "${payload.title}" aangemaakt door ${payload.createdBy}`,
-            "info"
+            "info",
           );
         }
         break;
       }
       case "issue-modified": {
-        const payload = parsed.payload as Issue & { modifiedBy: string; modifiedByUserId: number };
-        const isOwnAction = Number(authData.value?.id) === payload.modifiedByUserId;
-        
+        const payload = parsed.payload as Issue & {
+          modifiedBy: string;
+          modifiedByUserId: number;
+        };
+        const isOwnAction =
+          Number(authData.value?.id) === payload.modifiedByUserId;
+
         if (isOwnAction) {
           // Short confirmation for editor
           snackbar.showMessage("Opgeslagen");
@@ -43,7 +51,7 @@ export function useIssueNotifications() {
           // Full info for others
           snackbar.showPersistent(
             `Onderwerp "${payload.title}" gewijzigd door ${payload.modifiedBy}`,
-            "info"
+            "info",
           );
         }
         break;
@@ -55,8 +63,9 @@ export function useIssueNotifications() {
           deletedBy: string;
           deletedByUserId: number;
         };
-        const isOwnAction = Number(authData.value?.id) === payload.deletedByUserId;
-        
+        const isOwnAction =
+          Number(authData.value?.id) === payload.deletedByUserId;
+
         if (isOwnAction) {
           // Short confirmation for editor
           snackbar.showMessage("Verwijderd");
@@ -64,7 +73,7 @@ export function useIssueNotifications() {
           // Full info for others
           snackbar.showPersistent(
             `Onderwerp "${payload.title}" verwijderd door ${payload.deletedBy}`,
-            "info"
+            "info",
           );
         }
         break;

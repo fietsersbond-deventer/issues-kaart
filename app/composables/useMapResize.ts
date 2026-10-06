@@ -7,7 +7,7 @@ import type { Geometry } from "geojson";
 
 export function useMapResize(
   mapRef: Ref<{ map?: OLMap } | null | undefined>,
-  padding: Ref<[number, number, number, number]>
+  padding: Ref<[number, number, number, number]>,
 ) {
   const { issue: selectedIssue } = storeToRefs(useSelectedIssue());
   const mapHeight = ref(0);
@@ -28,7 +28,7 @@ export function useMapResize(
     const newCenter = transform(
       centerPoint.geometry.coordinates,
       "EPSG:4326",
-      "EPSG:3857"
+      "EPSG:3857",
     );
 
     // Store the target center to trigger animation
@@ -62,7 +62,7 @@ export function useMapResize(
         const extent = transformExtent(
           [minLng, minLat, maxLng, maxLat],
           "EPSG:4326",
-          "EPSG:3857"
+          "EPSG:3857",
         );
 
         view.fit(extent, {
@@ -72,7 +72,7 @@ export function useMapResize(
         });
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   let resizeObserver: ResizeObserver | null = null;
@@ -111,7 +111,7 @@ export function useMapResize(
     () => {
       recenterOnSelectedIssue();
     },
-    { deep: true }
+    { deep: true },
   );
 
   onUnmounted(() => {

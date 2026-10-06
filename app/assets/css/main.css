@@ -101,10 +101,10 @@ h6 {
 /* Links */
 a {
   color: var(--color-link);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
-.main-content a:hover {
+article .ql-editor a {
   text-decoration: underline;
 }
 

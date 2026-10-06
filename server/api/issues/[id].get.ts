@@ -1,6 +1,16 @@
 // import type { Issue } from "../../database/schema";
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getTagsForIssueId } from "~~/server/utils/issueTags";
+
+type IssueRow = {
+  id: number;
+  title: string;
+  description: string;
+  legend_id: number;
+  geometry: string;
+  created_at: string;
+};
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -18,9 +28,9 @@ export default defineEventHandler(async (event) => {
       `SELECT i.id, i.title, i.description, i.legend_id, 
      i.geometry, i.created_at 
      FROM issues i 
-     WHERE i.id = ?`
+     WHERE i.id = ?`,
     )
-    .get(id);
+    .get(id) as IssueRow | undefined;
   if (!row) {
     throw createError({
       statusCode: 404,
@@ -33,11 +43,13 @@ export default defineEventHandler(async (event) => {
     typeof row.description === "string" ? row.description : null;
   const hasImage = extractImageUrl(description) !== null;
   const imageUrl = hasImage ? `/api/issues/${row.id}/image` : null;
+  const tags = getTagsForIssueId(db, row.id);
 
   return {
     ...row,
     geometry:
       typeof row.geometry === "string" ? JSON.parse(row.geometry) : null,
     imageUrl,
+    tags,
   };
 });

@@ -1,4 +1,4 @@
-import type { AdminTextEntry, TextEntry } from "~/types/Text";
+import type { AdminTextEntry, TextEntry } from "~~/shared/types/Text";
 
 export function useTexts() {
   const { token } = useAuth();

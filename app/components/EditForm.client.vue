@@ -9,22 +9,11 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
-        <v-btn
-          v-if="'id' in issue"
-          color="error"
-          variant="flat"
-          @click="onDelete"
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -65,10 +54,7 @@
                     Street View toevoegen
                   </v-btn>
                 </div>
-                <div
-                  v-if="!issue.description"
-                  class="text-error text-caption mt-1"
-                >
+                <div v-if="!issue.description" class="text-error text-caption mt-1">
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -80,6 +66,19 @@
                 v-model="issue.legend_id"
                 :legends="legends"
                 label="Categorie"
+              />
+            </v-col>
+
+            <v-col cols="12">
+              <v-combobox
+                v-model="issue.tags"
+                :items="availableTags"
+                label="Tags"
+                multiple
+                chips
+                closable-chips
+                clearable
+                hide-selected
               />
             </v-col>
 
@@ -95,8 +94,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen
-                bovenin de kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
+                kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -105,16 +104,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
@@ -132,9 +125,8 @@
       <v-card-title>Street View toevoegen</v-card-title>
       <v-card-text>
         <p class="text-body-2 mb-2">
-          Plak hier een Street View link (gebruik de Deel-knop in Google Maps
-          terwijl je in Street View staat). Gewone kaartlocaties worden niet
-          ondersteund.
+          Plak hier een Street View link (gebruik de Deel-knop in Google Maps terwijl je
+          in Street View staat). Gewone kaartlocaties worden niet ondersteund.
         </p>
         <v-text-field
           v-model.trim="streetViewUrl"
@@ -176,7 +168,7 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import { isExistingIssue, type Issue } from "~/types/Issue";
+import { isExistingIssue, type Issue } from "~~/shared/types/Issue";
 import { imageCompressor } from "quill-image-compress";
 import {
   ensureStreetViewEmbedBlotRegistered,
@@ -359,6 +351,8 @@ const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
 const { data: user, token } = useAuth();
+
+const { list: availableTags } = useTagsApi();
 
 // Zelfde patroon als useIssuesMethods.ts: de server herkent een ingelogde
 // gebruiker via een "Authorization: Bearer <token>"-header (geen cookies),

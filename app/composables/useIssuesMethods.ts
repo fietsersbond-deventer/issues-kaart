@@ -1,4 +1,4 @@
-import type { Issue } from "@/types/Issue";
+import type { Issue } from "~~/shared/types/Issue";
 
 /**
  * CRUD methods for issues - available without creating a store

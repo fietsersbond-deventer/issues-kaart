@@ -4,6 +4,7 @@ import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
 import { getPlainText } from "~~/server/utils/getPlainText";
 import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
+import { replaceTagsForIssue } from "~~/server/utils/issueTags";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -14,17 +15,26 @@ export default defineEventHandler(async (event) => {
     description,
     legend_id,
     geometry,
+    tags,
   }: {
     title: string;
     description: string;
     legend_id: number;
     geometry: Geometry;
+    tags?: unknown;
   } = await readBody(event);
 
   if (!title || !description || !geometry) {
     throw createError({
       statusCode: 400,
       message: "Title, description and geometry are required",
+    });
+  }
+
+  if (tags !== undefined && !Array.isArray(tags)) {
+    throw createError({
+      statusCode: 400,
+      message: "Tags must be an array",
     });
   }
 
@@ -50,13 +60,28 @@ export default defineEventHandler(async (event) => {
   const insertStmt = db.prepare(
     "INSERT INTO issues (title, description, plain_text, legend_id, geometry) VALUES (?, ?, ?, ?, ?)",
   );
-  const result = insertStmt.run(
-    title,
-    sanitizedDescription,
-    getPlainText(sanitizedDescription),
-    legend_id,
-    JSON.stringify(geometry),
-  );
+  let result;
+  let normalizedTags: string[];
+  db.exec("BEGIN");
+  try {
+    result = insertStmt.run(
+      title,
+      sanitizedDescription,
+      getPlainText(sanitizedDescription),
+      legend_id,
+      JSON.stringify(geometry),
+    );
+    normalizedTags = replaceTagsForIssue(
+      db,
+      result.lastInsertRowid.toString(),
+      tags ?? [],
+    );
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+
   const selectStmt = db.prepare(
     "SELECT id, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?",
   );
@@ -76,8 +101,9 @@ export default defineEventHandler(async (event) => {
   // Emit with user info
   eventEmitter.emit("issue:created", {
     ...row,
+    tags: normalizedTags,
     createdBy,
     createdByUserId,
   });
-  return row;
+  return { ...row, tags: normalizedTags };
 });

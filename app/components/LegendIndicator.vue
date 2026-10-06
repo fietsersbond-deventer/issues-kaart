@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Legend } from "~/types/Legend";
+import type { Legend } from "~~/shared/types/Legend";
 
 interface Props {
   legend: Pick<Legend, "name" | "color" | "icon" | "icon_data_url"> & {

@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import type { User } from "~/types/User";
+import type { User } from "~~/shared/types/User";
 import { useRoles } from "~/composables/useRoles";
 
 const validForm = ref(true);
@@ -49,7 +49,7 @@ const emit = defineEmits<{
       name: string | null;
       role: string;
       password?: string;
-    }
+    },
   ];
   cancel: [];
 }>();

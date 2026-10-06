@@ -4,14 +4,14 @@
       <Toolbar>
         <template v-if="!isEditing">
           <v-btn v-if="!isConnected" variant="text" color="error" disabled>
-            <v-icon icon="mdi-wifi-off" />
+            <v-icon>mdi-wifi-off</v-icon>
             <v-tooltip activator="parent" location="top">
               Verbinding verbroken - bewerken is niet mogelijk
             </v-tooltip>
           </v-btn>
 
           <v-btn v-else-if="!!isLockedByOther" variant="text" color="warning">
-            <v-icon icon="mdi-lock-outline"></v-icon>
+            <v-icon>mdi-lock-outline</v-icon>
             <v-tooltip activator="parent" location="top">
               Dit issue wordt momenteel bewerkt door {{ isLockedByOther }}
             </v-tooltip>
@@ -19,36 +19,26 @@
 
           <v-btn
             v-else
+            icon="mdi-pencil"
             variant="text"
             :disabled="!isConnected"
             aria-label="Bewerken"
             @click="safeToggleEditing()"
-          >
-            <v-icon>mdi-pencil</v-icon>
-            <v-tooltip activator="parent" location="top"> Bewerken </v-tooltip>
-          </v-btn>
+          />
         </template>
         <template v-else>
           <v-btn
+            icon="mdi-pencil-remove"
             variant="text"
             aria-label="Bewerken annuleren"
             @click="safeToggleEditing()"
-          >
-            <v-icon>mdi-pencil-remove</v-icon>
-            <v-tooltip activator="parent" location="top">
-              Stop bewerken
-            </v-tooltip>
-          </v-btn>
+          />
           <v-btn
+            icon="mdi-fullscreen"
             variant="text"
             aria-label="Volledig scherm bewerken"
             @click="showEditDialog = !showEditDialog"
-          >
-            <v-icon icon="mdi-fullscreen"></v-icon>
-            <v-tooltip activator="parent" location="top">
-              Volledig scherm
-            </v-tooltip>
-          </v-btn>
+          />
         </template>
       </Toolbar>
     </v-toolbar>
@@ -62,22 +52,7 @@
           @save="setEditing(false)"
           @cancel="setEditing(false)"
         />
-        <template v-else>
-          <h1 class="mb-4">{{ issue.title }}</h1>
-          <CategoryChip
-            :style="{ marginLeft: '12px' }"
-            :legend="issue.legend"
-          />
-          <ImageViewer>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div
-              ref="descriptionRef"
-              class="ql-editor viewer"
-              v-html="issue.description"
-              @click="onDescriptionClick"
-            />
-          </ImageViewer>
-        </template>
+        <IssueDetails v-else :issue="issue" />
       </template>
       <template v-else>
         <template v-if="isEditing">
@@ -88,9 +63,7 @@
             @cancel="setEditing(false)"
           />
         </template>
-        <div v-else>
-          Klik op de edit knop om een nieuw onderwerp toe te voegen
-        </div>
+        <div v-else>Klik op de edit knop om een nieuw onderwerp toe te voegen</div>
       </template>
 
       <v-dialog
@@ -193,7 +166,7 @@ watch(
       activateStreetViewEmbeds(descriptionRef.value);
     }
   },
-  { flush: "post" },
+  { flush: "post" }
 );
 
 if (!id || typeof id !== "string") {

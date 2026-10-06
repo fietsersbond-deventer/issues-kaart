@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import type { User } from "~/types/User";
+import type { User } from "~~/shared/types/User";
 
 useTitle("Gebruikers");
 
@@ -157,13 +157,13 @@ const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteUser = ref<{ id: number; username: string } | null>(null);
 const editedUser = ref<Pick<User, "id" | "username" | "name" | "role"> | null>(
-  null
+  null,
 );
 
 const hasActiveResetTokens = computed(() => {
   return (
     users.value?.some(
-      (user) => user.reset_token && user.reset_token_expires_at
+      (user) => user.reset_token && user.reset_token_expires_at,
     ) ?? false
   );
 });

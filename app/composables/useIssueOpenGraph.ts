@@ -1,4 +1,4 @@
-import type { Issue } from "~/types/Issue";
+import type { Issue } from "~~/shared/types/Issue";
 
 /**
  * Set Open Graph metadata for an issue page
@@ -34,7 +34,7 @@ export function useIssueOpenGraph(issue: Issue) {
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
-        { name: "twitter:image", content: fullImageUrl }
+        { name: "twitter:image", content: fullImageUrl },
       );
     }
 

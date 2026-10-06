@@ -1,4 +1,4 @@
-import type { Issue, NewIssue, ExistingIssue } from "~/types/Issue";
+import type { Issue, NewIssue, ExistingIssue } from "~~/shared/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
@@ -79,12 +79,13 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         issue.value = await $fetch<Issue>(`/api/issues/${id}`);
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   const newIssue: NewIssue = {
     title: "",
     description: "",
+    tags: [],
   };
 
   watch(
@@ -94,7 +95,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         issue.value = { ...newIssue };
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   return {
