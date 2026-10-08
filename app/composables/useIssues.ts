@@ -76,10 +76,9 @@ export const useIssues = defineStore("issues", () => {
   });
 
   // any changes to the selected issue should be reflected in this store
-  // this serves as a preview while making changes
   const { issue } = storeToRefs(useSelectedIssue());
   const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
-    if (!isExistingIssue(issue)) return;
+    if (!issue) return;
 
     const existingIndex = issues.value.findIndex(
       (i) =>
