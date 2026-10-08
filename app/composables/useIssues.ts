@@ -84,7 +84,7 @@ export function useIssues(options?: { fields?: string }) {
     // any changes to the selected issue should be reflected in this store
     const { issue } = storeToRefs(useSelectedIssue());
     const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
-      if (!isExistingIssue(issue)) return;
+      if (!issue) return;
 
       const existingIndex = issues.value.findIndex(
         (i) =>
