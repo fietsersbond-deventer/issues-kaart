@@ -5,7 +5,12 @@
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
       <CategoryChip :legend="issue.legend" />
 
-      <Tag v-for="tag in issue.tags" :key="tag" :tag="getTag(tag)" />
+      <Tag
+        v-for="tag in issue.tags"
+        :key="tag"
+        :tag="getTag(tag)"
+        @click.stop="setTag(tag)"
+      />
     </div>
 
     <ImageViewer>
@@ -22,6 +27,8 @@
 
 <script setup lang="ts">
 import type { Issue } from "~~/shared/types/Issue";
+
+const { setTag } = useTagFilters();
 
 const props = defineProps<{
   issue: Issue;
