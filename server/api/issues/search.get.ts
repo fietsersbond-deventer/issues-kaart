@@ -1,5 +1,6 @@
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getTagsForIssueIds } from "~~/server/utils/issueTags";
 import { getMatch } from "~~/app/utils/getMatch";
 import { parseSearchTerms } from "~~/app/utils/parseSearchTerms";
 
@@ -80,17 +81,24 @@ export default defineEventHandler(async (event) => {
 
   const searchTerms = parseSearchTerms(search);
 
-  // Every term must match at least one of title/plain_text/legend name (matches previous OR-of-terms behaviour).
+  // A term matches title, plain_text, legend name or the label, slug or description of one of the issue's tags; terms are OR-ed.
   const searchConditions = searchTerms.map(
     () =>
-      "(i.title LIKE ? ESCAPE '\\' COLLATE NOCASE OR i.plain_text LIKE ? ESCAPE '\\' COLLATE NOCASE OR l.name LIKE ? ESCAPE '\\' COLLATE NOCASE)",
+      `(i.title LIKE ? ESCAPE '\\' COLLATE NOCASE OR i.plain_text LIKE ? ESCAPE '\\' COLLATE NOCASE OR l.name LIKE ? ESCAPE '\\' COLLATE NOCASE OR EXISTS (
+        SELECT 1 FROM issue_tags it JOIN tags t ON t.tag = it.tag
+        WHERE it.issue_id = i.id AND (
+          t.description LIKE ? ESCAPE '\\' COLLATE NOCASE
+          OR t.label LIKE ? ESCAPE '\\' COLLATE NOCASE
+          OR t.tag LIKE ? ESCAPE '\\' COLLATE NOCASE
+        )
+      ))`,
   );
   const whereClause = searchConditions.length
     ? `WHERE ${searchConditions.join(" OR ")}`
     : "";
   const likeParams = searchTerms.flatMap((term) => {
     const pattern = `%${escapeLikePattern(term)}%`;
-    return [pattern, pattern, pattern];
+    return [pattern, pattern, pattern, pattern, pattern, pattern];
   });
 
   const countRow = db
@@ -115,6 +123,11 @@ export default defineEventHandler(async (event) => {
     .prepare(sqlStatement)
     .all(...likeParams, itemsPerPage, offset);
 
+  const tagsByIssueId = getTagsForIssueIds(
+    db,
+    rows.map((row) => row.id as number),
+  );
+
   const items = rows.map((issue) => {
     const { description, plain_text, legend_name, ...issueFields } = issue;
     const plainTextDescription =
@@ -122,6 +135,7 @@ export default defineEventHandler(async (event) => {
 
     const result: Record<string, unknown> = {
       ...issueFields,
+      tags: tagsByIssueId.get(issue.id as number) ?? [],
       snippets: searchTerms
         .map((term) => getMatch(plainTextDescription, term, 5))
         .filter((snippet): snippet is string => Boolean(snippet)),

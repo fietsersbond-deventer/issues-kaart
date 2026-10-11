@@ -32,7 +32,10 @@
           </template>
 
           <template #item.legend="{ item }">
-            <category-chip v-if="item.legend" :legend="item.legend" />
+            <div class="legend-grid">
+              <category-chip v-if="item.legend" :legend="item.legend" />
+              <Tag v-for="tag in item.tags" :key="tag" :tag="getTag(tag)" />
+            </div>
           </template>
 
           <template #item.title="{ item }">
@@ -79,6 +82,7 @@ import type { Legend } from '~~/shared/types/Legend';
 useTitle("Onderwerpen");
 
 const isPrinting = useMediaQuery('print')
+const {getTag} = useTagsApi()
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -99,6 +103,7 @@ type SearchIssue = {
   imageUrl: string | null;
   snippets: string[];
   legend?: Legend;
+  tags: string[]
 };
 
 type SearchResponse = {
@@ -156,8 +161,8 @@ const headers = computed(() => {
   return [
     { title: "", value: "imageUrl", sortable: false },
     { title: "Titel", value: "title", sortable: true, width: "40%" },
-    { title: "Categorie", value: "legend", sortable: true },
-    { title: "Gevonden tekst", value: "snippets", sortable: false, width: "20%" },
+    { title: "", value: "legend", sortable: false },
+    { title: "", value: "snippets", sortable: false, width: "20%" },
   ];
 });
 
@@ -188,6 +193,13 @@ const headers = computed(() => {
   display: block;
   margin: 0.5rem auto 0.5rem auto;
   text-align: center;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, max-content));
+  gap: 6px;
+  padding: 4px 0;
 }
 
 </style>
