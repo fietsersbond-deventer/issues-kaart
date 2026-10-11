@@ -13,7 +13,8 @@
       />
     </div>
 
-    <ImageViewer>
+    <!-- Street View-voorvertoningen openen geen lightbox: die laden via useStreetViewEmbeds.ts -->
+    <ImageViewer selector="img:not(.streetview-embed img)">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div
         ref="descriptionRef"
@@ -84,6 +85,18 @@ onMounted(() => {
     activateStreetViewEmbeds(descriptionRef.value);
   }
 });
+
+// v-html zet bij een andere omschrijving (ander issue) verse DOM neer zonder overlay-knoppen.
+// flush: "post" zodat de nieuwe HTML al in de DOM staat.
+watch(
+  () => props.issue.description,
+  () => {
+    if (descriptionRef.value) {
+      activateStreetViewEmbeds(descriptionRef.value);
+    }
+  },
+  { flush: "post" },
+);
 </script>
 <style>
 /* Wrapper-element voor een streetview-embed: bevat afwisselend de statische

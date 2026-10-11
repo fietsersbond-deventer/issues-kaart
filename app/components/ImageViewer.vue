@@ -15,6 +15,11 @@
 </template>
 
 <script setup lang="ts">
+const { selector = "img" } = defineProps<{
+  /** CSS-selector voor de afbeeldingen die de lightbox openen. */
+  selector?: string;
+}>();
+
 const showImageDialog = ref(false);
 const selectedImage = ref<string | null>(null);
 const imageDialogWidth = ref<string>("90%");
@@ -24,14 +29,11 @@ const { mobile } = useDisplay();
 function handleImageClick(event: MouseEvent) {
   const target = event.target as HTMLElement;
   if (
-    target.tagName === "IMG" &&
+    target instanceof HTMLImageElement &&
     !mobile.value &&
-    // Voorkomt dat een klik op de statische Street View-voorvertoning de
-    // gewone afbeelding-lightbox opent i.p.v. (of naast) het "klik om te
-    // laden"-gedrag uit useStreetViewEmbeds.ts.
-    !target.closest(".streetview-embed")
+    target.matches(selector)
   ) {
-    const img = target as HTMLImageElement;
+    const img = target;
     selectedImage.value = img.src;
 
     // Get image dimensions to adjust dialog size

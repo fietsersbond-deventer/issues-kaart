@@ -63,7 +63,13 @@ export function useStreetViewEmbeds() {
 
     const embed = target.closest<HTMLElement>(".streetview-embed");
     const embedSrc = embed?.dataset.embedSrc;
-    if (!embed || !embedSrc || embed.dataset.loaded === "true") {
+    // Zonder overlay (data-enhanced) is er nog geen bewuste klik op de knop mogelijk.
+    if (
+      !embed ||
+      !embedSrc ||
+      embed.dataset.enhanced !== "true" ||
+      embed.dataset.loaded === "true"
+    ) {
       // Geen (geldige) streetview-embed geraakt, of al geladen: niets doen.
       return;
     }
