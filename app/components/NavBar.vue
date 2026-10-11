@@ -11,6 +11,20 @@
       <div class="header-link ml-3">{{ headerText }}</div>
     </NuxtLink>
     <v-spacer />
+    <v-btn
+      v-tooltip:top="'Kaart'"
+      to="/kaart"
+      variant="text"
+      aria-label="Ga naar kaart"
+      icon="mdi-map"
+    />
+    <v-btn
+      v-tooltip:top="'Lijst'"
+      to="/lijst"
+      variant="text"
+      aria-label="Ga naar lijst"
+      icon="mdi-list-box-outline"
+    />
 
     <!-- Show online users when authenticated -->
     <template v-if="status === 'authenticated'">
@@ -38,20 +52,6 @@
       />
     </template>
     <template v-else>
-      <v-btn
-        v-tooltip:top="'Kaart'"
-        to="/kaart"
-        variant="text"
-        aria-label="Ga naar kaart"
-        icon="mdi-map"
-      />
-      <v-btn
-        v-tooltip:top="'Lijst'"
-        to="/lijst"
-        variant="text"
-        aria-label="Ga naar lijst"
-        icon="mdi-list-box-outline"
-      />
       <v-btn
         v-if="websiteUrl"
         v-tooltip:top="'Afdeling'"
@@ -138,8 +138,7 @@ a.v-btn {
   background-size: cover;
   z-index: 0;
   opacity: 0;
-  animation: ellipse-drop 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.4s
-    forwards;
+  animation: ellipse-drop 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.4s forwards;
 }
 
 @keyframes ellipse-drop {
