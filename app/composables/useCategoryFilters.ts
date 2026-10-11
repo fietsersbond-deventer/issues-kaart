@@ -46,12 +46,12 @@ export const useCategoryFilters = defineStore("categoryFilters", () => {
   function toggleCategoryVisibility(categoryId: number) {
     if (isShowingAllCategories.value) {
       // First click: show only this category
-      return syncWithQuery(new Set([categoryId]));
+      return updateQuery(new Set([categoryId]));
     }
     const newSelection = new Set(selectedCategoryIds.value);
     if (newSelection.has(categoryId)) newSelection.delete(categoryId);
     else newSelection.add(categoryId);
-    return syncWithQuery(newSelection);
+    return updateQuery(newSelection);
   }
 
   /**
@@ -64,11 +64,11 @@ export const useCategoryFilters = defineStore("categoryFilters", () => {
   /**
    * Reset to show-all mode
    */
-  function showAllCategories(updateUrl = true) {
-    if (updateUrl) return syncWithQuery(new Set());
+  function showAllCategories() {
+    return updateQuery(new Set([]));
   }
 
-  async function syncWithQuery(ids: Set<number>) {
+  async function updateQuery(ids: Set<number>) {
     const query = { ...route.query };
 
     if (ids.size > 0 && ids.size !== usedCategoryIds.value.size) {

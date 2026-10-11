@@ -48,9 +48,8 @@ export const useTagFilters = defineStore("tagFilters", () => {
     return updateQuery();
   }
 
-  function clearTags(updateUrl = true) {
+  function clearTags() {
     selectedTags.value = [];
-    if (!updateUrl) return;
     return updateQuery();
   }
 

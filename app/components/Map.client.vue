@@ -13,6 +13,8 @@
       </MapControlContainer>
     </slot>
 
+    <MapFilterSummary />
+
     <!-- Bottom-left corner controls -->
     <slot name="bottom-left-controls" :is-small="isMapSmall">
       <MapControlContainer v-show="!isMapSmall" position="bottom-left">
@@ -81,11 +83,7 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -269,7 +267,7 @@ function moveToIssues() {
   }
 }
 
-const debouncedMoveToIssues = useDebounceFn(moveToIssues);
+const debouncedMoveToIssues = useDebounceFn(moveToIssues, 100);
 
 watch([selectedIssues, selectedIssue], () => {
   debouncedMoveToIssues();
