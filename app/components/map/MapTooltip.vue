@@ -8,6 +8,7 @@
       <div class="tooltip">
         <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
         <span class="tooltip-title">{{ tooltipContent }}</span>
+        <Tag v-for="tag in tags" :tag="tag" class="mt-2" />
       </div>
     </ol-overlay>
   </div>
@@ -28,6 +29,19 @@ const map: OlMap | undefined = inject("map");
 const tooltipContent = ref<string | null>(null);
 const tooltipImage = ref<string | null>(null);
 const tooltipPosition = ref<number[]>([0, 0]);
+const tags = ref<Tag[]>([]);
+
+const { getTag } = useTagsApi();
+
+function slugsToTags(slugs: string[]) {
+  tags.value = [];
+  for (const slug of slugs) {
+    const tag = getTag(slug);
+    if (tag) {
+      tags.value.push(tag);
+    }
+  }
+}
 
 let pointerListener: ((evt: MapBrowserEvent<PointerEvent>) => void) | null =
   null;
@@ -50,6 +64,7 @@ onMounted(() => {
 
       tooltipContent.value = properties.title || "Geen titel";
       tooltipImage.value = properties.imageUrl || null;
+      slugsToTags(properties.tags);
 
       map.getTargetElement().style.cursor = "pointer";
       // Always position above pointer
@@ -80,7 +95,9 @@ onUnmounted(() => {
   background-color: white;
   padding: 0.5rem;
   border-radius: 0.375rem; /* rounded */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
   border: 1px solid #d1d5db; /* gray-300 */
   white-space: normal;
   max-width: 12em;
