@@ -29,7 +29,7 @@ export const useCategoryFilters = defineStore("categoryFilters", () => {
     return new Set(queried).intersection(usedCategoryIds.value);
   });
 
-  const isShowingAll = computed(() => {
+  const isShowingAllCategories = computed(() => {
     const used = usedCategoryIds.value;
     const selected = selectedCategoryIds.value;
     return (
@@ -39,12 +39,12 @@ export const useCategoryFilters = defineStore("categoryFilters", () => {
 
   // which id's should be visible in the map?
   const visibleCategoryIds: Ref<Set<number>> = computed(() => {
-    if (isShowingAll.value) return usedCategoryIds.value;
+    if (isShowingAllCategories.value) return usedCategoryIds.value;
     return selectedCategoryIds.value;
   });
 
   function toggleCategoryVisibility(categoryId: number) {
-    if (isShowingAll.value) {
+    if (isShowingAllCategories.value) {
       // First click: show only this category
       return syncWithQuery(new Set([categoryId]));
     }
@@ -89,7 +89,7 @@ export const useCategoryFilters = defineStore("categoryFilters", () => {
   return {
     usedCategories,
     visibleCategoryIds,
-    isShowingAll,
+    isShowingAllCategories,
     toggleCategoryVisibility,
     isCategoryVisible,
     showAllCategories,

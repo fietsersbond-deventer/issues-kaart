@@ -4,7 +4,7 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view ref="view" :center="center" :projection="projection" />
+    <ol-view ref="view" :projection="projection" />
 
     <!-- Top-left corner controls -->
     <slot name="top-left-controls">
@@ -160,30 +160,10 @@ interface Size {
 // Use lightweight map issues for rendering (only essential fields)
 const { issues: allIssues } = storeToRefs(useIssues());
 
-const { selectedTags } = storeToRefs(useTagFilters());
-
-const { visibleCategoryIds, isShowingAll } = storeToRefs(useCategoryFilters());
-
-const issues = computed(() => {
-  return (
-    allIssues.value?.filter((issue) => {
-      // no filtering set: show all
-      if (isShowingAll.value && !selectedTags.value.length) {
-        return true;
-      }
-      if (selectedTags.value.length) {
-        // tags should all match: AND
-        if (!selectedTags.value.every((tag) => issue.tags.includes(tag))) {
-          return false;
-        }
-      }
-
-      return visibleCategoryIds.value?.has(issue.legend_id);
-    }) ?? []
-  );
-});
-
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
+const { selectedIssues } = useSelectedIssues();
+const { isShowingAllCategories } = storeToRefs(useCategoryFilters());
+
 function isSelected(issue: MapIssue) {
   return issue.id === selectedId.value;
 }
@@ -250,8 +230,8 @@ function updatePadding(controlsSize: Size) {
   currentPadding.value = [
     50, // top
     50, // right
-    controlsSize.height + 20, // bottom
-    50, // left
+    50, // controlsSize.height + 20, // bottom
+    controlsSize.width + 20,
   ];
 }
 
@@ -261,16 +241,23 @@ const mapRef = useTemplateRef("mapRef");
 const { mobile } = useDisplay();
 
 // Initialize bbox composable with mapRef
-const { bbox: issuesBbox } = useIssuesBbox(issues, mapRef);
+const { bbox: issuesBbox } = useIssuesBbox(selectedIssues, mapRef);
+
+const selectedIssueIsVisible = computed(() => {
+  // is the selectedIssue in the selectedIssues?
+  if (!selectedIssue.value || !selectedIssues.value) return false;
+  return selectedIssues.value.find(
+    (issue) => issue.id === selectedIssue.value!.id,
+  );
+});
 
 function moveToIssues() {
-  // console.debug({
-  //   selectedIssue: selectedIssue.value,
-  //   allIssues: allIssues.value?.length,
-  // });
   if (allIssues.value.length > 0) {
-    // If there's a selected issue with geometry, zoom to it
-    if (selectedIssue.value?.geometry) {
+    if (
+      isShowingAllCategories.value &&
+      selectedIssue.value?.geometry &&
+      selectedIssueIsVisible.value
+    ) {
       recenterOnSelectedIssue();
     } else {
       // Otherwise, fit all issues (including filtered ones for initial view)
@@ -283,25 +270,9 @@ function moveToIssues() {
 
 const debouncedMoveToIssues = useDebounceFn(moveToIssues);
 
-watch([allIssues, selectedIssue], () => {
+watch([selectedIssues, selectedIssue], () => {
   debouncedMoveToIssues();
 });
-
-// Watch for legend filter changes and zoom to visible issues
-watch(
-  visibleCategoryIds,
-  () => {
-    // If we're back to show-all mode and there's a selected issue, zoom to it
-    if (isShowingAll.value && selectedId.value) {
-      recenterOnSelectedIssue();
-    } else if (issuesBbox?.value) {
-      setBbox(issuesBbox.value as BBox, {
-        padding: [50, 50, 50, 50],
-      });
-    }
-  },
-  { deep: true },
-);
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {
@@ -343,7 +314,7 @@ const isMapSmall = computed(() => {
 function style(feature: Feature) {
   const properties = feature.getProperties();
   const issueId = properties.id;
-  const issue = issues.value?.find((i) => i.id === issueId);
+  const issue = selectedIssues.value?.find((i) => i.id === issueId);
   if (!issue) return;
 
   // Provide default color if none specified (for backward compatibility)
@@ -483,7 +454,7 @@ function style(feature: Feature) {
         width: 2,
       }),
       fill: new Fill({
-        color: getPolygonFillColor(issue as MapIssue),
+        color: getPolygonFillColor(issue as MapIssue).toString(),
       }),
       zIndex,
     });
@@ -500,15 +471,21 @@ const rdProjection = new Projection({
 });
 
 const markers = computed(() => {
-  return issues.value.filter((issue) => issue.geometry?.type === "Point");
+  return selectedIssues.value.filter(
+    (issue) => issue.geometry?.type === "Point",
+  );
 });
 
 const polygons = computed(() => {
-  return issues.value.filter((issue) => issue.geometry?.type === "Polygon");
+  return selectedIssues.value.filter(
+    (issue) => issue.geometry?.type === "Polygon",
+  );
 });
 
 const lines = computed(() => {
-  return issues.value.filter((issue) => issue.geometry?.type === "LineString");
+  return selectedIssues.value.filter(
+    (issue) => issue.geometry?.type === "LineString",
+  );
 });
 
 function toPointCoords(issue: MapIssue) {
@@ -581,12 +558,12 @@ function onModifyEnd(event: ModifyEvent) {
 
   // ALSO update the geometry in the issues array (which the map renders from)
   // This prevents the map from reverting to the old geometry
-  const issueIndex = issues.value.findIndex(
+  const issueIndex = selectedIssues.value.findIndex(
     (i) => "id" in i && i.id === selectedId.value,
   );
   if (issueIndex !== -1) {
     // @ts-expect-error - geometry type is complex
-    issues.value[issueIndex].geometry = geoJSON.geometry;
+    selectedIssues.value[issueIndex].geometry = geoJSON.geometry;
   }
 }
 
