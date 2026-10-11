@@ -1,12 +1,14 @@
 <template>
-  <v-btn v-if="hasActiveFilters" class="map-filter-summary" @click="resetFilters">
-    <span
-      ><b>{{ count }}</b> plek{{ count !== 1 ? "ken" : "" }} op de kaart</span
-    >
+  <v-fade-transition>
+    <v-btn v-if="hasActiveFilters" class="map-filter-summary" @click="resetFilters">
+      <span
+        ><b>{{ count }}</b> plek{{ count !== 1 ? "ken" : "" }} op de kaart</span
+      >
 
-    <v-tooltip text="Toon alles" location="top" activator="parent" />
-    <v-icon icon="mdi-restore" aria-label="Toon alles" class="ml-2" />
-  </v-btn>
+      <v-tooltip text="Toon alles" location="top" activator="parent" />
+      <v-icon icon="mdi-restore" aria-label="Toon alles" class="ml-2" />
+    </v-btn>
+  </v-fade-transition>
 </template>
 
 <script setup lang="ts">
