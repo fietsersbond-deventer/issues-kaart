@@ -196,7 +196,7 @@ const legendSize = ref<Size>({ width: 0, height: 0 });
 // Update padding when size changes
 watch(legendSize, async () => {
   currentPadding.value = [
-    50, // top
+    100, // top
     50, // right
     50, // legendSize.value.height + 20, // bottom
     legendSize.value.width + 20, // left
@@ -227,7 +227,7 @@ function resetToOriginalExtent() {
 
 function updatePadding(controlsSize: Size) {
   currentPadding.value = [
-    50, // top
+    100, // top
     50, // right
     50, // controlsSize.height + 20, // bottom
     controlsSize.width + 20,
