@@ -11,11 +11,7 @@
     <tbody>
       <tr v-for="item in legends" :key="item.id">
         <td>
-          <LegendIndicator
-            :key="item.id"
-            :legend="item"
-            :size="24"
-          />
+          <LegendIndicator :key="item.id" :legend="item" :size="24" />
         </td>
         <td>{{ item.name }}</td>
         <td>{{ item.description }}</td>
@@ -46,7 +42,7 @@
 
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
-import type { LegendUsage } from "~/composables/useLegends";
+import type { LegendUsage } from "~/composables/useCategories";
 
 const props = defineProps<{
   legends: Legend[];

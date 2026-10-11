@@ -8,7 +8,7 @@ export type LegendUsage = Record<
   }
 >;
 
-export const useLegends = defineStore("categories", () => {
+export const useCategories = defineStore("categories", () => {
   const { token } = useAuth();
 
   const headers = computed(() => ({
@@ -17,10 +17,7 @@ export const useLegends = defineStore("categories", () => {
   }));
 
   // Use manual refresh approach for better reactivity control
-  const { data: legends, refresh: refreshLegends } = useFetch<Legend[]>(
-    "/api/legends",
-    {}
-  );
+  const { data: categories, refresh } = useFetch<Legend[]>("/api/legends", {});
 
   async function getUsage() {
     const result = await $fetch<
@@ -53,7 +50,7 @@ export const useLegends = defineStore("categories", () => {
     });
 
     // Refresh the data from server to ensure UI updates
-    await refreshLegends();
+    refresh();
 
     return result;
   }
@@ -64,16 +61,15 @@ export const useLegends = defineStore("categories", () => {
       headers: headers.value,
     });
 
-    // Refresh the data from server to ensure UI updates
     if (result.success) {
-      await refreshLegends();
+      await refresh();
     }
 
     return result;
   }
 
   return {
-    legends,
+    categories,
     getUsage,
     create,
     update,

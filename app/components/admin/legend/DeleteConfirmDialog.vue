@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
-import type { LegendUsage } from "~/composables/useLegends";
+import type { LegendUsage } from "~/composables/useCategories";
 
 const modelValue = defineModel<boolean>("modelValue");
 

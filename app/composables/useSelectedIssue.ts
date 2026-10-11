@@ -12,15 +12,15 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   // Use shared WebSocket to receive updates for the selected issue
   const ws = useSharedIssuesWebSocket();
 
-  // Access legends store to enrich issues with legend info
-  const { legends } = storeToRefs(useLegends());
+  // Access categories store to enrich issues with legend info
+  const { categories } = storeToRefs(useCategories());
 
   /**
-   * Enriches an issue with legend from the legends store
+   * Enriches an issue with legend from the categories store
    */
   function enrichIssueWithLegend(issueData: ExistingIssue): ExistingIssue {
-    if (issueData.legend_id && legends.value) {
-      const legend = legends.value.find((l) => l.id === issueData.legend_id);
+    if (issueData.legend_id && categories.value) {
+      const legend = categories.value.find((l) => l.id === issueData.legend_id);
       if (legend) {
         return {
           ...issueData,
@@ -43,7 +43,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         updatedIssue.geometry = JSON.parse(updatedIssue.geometry);
       }
 
-      // Enrich with legend info from legends store
+      // Enrich with legend info from categories store
       updatedIssue = enrichIssueWithLegend(updatedIssue);
 
       // Only update if this is the issue we're viewing

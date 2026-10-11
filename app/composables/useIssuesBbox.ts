@@ -4,7 +4,6 @@ import { featureCollection } from "@turf/helpers";
 import type { BBox } from "geojson";
 import { fromLonLat, toLonLat } from "ol/proj";
 import type { Map, Map as OLMap } from "ol";
-import type { Size } from "ol/size";
 
 /**
  * Calculate bounding box from center coordinates and zoom level
