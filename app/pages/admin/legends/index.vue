@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import type { Legend as DbLegend } from "~~/server/database/schema";
 import type { Legend } from "~~/shared/types/Legend";
-import type { LegendUsage } from "~/composables/useLegends";
+import type { LegendUsage } from "~/composables/useCategories";
 
 definePageMeta({
   middleware: ["sidebase-auth"],
@@ -43,7 +43,7 @@ definePageMeta({
 
 useTitle("Categorieën");
 
-const legendsStore = useLegends();
+const legendsStore = useCategories();
 const { getUsage, create, update, remove } = legendsStore;
 const { legends } = storeToRefs(legendsStore);
 const legendUsage = ref<LegendUsage>({});

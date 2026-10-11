@@ -2,17 +2,17 @@
   <div class="legend-container">
     <v-table class="legend-list pa-2">
       <tr
-        v-for="item in visibleLegends"
+        v-for="item in usedCategories"
         :key="item.id"
         class="legend-item clickable"
-        :class="{ 'legend-item--disabled': !isLegendVisible(item.id) }"
+        :class="{ 'legend-item--disabled': !isCategoryVisible(item.id) }"
         density="compact"
         tabindex="0"
         role="checkbox"
-        :aria-checked="isLegendVisible(item.id)"
-        @click="toggleLegendVisibility(item.id)"
-        @keydown.enter.prevent="toggleLegendVisibility(item.id)"
-        @keydown.space.prevent="toggleLegendVisibility(item.id)"
+        :aria-checked="isCategoryVisible(item.id)"
+        @click="toggleCategoryVisibility(item.id)"
+        @keydown.enter.prevent="toggleCategoryVisibility(item.id)"
+        @keydown.space.prevent="toggleCategoryVisibility(item.id)"
       >
         <td>
           <LegendIndicator :legend="item" :size="24" />
@@ -43,21 +43,9 @@
 </template>
 
 <script setup lang="ts">
-const { legends } = storeToRefs(useLegends());
-const { toggleLegendVisibility, isLegendVisible } = useLegendFilters();
-
-// Only need legend_id to determine which legends are visible
-const { issues } = storeToRefs(useIssues({ fields: "id,legend_id" }));
-
-// Only show legends that are actually used in the map
-const visibleLegends = computed(() => {
-  const usedLegendIds = new Set(
-    issues.value
-      ?.map((issue) => issue.legend_id)
-      .filter((id): id is number => id != null) || [],
-  );
-  return legends.value?.filter((legend) => usedLegendIds.has(legend.id)) ?? [];
-});
+const { toggleCategoryVisibility, isCategoryVisible } = useCategoryFilters();
+const { usedCategories } = storeToRefs(useCategoryFilters());
+const { issues } = storeToRefs(useIssues());
 
 const countIssues = computed(() => {
   const counts: Record<number, number> = {};

@@ -15,7 +15,6 @@ export const useTagsApi = () => {
 
   const { data: tags, refresh: refreshTags } = useFetch<Tag[]>("/api/tags", {
     default: () => [],
-    headers: headers.value,
   });
 
   const list = computed(() => tags.value.map((tag) => tag.tag));

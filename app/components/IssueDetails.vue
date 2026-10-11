@@ -9,7 +9,7 @@
         v-for="tag in issue.tags"
         :key="tag"
         :tag="getTag(tag)"
-        @click.stop="setTag(tag)"
+        @click.stop="toggleTag(tag)"
       />
     </div>
 
@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import type { Issue } from "~~/shared/types/Issue";
 
-const { setTag } = useTagFilters();
+const { toggleTag } = useTagFilters();
 
 const props = defineProps<{
   issue: Issue;

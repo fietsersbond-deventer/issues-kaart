@@ -166,9 +166,7 @@ definePageMeta({
 const isPrinting = useMediaQuery('print')
 
 // Use lightweight issues for admin list (only id, title, legend_id, created_at)
-const issuesStore = useIssues({
-  fields: "id,title,legend_id,created_at,imageUrl",
-});
+const issuesStore = useIssues();
 const { remove, update } = issuesStore;
 const { issues } = storeToRefs(issuesStore);
 

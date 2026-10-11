@@ -81,7 +81,11 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -154,32 +158,27 @@ interface Size {
 }
 
 // Use lightweight map issues for rendering (only essential fields)
-const { issues: allIssues } = storeToRefs(
-  useIssues({ fields: "id,title,legend_id,geometry,imageUrl,tags" as const }),
-);
+const { issues: allIssues } = storeToRefs(useIssues());
 
-const route = useRoute();
-const activeTag = computed(() => {
-  return route.path.startsWith("/kaart/tag/") &&
-    typeof route.params.tag === "string"
-    ? route.params.tag
-    : null;
-});
+const { selectedTags } = storeToRefs(useTagFilters());
 
-// Filter issues based on legend visibility
-const { visibleLegendIds, isShowingAll } = storeToRefs(useLegendFilters());
+const { visibleCategoryIds, isShowingAll } = storeToRefs(useCategoryFilters());
 
 const issues = computed(() => {
   return (
     allIssues.value?.filter((issue) => {
-      if (activeTag.value && !issue.tags?.includes(activeTag.value)) {
-        return false;
+      // no filtering set: show all
+      if (isShowingAll.value && !selectedTags.value.length) {
+        return true;
+      }
+      if (selectedTags.value.length) {
+        // tags should all match: AND
+        if (!selectedTags.value.every((tag) => issue.tags.includes(tag))) {
+          return false;
+        }
       }
 
-      // If issue has no legend_id, show it by default
-      if (!issue.legend_id) return true;
-      // Otherwise, check if the legend is visible
-      return visibleLegendIds.value.has(issue.legend_id);
+      return visibleCategoryIds.value?.has(issue.legend_id);
     }) ?? []
   );
 });
@@ -191,12 +190,6 @@ function isSelected(issue: MapIssue) {
 
 // Layer preference management
 const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
-
-function getPreview(url: string) {
-  return function () {
-    return [url];
-  };
-}
 
 /**
  * Returns the properties object for any OpenLayers feature, with type safety.
@@ -296,7 +289,7 @@ watch([allIssues, selectedIssue], () => {
 
 // Watch for legend filter changes and zoom to visible issues
 watch(
-  visibleLegendIds,
+  visibleCategoryIds,
   () => {
     // If we're back to show-all mode and there's a selected issue, zoom to it
     if (isShowingAll.value && selectedId.value) {
@@ -321,8 +314,7 @@ const isDrawing = computed(() => {
   return addFeature.value?.isDrawing || false;
 });
 
-const center = ref([687858.9021986299, 6846820.48790154]);
-const { zoom } = useMapView(mapRef);
+const { zoom, center } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes

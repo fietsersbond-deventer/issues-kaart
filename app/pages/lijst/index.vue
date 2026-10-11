@@ -139,11 +139,11 @@ const { data: searchResponse, pending } = await useFetch<SearchResponse>(
   { query, dedupe: "cancel" }
 );
 
-const { legends } = storeToRefs(useLegends());
+const { categories } = storeToRefs(useCategories());
 const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
-    legend: legends.value?.find((legend) => legend.id === issue.legend_id),
+    legend: categories.value?.find((legend) => legend.id === issue.legend_id),
   }))
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);

@@ -7,7 +7,7 @@ export const useTagFilters = defineStore("tagFilters", () => {
     if (typeof value !== "string") return [];
 
     return value
-      .split(/[+,]/)
+      .split(/[+,\s]/)
       .map((tag) => tag.trim())
       .filter(Boolean);
   }
