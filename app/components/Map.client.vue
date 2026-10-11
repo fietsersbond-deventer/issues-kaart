@@ -163,6 +163,7 @@ const { issues: allIssues } = storeToRefs(useIssues());
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 const { selectedIssues } = useSelectedIssues();
 const { isShowingAllCategories } = storeToRefs(useCategoryFilters());
+const route = useRoute();
 
 function isSelected(issue: MapIssue) {
   return issue.id === selectedId.value;
@@ -199,8 +200,8 @@ watch(legendSize, async () => {
   currentPadding.value = [
     50, // top
     50, // right
-    legendSize.value.height + 20, // bottom
-    50, // left
+    50, // legendSize.value.height + 20, // bottom
+    legendSize.value.width + 20, // left
   ];
 });
 
@@ -513,7 +514,8 @@ function getPolygonFillColor(issue: MapIssue) {
 }
 
 function navigateToIssue(issue: MapIssue) {
-  navigateTo(`/kaart/${issue.id}`);
+  const { query } = route;
+  navigateTo({ path: `/kaart/${issue.id}`, query });
 }
 
 // Fallback function to create a simple circle icon if icon_data_url is missing

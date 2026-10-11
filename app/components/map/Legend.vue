@@ -1,5 +1,5 @@
 <template>
-  <div class="legend-container">
+  <div class="legend-container pa-2">
     <v-table class="legend-list pa-2">
       <tr
         v-for="item in usedCategories"
@@ -34,8 +34,50 @@
             </template>
           </v-tooltip>
         </td>
-        <td class="ps-2 font-weight-thin">
+        <td class="ps-2 font-weight-thin text-right">
           {{ countIssues[item.id] }}
+        </td>
+      </tr>
+      <tr
+        v-for="tag in usedTags"
+        :key="`tag-${tag.tag}`"
+        class="legend-item clickable"
+        :class="{ 'legend-item--disabled': isTagDisabled(tag.tag) }"
+        density="compact"
+        tabindex="0"
+        role="checkbox"
+        :aria-checked="hasTag(tag.tag)"
+        :aria-disabled="isTagDisabled(tag.tag)"
+        @click="onTagClick(tag.tag)"
+        @keydown.enter.prevent="onTagClick(tag.tag)"
+        @keydown.space.prevent="onTagClick(tag.tag)"
+      >
+        <td colspan="2" class="py-1">
+          <!-- description is shown via the info icon, not Tag's own tooltip -->
+          <Tag
+            :tag="{ ...tag, description: null }"
+            :active="hasTag(tag.tag)"
+            class="w-100"
+          />
+        </td>
+        <td>
+          <v-tooltip
+            v-if="tag.description"
+            :text="tag.description"
+            location="top"
+          >
+            <template #activator="{ props }">
+              <v-icon
+                v-bind="props"
+                icon="mdi-information"
+                size="x-small"
+                color="grey"
+              />
+            </template>
+          </v-tooltip>
+        </td>
+        <td class="ps-2 font-weight-thin text-right">
+          {{ selectedIssuesTagCount[tag.tag] ?? 0 }}
         </td>
       </tr>
     </v-table>
@@ -46,10 +88,41 @@
 const { toggleCategoryVisibility, isCategoryVisible } = useCategoryFilters();
 const { usedCategories } = storeToRefs(useCategoryFilters());
 const { issues } = storeToRefs(useIssues());
+const { selectedIssues } = useSelectedIssues();
+const { hasTag, toggleTag } = useTagFilters();
+const { getTag } = useTagsApi();
+
+const selectedIssuesTagCount = computed(() => {
+  const counts: Record<string, number> = {};
+  for (const issue of selectedIssues.value) {
+    for (const tag of issue.tags ?? []) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  return counts;
+});
+
+// All tags that occur on any issue, so tags don't vanish while filtering.
+const usedTags = computed(() => {
+  const slugs = new Set<string>();
+  for (const issue of issues.value) {
+    for (const tag of issue.tags ?? []) slugs.add(tag);
+  }
+  return [...slugs].sort().map(getTag);
+});
+
+// An active tag stays clickable so it can always be deselected.
+function isTagDisabled(tag: string) {
+  return !selectedIssuesTagCount.value[tag] && !hasTag(tag);
+}
+
+function onTagClick(tag: string) {
+  if (!isTagDisabled(tag)) toggleTag(tag);
+}
 
 const countIssues = computed(() => {
   const counts: Record<number, number> = {};
-  issues.value.forEach((issue) => {
+  selectedIssues.value.forEach((issue) => {
     counts[issue.legend_id] = (counts[issue.legend_id] ?? 0) + 1;
   });
 
@@ -96,6 +169,10 @@ const countIssues = computed(() => {
 
 .legend-item--disabled {
   opacity: 0.4;
+}
+
+.legend-item[aria-disabled="true"] {
+  pointer-events: none;
 }
 
 .legend-item--disabled:hover {
