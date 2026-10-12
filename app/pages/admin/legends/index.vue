@@ -12,7 +12,7 @@
     <v-row>
       <v-col cols="12">
         <AdminLegendTable
-          :legends="legends || []"
+          :legends="categories || []"
           :usage="legendUsage"
           @edit="editItem"
           @delete="confirmDelete"
@@ -43,9 +43,9 @@ definePageMeta({
 
 useTitle("Categorieën");
 
-const legendsStore = useCategories();
-const { getUsage, create, update, remove } = legendsStore;
-const { legends } = storeToRefs(legendsStore);
+const categoriesStore = useCategories();
+const { getUsage, create, update, remove } = categoriesStore;
+const { categories } = storeToRefs(categoriesStore);
 const legendUsage = ref<LegendUsage>({});
 const dialog = ref(false);
 const dialogDelete = ref(false);
@@ -73,8 +73,8 @@ async function deleteItem() {
 
   try {
     await remove(itemToDelete.value.id);
-    if (legends.value) {
-      legends.value = legends.value.filter(
+    if (categories.value) {
+      categories.value = categories.value.filter(
         (item) => item.id !== itemToDelete.value?.id,
       );
     }
@@ -101,8 +101,8 @@ async function save(
     } else {
       // Creating
       const newItem = await create(legendItem);
-      if (legends.value) {
-        legends.value.push(newItem);
+      if (categories.value) {
+        categories.value.push(newItem);
       }
     }
     dialog.value = false;
