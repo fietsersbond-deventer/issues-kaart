@@ -40,7 +40,7 @@
 
           <template #item.title="{ item }">
             <b v-html="emphasizeFilter(item.title)" />
-            <div v-html="emphasizeFilter(item.snippets.join(' '))" />
+            <div v-for="snippet in item.snippets" :key="snippet" v-html="emphasizeFilter(snippet)" />
           </template>
 
           <template #item.actions="{ item }">

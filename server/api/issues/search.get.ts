@@ -1,7 +1,7 @@
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueIds } from "~~/server/utils/issueTags";
-import { getMatch } from "~~/app/utils/getMatch";
+import { getMatches } from "~~/app/utils/getMatch";
 import { parseSearchTerms } from "~~/app/utils/parseSearchTerms";
 
 // Escape LIKE wildcards so search terms are matched literally.
@@ -136,9 +136,9 @@ export default defineEventHandler(async (event) => {
     const result: Record<string, unknown> = {
       ...issueFields,
       tags: tagsByIssueId.get(issue.id as number) ?? [],
-      snippets: searchTerms
-        .map((term) => getMatch(plainTextDescription, term, 5))
-        .filter((snippet): snippet is string => Boolean(snippet)),
+      snippets: searchTerms.flatMap((term) =>
+        getMatches(plainTextDescription, term, 5),
+      ),
     };
 
     // Add imageUrl if requested (returns URL path, not actual data)
