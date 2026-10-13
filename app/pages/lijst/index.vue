@@ -39,8 +39,13 @@
           </template>
 
           <template #item.title="{ item }">
-            <b v-html="emphasizeFilter(item.title)" />
-            <div v-for="snippet in item.snippets" :key="snippet" v-html="emphasizeFilter(snippet)" />
+            <template v-if="item.snippets?.length">
+              <b v-html="emphasizeFilter(item.title)" />
+              <div v-for="snippet in item.snippets" :key="snippet" v-html="emphasizeFilter(snippet)" />
+            </template>
+            <template v-else>
+              <span v-html="emphasizeFilter(item.title)" />
+            </template>
           </template>
 
           <template #item.actions="{ item }">
