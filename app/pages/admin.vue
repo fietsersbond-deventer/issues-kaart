@@ -1,16 +1,24 @@
 <template>
   <v-layout>
-    <v-navigation-drawer v-if="!isPrinting" permanent class="noprint" :width="256">
+    <v-navigation-drawer
+      v-if="!isPrinting"
+      permanent
+      class="noprint"
+      :width="256"
+    >
       <v-list>
         <v-list-item
-          prepend-icon="mdi-file-document"
-          title="Onderwerpen"
-          to="/admin/issues"
+          prepend-icon="mdi-palette"
+          title="Categorieën"
+          to="/admin/legends"
         />
-        <v-list-item prepend-icon="mdi-palette" title="Categorieën" to="/admin/legends" />
         <v-list-item prepend-icon="mdi-tag" title="Tags" to="/admin/tags" />
 
-        <v-list-item prepend-icon="mdi-text" title="Teksten" to="/admin/texts" />
+        <v-list-item
+          prepend-icon="mdi-text"
+          title="Teksten"
+          to="/admin/texts"
+        />
       </v-list>
       <v-list>
         <v-list-item
@@ -40,7 +48,7 @@ definePageMeta({
     "sidebase-auth",
     function (to) {
       if (to.path === "/admin") {
-        return "/admin/issues";
+        return "/admin/legends";
       }
     },
   ],
