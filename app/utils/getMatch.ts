@@ -11,7 +11,11 @@ function snippetAround(
   var leftLimit = 0;
 
   // right trim index
-  for (rightLimit = index + termLength; whitespace < whitespaces; rightLimit++) {
+  for (
+    rightLimit = index + termLength;
+    whitespace < whitespaces;
+    rightLimit++
+  ) {
     if (rightLimit >= string.length) {
       break;
     }
@@ -52,7 +56,12 @@ export function getMatches(string: string, term: string, whitespaces = 4) {
     const index = lowerString.indexOf(lowerTerm, searchFrom);
     if (index < 0) break;
 
-    const { snippet, end } = snippetAround(string, index, term.length, whitespaces);
+    const { snippet, end } = snippetAround(
+      string,
+      index,
+      term.length,
+      whitespaces,
+    );
     snippets.push(snippet);
     searchFrom = Math.max(end, index + term.length);
   }
