@@ -39,13 +39,9 @@
           </template>
 
           <template #item.title="{ item }">
-            <span v-html="emphasizeFilter(item.title)" />
+            <b v-html="emphasizeFilter(item.title)" />
+            <div v-html="emphasizeFilter(item.snippets.join(' '))" />
           </template>
-
-          <template #item.snippets="{ item }">
-            <span v-html="emphasizeFilter(item.snippets.join(' '))" />
-          </template>
-
 
           <template #item.actions="{ item }">
             <div> 
@@ -159,10 +155,10 @@ function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
 
 const headers = computed(() => {
   return [
+    { title: "id", value: "id", sortable: true, width: "5%" },
     { title: "", value: "imageUrl", sortable: false },
-    { title: "Titel", value: "title", sortable: true, width: "40%" },
+    { title: "", value: "title", sortable: true },
     { title: "", value: "legend", sortable: false },
-    { title: "", value: "snippets", sortable: false, width: "20%" },
   ];
 });
 
