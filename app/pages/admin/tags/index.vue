@@ -20,7 +20,7 @@
         >
           <template #item.tag="{ item }">
             <div class="d-flex align-center ga-2">
-              <v-icon :icon="item.icon || 'mdi-tag-outline'" size="18" color="grey" />
+              <AppIcon :icon="item.icon || 'mdi-tag-outline'" size="18" color="grey" />
               <span>{{ item.tag }}</span>
             </div>
           </template>
@@ -100,7 +100,7 @@
               <v-col cols="12">
                 <div class="text-subtitle-2 mb-2">Icoon</div>
                 <div class="d-flex align-center ga-2">
-                  <v-icon :icon="form.icon || 'mdi-tag-outline'" size="24" color="grey" />
+                  <AppIcon :icon="form.icon || 'mdi-tag-outline'" size="24" color="grey" />
                   <span class="text-caption text-medium-emphasis">
                     {{ form.icon || "Geen icoon" }}
                   </span>

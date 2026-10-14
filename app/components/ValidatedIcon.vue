@@ -1,6 +1,7 @@
 <template>
+  <Icon v-if="isIconify" :name="icon" :size="size" />
   <v-icon
-    v-if="!showFallback"
+    v-else-if="!showFallback"
     ref="iconRef"
     :icon="iconName"
     @error="handleIconError"
@@ -23,7 +24,10 @@ const iconRef = ref();
 const showFallback = ref(false);
 const isValidated = ref(false);
 
+const isIconify = computed(() => props.icon.includes(":"));
+
 const iconName = computed(() => {
+  if (isIconify.value) return props.icon;
   // Ensure icon has mdi- prefix
   return props.icon.startsWith("mdi-") ? props.icon : `mdi-${props.icon}`;
 });
@@ -48,7 +52,7 @@ watch(
 );
 
 function validateIcon() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || isIconify.value) return;
 
   // Create a test element to check if the icon renders
   const testElement = document.createElement("i");

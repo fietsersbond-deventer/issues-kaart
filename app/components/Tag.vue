@@ -7,7 +7,7 @@
     class="tag-chip"
   >
     <template #prepend>
-      <v-icon :icon="iconName" size="16" class="mr-2" />
+      <AppIcon :icon="iconName" size="16" class="mr-2" />
     </template>
     {{ tag.label || tag.tag }}
     <template #append>
