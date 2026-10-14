@@ -1,25 +1,15 @@
 import { randomBytes } from "crypto";
-import * as postmark from "postmark";
 import { getDb } from "~~/server/utils/db";
 
-const POSTMARK_API_KEY = process.env.NUXT_POSTMARK_API_KEY;
 const APP_URL = process.env.NUXT_PUBLIC_APP_URL || "http://localhost:3000";
-const EMAIL_FROM = process.env.NUXT_EMAIL_FROM;
-if (!EMAIL_FROM) {
-  throw new Error("NUXT_EMAIL_FROM environment variable is required");
-}
-
-if (!POSTMARK_API_KEY) {
-  throw new Error("NUXT_POSTMARK_API_KEY environment variable is required");
-}
-
-const postmarkClient = new postmark.ServerClient(POSTMARK_API_KEY);
 
 function generateToken() {
   return randomBytes(32).toString("hex");
 }
 
 export default defineEventHandler(async (event) => {
+  const { sendMail } = useNodeMailer();
+
   const { email } = await readBody(event);
 
   if (!email) {
@@ -33,7 +23,7 @@ export default defineEventHandler(async (event) => {
 
   // Find user by email
   const user = db
-    .prepare("SELECT id, username FROM users WHERE username = ?")
+    .prepare("SELECT id, username, name FROM users WHERE username = ?")
     .get(email);
 
   // If no user found, return success to prevent email enumeration
@@ -46,20 +36,48 @@ export default defineEventHandler(async (event) => {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 1); // Token expires in 24 hours
 
+  // Remove old reset tokens for this user before storing the new one
+  db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(
+    user.id,
+  );
+
   // Store reset token
   db.prepare(
-    "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)"
+    "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
   ).run(user.id, token, expiresAt.toISOString());
 
-  // Send email using Postmark template
-  await postmarkClient.sendEmailWithTemplate({
-    From: EMAIL_FROM,
-    To: email,
-    TemplateAlias: "password-reset",
-    TemplateModel: {
-      username: user.username,
-      resetLink: `${APP_URL}/reset-password/${token}`,
-    },
+  await sendMail({
+    subject: "Wachtwoord opnieuw instellen",
+    to: email,
+    html: `
+<!DOCTYPE html>
+<body>
+    <h2>Wachtwoord opnieuw instellen</h2>
+    <p>Hallo ${user.name},</p>
+    <p>Klik op onderstaande link om een nieuw wachtwoord in te stellen:</p>
+    
+    <a href="${APP_URL}/reset-password/${token}" class="button">Nieuw wachtwoord instellen</a>
+    
+    <p>Deze link is één dag geldig.</p>
+    
+    <p>Als je dit niet hebt aangevraagd, kun je deze e-mail veilig negeren.</p>
+    
+    <div class="footer">
+        <p>Met vriendelijke groet,<br>
+        Het Fietsersbond team</p>
+    </div>
+</body>
+</html>`,
+    text: `Hallo ${user.name},
+
+Gebruik de onderstaande link om een nieuw wachtwoord in te stellen:
+
+${APP_URL}/reset-password/${token}
+
+Deze link is één dag geldig.
+
+Als je dit niet hebt aangevraagd, kun je deze e-mail veilig negeren.
+`,
   });
 
   return { success: true };

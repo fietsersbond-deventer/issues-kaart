@@ -112,7 +112,7 @@ importers:
     dependencies:
       '@auth/core':
         specifier: '>=0.41.3'
-        version: 0.41.3
+        version: 0.41.3(nodemailer@7.0.13)
       '@jfungus/ratelimit-nuxt':
         specifier: ^0.0.2
         version: 0.0.2(magicast@0.5.4)(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.27.1(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@oxc-project/types@0.147.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.42)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0))(ioredis@5.11.1)(lightningcss@1.33.0)(magicast@0.5.4)(optionator@0.9.4)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.6)(rollup@4.63.1))(rollup@4.63.1)(srvx@1.0.5)(terser@5.44.0)(tsx@4.23.15)(typescript@5.9.3)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.44.0)(tsx@4.23.15)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@5.9.3))(yaml@2.9.1))
@@ -185,6 +185,9 @@ importers:
       geojson:
         specifier: ^0.5.0
         version: 0.5.0
+      h3:
+        specifier: ^1.15.11
+        version: 1.15.11
       jose:
         specifier: ^6.0.11
         version: 6.2.12
@@ -197,15 +200,27 @@ importers:
       morgan:
         specifier: ^1.12.1
         version: 1.12.1
+      nitropack:
+        specifier: ^2.13.4
+        version: 2.13.4(rolldown@1.2.6)(srvx@1.0.5)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.44.0)(tsx@4.23.15)(yaml@2.9.1))
+      nodemailer:
+        specifier: ^7.0.13
+        version: 7.0.13
       nuxt:
         specifier: ^4.5.2
         version: 4.5.2(@babel/plugin-syntax-jsx@7.27.1(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@oxc-project/types@0.147.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.42)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0))(ioredis@5.11.1)(lightningcss@1.33.0)(magicast@0.5.4)(optionator@0.9.4)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.6)(rollup@4.63.1))(rollup@4.63.1)(srvx@1.0.5)(terser@5.44.0)(tsx@4.23.15)(typescript@5.9.3)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.44.0)(tsx@4.23.15)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@5.9.3))(yaml@2.9.1)
       nuxt-mdi:
         specifier: 2.1.1
         version: 2.1.1(magicast@0.5.4)
+      nuxt-nodemailer:
+        specifier: 1.1.4
+        version: 1.1.4(magicast@0.5.4)(nodemailer@7.0.13)
       nuxt-security:
         specifier: 2.6.0
         version: 2.6.0(magic-string@1.2.3)(magicast@0.5.4)(rolldown@1.2.6)(rollup@4.63.1)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.6)(rollup@4.63.1)(vite@8.2.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.44.0)(tsx@4.23.15)(yaml@2.9.1)))
+      ofetch:
+        specifier: ^1.5.1
+        version: 1.5.1
       ol:
         specifier: ^10.5.0
         version: 10.10.0
@@ -1464,6 +1479,9 @@ packages:
 
   '@types/node@26.6.3':
     resolution: {integrity: sha512-dsqMQQoeTLqu9wynDD00q573mNzso3IdQOAfHRJqLCcmCFPoGo9A1bDpUcv/9tnKpErQWv9uKeGfl37EIS02Yg==}
+
+  '@types/nodemailer@7.0.12':
+    resolution: {integrity: sha512-80vKwiIsVSyFA1rRovH59jNPLBOuc6dRZIHEu40gXTkBkZnQv8vog1xSGEb9j5q/tdMAs5ivvDR2pLTU0hGHXA==}
 
   '@types/pako@2.0.4':
     resolution: {integrity: sha512-VWDCbrLeVXJM9fihYodcLiIv0ku+AlOa/TQ1SvYOaBuyrSKgEcro95LJyIsJ4vSo6BXIxOKxiJAat04CmST9Fw==}
@@ -3008,10 +3026,6 @@ packages:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
     engines: {node: '>=20'}
 
-  hasown@2.0.2:
-    resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
-    engines: {node: '>= 0.4'}
-
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
@@ -3622,6 +3636,10 @@ packages:
     resolution: {integrity: sha512-kQK9LGGFiHtrWiNhZtA7Qbw17AQz+dmsEKODRIVTXA9+e5MS/2gZEBhYJt13GrAz5/IOZKddH/0Z3TP/Zgo+yw==}
     engines: {node: '>=18'}
 
+  nodemailer@7.0.13:
+    resolution: {integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==}
+    engines: {node: '>=6.0.0'}
+
   nopt@8.1.0:
     resolution: {integrity: sha512-ieGu42u/Qsa4TFktmaKEwM6MQH0pOWnaB3htzh0JRtx84+Mebc0cbZYN5bC+6WTZ4+77xrL9Pn5m7CV6VIkV7A==}
     engines: {node: ^18.17.0 || >=20.5.0}
@@ -3656,6 +3674,11 @@ packages:
 
   nuxt-mdi@2.1.1:
     resolution: {integrity: sha512-BkW2CQulmLSsVCJJ+NbNy/UH4Rz4vmO8bAeXVs6TgiQf+4SaDE7Q5LubzWllc/67YyQu1sjslZWrVYOXGW0KPQ==}
+
+  nuxt-nodemailer@1.1.4:
+    resolution: {integrity: sha512-nIH9dfQ/Z58QtwspetoHJI+XGNraVBW7setEu0f8EJDTLLh2WRMIZgamVRmrF9d10/POT+fLDmQ2N1QEmUwWuw==}
+    peerDependencies:
+      nodemailer: ^7.0.6
 
   nuxt-security@2.6.0:
     resolution: {integrity: sha512-5rEfyxw1gS+vl1s5q7GcGuFOL5g0I03Q/mz7Zfr+IRJFsaZKwRxNVMFNRbatfK3Dz65LuRPnLewLmJ+Yh9ujOA==}
@@ -4668,8 +4691,8 @@ packages:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
 
-  type-fest@5.0.1:
-    resolution: {integrity: sha512-9MpwAI52m8H6ssA542UxSLnSiSD2dsC3/L85g6hVubLSXd82wdI80eZwTWhdOfN67NlA+D+oipAs1MlcTcu3KA==}
+  type-fest@5.10.0:
+    resolution: {integrity: sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA==}
     engines: {node: '>=20'}
 
   typescript@5.9.3:
@@ -5394,13 +5417,15 @@ snapshots:
       lru-cache: 10.4.3
     optional: true
 
-  '@auth/core@0.41.3':
+  '@auth/core@0.41.3(nodemailer@7.0.13)':
     dependencies:
       '@panva/hkdf': 1.2.1
       jose: 6.2.12
       oauth4webapi: 3.8.2
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
+    optionalDependencies:
+      nodemailer: 7.0.13
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -6962,6 +6987,10 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
+  '@types/nodemailer@7.0.12':
+    dependencies:
+      '@types/node': 26.6.3
+
   '@types/pako@2.0.4': {}
 
   '@types/raf@3.4.3':
@@ -8019,7 +8048,7 @@ snapshots:
 
   dot-prop@10.1.0:
     dependencies:
-      type-fest: 5.0.1
+      type-fest: 5.10.0
 
   dotenv@17.4.2: {}
 
@@ -8599,10 +8628,6 @@ snapshots:
     dependencies:
       hookified: 1.15.1
 
-  hasown@2.0.2:
-    dependencies:
-      function-bind: 1.1.2
-
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
@@ -8752,7 +8777,7 @@ snapshots:
 
   is-core-module@2.16.1:
     dependencies:
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   is-docker@3.0.0: {}
 
@@ -9223,10 +9248,10 @@ snapshots:
       node-fetch-native: 1.6.7
       node-mock-http: 1.0.5
       ofetch: 1.5.1
-      ohash: 2.0.11
+      ohash: 2.0.12
       pathe: 2.0.3
       perfect-debounce: 2.1.0
-      pkg-types: 2.3.1
+      pkg-types: 2.3.3
       pretty-bytes: 7.1.0
       radix3: 1.1.2
       rollup: 4.63.1
@@ -9303,6 +9328,8 @@ snapshots:
 
   node-releases@2.0.57: {}
 
+  nodemailer@7.0.13: {}
+
   nopt@8.1.0:
     dependencies:
       abbrev: 3.0.1
@@ -9347,6 +9374,14 @@ snapshots:
       '@mdi/js': 7.4.47
       '@nuxt/kit': 3.19.3(magicast@0.5.4)
       defu: 6.1.7
+    transitivePeerDependencies:
+      - magicast
+
+  nuxt-nodemailer@1.1.4(magicast@0.5.4)(nodemailer@7.0.13):
+    dependencies:
+      '@nuxt/kit': 3.19.3(magicast@0.5.4)
+      '@types/nodemailer': 7.0.12
+      nodemailer: 7.0.13
     transitivePeerDependencies:
       - magicast
 
@@ -10496,7 +10531,7 @@ snapshots:
 
   type-fest@4.41.0: {}
 
-  type-fest@5.0.1:
+  type-fest@5.10.0:
     dependencies:
       tagged-tag: 1.0.0
 
@@ -10753,7 +10788,7 @@ snapshots:
       magic-string: 0.30.21
       mlly: 1.8.2
       pathe: 2.0.3
-      pkg-types: 2.3.1
+      pkg-types: 2.3.3
 
   unzipit@2.0.0: {}
 

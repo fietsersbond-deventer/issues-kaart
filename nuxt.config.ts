@@ -29,6 +29,16 @@ export default defineNuxtConfig({
       // Auth token voor API toegang
       authToken: process.env.MATOMO_AUTH_TOKEN,
     },
+    nodemailer: {
+      host: process.env.NUXT_NODEMAILER_HOST,
+      port: Number(process.env.NUXT_NODEMAILER_PORT) || 587,
+      secure: process.env.NUXT_NODEMAILER_SECURE === "true",
+      auth: {
+        user: process.env.NUXT_NODEMAILER_AUTH_USER,
+        pass: process.env.NUXT_NODEMAILER_AUTH_PASSWORD,
+      },
+      from: process.env.NUXT_NODEMAILER_FROM,
+    },
     public: {
       adminName: "",
       // Organisatie configuratie
@@ -61,9 +71,10 @@ export default defineNuxtConfig({
     "nuxt-mdi",
     "vuetify-nuxt-module",
     "@pinia/nuxt",
-    "@jfungus/ratelimit-nuxt",
     // "nuxt-security",
     // "nuxt-db-migrations",
+    "@jfungus/ratelimit-nuxt",
+    "nuxt-nodemailer",
   ],
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
