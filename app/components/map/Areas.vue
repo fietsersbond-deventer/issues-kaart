@@ -31,12 +31,7 @@ import gebieden from "~/assets/gebieden.geojson?raw";
 
 const map: OlMap | undefined = inject("map");
 
-// localhost is treated as the Deventer instance
-const currentHost = import.meta.client
-  ? location.hostname === "localhost"
-    ? "deventer.kaart.fietsersbond.nl"
-    : location.hostname
-  : "";
+const { hostname: currentHost } = useCurrentArea();
 
 const allFeatures = new GeoJSON().readFeatures(JSON.parse(gebieden), {
   dataProjection: "EPSG:4326",

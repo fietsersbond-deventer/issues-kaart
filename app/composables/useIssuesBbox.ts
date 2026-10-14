@@ -106,8 +106,11 @@ export function useIssuesBbox(
 
   const { map } = useRuntimeConfig().public;
 
-  // de minimum bbox volgens de config
+  const { bbox: areaBbox } = useCurrentArea();
+
+  // de minimum bbox: het gebied van deze instance, anders de config
   const minBbox = computed(() => {
+    if (areaBbox) return areaBbox;
     if (!mapRef.value?.map) return;
     const lon = parseFloat(map.centerLon);
     const lat = parseFloat(map.centerLat);
