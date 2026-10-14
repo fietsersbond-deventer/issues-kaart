@@ -186,6 +186,28 @@ export default defineNuxtConfig({
         transformAssetUrls,
       },
     },
+    optimizeDeps: {
+      include: [
+        "@turf/bbox",
+        "@turf/centroid",
+        "@turf/helpers",
+        "@vueup/vue-quill",
+        "@vueuse/core",
+        "mitt",
+        "ol",
+        "ol/control",
+        "ol/easing",
+        "ol/events/condition",
+        "ol/format",
+        "ol/proj",
+        "ol/proj/Projection",
+        "ol/proj/proj4.js",
+        "ol/style",
+        "proj4",
+        "vue3-openlayers",
+      ],
+    },
+
     server: {
       allowedHosts: true,
     },

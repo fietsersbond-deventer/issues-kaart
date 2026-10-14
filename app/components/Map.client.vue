@@ -117,6 +117,8 @@
         /> </ol-source-vector
     ></ol-vector-layer>
 
+    <MapAreas />
+
     <ol-attribution-control :collapsible="mobile" />
 
     <MapTooltip :is-drawing />
@@ -125,6 +127,7 @@
       v-if="!isDrawing"
       :condition="click"
       :hit-tolerance="mobile ? 15 : 5"
+      :layers="isNotAreaLayer"
       :style
       @select="onFeatureSelect"
     />
@@ -147,6 +150,7 @@ import { click } from "ol/events/condition";
 import type { BBox } from "geojson";
 import { easeOut } from "ol/easing";
 import type { FitOptions } from "ol/View";
+import type Layer from "ol/layer/Layer";
 import { useDebounceFn } from "@vueuse/core";
 import Color from "color";
 
@@ -520,6 +524,11 @@ function navigateToIssue(issue: MapIssue) {
 const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
   new Collection(),
 );
+
+// ol Select stops at the first hit that fails `filter`, so exclude the layer instead
+function isNotAreaLayer(layer: Layer) {
+  return layer.getClassName() !== "area-layer";
+}
 
 function onFeatureSelect(event: SelectEvent) {
   const selected = event.selected;
