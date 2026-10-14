@@ -13,7 +13,9 @@ const map: OlMap | undefined = inject("map");
 const area = ref<{ name: string; position: number[] } | null>(null);
 
 function onPointerMove(evt: MapBrowserEvent) {
-  const hits = map?.getFeaturesAtPixel(evt.pixel, { hitTolerance: 3 }) ?? [];
+  const hits = (
+    map?.getFeaturesAtPixel(evt.pixel, { hitTolerance: 3 }) ?? []
+  ).filter((f) => !f.get("current"));
   // Issues take precedence over the area underneath them
   const hit = hits.some((f) => !f.get("areaUrl"))
     ? undefined

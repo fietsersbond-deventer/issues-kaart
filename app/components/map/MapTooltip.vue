@@ -57,9 +57,10 @@ onMounted(() => {
     }
 
     const pixel = evt.pixel;
-    const features = map
-      .getFeaturesAtPixel(pixel, { hitTolerance: 3 })
-      .filter((f) => !f.get("areaUrl"));
+    const features = map.getFeaturesAtPixel(pixel, {
+      hitTolerance: 3,
+      layerFilter: (layer) => layer.getClassName() !== "area-layer",
+    });
     if (features && features.length > 0) {
       const feature = features[0] as Feature<Point | LineString | Polygon>;
       const properties = feature.getProperties();
