@@ -75,6 +75,7 @@ export default defineNuxtConfig({
     // "nuxt-db-migrations",
     "@jfungus/ratelimit-nuxt",
     "nuxt-nodemailer",
+    "@nuxt/icon",
   ],
   auth: {
     baseURL: process.env.AUTH_ORIGIN,

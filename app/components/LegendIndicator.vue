@@ -25,7 +25,7 @@
           position: 'relative',
         }"
       >
-        <v-icon
+        <AppIcon
           :icon="legend.icon"
           :color="getContrastColor(legend.color || '#2196F3')"
           :size="Math.round(size * 0.6)"

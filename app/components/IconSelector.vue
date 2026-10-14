@@ -60,11 +60,7 @@
 
     <v-row v-if="totalPages > 1">
       <v-col cols="12" class="d-flex justify-center">
-        <v-pagination
-          v-model="currentPage"
-          :length="totalPages"
-          :total-visible="7"
-        />
+        <v-pagination v-model="currentPage" :length="totalPages" :total-visible="7" />
       </v-col>
     </v-row>
   </div>
@@ -96,6 +92,45 @@ const loading = ref(false);
 const loadingMessage = ref("Loading all MDI icons...");
 const allIcons = ref<MdiIcon[]>([]);
 const missingIcons = ref(new Set<string>());
+
+const remoteIcons = ref<string[]>([]);
+
+// A fully qualified Iconify name typed by the user, e.g. tdesign:traffic-events
+const typedIcon = computed(() => {
+  const query = searchQuery.value?.trim().toLowerCase() ?? "";
+  if (!/^[a-z0-9-]+:[a-z0-9-]+$/.test(query)) return undefined;
+  return toStoredName(query);
+});
+
+// Legacy MDI icons are stored as "mdi-name", all other sets as "prefix:name"
+function toStoredName(name: string) {
+  return name.startsWith("mdi:") ? `mdi-${name.slice(4)}` : name;
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+let searchRequest = 0;
+watch(searchQuery, (query) => {
+  clearTimeout(searchTimer);
+  const q = query?.trim() ?? "";
+  if (q.length < 2) {
+    remoteIcons.value = [];
+    return;
+  }
+  searchTimer = setTimeout(async () => {
+    const request = ++searchRequest;
+    try {
+      const result = await $fetch<{ icons: string[] }>(
+        "https://api.iconify.design/search",
+        { query: { query: q, limit: 999 } },
+      );
+      if (request === searchRequest) {
+        remoteIcons.value = result.icons.map(toStoredName);
+      }
+    } catch (error) {
+      console.warn("Iconify search failed:", error);
+    }
+  }, 300);
+});
 
 // Available categories (now using tags)
 const categoryOptions = computed(() => {
@@ -131,6 +166,8 @@ const filteredIcons = computed(() => {
       const query = searchQuery.value.toLowerCase();
       icons = icons.filter((icon) => icon.toLowerCase().includes(query));
     }
+    const direct = typedIcon.value ? [typedIcon.value] : [];
+    icons = [...new Set([...direct, ...icons, ...remoteIcons.value])];
   }
 
   return icons;
