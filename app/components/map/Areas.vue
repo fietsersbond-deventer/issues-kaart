@@ -31,12 +31,13 @@ import gebieden from "~/assets/gebieden.geojson?raw";
 
 const map: OlMap | undefined = inject("map");
 
-const { hostname: currentHost } = useCurrentArea();
+const { hostname: currentHost, area: currentArea } = useCurrentArea();
 
-const allFeatures = new GeoJSON().readFeatures(JSON.parse(gebieden), {
+const geojson = new GeoJSON({
   dataProjection: "EPSG:4326",
   featureProjection: "EPSG:3857",
 });
+const allFeatures = geojson.readFeatures(JSON.parse(gebieden));
 const isCurrent = (f: FeatureLike) =>
   new URL(f.get("areaUrl")).hostname === currentHost;
 const features = allFeatures.filter((f) => !isCurrent(f));
@@ -52,17 +53,15 @@ function signedArea(ring: number[][]) {
 // Mask: a world-covering polygon with the current area cut out as hole(s).
 // Flagged so hover/click handlers ignore it.
 function createMask(): Feature[] {
-  const holes: number[][][] = [];
-  for (const f of allFeatures.filter(isCurrent)) {
-    const geometry = f.getGeometry();
-    const polygons =
-      geometry instanceof MultiPolygon
-        ? geometry.getPolygons()
-        : geometry instanceof Polygon
-          ? [geometry]
-          : [];
-    for (const polygon of polygons) holes.push(polygon.getCoordinates()[0]!);
-  }
+  if (!currentArea) return [];
+  const geometry = geojson.readGeometry(currentArea.geometry);
+  const polygons =
+    geometry instanceof MultiPolygon
+      ? geometry.getPolygons()
+      : geometry instanceof Polygon
+        ? [geometry]
+        : [];
+  const holes = polygons.map((polygon) => polygon.getCoordinates()[0]!);
   if (!holes.length) return [];
   const [w, s, e, n] = [-20037508, -20048966, 20037508, 20048966];
   const world = [

@@ -92,6 +92,20 @@ pnpm import:kml -- "Knelpunten Rhenen 2023.kml"
 
 `--dry-run` toont de legendanamen, kleuren en placemarks die worden verwerkt zonder rijen toe te voegen. Nieuwe legenda's krijgen de omschrijving `Dummy tekst`. Placemark-titels komen uit `Data name="Waar"`; alle relevante `Data`-velden worden als H3-secties toegevoegd. Afbeeldingen in de KML-description worden gedownload en als base64-data-afbeelding opgeslagen. Een herhaalde import werkt bestaande issues met dezelfde titel en geometrie bij in plaats van ze dubbel toe te voegen.
 
+### Gebieden van andere instances beheren
+
+`app/assets/gebieden.geojson` bevat de gebieden van alle kaart-instances. Elke instance toont de gebieden van de andere instances als link, en het eigen gebied (alle gebieden met de eigen `areaUrl`, samengevoegd) als omtrek met een masker erbuiten. Gemeentegrenzen komen van CBS/PDOK.
+
+```bash
+pnpm gebieden list                       # huidige gebieden
+pnpm gebieden gemeenten hoek             # gemeentenamen opzoeken
+pnpm gebieden add https://zwolle.kaart.fietsersbond.nl/ Zwolle
+pnpm gebieden add https://rotterdam.kaart.fietsersbond.nl/ Rotterdam Schiedam "Hoeksche Waard" --name Rotterdam
+pnpm gebieden remove Zwolle
+```
+
+Meerdere gemeenten in één `add` worden samengevoegd tot één gebied (alleen de buitengrens). Een gebied met dezelfde naam wordt vervangen. Gebruik `CBS_YEAR=2025` als de grenzen van het huidige jaar nog niet beschikbaar zijn.
+
 ## 🏗️ Build voor productie
 
 ```bash
