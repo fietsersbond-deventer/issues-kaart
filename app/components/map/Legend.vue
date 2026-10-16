@@ -19,22 +19,13 @@
         </td>
         <td class="text-body-2 text-truncate pa-2">{{ item.name }}</td>
         <td>
-          <v-tooltip
-            v-if="item.description"
-            :text="item.description"
-            location="top"
-          >
+          <v-tooltip v-if="item.description" :text="item.description" location="top">
             <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
+              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
             </template>
           </v-tooltip>
         </td>
-        <td class="ps-2 font-weight-thin text-right">
+        <td class="ps-2 font-weight-thin text-right counter">
           {{ countIssues[item.id] }}
         </td>
       </tr>
@@ -61,22 +52,13 @@
           />
         </td>
         <td>
-          <v-tooltip
-            v-if="tag.description"
-            :text="tag.description"
-            location="top"
-          >
+          <v-tooltip v-if="tag.description" :text="tag.description" location="top">
             <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
+              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
             </template>
           </v-tooltip>
         </td>
-        <td class="ps-2 font-weight-thin text-right">
+        <td class="ps-2 font-weight-thin text-right counter">
           {{ selectedIssuesTagCount[tag.tag] ?? 0 }}
         </td>
       </tr>
@@ -149,9 +131,11 @@ const countIssues = computed(() => {
   min-height: 28px !important;
   height: 28px !important;
   padding: 0 8px !important;
-  transition:
-    opacity 0.2s ease,
-    background-color 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.counter {
+  width: 3em;
 }
 
 .legend-item.clickable {

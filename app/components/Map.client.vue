@@ -147,11 +147,7 @@ import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
-import type { BBox } from "geojson";
-import { easeOut } from "ol/easing";
-import type { FitOptions } from "ol/View";
 import type Layer from "ol/layer/Layer";
-import { useDebounceFn } from "@vueuse/core";
 import Color from "color";
 
 interface Size {
@@ -160,11 +156,8 @@ interface Size {
 }
 
 // Use lightweight map issues for rendering (only essential fields)
-const { issues: allIssues } = storeToRefs(useIssues());
-
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 const { selectedIssues } = useSelectedIssues();
-const { isShowingAllCategories } = storeToRefs(useCategoryFilters());
 const route = useRoute();
 
 function isSelected(issue: MapIssue) {
@@ -207,26 +200,8 @@ watch(legendSize, async () => {
   ];
 });
 
-function setBbox(bbox: BBox, options: FitOptions = {}) {
-  if (!view.value) return;
-  view.value.fit(bbox, {
-    easing: easeOut,
-    duration: 1000,
-
-    padding: currentPadding.value,
-    ...options,
-  });
-}
-
 function resetToOriginalExtent() {
-  if (!allIssues.value || allIssues.value.length === 0) return;
-
-  const bbox = issuesBbox.value;
-  if (!bbox) return;
-
-  setBbox(issuesBbox.value, {
-    padding: [50, 50, 50, 50],
-  });
+  refit({ overview: true, duration: 1000 });
 }
 
 function updatePadding(controlsSize: Size) {
@@ -236,46 +211,12 @@ function updatePadding(controlsSize: Size) {
     50, // controlsSize.height + 20, // bottom
     controlsSize.width + 20,
   ];
+  refit();
 }
 
-const view = useTemplateRef("view");
 const mapRef = useTemplateRef("mapRef");
 
 const { mobile } = useDisplay();
-
-// Initialize bbox composable with mapRef
-const { bbox: issuesBbox } = useIssuesBbox(selectedIssues, mapRef);
-
-const selectedIssueIsVisible = computed(() => {
-  // is the selectedIssue in the selectedIssues?
-  if (!selectedIssue.value || !selectedIssues.value) return false;
-  return selectedIssues.value.find(
-    (issue) => issue.id === selectedIssue.value!.id,
-  );
-});
-
-function moveToIssues() {
-  if (allIssues.value.length > 0) {
-    if (
-      isShowingAllCategories.value &&
-      selectedIssue.value?.geometry &&
-      selectedIssueIsVisible.value
-    ) {
-      recenterOnSelectedIssue();
-    } else {
-      // Otherwise, fit all issues (including filtered ones for initial view)
-      const bbox = issuesBbox?.value;
-      if (!bbox) return;
-      setBbox(bbox as BBox);
-    }
-  }
-}
-
-const debouncedMoveToIssues = useDebounceFn(moveToIssues, 100);
-
-watch([selectedIssues, selectedIssue], () => {
-  debouncedMoveToIssues();
-});
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {
@@ -292,10 +233,13 @@ const { zoom, center } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
-const { mapHeight, recenterOnSelectedIssue } = useMapResize(
-  mapRef,
-  currentPadding,
-);
+const { mapHeight, mapWidth } = useMapResize(mapRef);
+const mapSize = computed<[number, number]>(() => [
+  mapWidth.value,
+  mapHeight.value,
+]);
+
+const { refit } = useMapFocus(mapRef, currentPadding, mapSize);
 
 // Hide controls based on actual map height (available space for the map)
 const isMapVerySmall = computed(() => {
@@ -581,6 +525,7 @@ const emit = defineEmits(["feature-clicked"]);
 // Expose functions to parent components
 defineExpose({
   resetToOriginalExtent,
+  refit,
   preferredLayer,
   updatePadding,
 });
