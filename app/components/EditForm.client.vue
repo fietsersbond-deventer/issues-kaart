@@ -84,16 +84,7 @@
             </v-col>
 
             <v-col cols="12">
-              <v-combobox
-                v-model="issue.tags"
-                :items="availableTags"
-                label="Tags"
-                multiple
-                chips
-                closable-chips
-                clearable
-                hide-selected
-              />
+              <TagSelect v-model="issue.tags" label="Tags" />
             </v-col>
 
             <!-- Hidden geometry validation field -->
@@ -372,8 +363,6 @@ const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
 const { data: user, token } = useAuth();
-
-const { list: availableTags } = useTagsApi();
 
 // Zelfde patroon als useIssuesMethods.ts: de server herkent een ingelogde
 // gebruiker via een "Authorization: Bearer <token>"-header (geen cookies),
