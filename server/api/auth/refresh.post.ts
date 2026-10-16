@@ -1,6 +1,6 @@
 import {
   generateAccessToken,
-  verifyRefreshToken,
+  rotateRefreshToken,
 } from "../../utils/tokenUtils";
 
 export default defineEventHandler(async (event) => {
@@ -14,9 +14,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const user = await verifyRefreshToken(refreshToken);
+    const { user, refreshToken: newRefreshToken } =
+      rotateRefreshToken(refreshToken);
     const accessToken = await generateAccessToken(user);
-    const newRefreshToken = await generateRefreshToken(user.id);
 
     return {
       token: accessToken,

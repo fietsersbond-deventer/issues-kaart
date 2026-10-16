@@ -30,6 +30,11 @@ export function generateRefreshToken(userId: number): string {
   const token = randomBytes(40).toString("hex");
   const db = getDb();
 
+  // Ruim verlopen tokens op
+  db.prepare(
+    "DELETE FROM refresh_tokens WHERE julianday(expires_at) <= julianday('now')"
+  ).run();
+
   // Set expiry date to 30 days from now
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);
@@ -49,7 +54,7 @@ export function verifyRefreshToken(token: string) {
     .prepare(
       `SELECT rt.*, u.* FROM refresh_tokens rt 
      JOIN users u ON u.id = rt.user_id 
-     WHERE rt.token = ? AND rt.expires_at > datetime('now')`
+     WHERE rt.token = ? AND julianday(rt.expires_at) > julianday('now')`
     )
     .get(token);
 
@@ -71,6 +76,22 @@ export function verifyRefreshToken(token: string) {
   };
 
   return user;
+}
+
+// Verifieert, trekt het oude token in en geeft een nieuw token uit in één transactie
+export function rotateRefreshToken(token: string) {
+  const db = getDb();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const user = verifyRefreshToken(token);
+    revokeRefreshToken(token);
+    const refreshToken = generateRefreshToken(user.id);
+    db.exec("COMMIT");
+    return { user, refreshToken };
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
 }
 
 export function revokeRefreshToken(token: string) {
