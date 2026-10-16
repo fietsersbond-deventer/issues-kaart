@@ -1,211 +1,130 @@
 <template>
-  <div class="map-search-control">
-    <!-- Mobile: Search button that expands -->
-    <v-btn
-      v-if="mobile && !isExpanded"
-      icon
-      size="small"
-      class="search-button"
-      title="Zoek locatie"
-      :loading="isSearching"
-      @click="toggleSearch"
-    >
-      <v-icon>mdi-magnify</v-icon>
-    </v-btn>
-
-    <!-- Desktop or expanded mobile search -->
-    <v-autocomplete
-      v-if="!mobile || isExpanded"
-      ref="searchInput"
-      v-model="selectedItem"
-      v-model:search="searchText"
-      :items="searchResults"
-      :loading="isSearching"
-      :menu="searchResults.length > 0"
-      item-title="displayName"
-      item-value="id"
-      placeholder="Zoek locatie..."
-      hide-no-data
-      hide-details
-      density="compact"
-      variant="solo"
-      clearable
-      auto-select-first
-      @update:model-value="onSelect"
-      @blur="onBlur"
-    >
-      <template #prepend-inner>
-        <v-btn
-          v-if="mobile"
-          icon
-          size="x-small"
-          variant="text"
-          @click="closeSearch"
-        >
-          <v-icon size="18">mdi-arrow-left</v-icon>
-        </v-btn>
-      </template>
-      <template #append-inner>
-        <v-progress-circular
-          v-if="isSearching"
-          indeterminate
-          size="20"
-          width="2"
-          color="primary"
+  <div
+    class="d-flex align-center mb-1 bg-surface-container-high"
+    style="width: fit-content; height: 40px; border-radius: 12px"
+  >
+    <ToolButton
+      v-model="toolActive"
+      :disabled="disabled"
+      :tooltip-text="t('common.search')"
+      class="click-stop elevation-0"
+      icon="mdi-magnify"
+      style="margin-top: 0 !important"
+    />
+    <v-expand-x-transition>
+      <v-card
+        v-show="toolActive"
+        class="click-stop"
+        height="40px"
+        width="600px"
+        style="border: none"
+      >
+        <Gazetteer
+          v-model="location"
+          :disabled="disabled"
+          style="z-index: -1; height: 40px"
+          :search-params="searchParams"
+          hide-details
+          density="compact"
         />
-      </template>
-      <template #item="{ props, item }">
-        <v-list-item v-bind="props" :title="item.raw.displayName">
-          <template #subtitle>
-            <span class="text-caption">{{ item.raw.type }}</span>
-          </template>
-        </v-list-item>
-      </template>
-    </v-autocomplete>
+      </v-card>
+    </v-expand-x-transition>
   </div>
 </template>
 
-<script lang="ts" setup>
-import type { BBox } from "geojson";
-import { transformBboxToOpenLayers } from "~/utils/getIssuesBbox";
-import {
-  NominatimSearchProvider,
-  type SearchResult,
-  useLocationSearch,
-} from "~/composables/useLocationSearch";
-import { useDisplay } from "vuetify";
+<script setup lang="ts">
 
-const emit = defineEmits<{
-  selected: [data: BBox];
-  searchExpanded: [expanded: boolean];
+// props
+const
+  defineProps<{
+    zoomAnimation?: boolean;
+    active?: boolean;
+    disabled?: boolean;
+  }>(),
+  {
+    zoomAnimation: true,
+    active: false,
+    disabled: false,
+  },
+);
+
+const emits = defineEmits<{
+  (event: "update:active", value: boolean): void;
 }>();
 
-const { mobile } = useDisplay();
-const searchProvider = new NominatimSearchProvider();
-const { search: performSearch, isSearching } =
-  useLocationSearch(searchProvider);
+// Hide search result geometry and clear the current selection when the search bar is closed
+watch(toolActive, (active) => {
+  if (!active) {
+    setVisible(false);
+    setSelectedSearchResult(undefined);
+    location.value = undefined;
+  }
+});
 
-const searchText = ref("");
-const selectedItem = ref<string | null>(null);
-const searchResults = ref<SearchResult[]>([]);
-const isExpanded = ref(false);
-const searchInput = ref();
+// Zoom to the detailed bounds calculated from the fetched feature geometry
+// Expand the bounds by 20% so the feature has some visual padding
+const BOUNDS_PADDING_FACTOR = 0.4;
+watch(detailedBounds, (bounds) => {
+  if (bounds) {
+    const padX = bounds.width * BOUNDS_PADDING_FACTOR;
+    const padY = bounds.height * BOUNDS_PADDING_FACTOR;
+    const paddedBounds = createBounds(bounds.reference, [
+      bounds.x - padX / 2,
+      bounds.width + padX,
+      bounds.y - padY / 2,
+      bounds.height + padY,
+    ]);
+    updateCameraPositionBounds(
+      paddedBounds,
+      MIN_HEIGHT,
+      HEIGHT_FACTOR_ADJUSTMENT,
+      props.zoomAnimation,
+    );
+  }
+});
 
-function toggleSearch() {
-  console.log(
-    "Toggle search - before:",
-    isExpanded.value,
-    "mobile:",
-    mobile.value
+function zoomToBounds(boundingBox: SearchResult["boundingbox"]) {
+  if (!boundingBox) return;
+  const minY = Math.min(boundingBox.south, boundingBox.north);
+  const deltaY = Math.max(boundingBox.south, boundingBox.north) - minY;
+
+  const minX = Math.min(boundingBox.west, boundingBox.east);
+  const deltaX = Math.max(boundingBox.west, boundingBox.east) - minX;
+
+  const bounds = createBounds(EPSG_4326, [minX, deltaX, minY, deltaY]);
+
+  updateCameraPositionBounds(
+    bounds,
+    MIN_HEIGHT,
+    HEIGHT_FACTOR_ADJUSTMENT,
+    props.zoomAnimation,
   );
-  isExpanded.value = !isExpanded.value;
-  console.log("Toggle search - after:", isExpanded.value);
-  emit("searchExpanded", isExpanded.value);
-
-  if (isExpanded.value) {
-    // Focus the input after it's rendered
-    nextTick(() => {
-      console.log("Trying to focus input:", searchInput.value);
-      searchInput.value?.focus();
-    });
-  }
 }
 
-function closeSearch() {
-  isExpanded.value = false;
-  searchText.value = "";
-  searchResults.value = [];
-  emit("searchExpanded", false);
-}
-
-function onBlur() {
-  // On mobile, close search if there's no search text
-  if (mobile.value && !searchText.value) {
-    setTimeout(() => {
-      closeSearch();
-    }, 200);
-  }
-}
-
-// Watch for search text changes with debounce
-let searchTimeout: NodeJS.Timeout;
-watch(searchText, (value) => {
-  clearTimeout(searchTimeout);
-
-  if (!value || value.trim().length === 0) {
-    searchResults.value = [];
+watch(location, (selected) => {
+  if (!selected) {
+    setSelectedSearchResult(undefined);
     return;
   }
 
-  searchTimeout = setTimeout(async () => {
-    console.log("Searching for:", value);
-    const results = await performSearch(value);
-    console.log("Got results:", results.length);
+  // Set the selected result for display on the map
+  setSelectedSearchResult(toRaw(selected));
 
-    if (results.length === 0) {
-      searchResults.value = [
-        {
-          id: "no-results",
-          name: "Geen resultaten gevonden",
-          displayName: "Geen resultaten gevonden",
-          type: "no-results",
-          boundingBox: [0, 0, 0, 0] as BBox,
-          coordinates: [0, 0] as [number, number],
-        },
-      ];
-    } else {
-      // Create a new array to ensure reactivity
-      searchResults.value = [...results];
-    }
+  let bbox = toRaw(selected).boundingbox;
+  if (!bbox) {
+    // if no bounding box is available, create a small bounding box around the location
+    const { lat, lon } = toRaw(selected);
+    const delta = 0.001; // ~100m, can be adjusted based on typical search result types
+    bbox = {
+      south: lat - delta,
+      west: lon - delta,
+      north: lat + delta,
+      east: lon + delta,
+    };
+  }
 
-    // Force update on next tick
-    await nextTick();
-    console.log("Search results updated:", searchResults.value.length);
-  }, 300);
+  if (bbox) {
+    zoomToBounds(bbox);
+  }
 });
-
-function onSelect(itemId: string | null) {
-  if (!itemId || itemId === "no-results") return;
-
-  const result = searchResults.value.find((r) => r.id === itemId);
-  if (!result) return;
-
-  const boundingBox = transformBboxToOpenLayers(result.boundingBox);
-  emit("selected", boundingBox);
-
-  // Clear selection and close on mobile
-  selectedItem.value = null;
-  if (mobile.value) {
-    closeSearch();
-  }
-}
 </script>
-
-<style scoped>
-.search-button {
-  background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-@media (min-width: 600px) {
-  .map-search-control :deep(.v-autocomplete) {
-    width: 300px;
-  }
-}
-
-@media (max-width: 599px) {
-  .map-search-control :deep(.v-autocomplete) {
-    width: calc(100vw - 1em);
-    max-width: 400px;
-  }
-}
-
-.map-search-control :deep(.v-field) {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  background: white;
-}
-
-.map-search-control :deep(.v-autocomplete__menu-content) {
-  max-height: 400px;
-}
-</style>
