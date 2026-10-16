@@ -204,6 +204,7 @@ export default defineNuxtConfig({
         "ol/proj/proj4.js",
         "ol/style",
         "proj4",
+        "quill-image-compress", // CJS
         "vue3-openlayers",
       ],
     },

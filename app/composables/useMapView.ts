@@ -40,25 +40,6 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
       return;
     }
 
-    // Start at the bounding box of this instance's area, else the config values
-    const { bbox: areaBbox } = useCurrentArea();
-    const size = map.getSize();
-    if (areaBbox && size && size[0] && size[1]) {
-      const [west, south, east, north] = areaBbox;
-      view.fit(
-        [
-          ...converter.forward([west!, south!]),
-          ...converter.forward([east!, north!]),
-        ],
-        { size },
-      );
-      center.value = view.getCenter() as [number, number];
-      zoom.value = view.getZoom() ?? initialZoom;
-    } else {
-      view.setCenter([centerX, centerY]);
-      view.setZoom(initialZoom);
-    }
-
     // Separate listeners for different types of changes
     const updateCenter = useThrottleFn(() => {
       const newCenter = view.getCenter();
