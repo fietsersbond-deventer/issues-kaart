@@ -1,6 +1,6 @@
 <template>
   <div class="legend-container pa-2">
-    <v-table class="legend-list pa-2">
+    <v-table class="legend-list categories-list pa-2">
       <tr
         v-for="item in usedCategories"
         :key="item.id"
@@ -29,6 +29,8 @@
           {{ countIssues[item.id] }}
         </td>
       </tr>
+    </v-table>
+    <v-table v-if="usedTags.length" class="legend-list tags-list pa-2">
       <tr
         v-for="tag in usedTags"
         :key="`tag-${tag.tag}`"
@@ -122,9 +124,39 @@ const countIssues = computed(() => {
 }
 
 .legend-list {
-  overflow-y: auto !important;
-  max-height: 100% !important;
   padding: 0;
+}
+
+/* Categorieën scrollen nooit: deze moeten altijd volledig zichtbaar zijn. */
+.categories-list {
+  flex: 0 0 auto;
+}
+
+/*
+ * Vuetify rendert de daadwerkelijke scrollcontainer als een interne
+ * .v-table__wrapper div (niet het buitenste .v-table-element), dus
+ * overflow en scrollbar-gutter moeten daar via :deep() worden toegepast.
+ * We forceren scrollbar-gutter: stable hier ook (zelfs zonder scrollbar),
+ * zodat deze tabel dezelfde breedte reserveert als de tags-tabel eronder.
+ * Zo blijven de tellerkolommen van beide tabellen mooi uitgelijnd.
+ */
+.categories-list :deep(.v-table__wrapper) {
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* Tags vullen de resterende ruimte en scrollen zodra max-height wordt overschreden. */
+.tags-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tags-list :deep(.v-table__wrapper) {
+  overflow-y: auto;
+  max-height: 10em;
+  scrollbar-gutter: stable;
 }
 
 .legend-item {
