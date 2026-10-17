@@ -3,6 +3,7 @@
     ref="mapRef"
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
+    @dblclick="onFeatureDoubleClick"
   >
     <ol-view ref="view" :projection="projection" />
 
@@ -83,8 +84,8 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
-      <ol-source-vector>
+    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="featureStyle">
+      <ol-source-vector ref="issueSource">
         <ol-feature
           v-for="issue in markers"
           :key="`marker-${issue.id}`"
@@ -128,7 +129,7 @@
       :condition="click"
       :hit-tolerance="mobile ? 15 : 5"
       :layers="isNotAreaLayer"
-      :style
+      :style="featureStyle"
       @select="onFeatureSelect"
     />
   </ol-map>
@@ -141,14 +142,17 @@ import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
-import { Collection, type Feature } from "ol";
+import type { Feature } from "ol";
+import type VectorSource from "ol/source/Vector";
 import type { ModifyEvent } from "ol/interaction/Modify";
+import type MapBrowserEvent from "ol/MapBrowserEvent";
 import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
 import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
 import type Layer from "ol/layer/Layer";
 import Color from "color";
+import { mapSelectionStyles } from "../utils/mapSelectionStyles";
 
 interface Size {
   width: number;
@@ -219,8 +223,14 @@ const mapRef = useTemplateRef("mapRef");
 const { mobile } = useDisplay();
 
 const { isEditing } = useIsEditing();
+const { status: authStatus } = useAuth();
+const { isConnected } = useConnectionStatus();
+const { isLocked } = useIssueLocks();
 const modifyEnabled = computed(() => {
-  return isEditing.value && selectedIssue.value;
+  return (
+    isEditing.value && !isDrawing.value && selectedId.value !== null
+    && selectedIssue.value?.id === selectedId.value
+  );
 });
 
 const addFeature = ref(null);
@@ -257,6 +267,20 @@ const isMapSmall = computed(() => {
   }
   return false;
 });
+
+function featureStyle(feature: Feature) {
+  const base = style(feature);
+  if (!base || feature.get("id") !== selectedId.value) return base;
+  const baseStyles = Array.isArray(base) ? base : [base];
+  const pointRadius = Math.max(15, ...baseStyles.map(style => {
+    const image = style.getImage();
+    return image instanceof Circle ? image.getRadius() + 4 : 0;
+  }));
+  return [
+    ...mapSelectionStyles(feature, modifyEnabled.value, pointRadius),
+    ...baseStyles,
+  ];
+}
 
 function style(feature: Feature) {
   const properties = feature.getProperties();
@@ -461,13 +485,20 @@ function getPolygonFillColor(issue: MapIssue) {
 
 function navigateToIssue(issue: MapIssue) {
   const { query } = route;
-  navigateTo({ path: `/kaart/${issue.id}`, query });
+  return navigateTo({ path: `/kaart/${issue.id}`, query });
 }
 
-// Fallback function to create a simple circle icon if icon_data_url is missing
-const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
-  new Collection(),
+const issueSource = useTemplateRef<{
+  source: VectorSource<Feature<Point | LineString | Polygon>>;
+}>("issueSource");
+const selectedFeatures = useEditableMapFeatures(
+  computed(() => issueSource.value?.source),
+  selectedId,
+  modifyEnabled,
 );
+
+// OpenLayers bewaart getekende stijlen; teken opnieuw wanneer de interactiemodus verandert.
+watch([selectedId, modifyEnabled], () => issueSource.value?.source.changed());
 
 // ol Select stops at the first hit that fails `filter`, so exclude the layer instead
 function isNotAreaLayer(layer: Layer) {
@@ -475,23 +506,57 @@ function isNotAreaLayer(layer: Layer) {
 }
 
 function onFeatureSelect(event: SelectEvent) {
-  const selected = event.selected;
-  if (selected && selected.length > 0) {
-    const feature = selected[0] as Feature<Point | LineString | Polygon>;
-    const properties = feature.getProperties();
-    const issueId = properties.id;
-    if (issueId === selectedId.value) {
-      selectedFeatures.value.push(feature);
-      return;
-    } else {
-      selectedId.value = issueId;
-      navigateToIssue({ id: issueId } as MapIssue);
-      emit("feature-clicked");
-    }
-  } else {
-    selectedFeatures.value.clear();
+  const issueId = event.selected[0]?.get("id");
+  if (typeof issueId !== "number" || !Number.isSafeInteger(issueId) || issueId <= 0
+    || issueId === selectedId.value) {
+    return;
   }
+  selectedId.value = issueId;
+  navigateToIssue({ id: issueId } as MapIssue);
+  emit("feature-clicked");
 }
+
+const pendingEditId = ref<number | null>(null);
+
+function canEditFeature(id: number) {
+  return authStatus.value === "authenticated" && isConnected.value && !isLocked(id) && !isDrawing.value;
+}
+
+async function onFeatureDoubleClick(event: MapBrowserEvent) {
+  if (isDrawing.value) return;
+  const id = event.map.forEachFeatureAtPixel(event.pixel, feature => {
+    const id = feature.get("id");
+    if (typeof id === "number" && Number.isSafeInteger(id) && id > 0
+      && issueSource.value?.source.hasFeature(feature as Feature<Point | LineString | Polygon>)) return id;
+  }, { hitTolerance: mobile.value ? 15 : 5, layerFilter: isNotAreaLayer });
+  if (id === undefined) return;
+
+  // Stop DoubleClickZoom voordat OpenLayers de gebeurtenis aan interacties doorgeeft.
+  event.preventDefault();
+  event.stopPropagation();
+  event.map.getView().cancelAnimations();
+  if (!canEditFeature(id)) return;
+  if (selectedId.value !== id) {
+    selectedId.value = id;
+    emit("feature-clicked");
+  }
+  await navigateToIssue({ id } as MapIssue);
+  await nextTick();
+  if (selectedId.value === id) pendingEditId.value = id;
+}
+
+// Routewijzigingen beëindigen de bewerkmodus en kunnen eerder klaar zijn dan het ophalen van het onderwerp.
+watch([pendingEditId, selectedId, () => selectedIssue.value?.id], ([id, selected, loaded]) => {
+  if (id === null) return;
+  if (selected !== id) {
+    pendingEditId.value = null;
+    return;
+  }
+  if (loaded === id) {
+    pendingEditId.value = null;
+    if (canEditFeature(id)) isEditing.value = true;
+  }
+}, { flush: "post" });
 
 function onModifyEnd(event: ModifyEvent) {
   const writer = new GeoJSON();
@@ -509,15 +574,7 @@ function onModifyEnd(event: ModifyEvent) {
   // @ts-expect-error - geometry type is complex
   selectedIssue.value!.geometry = geoJSON.geometry;
 
-  // ALSO update the geometry in the issues array (which the map renders from)
-  // This prevents the map from reverting to the old geometry
-  const issueIndex = selectedIssues.value.findIndex(
-    (i) => "id" in i && i.id === selectedId.value,
-  );
-  if (issueIndex !== -1) {
-    // @ts-expect-error - geometry type is complex
-    selectedIssues.value[issueIndex].geometry = geoJSON.geometry;
-  }
+  // useIssues beheert de tijdelijke voorvertoning en herstelt deze wanneer de selectie verandert.
 }
 
 const emit = defineEmits(["feature-clicked"]);

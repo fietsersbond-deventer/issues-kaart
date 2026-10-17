@@ -8,8 +8,8 @@ import {
   focusKey,
   resolveFocusTarget,
   type FocusTarget,
-} from "~/utils/mapFocusTarget";
-import { transformBboxToOpenLayers } from "~/utils/getIssuesBbox";
+} from "../utils/mapFocusTarget";
+import { transformBboxToOpenLayers } from "../utils/getIssuesBbox";
 
 type Padding = [number, number, number, number];
 
@@ -113,6 +113,10 @@ export function useMapFocus(
     const t = target.value;
     if (!t || !initialized || !mapRef.value?.map) return;
     const k = key.value!;
+    if (isEditing.value) {
+      appliedKey = k;
+      return;
+    }
     if (!force && k === appliedKey) return;
     // the first fit has nothing to animate from
     const first = appliedKey === undefined;

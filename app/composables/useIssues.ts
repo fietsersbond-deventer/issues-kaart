@@ -10,6 +10,7 @@ import { useThrottleFn } from "@vueuse/core";
 export const useIssues = defineStore("issues", () => {
   const ws = useSharedIssuesWebSocket();
   const issues = ref<Issue[]>([]);
+  const previewOriginals = new Map<number, Issue>();
 
   // Get categories for enriching issues
   const { categories } = storeToRefs(useCategories());
@@ -52,6 +53,7 @@ export const useIssues = defineStore("issues", () => {
       }
       case "issue-modified": {
         const issue = processIssue(parsed.payload as Issue);
+        previewOriginals.delete(issue.id);
         const existingIndex = issues.value.findIndex(
           (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined),
         );
@@ -66,6 +68,7 @@ export const useIssues = defineStore("issues", () => {
       case "issue-deleted": {
         const payload = (parsed as WebSocketMessage<"issue-deleted">).payload;
         const issueId = payload.id;
+        previewOriginals.delete(issueId);
 
         issues.value = issues.value.filter((i) => i.id !== issueId);
         break;
@@ -76,9 +79,21 @@ export const useIssues = defineStore("issues", () => {
   });
 
   // any changes to the selected issue should be reflected in this store
-  const { issue } = storeToRefs(useSelectedIssue());
+  const { issue, selectedId } = storeToRefs(useSelectedIssue());
+
+  watch(selectedId, (_id, previousId) => {
+    if (previousId === null) return;
+    const original = previewOriginals.get(previousId);
+    if (!original) return;
+    const index = issues.value.findIndex(item => item.id === previousId);
+    if (index !== -1) issues.value[index] = processIssue(original);
+    previewOriginals.delete(previousId);
+  }, { flush: "sync" });
+
   const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
     if (!issue) return;
+    // Een wachtende voorvertoning kan horen bij het onderwerp dat we zojuist hebben verlaten.
+    if (isExistingIssue(issue) && issue.id !== selectedId.value) return;
 
     const existingIndex = issues.value.findIndex(
       (i) =>
@@ -87,6 +102,9 @@ export const useIssues = defineStore("issues", () => {
     );
 
     if (existingIndex !== -1) {
+      if (isExistingIssue(issue) && !previewOriginals.has(issue.id)) {
+        previewOriginals.set(issue.id, JSON.parse(JSON.stringify(issues.value[existingIndex])));
+      }
       // Update existing issue in store
       issues.value[existingIndex] = processIssue(issue);
     } else {
@@ -110,6 +128,7 @@ export const useIssues = defineStore("issues", () => {
   watch(
     data,
     (newData) => {
+      previewOriginals.clear();
       if (newData) {
         issues.value = newData.map((issue) => processIssue(issue));
       } else {
