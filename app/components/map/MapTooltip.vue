@@ -1,7 +1,7 @@
 <template>
   <div>
     <ol-overlay
-      v-if="tooltipContent && !isDrawing"
+      v-if="tooltipContent && !isInteracting"
       :position="tooltipPosition"
       positioning="bottom-center"
     >
@@ -30,6 +30,20 @@ const tooltipContent = ref<string | null>(null);
 const tooltipImage = ref<string | null>(null);
 const tooltipPosition = ref<number[]>([0, 0]);
 const tags = ref<Tag[]>([]);
+const { isEditing } = useIsEditing();
+const isInteracting = computed(() => isDrawing || isEditing.value);
+
+function clearTooltip() {
+  tooltipContent.value = null;
+  tooltipImage.value = null;
+  tags.value = [];
+  const target = map?.getTargetElement();
+  if (target) target.style.cursor = "";
+}
+
+watch(isInteracting, (active) => {
+  if (active) clearTooltip();
+});
 
 const { getTag } = useTagsApi();
 
@@ -50,9 +64,8 @@ onMounted(() => {
   if (!map) return;
   pointerListener = (evt: MapBrowserEvent<PointerEvent>) => {
     // Don't show tooltip when drawing/editing
-    if (isDrawing) {
-      tooltipContent.value = null;
-      tooltipImage.value = null;
+    if (isInteracting.value) {
+      clearTooltip();
       return;
     }
 
@@ -77,9 +90,7 @@ onMounted(() => {
         tooltipPosition.value = map.getCoordinateFromPixel(pointerPixel);
       }
     } else {
-      tooltipContent.value = null;
-      tooltipImage.value = null;
-      map.getTargetElement().style.cursor = "";
+      clearTooltip();
     }
   };
   map.on("pointermove", pointerListener);
