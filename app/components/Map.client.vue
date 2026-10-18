@@ -217,7 +217,7 @@ function updatePadding(controlsSize: Size) {
 
 const mapRef = useTemplateRef("mapRef");
 
-const { mobile } = useDisplay();
+const { mobile } = useVDisplay();
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {

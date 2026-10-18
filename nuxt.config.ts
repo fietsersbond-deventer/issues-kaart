@@ -142,7 +142,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   vuetify: {
     moduleOptions: {
-      /* module specific options */
+      prefixComposables: true,
     },
     vuetifyOptions: {
       /* vuetify options */
