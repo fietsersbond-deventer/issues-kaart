@@ -17,11 +17,22 @@
         <td>
           <LegendIndicator :legend="item" :size="24" />
         </td>
-        <td class="text-body-2 text-truncate pa-2">{{ item.name }}</td>
+        <td class="text-body-2 text-truncate pa-2">
+          {{ item.name }}
+        </td>
         <td>
-          <v-tooltip v-if="item.description" :text="item.description" location="top">
+          <v-tooltip
+            v-if="item.description"
+            :text="item.description"
+            location="top"
+          >
             <template #activator="{ props }">
-              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
+              <v-icon
+                v-bind="props"
+                icon="mdi-information"
+                size="x-small"
+                color="grey"
+              />
             </template>
           </v-tooltip>
         </td>
@@ -54,9 +65,18 @@
           />
         </td>
         <td>
-          <v-tooltip v-if="tag.description" :text="tag.description" location="top">
+          <v-tooltip
+            v-if="tag.description"
+            :text="tag.description"
+            location="top"
+          >
             <template #activator="{ props }">
-              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
+              <v-icon
+                v-bind="props"
+                icon="mdi-information"
+                size="x-small"
+                color="grey"
+              />
             </template>
           </v-tooltip>
         </td>
@@ -149,7 +169,7 @@ const countIssues = computed(() => {
 /* Tags nemen alleen de ruimte die ze nodig hebben en scrollen zodra max-height wordt overschreden. */
 .tags-list {
   flex: 0 1 auto;
-  min-height: 0;
+  min-height: 3 em;
   display: flex;
   flex-direction: column;
 }
@@ -165,7 +185,9 @@ const countIssues = computed(() => {
   min-height: 28px !important;
   height: 28px !important;
   padding: 0 8px !important;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .counter {
