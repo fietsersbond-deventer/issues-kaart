@@ -153,7 +153,7 @@
             :src="parsedPreview.previewDataUrl"
             alt="Street View voorvertoning"
             class="streetview-dialog-preview"
-          />
+          >
         </div>
       </v-card-text>
       <v-card-actions>
@@ -180,7 +180,7 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import { isExistingIssue, type Issue } from "~~/shared/types/Issue";
+import { isExistingIssue, type Issue, type NewIssue } from "~~/shared/types/Issue";
 import { imageCompressor } from "quill-image-compress";
 import {
   ensureStreetViewEmbedBlotRegistered,
@@ -195,7 +195,7 @@ void ensureStreetViewEmbedBlotRegistered();
 
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
-const issue = defineModel<Issue>({ required: true });
+const issue = defineModel<Issue | NewIssue>({ required: true });
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {

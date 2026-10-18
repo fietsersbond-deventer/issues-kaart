@@ -1,5 +1,5 @@
-import type { WebSocketPeer } from "#nitro";
-import { defineWebSocketHandler } from "#nitro";
+import type { Peer as WebSocketPeer } from "crossws";
+
 import type { Issue } from "~~/shared/types/Issue";
 import type { WebSocketEvents } from "~~/shared/types/WebSocketMessages";
 import { getEmitter } from "~~/server/utils/getEmitter";

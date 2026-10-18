@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MapIssue } from "~~/shared/types/Issue";
+import type { MapIssue, NewIssue } from "~~/shared/types/Issue";
 import { register } from "ol/proj/proj4.js";
 import { transform } from "ol/proj";
 import proj4 from "proj4";
@@ -150,13 +150,14 @@ import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
 import type Layer from "ol/layer/Layer";
 import Color from "color";
+defineOptions({ name: "IssueMap" });
 
 // Use lightweight map issues for rendering (only essential fields)
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 const { selectedIssues } = useSelectedIssues();
 const route = useRoute();
 
-function isSelected(issue: MapIssue) {
+function isSelected(issue: MapIssue | NewIssue) {
   return issue.id === selectedId.value;
 }
 
@@ -166,7 +167,7 @@ const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
 /**
  * Returns the properties object for any OpenLayers feature, with type safety.
  */
-function getFeatureProperties(issue: MapIssue) {
+function getFeatureProperties(issue: MapIssue | NewIssue) {
   const { geometry, ...props } = issue;
   return props;
 }
@@ -219,7 +220,7 @@ const isDrawing = computed(() => {
   return addFeature.value?.isDrawing || false;
 });
 
-const { zoom, center } = useMapView(mapRef);
+const { zoom } = useMapView(mapRef);
 const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
@@ -425,31 +426,31 @@ const lines = computed(() => {
   );
 });
 
-function toPointCoords(issue: MapIssue) {
-  if (issue.geometry.type !== "Point") return [0, 0];
+function toPointCoords(issue: MapIssue | NewIssue) {
+  if (issue.geometry?.type !== "Point") return [0, 0];
   return transform(issue.geometry.coordinates, "EPSG:4326", "EPSG:3857");
 }
 
-function toLineCoords(issue: MapIssue) {
-  if (issue.geometry.type !== "LineString") return [[0, 0]];
+function toLineCoords(issue: MapIssue | NewIssue) {
+  if (issue.geometry?.type !== "LineString") return [[0, 0]];
   return issue.geometry.coordinates.map((coord) =>
     transform(coord, "EPSG:4326", "EPSG:3857"),
   );
 }
 
-function toPolygonCoords(issue: MapIssue) {
-  if (issue.geometry.type !== "Polygon") return [[[0, 0]]];
+function toPolygonCoords(issue: MapIssue | NewIssue) {
+  if (issue.geometry?.type !== "Polygon") return [[[0, 0]]];
   return issue.geometry.coordinates.map((ring) =>
     ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857")),
   );
 }
 
-function getPolygonFillColor(issue: MapIssue) {
+function getPolygonFillColor(issue: MapIssue | NewIssue) {
   const color = new Color(issue.legend?.color || "#000000");
   return color.fade(0.5);
 }
 
-function navigateToIssue(issue: MapIssue) {
+function navigateToIssue(issue: Pick<MapIssue, "id">) {
   const { query } = route;
   navigateTo({ path: `/kaart/${issue.id}`, query });
 }

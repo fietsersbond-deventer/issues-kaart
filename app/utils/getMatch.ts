@@ -4,11 +4,11 @@ function snippetAround(
   termLength: number,
   whitespaces: number,
 ) {
-  var _ws = [" ", "\t"];
+  const _ws = [" ", "\t"];
 
-  var whitespace = 0;
-  var rightLimit = 0;
-  var leftLimit = 0;
+  let whitespace = 0;
+  let rightLimit;
+  let leftLimit;
 
   // right trim index
   for (

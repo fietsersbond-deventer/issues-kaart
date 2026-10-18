@@ -7,7 +7,7 @@
         alt="Fietsersbond"
         max-height="40"
         class="ml-4"
-      />
+      >
       <div class="header-link ml-3">{{ headerText }}</div>
     </NuxtLink>
     <v-spacer />

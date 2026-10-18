@@ -42,11 +42,11 @@ const transformedCoords = computed(() => {
 
 // Calculate center of polygon for tooltip
 const tooltipPosition = computed(() => {
-  if (!props.coordinates.length || !props.coordinates[0].length) {
+  const coords = props.coordinates[0]; // Use first ring
+  if (!coords?.length) {
     return fromLonLat([0, 0]);
   }
 
-  const coords = props.coordinates[0]; // Use first ring
   const sumX = coords.reduce((sum, coord) => sum + coord[0], 0);
   const sumY = coords.reduce((sum, coord) => sum + coord[1], 0);
   const center: [number, number] = [sumX / coords.length, sumY / coords.length];

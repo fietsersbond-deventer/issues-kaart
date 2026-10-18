@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import type { OnlineUser } from "@/composables/useOnlineUsers";
+import type { OnlineUser } from "~~/shared/types/WebSocketMessages";
 
 interface Props {
   user: OnlineUser;

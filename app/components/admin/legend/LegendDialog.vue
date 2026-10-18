@@ -44,7 +44,7 @@
                       :src="editedItem.icon_data_url"
                       alt="Map icon preview"
                       style="width: 36px; height: 36px; border-radius: 50%"
-                    />
+                    >
                     <v-chip v-else color="grey" size="small"
                       >Genereren...</v-chip
                     >

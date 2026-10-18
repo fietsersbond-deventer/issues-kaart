@@ -127,6 +127,7 @@ function onTagClick(tag: string) {
 const countIssues = computed(() => {
   const counts: Record<number, number> = {};
   selectedIssues.value.forEach((issue) => {
+    if (issue.legend_id === undefined) return;
     counts[issue.legend_id] = (counts[issue.legend_id] ?? 0) + 1;
   });
 

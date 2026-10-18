@@ -23,7 +23,11 @@ export type NewIssue = Omit<
   Issue,
   "id" | "created_at" | "imageUrl" | "geometry" | "legend_id" | "legend"
 > &
-  Partial<Pick<Issue, "geometry" | "legend_id" | "legend">>;
+  Partial<Pick<Issue, "legend_id" | "legend">> & {
+    id?: never;
+    imageUrl?: never;
+    geometry?: Issue["geometry"] | null;
+  };
 
 export type MapIssue = Pick<
   Issue,
@@ -50,13 +54,13 @@ export type ParseFields<T extends string> =
 
 export type IssueWithFields<T extends string> = Pick<Issue, ParseFields<T>>;
 
-export function isExistingIssue(
-  issue?: Issue | NewIssue | null,
-): issue is Issue {
+export function isExistingIssue<T extends { id?: number }>(
+  issue?: T | null,
+): issue is T & { id: number } {
   if (!issue) return false;
   return "id" in issue;
 }
 
-export function isNewIssue(issue: Issue | NewIssue): issue is NewIssue {
+export function isNewIssue(issue: Issue | MapIssue | NewIssue): issue is NewIssue {
   return !("id" in issue);
 }

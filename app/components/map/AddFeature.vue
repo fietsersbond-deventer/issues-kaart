@@ -44,7 +44,7 @@ function onDrawEnd(event: DrawEvent) {
     console.warn("No issue selected to update geometry");
     return;
   }
-  issue.value.geometry = geoJSON.geometry;
+  issue.value.geometry = geoJSON.geometry as Issue["geometry"];
 }
 
 eventBus.on("startPoint", () => startDrawing(POINT));

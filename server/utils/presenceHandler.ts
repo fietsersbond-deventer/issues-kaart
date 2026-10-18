@@ -1,4 +1,4 @@
-import type { WebSocketPeer } from "#nitro";
+import type { Peer as WebSocketPeer } from "crossws";
 import type { OnlineUser } from "~~/shared/types/WebSocketMessages";
 import { getPeerSession } from "./peerSession";
 

@@ -35,7 +35,6 @@ export function useMapFocus(
   const { visibleCategoryIds, isShowingAllCategories } =
     storeToRefs(useCategoryFilters());
   const { isEditing } = useIsEditing();
-  const { mobile } = useDisplay();
   const { bbox: areaBbox } = useCurrentArea();
 
   const prefer = ref<"issue" | "filter">("issue");
@@ -115,7 +114,6 @@ export function useMapFocus(
     const k = key.value!;
     if (!force && k === appliedKey) return;
     // the first fit has nothing to animate from
-    const first = appliedKey === undefined;
     appliedKey = k;
     fit(t);
   }

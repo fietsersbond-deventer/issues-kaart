@@ -1,4 +1,4 @@
-import type { WebSocketPeer } from "#nitro";
+import type { Peer as WebSocketPeer } from "crossws";
 import { getDb } from "./db";
 import { getPeerSession } from "./peerSession";
 

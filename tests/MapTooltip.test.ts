@@ -88,6 +88,14 @@ afterEach(() => {
 });
 
 describe("MapTooltip bestaand gedrag", () => {
+  it("toont inhoud zonder cursorwijziging wanneer het kaartdoel ontbreekt", async () => {
+    mountTooltip();
+    map.getTargetElement.mockReturnValue(undefined);
+    await hover();
+    expect(wrapper.text()).toContain("Route");
+    expect(wrapper.find('[data-test="overlay"]').exists()).toBe(true);
+  });
+
   it("registreert en verwijdert dezelfde muisbewegingslistener", () => {
     mountTooltip();
     expect(map.on).toHaveBeenCalledWith("pointermove", expect.any(Function));
