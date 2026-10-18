@@ -136,9 +136,8 @@
 </template>
 
 <script setup lang="ts">
-import type { MapIssue, NewIssue } from "~~/shared/types/Issue";
+import type { MapIssue } from "~~/shared/types/Issue";
 import { register } from "ol/proj/proj4.js";
-import { transform } from "ol/proj";
 import proj4 from "proj4";
 import Projection from "ol/proj/Projection";
 import type { SelectEvent } from "ol/interaction/Select";
@@ -146,10 +145,15 @@ import { Collection, type Feature } from "ol";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import { GeoJSON } from "ol/format";
 import type { LineString, Point, Polygon } from "ol/geom";
-import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
 import { click } from "ol/events/condition";
 import type Layer from "ol/layer/Layer";
-import Color from "color";
+import { getIssueMapStyle } from "../utils/issueMapStyle";
+import {
+  getFeatureProperties,
+  toPointCoords,
+  toLineCoords,
+  toPolygonCoords,
+} from "../utils/issueMapGeometry";
 defineOptions({ name: "IssueMap" });
 
 // Use lightweight map issues for rendering (only essential fields)
@@ -157,20 +161,8 @@ const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 const { selectedIssues } = useSelectedIssues();
 const route = useRoute();
 
-function isSelected(issue: MapIssue | NewIssue) {
-  return issue.id === selectedId.value;
-}
-
 // Layer preference management
 const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
-
-/**
- * Returns the properties object for any OpenLayers feature, with type safety.
- */
-function getFeatureProperties(issue: MapIssue | NewIssue) {
-  const { geometry, ...props } = issue;
-  return props;
-}
 
 // preview images for layers
 const luchtfotoSource = useTemplateRef("luchtfoto-source");
@@ -250,152 +242,8 @@ const isMapSmall = computed(() => {
 });
 
 function style(feature: Feature) {
-  const properties = feature.getProperties();
-  const issueId = properties.id;
-  const issue = selectedIssues.value?.find((i) => i.id === issueId);
-  if (!issue) return;
-
-  // Provide default color if none specified (for backward compatibility)
-  const issueColor = issue.legend?.color;
-
-  // Set higher zIndex for selected features to bring them to the top
-  const zIndex = isSelected(issue) ? 1000 : 1;
-
-  if (feature.getGeometry()!.getType() === "Point") {
-    // If the issue has an icon, use it with black circle when selected
-    if (issue.legend?.icon) {
-      if (issue.legend?.icon_data_url) {
-        const minScale = 0.3; // Small when zoomed out (low zoom values)
-        const maxScale = 0.7; // larger when zoomed in (high zoom values)
-        const finalScale =
-          minScale + ((zoom.value - 10) / 8) * (maxScale - minScale);
-        // Clamp to min/max bounds
-        const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
-
-        const iconStyle = new Style({
-          image: new Icon({
-            src: issue.legend.icon_data_url,
-            scale: clampedScale,
-            anchor: [0.5, 0.5],
-          }),
-          zIndex,
-        });
-
-        // Add black border overlay if selected (scale border with icon)
-        if (isSelected(issue)) {
-          // Calculate actual rendered icon size: base canvas size (64px) * current scale
-          const baseIconSize = 64; // This matches the canvas size from iconCanvas.ts (32 * 2)
-          const actualIconSize = baseIconSize * clampedScale;
-          const iconRadius = actualIconSize / 2; // Icon is circular, so radius is half the size
-          const borderRadius = iconRadius + 1; // Border extends 1px beyond the icon edge
-          const borderStyle = new Style({
-            image: new Circle({
-              radius: Math.max(6, borderRadius),
-              fill: new Fill({ color: "transparent" }),
-              stroke: new Stroke({ color: "black", width: 3 }),
-            }),
-            zIndex: zIndex + 1, // Border slightly above the icon
-          });
-          return [iconStyle, borderStyle]; // Return both styles
-        }
-
-        return iconStyle;
-      }
-
-      const minRadius = 3; // Small when zoomed out (low zoom values)
-      const maxRadius = 7; // Normal size when zoomed in (high zoom values)
-      const finalRadius =
-        minRadius + ((zoom.value - 10) / 8) * (maxRadius - minRadius);
-      // Clamp to min/max bounds
-      const clampedRadius = Math.max(
-        minRadius,
-        Math.min(maxRadius, finalRadius),
-      );
-
-      const circleStyle = new Style({
-        image: new Circle({
-          radius: clampedRadius,
-          fill: new Fill({ color: issue.legend?.color || "#2196F3" }),
-          stroke: new Stroke({
-            color: "white",
-            width: Math.max(1, clampedRadius / 6),
-          }),
-        }),
-        zIndex,
-      });
-
-      // Add black border overlay if selected (scale with circle)
-      if (isSelected(issue)) {
-        const borderRadius = finalRadius + 3;
-        const borderStyle = new Style({
-          image: new Circle({
-            radius: borderRadius,
-            fill: new Fill({ color: "transparent" }),
-            stroke: new Stroke({ color: "black", width: 3 }),
-          }),
-          zIndex: zIndex + 1, // Border slightly above the circle
-        });
-        return [circleStyle, borderStyle]; // Return both styles
-      }
-
-      return circleStyle;
-    } else {
-      // Fallback to circle for issues without icons
-      return new Style({
-        image: new Circle({
-          radius: 8,
-          fill: new Fill({ color: issueColor }),
-          stroke: new Stroke({
-            color: isSelected(issue) ? "black" : "white",
-            width: 2,
-          }),
-        }),
-        zIndex,
-      });
-    }
-  } else if (feature.getGeometry()!.getType() === "LineString") {
-    const lineWidth = 3;
-    const selectedLineWidth = 6;
-
-    if (isSelected(issue as MapIssue)) {
-      // Draw black border first (thicker), then colored line on top
-      const borderStyle = new Style({
-        stroke: new Stroke({
-          color: "black",
-          width: selectedLineWidth + 2, // 2px wider than the colored line
-        }),
-        zIndex: zIndex, // Border at base z-index
-      });
-
-      const lineStyle = new Style({
-        stroke: new Stroke({
-          color: issueColor,
-          width: selectedLineWidth,
-        }),
-        zIndex: zIndex + 1, // Line slightly above the border
-      });
-
-      return [borderStyle, lineStyle]; // Return both styles - border first, then line
-    } else {
-      return new Style({
-        stroke: new Stroke({
-          color: issueColor,
-          width: lineWidth,
-        }),
-        zIndex,
-      });
-    }
-  } else
-    return new Style({
-      stroke: new Stroke({
-        color: isSelected(issue as MapIssue) ? "black" : issueColor,
-        width: 2,
-      }),
-      fill: new Fill({
-        color: getPolygonFillColor(issue as MapIssue).toString(),
-      }),
-      zIndex,
-    });
+  const issue = selectedIssues.value.find((issue) => issue.id === feature.get("id"));
+  return getIssueMapStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
 }
 
 proj4.defs(
@@ -425,30 +273,6 @@ const lines = computed(() => {
     (issue) => issue.geometry?.type === "LineString",
   );
 });
-
-function toPointCoords(issue: MapIssue | NewIssue) {
-  if (issue.geometry?.type !== "Point") return [0, 0];
-  return transform(issue.geometry.coordinates, "EPSG:4326", "EPSG:3857");
-}
-
-function toLineCoords(issue: MapIssue | NewIssue) {
-  if (issue.geometry?.type !== "LineString") return [[0, 0]];
-  return issue.geometry.coordinates.map((coord) =>
-    transform(coord, "EPSG:4326", "EPSG:3857"),
-  );
-}
-
-function toPolygonCoords(issue: MapIssue | NewIssue) {
-  if (issue.geometry?.type !== "Polygon") return [[[0, 0]]];
-  return issue.geometry.coordinates.map((ring) =>
-    ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857")),
-  );
-}
-
-function getPolygonFillColor(issue: MapIssue | NewIssue) {
-  const color = new Color(issue.legend?.color || "#000000");
-  return color.fade(0.5);
-}
 
 function navigateToIssue(issue: Pick<MapIssue, "id">) {
   const { query } = route;
