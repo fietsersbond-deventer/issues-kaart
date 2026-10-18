@@ -35,6 +35,7 @@ const refit=vi.fn();
 const navigate=vi.fn();
 const query={ tag: "veilig",cat: "1" };
 let padding: { value: number[] };
+let focusMapSize: { value: [number, number] };
 let wrapper: VueWrapper;
 const Container=defineComponent({ template: "<div><slot /></div>" });
 const FeatureStub=defineComponent({ props: ["properties"],template: "<div><slot /></div>" });
@@ -104,7 +105,8 @@ beforeEach(() => {
   vi.stubGlobal("useIsEditing",() => ({ isEditing: editing }));
   vi.stubGlobal("useMapView",() => ({ zoom }));
   vi.stubGlobal("useMapResize",() => ({ mapHeight: height,mapWidth: width }));
-  vi.stubGlobal("useMapFocus",(_map: unknown,p: typeof padding) => {
+  vi.stubGlobal("useMapFocus",(_map: unknown,p: typeof padding, size: typeof focusMapSize) => {
+    focusMapSize = size;
     padding=p;
     return { refit };
   });
@@ -186,6 +188,44 @@ describe("kaartcontract vóór opsplitsing",() => {
     wrapper.getComponent(Size).vm.$emit("update:modelValue",{ width: 400,height: 120 });
     await nextTick();
     expect(padding.value).toEqual([100,50,170,50]);
+  });
+
+  it("behoudt de publieke refit en gedeelde laagvoorkeur zonder optionele slots", async () => {
+    mountMap();
+    expect(wrapper.findComponent(Size).exists()).toBe(false);
+    const api = wrapper.vm as unknown as {
+      refit: typeof refit;
+      preferredLayer: string;
+    };
+    api.refit({ overview: true });
+    expect(refit).toHaveBeenCalledWith({ overview: true });
+    preferredLayer.value = "Foto";
+    await nextTick();
+    expect(api.preferredLayer).toBe("Foto");
+    api.preferredLayer = "Fiets";
+    await nextTick();
+    expect(preferredLayer.value).toBe("Fiets");
+    expect(wrapper.findAllComponents(Tile).map(w => w.props("visible"))).toEqual([false, true, false, false]);
+  });
+
+  it("leest de exposed drawing-status direct bij mount", async () => {
+    drawing.value = true;
+    mountMap();
+    await nextTick();
+    expect(wrapper.findComponent(Select).exists()).toBe(false);
+    expect(wrapper.getComponent(Tooltip).props("isDrawing")).toBe(true);
+    drawing.value = false;
+    await nextTick();
+    expect(wrapper.findComponent(Select).exists()).toBe(true);
+    expect(wrapper.getComponent(Tooltip).props("isDrawing")).toBe(false);
+  });
+
+  it("geeft de actuele kaartafmetingen door aan de bestaande focus-composable", () => {
+    mountMap();
+    expect(focusMapSize.value).toEqual([800, 600]);
+    width.value = 360;
+    height.value = 240;
+    expect(focusMapSize.value).toEqual([360, 240]);
   });
 
   it("selecteert met querybehoud en meldt alleen een nieuw onderwerp",async () => {
