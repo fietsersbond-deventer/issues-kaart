@@ -18,7 +18,7 @@
       position="bottom-left"
     >
       <SizeCalculator v-model="bottomLeftSize">
-        <slot name="bottom-left-controls" />
+        <slot name="bottom-left-controls" :map-width="mapWidth" />
       </SizeCalculator>
     </MapControlContainer>
 
