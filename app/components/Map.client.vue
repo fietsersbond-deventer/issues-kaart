@@ -4,7 +4,7 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view ref="view" :projection="projection" />
+    <ol-view projection="EPSG:3857" />
 
     <MapControlContainer position="top-left">
       <slot name="top-left-controls" />
@@ -53,11 +53,16 @@
 
 <script setup lang="ts">
 import type { Feature } from "ol";
+import type AddFeature from "./map/AddFeature.vue";
 import { click } from "ol/events/condition";
 import { getIssueMapStyle } from "../utils/issueMapStyle";
 defineOptions({ name: "IssueMap" });
 
-const emit = defineEmits(["feature-clicked"]);
+defineSlots<{
+  "top-left-controls"?: () => unknown;
+  "bottom-left-controls"?: (props: { mapWidth: number }) => unknown;
+}>();
+const emit = defineEmits<{ "feature-clicked": [] }>();
 const {
   selectedId,
   selectedIssues,
@@ -97,14 +102,10 @@ const mapRef = useTemplateRef("mapRef");
 
 const { mobile } = useVDisplay();
 
-const addFeature = ref(null);
-const isDrawing = computed(() => {
-  // @ts-expect-error - isDrawing is a property of the addFeature component
-  return addFeature.value?.isDrawing || false;
-});
+const addFeature = useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
+const isDrawing = computed(() => addFeature.value?.isDrawing || false);
 
 const { zoom } = useMapView(mapRef);
-const projection = ref("EPSG:3857");
 
 // Setup resize observer to handle container size changes
 const { mapHeight, mapWidth } = useMapResize(mapRef);

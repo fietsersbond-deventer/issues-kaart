@@ -6,6 +6,8 @@ import { Collection,Feature } from "ol";
 import { Point,LineString,Polygon } from "ol/geom";
 import { fromLonLat } from "ol/proj";
 import type { Circle,Icon,Style } from "ol/style";
+import IssueLayer from "../app/components/map/IssueLayer.vue";
+import { useMapIssueInteractions } from "../app/composables/useMapIssueInteractions";
 import BaseLayers from "../app/components/map/BaseLayers.vue";
 import IssueMap from "../app/components/Map.client.vue";
 import type { MapIssue,Issue } from "../shared/types/Issue";
@@ -57,7 +59,7 @@ function mountMap(withSlots=false) {
   wrapper=mount(IssueMap,{
     slots: withSlots? { "top-left-controls": "<b>Top</b>","bottom-left-controls": ({ mapWidth }: { mapWidth: number }) => `Width ${mapWidth}` }:{},
     global: {
-      components: { MapBaseLayers: BaseLayers },
+      components: { MapBaseLayers: BaseLayers, MapIssueLayer: IssueLayer },
       stubs: {
         "ol-map": Container,"ol-view": true,MapControlContainer: Container,MapResetExtentControl: Reset,
         MapFilterSummary: true,SizeCalculator: Size,MapAddFeature: AddFeature,
@@ -92,6 +94,7 @@ beforeEach(() => {
   preferredLayer.value="Licht";
   for(const [name,value] of Object.entries({ ref,computed,watch,useTemplateRef })) vi.stubGlobal(name,value);
   vi.stubGlobal("storeToRefs",(store: unknown) => store);
+  vi.stubGlobal("useMapIssueInteractions", useMapIssueInteractions);
   vi.stubGlobal("useSelectedIssue",() => ({ issue: selectedIssue,selectedId }));
   vi.stubGlobal("useSelectedIssues",() => ({ selectedIssues }));
   vi.stubGlobal("useRoute",() => ({ query }));
