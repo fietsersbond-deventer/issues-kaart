@@ -6,24 +6,21 @@
   >
     <ol-view ref="view" :projection="projection" />
 
-    <!-- Top-left corner controls -->
-    <slot name="top-left-controls">
-      <MapControlContainer position="top-left">
-        <MapResetExtentControl @reset="resetToOriginalExtent" />
-      </MapControlContainer>
-    </slot>
+    <MapControlContainer position="top-left">
+      <slot name="top-left-controls" />
+      <MapResetExtentControl @reset="resetToOriginalExtent" />
+    </MapControlContainer>
 
     <MapFilterSummary />
 
-    <!-- Bottom-left corner controls -->
-    <slot name="bottom-left-controls" :is-small="isMapSmall">
-      <MapControlContainer v-show="!isMapSmall" position="bottom-left">
-        <SizeCalculator v-model="legendSize">
-          <MapLegend />
-          <MapLayerSwitcher v-model="preferredLayer" />
-        </SizeCalculator>
-      </MapControlContainer>
-    </slot>
+    <MapControlContainer
+      v-if="$slots['bottom-left-controls']"
+      position="bottom-left"
+    >
+      <SizeCalculator v-model="bottomLeftSize">
+        <slot name="bottom-left-controls" :map-width="mapWidth" />
+      </SizeCalculator>
+    </MapControlContainer>
 
     <MapAddFeature ref="addFeature" />
 
@@ -150,10 +147,6 @@ import { click } from "ol/events/condition";
 import type Layer from "ol/layer/Layer";
 import Color from "color";
 
-interface Size {
-  width: number;
-  height: number;
-}
 
 // Use lightweight map issues for rendering (only essential fields)
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
@@ -186,32 +179,22 @@ watchLayerVisibility(fietskaart, "Fiets");
 watchLayerVisibility(luchtfotoSource, "Foto");
 
 // [top, right, bottom, left]
-const currentPadding = ref<[number, number, number, number]>([50, 50, 50, 50]);
+const currentPadding = ref<[number, number, number, number]>([100, 50, 50, 50]);
 
-const legendSize = ref<Size>({ width: 0, height: 0 });
+interface Size {
+  width: number;
+  height: number;
+}
+const bottomLeftSize = ref<Size>({ width: 0, height: 0 });
 
-// Update padding when size changes
-watch(legendSize, async () => {
-  currentPadding.value = [
-    100, // top
-    50, // right
-    50, // legendSize.value.height + 20, // bottom
-    legendSize.value.width + 20, // left
-  ];
+// Keep the bottom-left controls clear of the fitted extent; a hidden panel measures 0
+watch(bottomLeftSize, ({ width }) => {
+  currentPadding.value = [100, 50, 50, width > 0 ? width + 20 : 50];
+  refit();
 });
 
 function resetToOriginalExtent() {
   refit({ overview: true, duration: 1000 });
-}
-
-function updatePadding(controlsSize: Size) {
-  currentPadding.value = [
-    100, // top
-    50, // right
-    50, // controlsSize.height + 20, // bottom
-    controlsSize.width + 20,
-  ];
-  refit();
 }
 
 const mapRef = useTemplateRef("mapRef");
@@ -527,7 +510,6 @@ defineExpose({
   resetToOriginalExtent,
   refit,
   preferredLayer,
-  updatePadding,
 });
 </script>
 
