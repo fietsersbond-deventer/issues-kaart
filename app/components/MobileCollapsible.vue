@@ -31,7 +31,7 @@ defineProps<{
   icon?: string;
 }>();
 
-const { mobile } = useDisplay();
+const { mobile } = useVDisplay();
 
 // Reset expanded state when switching to desktop
 watch(mobile, (isMobile) => {

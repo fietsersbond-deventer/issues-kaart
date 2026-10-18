@@ -207,7 +207,7 @@ function resetToOriginalExtent() {
 
 const mapRef = useTemplateRef("mapRef");
 
-const { mobile } = useDisplay();
+const { mobile } = useVDisplay();
 
 const { isEditing } = useIsEditing();
 const modifyEnabled = computed(() => {

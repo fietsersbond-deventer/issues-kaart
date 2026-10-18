@@ -24,7 +24,7 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
   const sheetContentRef = ref<HTMLElement | null>(null);
 
   const { selectedId } = storeToRefs(useSelectedIssue());
-  const { mobile } = useDisplay();
+  const { mobile } = useVDisplay();
 
   // Scroll to top when selected issue changes in mobile mode
   if (autoScrollToTop) {

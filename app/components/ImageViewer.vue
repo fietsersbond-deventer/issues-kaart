@@ -23,7 +23,7 @@ const { selector = "img" } = defineProps<{
 const showImageDialog = ref(false);
 const selectedImage = ref<string | null>(null);
 const imageDialogWidth = ref<string>("90%");
-const { mobile } = useDisplay();
+const { mobile } = useVDisplay();
 
 // Handle image clicks to open dialog
 function handleImageClick(event: MouseEvent) {

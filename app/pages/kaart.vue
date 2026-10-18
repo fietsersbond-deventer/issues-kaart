@@ -6,6 +6,6 @@
 </template>
 
 <script setup lang="ts">
-const { mobile } = useDisplay();
+const { mobile } = useVDisplay();
 useMapEventBus().provide();
 </script>
