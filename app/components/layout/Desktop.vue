@@ -2,10 +2,17 @@
   <v-layout class="desktop-layout">
     <v-main class="map-main">
       <Map class="fill-height">
-        <template #bottom-left-controls>
-          <div class="map-menu-panel">
+        <template #bottom-left-controls="{ mapWidth }">
+          <div
+            class="map-menu-panel"
+            :style="{ maxWidth: mapWidth ? `${mapWidth / 2}px` : undefined }"
+          >
             <v-expansion-panels v-model="panel">
-              <v-expansion-panel title="Legenda en kaartlagen">
+              <v-expansion-panel
+                title="Legenda en kaartlagen"
+                collapse-icon="mdi-chevron-down"
+                expand-icon="mdi-chevron-up"
+              >
                 <v-expansion-panel-text>
                   <div class="map-menu-panel-text">
                     <MapLegend class="map-menu-panel-legend" />
@@ -75,6 +82,7 @@ onUnmounted(() => {
 .map-main {
   transition: width 0.3s ease;
 }
+
 .map-menu-panel {
   min-width: 250px;
   background: white;
