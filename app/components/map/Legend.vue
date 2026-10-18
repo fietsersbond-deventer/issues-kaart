@@ -116,7 +116,8 @@ const countIssues = computed(() => {
 
 <style scoped>
 .legend-container {
-  height: 100%;
+  height: auto;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   background: white;
@@ -145,9 +146,9 @@ const countIssues = computed(() => {
   scrollbar-gutter: stable;
 }
 
-/* Tags vullen de resterende ruimte en scrollen zodra max-height wordt overschreden. */
+/* Tags nemen alleen de ruimte die ze nodig hebben en scrollen zodra max-height wordt overschreden. */
 .tags-list {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -155,7 +156,8 @@ const countIssues = computed(() => {
 
 .tags-list :deep(.v-table__wrapper) {
   overflow-y: auto;
-  max-height: 10em;
+  height: auto;
+  max-height: var(--legend-tags-max-height, 10em);
   scrollbar-gutter: stable;
 }
 

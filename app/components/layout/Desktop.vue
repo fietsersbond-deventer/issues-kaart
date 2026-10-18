@@ -1,9 +1,26 @@
 <template>
   <v-layout class="desktop-layout">
-    <MapSidePanel />
-
     <v-main class="map-main">
-      <Map class="fill-height" />
+      <Map class="fill-height">
+        <template #bottom-left-controls>
+          <div class="map-menu-panel">
+            <v-expansion-panels v-model="panel">
+              <v-expansion-panel title="Legenda en kaartlagen">
+                <v-expansion-panel-text>
+                  <div class="map-menu-panel-text">
+                    <MapLegend class="map-menu-panel-legend" />
+                    <!-- Altijd zichtbaar onderaan -->
+                    <MapLayerSwitcher
+                      v-model="preferredLayer"
+                      class="map-menu-panel-layers"
+                    />
+                  </div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </div>
+        </template>
+      </Map>
     </v-main>
 
     <v-navigation-drawer
@@ -25,8 +42,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 
-const { open: menuOpen } = useMapMenu();
-menuOpen.value = true;
+// legend/layer panel is open by default on desktop
+const panel = ref<number | undefined>(0);
+
+const { preferredLayer } = useMapLayerPreference();
 
 const drawerWidth = ref(600);
 
@@ -55,5 +74,26 @@ onUnmounted(() => {
 
 .map-main {
   transition: width 0.3s ease;
+}
+.map-menu-panel {
+  min-width: 250px;
+  background: white;
+}
+
+/* Beperk de hoogte zodat de legenda scrolt in plaats van het paneel te laten groeien */
+.map-menu-panel-text {
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+}
+
+.map-menu-panel-legend {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.map-menu-panel-layers {
+  flex-shrink: 0;
+  padding: 8px;
 }
 </style>

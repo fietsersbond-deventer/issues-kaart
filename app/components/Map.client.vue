@@ -7,21 +7,20 @@
     <ol-view ref="view" :projection="projection" />
 
     <MapControlContainer position="top-left">
-      <v-btn
-        v-if="!menuOpen"
-        icon
-        size="small"
-        class="map-menu-button"
-        title="Kaartlagen en legenda"
-        aria-label="Kaartlagen en legenda openen"
-        @click="menuOpen = true"
-      >
-        <v-icon>mdi-menu</v-icon>
-      </v-btn>
+      <slot name="top-left-controls" />
       <MapResetExtentControl @reset="resetToOriginalExtent" />
     </MapControlContainer>
 
     <MapFilterSummary />
+
+    <MapControlContainer
+      v-if="$slots['bottom-left-controls']"
+      position="bottom-left"
+    >
+      <SizeCalculator v-model="bottomLeftSize">
+        <slot name="bottom-left-controls" />
+      </SizeCalculator>
+    </MapControlContainer>
 
     <MapAddFeature ref="addFeature" />
 
@@ -148,10 +147,6 @@ import { click } from "ol/events/condition";
 import type Layer from "ol/layer/Layer";
 import Color from "color";
 
-interface Size {
-  width: number;
-  height: number;
-}
 
 // Use lightweight map issues for rendering (only essential fields)
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
@@ -163,7 +158,6 @@ function isSelected(issue: MapIssue) {
 }
 
 // Layer preference management
-const { open: menuOpen } = useMapMenu();
 const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
 
 /**
@@ -186,6 +180,18 @@ watchLayerVisibility(luchtfotoSource, "Foto");
 
 // [top, right, bottom, left]
 const currentPadding = ref<[number, number, number, number]>([100, 50, 50, 50]);
+
+interface Size {
+  width: number;
+  height: number;
+}
+const bottomLeftSize = ref<Size>({ width: 0, height: 0 });
+
+// Keep the bottom-left controls clear of the fitted extent; a hidden panel measures 0
+watch(bottomLeftSize, ({ width }) => {
+  currentPadding.value = [100, 50, 50, width > 0 ? width + 20 : 50];
+  refit();
+});
 
 function resetToOriginalExtent() {
   refit({ overview: true, duration: 1000 });
@@ -508,11 +514,6 @@ defineExpose({
 </script>
 
 <style>
-.map-menu-button {
-  background: white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
 /* Ensure the ol-counter is hidden in the layer switcher */
 :deep(.ol-counter) {
   display: none !important;

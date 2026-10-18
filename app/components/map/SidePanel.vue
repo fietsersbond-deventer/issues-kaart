@@ -19,8 +19,11 @@
     </v-btn>
 
     <div class="map-side-panel-content">
-      <MapLayerSwitcher v-model="preferredLayer" />
-      <MapLegend class="mt-3" />
+      <div class="map-side-panel-scroll">
+        <MapLegend class="mt-3" />
+      </div>
+      <!-- Altijd zichtbaar onderaan, ook als de legenda scrollt -->
+      <MapLayerSwitcher v-model="preferredLayer" class="map-side-panel-layers" />
     </div>
   </v-navigation-drawer>
 </template>
@@ -47,6 +50,21 @@ const { preferredLayer } = useMapLayerPreference();
 }
 
 .map-side-panel-content {
+  /* Het paneel scrollt zelf; de tags hoeven niet apart te scrollen */
+  --legend-tags-max-height: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   padding: 56px 12px 12px;
+}
+
+.map-side-panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.map-side-panel-layers {
+  flex-shrink: 0;
 }
 </style>

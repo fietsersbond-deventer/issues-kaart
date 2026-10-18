@@ -3,7 +3,20 @@
     <MapSidePanel temporary />
 
     <v-main class="map-main" :style="{ height: `${100 - sheetHeight}%` }">
-      <Map class="fill-height" />
+      <Map class="fill-height">
+        <template #top-left-controls>
+          <v-btn
+            icon
+            size="small"
+            class="menu-btn"
+            title="Kaartlagen en legenda"
+            aria-label="Kaartlagen en legenda openen"
+            @click="menuOpen = true"
+          >
+            <v-icon>mdi-menu</v-icon>
+          </v-btn>
+        </template>
+      </Map>
     </v-main>
 
     <div class="bottom-sheet" :style="{ height: `${sheetHeight}%` }">
@@ -117,5 +130,9 @@ function toggleSheetHeight() {
 .sheet-content {
   overflow-y: auto;
   height: calc(100% - 24px);
+}
+.menu-btn {
+  background: white !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
 }
 </style>
