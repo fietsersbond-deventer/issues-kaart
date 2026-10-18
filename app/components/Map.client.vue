@@ -26,43 +26,13 @@
 
     <MapBaseLayers />
 
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
-      <ol-source-vector>
-        <ol-feature
-          v-for="issue in markers"
-          :key="`marker-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
-        >
-          <ol-geom-point :coordinates="toPointCoords(issue)" />
-        </ol-feature>
-
-        <ol-feature
-          v-for="issue in lines"
-          :key="`line-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
-        >
-          <ol-geom-line-string :coordinates="toLineCoords(issue)" />
-        </ol-feature>
-
-        <ol-feature
-          v-for="issue in polygons"
-          :key="`polygon-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
-        >
-          <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
-        </ol-feature>
-
-        <!-- editor -->
-        <ol-interaction-modify
-          v-if="modifyEnabled"
-          :features="selectedFeatures"
-          @modifyend="onModifyEnd"
-        /> </ol-source-vector
-    ></ol-vector-layer>
+    <MapIssueLayer
+      :issues="selectedIssues"
+      :feature-style="style"
+      :modify-enabled="modifyEnabled"
+      :selected-features="selectedFeatures"
+      @modifyend="onModifyEnd"
+    />
 
     <MapAreas />
 
@@ -82,27 +52,21 @@
 </template>
 
 <script setup lang="ts">
-import type { MapIssue } from "~~/shared/types/Issue";
-import type { SelectEvent } from "ol/interaction/Select";
-import { Collection, type Feature } from "ol";
-import type { ModifyEvent } from "ol/interaction/Modify";
-import { GeoJSON } from "ol/format";
-import type { LineString, Point, Polygon } from "ol/geom";
+import type { Feature } from "ol";
 import { click } from "ol/events/condition";
-import type Layer from "ol/layer/Layer";
 import { getIssueMapStyle } from "../utils/issueMapStyle";
-import {
-  getFeatureProperties,
-  toPointCoords,
-  toLineCoords,
-  toPolygonCoords,
-} from "../utils/issueMapGeometry";
 defineOptions({ name: "IssueMap" });
 
-// Use lightweight map issues for rendering (only essential fields)
-const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
-const { selectedIssues } = useSelectedIssues();
-const route = useRoute();
+const emit = defineEmits(["feature-clicked"]);
+const {
+  selectedId,
+  selectedIssues,
+  selectedFeatures,
+  modifyEnabled,
+  isNotAreaLayer,
+  onFeatureSelect,
+  onModifyEnd,
+} = useMapIssueInteractions(() => emit("feature-clicked"));
 
 const { preferredLayer } = useMapLayerPreference();
 
@@ -132,11 +96,6 @@ function resetToOriginalExtent() {
 const mapRef = useTemplateRef("mapRef");
 
 const { mobile } = useVDisplay();
-
-const { isEditing } = useIsEditing();
-const modifyEnabled = computed(() => {
-  return isEditing.value && selectedIssue.value;
-});
 
 const addFeature = ref(null);
 const isDrawing = computed(() => {
@@ -177,87 +136,6 @@ function style(feature: Feature) {
   const issue = selectedIssues.value.find((issue) => issue.id === feature.get("id"));
   return getIssueMapStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
 }
-
-const markers = computed(() => {
-  return selectedIssues.value.filter(
-    (issue) => issue.geometry?.type === "Point",
-  );
-});
-
-const polygons = computed(() => {
-  return selectedIssues.value.filter(
-    (issue) => issue.geometry?.type === "Polygon",
-  );
-});
-
-const lines = computed(() => {
-  return selectedIssues.value.filter(
-    (issue) => issue.geometry?.type === "LineString",
-  );
-});
-
-function navigateToIssue(issue: Pick<MapIssue, "id">) {
-  const { query } = route;
-  navigateTo({ path: `/kaart/${issue.id}`, query });
-}
-
-// Fallback function to create a simple circle icon if icon_data_url is missing
-const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
-  new Collection(),
-);
-
-// ol Select stops at the first hit that fails `filter`, so exclude the layer instead
-function isNotAreaLayer(layer: Layer) {
-  return layer.getClassName() !== "area-layer";
-}
-
-function onFeatureSelect(event: SelectEvent) {
-  const selected = event.selected;
-  if (selected && selected.length > 0) {
-    const feature = selected[0] as Feature<Point | LineString | Polygon>;
-    const properties = feature.getProperties();
-    const issueId = properties.id;
-    if (issueId === selectedId.value) {
-      selectedFeatures.value.push(feature);
-      return;
-    } else {
-      selectedId.value = issueId;
-      navigateToIssue({ id: issueId } as MapIssue);
-      emit("feature-clicked");
-    }
-  } else {
-    selectedFeatures.value.clear();
-  }
-}
-
-function onModifyEnd(event: ModifyEvent) {
-  const writer = new GeoJSON();
-  const feature = event.features.item(0);
-  if (!feature) {
-    console.warn("No feature modified");
-    return;
-  }
-  const geoJSON = writer.writeFeatureObject(feature, {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857",
-  });
-
-  // Update selectedIssue geometry
-  // @ts-expect-error - geometry type is complex
-  selectedIssue.value!.geometry = geoJSON.geometry;
-
-  // ALSO update the geometry in the issues array (which the map renders from)
-  // This prevents the map from reverting to the old geometry
-  const issueIndex = selectedIssues.value.findIndex(
-    (i) => "id" in i && i.id === selectedId.value,
-  );
-  if (issueIndex !== -1) {
-    // @ts-expect-error - geometry type is complex
-    selectedIssues.value[issueIndex].geometry = geoJSON.geometry;
-  }
-}
-
-const emit = defineEmits(["feature-clicked"]);
 
 // Expose functions to parent components
 defineExpose({

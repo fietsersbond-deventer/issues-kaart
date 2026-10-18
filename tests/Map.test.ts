@@ -6,6 +6,7 @@ import { Collection,Feature } from "ol";
 import { Point,LineString,Polygon } from "ol/geom";
 import { fromLonLat } from "ol/proj";
 import type { Circle,Icon,Style } from "ol/style";
+import BaseLayers from "../app/components/map/BaseLayers.vue";
 import IssueMap from "../app/components/Map.client.vue";
 import type { MapIssue,Issue } from "../shared/types/Issue";
 
@@ -56,6 +57,7 @@ function mountMap(withSlots=false) {
   wrapper=mount(IssueMap,{
     slots: withSlots? { "top-left-controls": "<b>Top</b>","bottom-left-controls": ({ mapWidth }: { mapWidth: number }) => `Width ${mapWidth}` }:{},
     global: {
+      components: { MapBaseLayers: BaseLayers },
       stubs: {
         "ol-map": Container,"ol-view": true,MapControlContainer: Container,MapResetExtentControl: Reset,
         MapFilterSummary: true,SizeCalculator: Size,MapAddFeature: AddFeature,
@@ -132,6 +134,23 @@ describe("kaartcontract vóór opsplitsing",() => {
     preferredLayer.value="Fiets";
     await nextTick();
     expect(layers.map(w => w.props("visible"))).toEqual([false,true,false,false]);
+  });
+
+  it("behoudt bronnen, attributie en RD-projectie", () => {
+    mountMap();
+    const xyz = wrapper.findAll("ol-source-xyz-stub");
+    expect(xyz[0]!.attributes("url")).toContain("cartodb-basemaps");
+    expect(xyz[0]!.attributes("attributions")).toContain("CARTO");
+    expect(xyz[1]!.attributes("url")).toContain("tile-cyclosm");
+    expect(xyz[1]!.attributes("attributions")).toContain("OpenStreetMap");
+    const wmts = wrapper.findAll("ol-source-wmts-stub");
+    expect(wmts.map(w => w.attributes("layer"))).toEqual(["Actueel_ortho25", "labels"]);
+    expect(wmts[0]!.attributes("attributions")).toContain("Kadaster");
+    expect(wmts.map(w => w.attributes("url"))).toEqual([
+      "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0?TILEMATRIXSET=EPSG:28992",
+      "https://service.pdok.nl/kadaster/brt-achtergrondkaart/wmts/v2_0?TILEMATRIXSET=EPSG:28992",
+    ]);
+    expect(wrapper.findAllComponents(Tile).map(w => w.props("baseLayer"))).toEqual([true, true, true, undefined]);
   });
 
   it("volgt wijzigingen in de gefilterde onderwerpen",async () => {
