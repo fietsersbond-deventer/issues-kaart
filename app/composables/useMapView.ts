@@ -9,25 +9,30 @@ export interface MapViewState {
   rotation: number;
 }
 
+/** View state shared between the map and components outside of it (e.g. the side panel) */
+export function useMapViewState() {
+  const { map } = useRuntimeConfig().public;
+  const converter = proj4("EPSG:4326", "EPSG:3857");
+  const center = useState<[number, number]>("map-view-center", () => {
+    const [x, y] = converter.forward([
+      parseFloat(String(map.centerLon)),
+      parseFloat(String(map.centerLat)),
+    ]);
+    return [x, y];
+  });
+  const zoom = useState<number>("map-view-zoom", () =>
+    parseInt(String(map.initialZoom)),
+  );
+  const rotation = useState<number>("map-view-rotation", () => 0);
+  return { center, zoom, rotation };
+}
+
 /**
  * Composable to track and share map view state (center, zoom, rotation)
  * @param mapRef - Template ref to the ol-map component
  */
 export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
-  const { map } = useRuntimeConfig().public;
-
-  // Parse the string values from env to numbers at runtime
-  const centerLat = parseFloat(String(map.centerLat));
-  const centerLon = parseFloat(String(map.centerLon));
-  const initialZoom = parseInt(String(map.initialZoom));
-
-  // Convert WGS84 (lat, lon) to Web Mercator (EPSG:3857) using proj4
-  const converter = proj4("EPSG:4326", "EPSG:3857");
-  const [centerX, centerY] = converter.forward([centerLon, centerLat]);
-
-  const center = ref<[number, number]>([centerX, centerY]);
-  const zoom = ref<number>(initialZoom);
-  const rotation = ref<number>(0);
+  const { center, zoom, rotation } = useMapViewState();
 
   // Try to get map from injection first, then from mapRef parameter
   let olMap = inject<Map | null>("map", null);

@@ -1,12 +1,9 @@
 <template>
   <v-layout class="desktop-layout">
-    <v-main
-      class="map-main"
-      :style="{ width: `calc(100% - ${drawerWidth}px)` }"
-    >
-      <Map class="fill-height">
-        <!-- Use default slot content for desktop -->
-      </Map>
+    <MapSidePanel />
+
+    <v-main class="map-main">
+      <Map class="fill-height" />
     </v-main>
 
     <v-navigation-drawer
@@ -27,6 +24,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
+
+const { open: menuOpen } = useMapMenu();
+menuOpen.value = true;
 
 const drawerWidth = ref(600);
 

@@ -54,8 +54,8 @@
 <script setup lang="ts">
 const selectedLayer = defineModel<string>();
 
-// Use the map view composable to sync with main map
-const { center, zoom, rotation } = useMapView();
+// Shared view state kept in sync by the main map
+const { center, zoom, rotation } = useMapViewState();
 
 const layers = [{ name: "Licht" }, { name: "Fiets" }, { name: "Foto" }];
 

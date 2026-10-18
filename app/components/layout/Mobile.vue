@@ -1,60 +1,9 @@
 <template>
   <v-layout class="map-layout">
+    <MapSidePanel temporary />
+
     <v-main class="map-main" :style="{ height: `${100 - sheetHeight}%` }">
-      <Map ref="mapRef" class="fill-height">
-        <template #top-left-controls>
-          <MapControlContainer position="top-left">
-            <MapResetExtentControl @reset="handleResetExtent" />
-          </MapControlContainer>
-        </template>
-
-        <template #bottom-left-controls="{ isSmall }">
-          <MapControlContainer v-show="!isSmall" position="bottom-left">
-            <SizeCalculator v-model="controlsSize">
-              <div class="mobile-controls-container">
-                <!-- Control buttons -->
-                <div class="mobile-control-buttons">
-                  <!-- Layer switcher button -->
-                  <v-btn
-                    icon
-                    size="small"
-                    class="layer-switcher-btn"
-                    @click="showLayerSwitcher = !showLayerSwitcher"
-                  >
-                    <v-icon>mdi-layers</v-icon>
-                    <v-tooltip activator="parent" location="top">
-                      Kaartlagen
-                    </v-tooltip>
-                  </v-btn>
-
-                  <!-- Legend button -->
-                  <v-btn
-                    icon
-                    size="small"
-                    class="legend-btn"
-                    @click="showLegend = !showLegend"
-                  >
-                    <v-icon>mdi-map-legend</v-icon>
-                    <v-tooltip activator="parent" location="top">
-                      Legenda
-                    </v-tooltip>
-                  </v-btn>
-                </div>
-
-                <!-- Layer switcher content -->
-                <div v-if="showLayerSwitcher" class="mobile-control-content">
-                  <MapLayerSwitcher v-model="preferredLayer" />
-                </div>
-
-                <!-- Legend content -->
-                <div v-if="showLegend" class="mobile-control-content">
-                  <MapLegend />
-                </div>
-              </div>
-            </SizeCalculator>
-          </MapControlContainer>
-        </template>
-      </Map>
+      <Map class="fill-height" />
     </v-main>
 
     <div class="bottom-sheet" :style="{ height: `${sheetHeight}%` }">
@@ -64,9 +13,7 @@
         role="button"
         :aria-pressed="isSheetExpanded"
         aria-controls="mobile-bottom-sheet-content"
-        :aria-label="
-          isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'
-        "
+        :aria-label="isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'"
         @touchstart="startDrag"
         @touchmove="onDrag"
         @touchend="endDrag"
@@ -76,11 +23,7 @@
       >
         <div class="drag-indicator" />
       </div>
-      <div
-        id="mobile-bottom-sheet-content"
-        ref="sheetContentRef"
-        class="sheet-content"
-      >
+      <div id="mobile-bottom-sheet-content" ref="sheetContentRef" class="sheet-content">
         <NuxtPage />
       </div>
     </div>
@@ -103,62 +46,16 @@ const {
   snapPoints: [40, 75],
 });
 
-// Mobile control overlays
-const showLayerSwitcher = ref(false);
-const showLegend = ref(false);
+const { open: menuOpen } = useMapMenu();
+menuOpen.value = false;
+
 const collapsedSheetHeight = 40;
 const expandedSheetHeight = 75;
-const isSheetExpanded = computed(
-  () => sheetHeight.value >= expandedSheetHeight,
-);
-
-// Size tracking for the mobile controls
-const controlsSize = ref<{ width: number; height: number }>({
-  width: 0,
-  height: 0,
-});
-
-// Get reference to the Map component
-const mapRef = ref();
-
-// Create a computed property for preferredLayer that syncs with the map
-const preferredLayer = computed({
-  get: () => mapRef.value?.preferredLayer || "Licht",
-  set: (value) => {
-    if (mapRef.value) {
-      mapRef.value.preferredLayer = value;
-    }
-  },
-});
-
-// Handle reset extent by calling the Map component's method
-function handleResetExtent() {
-  if (mapRef.value) {
-    mapRef.value.resetToOriginalExtent();
-  }
-}
+const isSheetExpanded = computed(() => sheetHeight.value >= expandedSheetHeight);
 
 function toggleSheetHeight() {
   setHeight(isSheetExpanded.value ? collapsedSheetHeight : expandedSheetHeight);
 }
-
-// Watch for controls size changes and update map padding
-watch(controlsSize, (newSize) => {
-  if (mapRef.value && mapRef.value.updatePadding) {
-    // Update the map's padding based on mobile controls size
-    mapRef.value.updatePadding(newSize);
-  }
-});
-
-// Close overlays when clicking outside or when bottom sheet changes
-watch([showLegend, showLayerSwitcher], () => {
-  mapRef.value?.refit();
-});
-
-watch(sheetHeight, () => {
-  showLayerSwitcher.value = false;
-  showLegend.value = false;
-});
 </script>
 
 <style scoped>
@@ -220,31 +117,5 @@ watch(sheetHeight, () => {
 .sheet-content {
   overflow-y: auto;
   height: calc(100% - 24px);
-}
-
-.mobile-controls-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.mobile-control-buttons {
-  display: flex;
-  gap: 4px;
-  padding: 8px;
-  background: white;
-}
-
-.layer-switcher-btn,
-.legend-btn {
-  background: white !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-}
-
-.mobile-control-content {
-  border-top: 1px solid #e0e0e0;
-  padding: 12px;
-  background: white;
 }
 </style>

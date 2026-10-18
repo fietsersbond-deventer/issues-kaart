@@ -6,24 +6,22 @@
   >
     <ol-view ref="view" :projection="projection" />
 
-    <!-- Top-left corner controls -->
-    <slot name="top-left-controls">
-      <MapControlContainer position="top-left">
-        <MapResetExtentControl @reset="resetToOriginalExtent" />
-      </MapControlContainer>
-    </slot>
+    <MapControlContainer position="top-left">
+      <v-btn
+        v-if="!menuOpen"
+        icon
+        size="small"
+        class="map-menu-button"
+        title="Kaartlagen en legenda"
+        aria-label="Kaartlagen en legenda openen"
+        @click="menuOpen = true"
+      >
+        <v-icon>mdi-menu</v-icon>
+      </v-btn>
+      <MapResetExtentControl @reset="resetToOriginalExtent" />
+    </MapControlContainer>
 
     <MapFilterSummary />
-
-    <!-- Bottom-left corner controls -->
-    <slot name="bottom-left-controls" :is-small="isMapSmall">
-      <MapControlContainer v-show="!isMapSmall" position="bottom-left">
-        <SizeCalculator v-model="legendSize">
-          <MapLegend />
-          <MapLayerSwitcher v-model="preferredLayer" />
-        </SizeCalculator>
-      </MapControlContainer>
-    </slot>
 
     <MapAddFeature ref="addFeature" />
 
@@ -165,6 +163,7 @@ function isSelected(issue: MapIssue) {
 }
 
 // Layer preference management
+const { open: menuOpen } = useMapMenu();
 const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
 
 /**
@@ -186,32 +185,10 @@ watchLayerVisibility(fietskaart, "Fiets");
 watchLayerVisibility(luchtfotoSource, "Foto");
 
 // [top, right, bottom, left]
-const currentPadding = ref<[number, number, number, number]>([50, 50, 50, 50]);
-
-const legendSize = ref<Size>({ width: 0, height: 0 });
-
-// Update padding when size changes
-watch(legendSize, async () => {
-  currentPadding.value = [
-    100, // top
-    50, // right
-    50, // legendSize.value.height + 20, // bottom
-    legendSize.value.width + 20, // left
-  ];
-});
+const currentPadding = ref<[number, number, number, number]>([100, 50, 50, 50]);
 
 function resetToOriginalExtent() {
   refit({ overview: true, duration: 1000 });
-}
-
-function updatePadding(controlsSize: Size) {
-  currentPadding.value = [
-    100, // top
-    50, // right
-    50, // controlsSize.height + 20, // bottom
-    controlsSize.width + 20,
-  ];
-  refit();
 }
 
 const mapRef = useTemplateRef("mapRef");
@@ -527,11 +504,15 @@ defineExpose({
   resetToOriginalExtent,
   refit,
   preferredLayer,
-  updatePadding,
 });
 </script>
 
 <style>
+.map-menu-button {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
 /* Ensure the ol-counter is hidden in the layer switcher */
 :deep(.ol-counter) {
   display: none !important;
