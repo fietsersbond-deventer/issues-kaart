@@ -218,9 +218,6 @@ importers:
       nuxt:
         specifier: ^4.5.2
         version: 4.6.1(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@oxc-project/types@0.154.0)(@types/node@26.6.5)(@vue/compiler-sfc@3.5.44)(acorn@8.19.0)(confbox@0.3.1)(db0@0.3.4)(dotenv@17.4.2)(esbuild@0.28.2)(eslint@10.12.0(jiti@2.7.0))(giget@3.3.1)(ioredis@5.11.1)(lightningcss@1.33.0)(mlly@1.8.2)(optionator@0.9.4)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3)))(rolldown@1.2.14)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.14)(rollup@4.64.6))(rollup@4.64.6)(srvx@1.0.5)(terser@5.51.2)(tsx@4.23.15)(typescript@6.0.3)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue-tsc@3.3.13(typescript@6.0.3))(yaml@2.9.1)
-      nuxt-mdi:
-        specifier: 2.1.1
-        version: 2.1.1(magicast@0.5.5)
       nuxt-nodemailer:
         specifier: 1.1.4
         version: 1.1.4(magicast@0.5.5)(nodemailer@10.0.9)
@@ -303,6 +300,9 @@ importers:
       tsx:
         specifier: ^4.20.3
         version: 4.23.15
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
       vite-plugin-vuetify:
         specifier: ^2.1.3
         version: 2.1.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))(vuetify@4.2.5)
@@ -909,9 +909,6 @@ packages:
 
   '@mdi/font@7.4.47':
     resolution: {integrity: sha512-43MtGpd585SNzHZPcYowu/84Vz2a2g31TvPMTm9uTiCSWzaheQySUcSyUH/46fPnuPQWof2yd0pGBtzee/IQWw==}
-
-  '@mdi/js@7.4.47':
-    resolution: {integrity: sha512-KPnNOtm5i2pMabqZxpUz7iQf+mfrYZyKCZ8QNz85czgEt7cuHcGorWfdzUMWYA0SD+a6Hn4FmJ+YhzzzjkTZrQ==}
 
   '@modelcontextprotocol/client@2.3.1':
     resolution: {integrity: sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==}
@@ -3843,9 +3840,6 @@ packages:
   nuxt-csurf@1.6.6:
     resolution: {integrity: sha512-T2WTlZQeTuoLCtoRJVlpBABEEx5vNPzHjIow/7BoQqoZ6S7YYYXAT1smKv7t6uvDfK7BZDhfLPQHDomUplg1Sw==}
 
-  nuxt-mdi@2.1.1:
-    resolution: {integrity: sha512-BkW2CQulmLSsVCJJ+NbNy/UH4Rz4vmO8bAeXVs6TgiQf+4SaDE7Q5LubzWllc/67YyQu1sjslZWrVYOXGW0KPQ==}
-
   nuxt-nodemailer@1.1.4:
     resolution: {integrity: sha512-nIH9dfQ/Z58QtwspetoHJI+XGNraVBW7setEu0f8EJDTLLh2WRMIZgamVRmrF9d10/POT+fLDmQ2N1QEmUwWuw==}
     peerDependencies:
@@ -6058,8 +6052,6 @@ snapshots:
       - supports-color
 
   '@mdi/font@7.4.47': {}
-
-  '@mdi/js@7.4.47': {}
 
   '@modelcontextprotocol/client@2.3.1':
     dependencies:
@@ -9579,14 +9571,6 @@ snapshots:
       - oxc-parser
       - rolldown
       - unplugin
-
-  nuxt-mdi@2.1.1(magicast@0.5.5):
-    dependencies:
-      '@mdi/js': 7.4.47
-      '@nuxt/kit': 3.21.11(magicast@0.5.5)
-      defu: 6.1.7
-    transitivePeerDependencies:
-      - magicast
 
   nuxt-nodemailer@1.1.4(magicast@0.5.5)(nodemailer@10.0.9):
     dependencies:

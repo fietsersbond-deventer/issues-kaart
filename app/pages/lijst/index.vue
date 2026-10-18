@@ -23,12 +23,12 @@
           class="elevation-1"
           density="compact"
           :loading="pending"
-          @click:row="gotoIssue"
           :items-per-page-options="[5, 10, 25, 50]"
           show-current-page
+          @click:row="gotoIssue"
         >
           <template #item.imageUrl="{ item }">
-            <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail"></img>           
+            <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail">
           </template>
 
           <template #item.legend="{ item }">
@@ -38,6 +38,8 @@
             </div>
           </template>
 
+          <!-- emphasizeFilter escapes all result text before adding mark tags. -->
+          <!-- eslint-disable vue/no-v-html -->
           <template #item.title="{ item }">
             <template v-if="item.snippets?.length">
               <b v-html="emphasizeFilter(item.title)" />
@@ -48,9 +50,9 @@
             </template>
           </template>
 
+          <!-- eslint-enable vue/no-v-html -->
           <template #item.actions="{ item }">
-            <div> 
-              <template>
+            <div>
                 <v-btn
                   :to="`/kaart/${item.id}`"
                   icon
@@ -64,7 +66,6 @@
                     Bekijk issue in de kaart
                   </v-tooltip>
                 </v-btn>
-              </template>
             </div>
           </template></v-data-table-server
         >

@@ -62,13 +62,9 @@ export default defineNuxtConfig({
     },
     isProduction: process.env.NODE_ENV === "production",
   },
-  content: {
-    experimental: { sqliteConnector: "native" },
-  },
   modules: [
     "@nuxt/eslint",
     "@sidebase/nuxt-auth",
-    "nuxt-mdi",
     "vuetify-nuxt-module",
     "@pinia/nuxt",
     // "nuxt-security",
@@ -109,10 +105,6 @@ export default defineNuxtConfig({
       openAPI: true,
       websocket: true,
     },
-  },
-  ratelimit: {
-    limit: 100,
-    windowMs: 60000, // 1 minute in milliseconds
   },
   // security: {
   //   headers: {
@@ -212,12 +204,5 @@ export default defineNuxtConfig({
     server: {
       allowedHosts: true,
     },
-  },
-  dbMigrations: {
-    dir: "./server/database/migrations",
-    autoMigrate: true,
-    table: "_hub_migrations",
-    lockTimeout: 30000,
-    baseline: "0001_initial_schema.sql",
   },
 });

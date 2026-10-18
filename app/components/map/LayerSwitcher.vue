@@ -2,50 +2,26 @@
   <div class="layer-switcher">
     <div class="mini-maps">
       <div
-        v-for="layer in layers"
-        :key="layer.name"
+        v-for="mapLayer in layers"
+        :key="mapLayer.name"
         class="mini-map-container"
-        :class="{ active: selectedLayer === layer.name }"
+        :class="{ active: selectedLayer === mapLayer.name }"
         tabindex="0"
         role="button"
-        :aria-pressed="selectedLayer === layer.name"
-        :aria-label="`Kaartlaag ${layer.name}`"
-        @click="selectLayer(layer.name)"
-        @keydown.enter.prevent="selectLayer(layer.name)"
-        @keydown.space.prevent="selectLayer(layer.name)"
+        :aria-pressed="selectedLayer === mapLayer.name"
+        :aria-label="`Kaartlaag ${mapLayer.name}`"
+        @click="selectLayer(mapLayer.name)"
+        @keydown.enter.prevent="selectLayer(mapLayer.name)"
+        @keydown.space.prevent="selectLayer(mapLayer.name)"
       >
-        <ol-map class="mini-map" :controls="[]">
-          <ol-view
-            :center="center"
-            :zoom="zoom - 3"
-            :rotation="rotation"
-            projection="EPSG:3857"
-          />
+        <MapLayerPreview
+          :name="mapLayer.name"
+          :center="center"
+          :zoom="zoom"
+          :rotation="rotation"
+        />
 
-          <!-- Light layer -->
-          <ol-tile-layer v-if="layer.name === 'Licht'" :visible="true">
-            <ol-source-xyz
-              url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=cb1_2g3h_1_01ad081dc8ac0a49f3be7436"
-            />
-          </ol-tile-layer>
-
-          <!-- Cycle layer -->
-          <ol-tile-layer v-if="layer.name === 'Fiets'" :visible="true">
-            <ol-source-xyz
-              url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
-            />
-          </ol-tile-layer>
-
-          <!-- Photo layer -->
-          <ol-tile-layer v-if="layer.name === 'Foto'" :visible="true">
-            <ol-source-tile-wms
-              url="https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0"
-              layers="Actueel_ortho25"
-            />
-          </ol-tile-layer>
-        </ol-map>
-
-        <div class="layer-label">{{ layer.name }}</div>
+        <div class="layer-label">{{ mapLayer.name }}</div>
       </div>
     </div>
   </div>

@@ -6,9 +6,9 @@
       positioning="bottom-center"
     >
       <div class="tooltip">
-        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
+        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" >
         <span class="tooltip-title">{{ tooltipContent }}</span>
-        <Tag v-for="tag in tags" :tag="tag" class="mt-2" />
+        <Tag v-for="tag in tags" :key="tag.tag" :tag="tag" class="mt-2" />
       </div>
     </ol-overlay>
   </div>
@@ -57,12 +57,12 @@ function slugsToTags(slugs: string[]) {
   }
 }
 
-let pointerListener: ((evt: MapBrowserEvent<PointerEvent>) => void) | null =
+let pointerListener: ((evt: MapBrowserEvent) => void) | null =
   null;
 
 onMounted(() => {
   if (!map) return;
-  pointerListener = (evt: MapBrowserEvent<PointerEvent>) => {
+  pointerListener = (evt: MapBrowserEvent) => {
     // Don't show tooltip when drawing/editing
     if (isInteracting.value) {
       clearTooltip();
@@ -82,7 +82,8 @@ onMounted(() => {
       tooltipImage.value = properties.imageUrl || null;
       slugsToTags(properties.tags);
 
-      map.getTargetElement().style.cursor = "pointer";
+      const target = map.getTargetElement();
+      if (target) target.style.cursor = "pointer";
       // Always position above pointer
       if (typeof pixel[0] === "number" && typeof pixel[1] === "number") {
         const verticalOffset = 15;

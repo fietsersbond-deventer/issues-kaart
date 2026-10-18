@@ -1,5 +1,5 @@
-import type { WebSocketPeer } from "#nitro";
-import { defineWebSocketHandler } from "#nitro";
+import type { Peer as WebSocketPeer } from "crossws";
+
 import { verifyToken } from "../../utils/verifyToken";
 import {
   setPeerSession,
@@ -95,7 +95,7 @@ export default defineWebSocketHandler({
     }
   },
 
-  message(peer: WebSocketPeer, message: string) {
+  message(peer, message) {
     try {
       // Update activity timestamp for this peer
       updatePeerActivity(peer.toString());

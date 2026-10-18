@@ -21,14 +21,20 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Run security tests
-        run: pnpm test:run
+      - name: Lint
+        run: pnpm lint
 
-      - name: Generate test coverage report
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Run tests with coverage
         run: pnpm test:coverage
+
+      - name: Build
+        run: pnpm build

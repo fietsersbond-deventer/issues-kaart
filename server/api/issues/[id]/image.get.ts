@@ -48,8 +48,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const mimeType = match[1]; // e.g., "image/jpeg", "image/png"
-  const base64Data = match[2];
+  const mimeType = match[1]!; // e.g., "image/jpeg", "image/png"
+  const base64Data = match[2]!;
 
   // Convert base64 to buffer
   const imageBuffer = Buffer.from(base64Data, "base64");

@@ -8,7 +8,7 @@
         <v-alert density="compact" type="error" variant="outlined" class="mb-3">
           {{ error }}
         </v-alert>
-        <div v-if="legend && usage[legend.id]?.used_by_issues.length > 0">
+        <div v-if="legend && (usage[legend.id]?.used_by_issues.length ?? 0) > 0">
           <div class="text-subtitle-1 mb-2">
             Dit legenda item wordt gebruikt door de volgende meldingen:
           </div>
@@ -49,7 +49,7 @@ import type { LegendUsage } from "~/composables/useCategories";
 
 const modelValue = defineModel<boolean>("modelValue");
 
-const props = defineProps<{
+defineProps<{
   legend: Legend | null;
   error: string;
   usage: LegendUsage;

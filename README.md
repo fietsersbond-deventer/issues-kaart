@@ -26,7 +26,7 @@ Deze applicatie is gebouwd met Nuxt 4 en biedt:
 
 ## 📦 Vereisten
 
-- **Node.js**: versie 22.2 of hoger
+- **Node.js**: versie 22.21 of hoger binnen Node 22 (of een ondersteunde Node 24/26-versie); `.nvmrc` legt de versie voor lokaal gebruik en CI vast
 - **pnpm**: versie 10.11.0 of hoger
 
 ## 🛠️ Installatie
@@ -41,7 +41,7 @@ Deze applicatie is gebouwd met Nuxt 4 en biedt:
 2. **Installeer dependencies**
 
    ```bash
-   pnpm install
+   pnpm install --frozen-lockfile
    ```
 
 3. **Configureer environment variabelen**

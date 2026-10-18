@@ -263,7 +263,7 @@ export class NominatimSearchProvider implements SearchProvider {
  * Composable for location search functionality
  */
 export function useLocationSearch(
-  provider: SearchProvider = new PhotonSearchProvider()
+  provider: SearchProvider
 ) {
   const isSearching = ref(false);
   let currentController: AbortController | null = null;
@@ -333,7 +333,7 @@ function removeDuplicates(results: SearchResult[]): SearchResult[] {
   return finalResults
     .sort((a, b) => {
       // First priority: distance to Deventer (closer is better)
-      const deventerCoords = [6.1574997, 52.2511467]; // Deventer coordinates
+      const deventerCoords: [number, number] = [6.1574997, 52.2511467]; // Deventer coordinates
       const aDistance = calculateDistance(a.coordinates, deventerCoords);
       const bDistance = calculateDistance(b.coordinates, deventerCoords);
 

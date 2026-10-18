@@ -3,13 +3,14 @@ import {
   isExistingIssue,
   type Issue,
   type NewIssue,
+  type MapIssue,
 } from "~~/shared/types/Issue";
 import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
 export const useIssues = defineStore("issues", () => {
   const ws = useSharedIssuesWebSocket();
-  const issues = ref<Issue[]>([]);
+  const issues = ref<(MapIssue | NewIssue)[]>([]);
 
   // Get categories for enriching issues
   const { categories } = storeToRefs(useCategories());
@@ -23,7 +24,7 @@ export const useIssues = defineStore("issues", () => {
     status,
   } = useFetch<MapIssue[]>("/api/issues", fetchOptions);
 
-  function processIssue(issue: Issue): Issue {
+  function processIssue<T extends MapIssue | NewIssue>(issue: T): T {
     if (issue.geometry && typeof issue.geometry === "string") {
       issue.geometry = JSON.parse(issue.geometry);
     }
@@ -33,7 +34,7 @@ export const useIssues = defineStore("issues", () => {
       const legend = categories.value.find((l) => l.id === issue.legend_id);
       if (legend) {
         // Add the full legend object to the issue
-        const enrichedIssue = issue as Issue & { legend: typeof legend };
+        const enrichedIssue = issue;
         enrichedIssue.legend = legend;
         return enrichedIssue;
       }

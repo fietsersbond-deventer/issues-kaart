@@ -15,13 +15,15 @@
 
     <!-- Street View-voorvertoningen openen geen lightbox: die laden via useStreetViewEmbeds.ts -->
     <ImageViewer selector="img:not(.streetview-embed img)">
-      <!-- eslint-disable-next-line vue/no-v-html -->
+      <!-- The API sanitizes descriptions on create/update with sanitizeHtml. -->
+      <!-- eslint-disable vue/no-v-html -->
       <div
         ref="descriptionRef"
         class="ql-editor viewer"
-        v-html="issue.description"
         @click="onDescriptionClick"
+        v-html="issue.description"
       />
+      <!-- eslint-enable vue/no-v-html -->
     </ImageViewer>
   </article>
 </template>

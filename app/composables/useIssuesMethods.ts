@@ -1,4 +1,4 @@
-import type { Issue } from "~~/shared/types/Issue";
+import type { Issue, NewIssue } from "~~/shared/types/Issue";
 
 /**
  * CRUD methods for issues - available without creating a store
@@ -23,7 +23,7 @@ export function useIssuesMethods() {
     });
   }
 
-  async function create(body: Issue) {
+  async function create(body: NewIssue) {
     const issue = await $fetch<Issue>("/api/issues", {
       method: "POST",
       body,

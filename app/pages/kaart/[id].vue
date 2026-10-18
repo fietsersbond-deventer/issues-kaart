@@ -44,7 +44,7 @@
     </v-toolbar>
 
     <div v-if="issue" class="pa-4">
-      <template v-if="'id' in issue">
+      <template v-if="isExistingIssue(issue)">
         <EditForm
           v-if="isEditing"
           v-model="issue"
@@ -52,7 +52,7 @@
           @save="setEditing(false)"
           @cancel="setEditing(false)"
         />
-        <IssueDetails ref="descriptionRef" v-else :issue="issue" />
+        <IssueDetails v-else ref="descriptionRef" :issue="issue" />
       </template>
       <template v-else>
         <template v-if="isEditing">

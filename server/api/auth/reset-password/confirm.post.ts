@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
         "JOIN users u ON u.id = prt.user_id " +
         "WHERE prt.token = ? AND prt.expires_at > datetime('now')"
     )
-    .get(token);
+    .get(token) as { user_id: number } | undefined;
 
   if (!resetToken) {
     throw createError({

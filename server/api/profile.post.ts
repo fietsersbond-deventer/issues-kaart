@@ -95,7 +95,7 @@ function getClientIP(event: any): string {
     | string[]
     | undefined;
   if (realIP) {
-    return typeof realIP === "string" ? realIP : realIP[0];
+    return typeof realIP === "string" ? realIP : realIP[0] || "";
   }
 
   // Fallback to the direct connection IP

@@ -18,20 +18,20 @@
           :items-per-page="10"
           :items-per-page-options="[5, 10, 25, 50]"
         >
-          <template #item.tag="{ item }">
+          <template #[`item.tag`]="{ item }">
             <div class="d-flex align-center ga-2">
               <AppIcon :icon="item.icon || 'mdi-tag-outline'" size="18" color="grey" />
               <span>{{ item.tag }}</span>
             </div>
           </template>
 
-          <template #item.description="{ item }">
+          <template #[`item.description`]="{ item }">
             <span class="text-medium-emphasis">
               {{ item.description || "-" }}
             </span>
           </template>
 
-          <template #item.icon="{ item }">
+          <template #[`item.icon`]="{ item }">
             <v-chip
               v-if="item.icon"
               color="grey"
@@ -44,7 +44,7 @@
             <span v-else class="text-medium-emphasis">-</span>
           </template>
 
-          <template #item.actions="{ item }">
+          <template #[`item.actions`]="{ item }">
             <div class="d-flex ga-2">
               <v-btn
                 icon="mdi-pencil"
@@ -125,7 +125,7 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn color="primary" @click="saveTag" :loading="saving" :disabled="!valid">
+          <v-btn color="primary" :loading="saving" :disabled="!valid" @click="saveTag">
             Opslaan
           </v-btn>
           <v-btn variant="text" @click="dialog = false">Annuleren</v-btn>
@@ -141,7 +141,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="error" @click="deleteTag" :loading="saving"> Verwijderen </v-btn>
+          <v-btn color="error" :loading="saving" @click="deleteTag"> Verwijderen </v-btn>
           <v-btn @click="deleteDialog = false">Annuleren</v-btn>
         </v-card-actions>
       </v-card>

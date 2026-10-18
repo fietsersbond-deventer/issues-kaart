@@ -8,7 +8,7 @@
       class="image-dialog"
     >
       <v-card v-if="selectedImage" class="image-card">
-        <img :src="selectedImage" class="dialog-image" />
+        <img :src="selectedImage" class="dialog-image" >
       </v-card>
     </v-dialog>
   </div>
