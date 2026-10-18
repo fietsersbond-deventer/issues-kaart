@@ -3,7 +3,7 @@
     :display-in-layer-switcher="false"
     :style="style"
   >
-    <ol-source-vector>
+    <ol-source-vector ref="issueSource">
       <ol-feature
         v-for="issue in markers"
         :key="`marker-${issue.id}`"
@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import type VectorSource from "ol/source/Vector";
 import type { UnwrapRef } from "vue";
 import type { MapIssue, NewIssue } from "~~/shared/types/Issue";
 import type { Collection, Feature } from "ol";
@@ -58,6 +59,10 @@ const props = defineProps<{
   modifyEnabled: boolean;
   selectedFeatures: UnwrapRef<Collection<Feature<Point | LineString | Polygon>>>;
 }>();
+const issueSource = useTemplateRef<{ source: VectorSource<Feature<Point | LineString | Polygon>> }>("issueSource");
+const source = computed(() => issueSource.value?.source);
+defineExpose({ source });
+
 const emit = defineEmits<{ modifyend: [event: ModifyEvent] }>();
 
 function style(feature: Feature) {

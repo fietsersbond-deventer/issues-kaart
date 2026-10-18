@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computed, ref, toRaw } from "vue";
+import { computed, ref, shallowRef, watch, toRaw } from "vue";
 import { Collection, Feature } from "ol";
 import { Point, LineString, Polygon } from "ol/geom";
 import type { SelectEvent } from "ol/interaction/Select";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import VectorLayer from "ol/layer/Vector";
 import type { Issue, MapIssue, NewIssue } from "../shared/types/Issue";
+import { useEditableMapFeatures } from "../app/composables/useEditableMapFeatures";
 import { useMapIssueInteractions } from "../app/composables/useMapIssueInteractions";
 
 const selectedId = ref<number | null>(null);
@@ -37,7 +38,7 @@ beforeEach(() => {
   selectedIssues.value = [issue()];
   editing.value = false;
   route.query = { tag: "veilig", cat: "2" };
-  for (const [name, value] of Object.entries({ ref, computed })) vi.stubGlobal(name, value);
+  for (const [name, value] of Object.entries({ ref, computed, shallowRef, watch, useEditableMapFeatures })) vi.stubGlobal(name, value);
   vi.stubGlobal("storeToRefs", (store: unknown) => store);
   vi.stubGlobal("useSelectedIssue", () => ({ issue: selectedIssue, selectedId }));
   vi.stubGlobal("useSelectedIssues", () => ({ selectedIssues }));
@@ -58,13 +59,13 @@ describe("useMapIssueInteractions", () => {
     expect(interaction.selectedFeatures.value.getLength()).toBe(0);
   });
 
-  it("verzamelt herselecties en wist ze bij deselectie zonder navigatie", () => {
+  it("laat herselecties en deselectie zonder bron ongemoeid", () => {
     selectedId.value = 1;
     const interaction = useMapIssueInteractions(clicked);
     const feature = new Feature(new Point([0, 0]));
     feature.set("id", 1);
     interaction.onFeatureSelect(select([feature]));
-    expect(toRaw(interaction.selectedFeatures.value.item(0))).toBe(feature);
+    expect(interaction.selectedFeatures.value.getLength()).toBe(0);
     expect(navigate).not.toHaveBeenCalled();
     expect(clicked).not.toHaveBeenCalled();
     interaction.onFeatureSelect(select([]));
@@ -76,7 +77,7 @@ describe("useMapIssueInteractions", () => {
     const first = useMapIssueInteractions(clicked);
     const second = useMapIssueInteractions(clicked);
     first.onFeatureSelect(select([new Feature({ id: 1 })]));
-    expect(first.selectedFeatures.value.getLength()).toBe(1);
+    expect(first.selectedFeatures.value).not.toBe(second.selectedFeatures.value);
     expect(second.selectedFeatures.value.getLength()).toBe(0);
   });
 
@@ -86,15 +87,16 @@ describe("useMapIssueInteractions", () => {
     expect(interaction.isNotAreaLayer(new VectorLayer())).toBe(true);
   });
 
-  it("schakelt bewerken reactief in voor bestaande en nieuwe onderwerpen", () => {
+  it("schakelt bewerken alleen in voor het geladen geselecteerde onderwerp", () => {
     const { modifyEnabled } = useMapIssueInteractions(clicked);
     expect(modifyEnabled.value).toBe(false);
     editing.value = true;
     expect(modifyEnabled.value).toBe(false);
+    selectedId.value = 1;
     selectedIssue.value = issue();
     expect(modifyEnabled.value).toBe(true);
     selectedIssue.value = { title: "Nieuw", description: "", tags: [] };
-    expect(modifyEnabled.value).toBe(true);
+    expect(modifyEnabled.value).toBe(false);
     editing.value = false;
     expect(modifyEnabled.value).toBe(false);
   });

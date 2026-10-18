@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { computed, nextTick, toRaw } from "vue";
+import { computed, nextTick, toRaw, useTemplateRef } from "vue";
 import { Collection, Feature } from "ol";
 import type VectorLayer from "ol/layer/Vector";
 import type VectorSource from "ol/source/Vector";
@@ -57,6 +57,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   selectedFeatures.clear();
   vi.stubGlobal("computed", computed);
+  vi.stubGlobal("useTemplateRef", useTemplateRef);
 });
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); });
 
