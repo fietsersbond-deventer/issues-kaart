@@ -1,6 +1,12 @@
 <template>
   <article>
-    <h1 class="mb-4">{{ issue.title }}</h1>
+    <div class="d-flex ga-2 mb-4">
+      <h1 class="mb-0">{{ issue.title }}</h1>
+      <v-btn variant="text" size="small" aria-label="Kopieer issue URL" @click="copyUrl">
+        <v-icon size="28">mdi-share-variant</v-icon>
+        <v-tooltip activator="parent" location="top" text="Kopieer URL van huidige issue"/>
+      </v-btn>
+    </div>
 
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
       <CategoryChip :legend="issue.legend" />
@@ -38,6 +44,23 @@ const props = defineProps<{
 }>();
 
 const { getTag } = useTagsApi();
+const { showSuccess, showError } = useSnackbar();
+
+async function copyUrl() {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(window.location.href);
+      showSuccess("URL gekopieerd!");
+    } else {
+      showError("Browser ondersteunt geen clipboard, kan URL niet kopiëren.");
+    }
+  } catch (err) {
+    console.error("Failed to copy link:", err);
+    showError("URL kon niet worden gekopieerd.");
+  }
+}
 
 // if a link is relative, use navigateTo()
 function handleLocalLinks(event: MouseEvent) {
