@@ -4,6 +4,7 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
+    <!-- The children below use the map provided by ol-map. -->
     <ol-view projection="EPSG:3857" />
 
     <MapControlContainer position="top-left">
@@ -22,8 +23,11 @@
       </SizeCalculator>
     </MapControlContainer>
 
+    <!-- While drawing, hide the tooltip and stop clicks from selecting existing issues. -->
     <MapAddFeature ref="addFeature" />
 
+    <!-- Add backgrounds first, then issues and area overlays.
+         Layers with an explicit z-index can override this order. -->
     <MapBaseLayers />
 
     <MapIssueLayer
@@ -40,6 +44,8 @@
 
     <MapTooltip :is-drawing />
 
+    <!-- Selection stays last so the interaction order matches the original map.
+         Areas handle their own clicks, so exclude them here. -->
     <ol-interaction-select
       v-if="!isDrawing"
       :condition="click"
@@ -56,8 +62,14 @@ import type { Feature } from "ol";
 import type AddFeature from "./map/AddFeature.vue";
 import { click } from "ol/events/condition";
 import { getIssueMapStyle } from "../utils/issueMapStyle";
+// This component puts the map together and connects it to the page layout.
+// BaseLayers sets up the backgrounds; IssueLayer draws the issues and lets users
+// reshape them. Selection, navigation and geometry updates are handled by
+// useMapIssueInteractions. View tracking, resizing and fitting use the existing
+// useMapView, useMapResize and useMapFocus composables.
 defineOptions({ name: "IssueMap" });
 
+// Desktop and mobile layouts pass their controls through these slots.
 defineSlots<{
   "top-left-controls"?: () => unknown;
   "bottom-left-controls"?: (props: { mapWidth: number }) => unknown;
@@ -73,6 +85,7 @@ const {
   onModifyEnd,
 } = useMapIssueInteractions(() => emit("feature-clicked"));
 
+// BaseLayers and the layer picker read and write the same saved preference.
 const { preferredLayer } = useMapLayerPreference();
 
 // [top, right, bottom, left]
@@ -84,7 +97,8 @@ interface Size {
 }
 const bottomLeftSize = ref<Size>({ width: 0, height: 0 });
 
-// Keep the bottom-left controls clear of the fitted extent; a hidden panel measures 0
+// Leave room for the controls when fitting the map: on the left for a tall panel,
+// below for a wide one. A hidden panel reports zero, leaving only the normal margin.
 watch(bottomLeftSize, ({ width, height }) => {
   if (width < height) {
     currentPadding.value = [100, 50, 50, width + 50];
@@ -107,7 +121,7 @@ const isDrawing = computed(() => addFeature.value?.isDrawing || false);
 
 const { zoom } = useMapView(mapRef);
 
-// Setup resize observer to handle container size changes
+// Refit when the map container changes size, for example when the bottom sheet moves.
 const { mapHeight, mapWidth } = useMapResize(mapRef);
 const mapSize = computed<[number, number]>(() => [
   mapWidth.value,
@@ -116,10 +130,9 @@ const mapSize = computed<[number, number]>(() => [
 
 const { refit } = useMapFocus(mapRef, currentPadding, mapSize);
 
-// Hide controls based on actual map height (available space for the map)
+// On mobile, hide controls as the bottom sheet leaves less room for the map.
 const isMapVerySmall = computed(() => {
   if (mobile.value) {
-    // On mobile, use relative size based on available screen percentage
     return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.35;
   }
   return false;
@@ -127,18 +140,20 @@ const isMapVerySmall = computed(() => {
 
 const isMapSmall = computed(() => {
   if (mobile.value) {
-    // On mobile, use relative size based on available screen percentage
     return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.45;
   }
   return false;
 });
 
+// Use the same styling for the issue layer and the selection overlay.
+// Read the current selection and zoom each time OpenLayers calls this function.
 function style(feature: Feature) {
   const issue = selectedIssues.value.find((issue) => issue.id === feature.get("id"));
   return getIssueMapStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
 }
 
-// Expose functions to parent components
+// Parents can request a refit or change the background through this ref.
+// Reset shows the overview; a normal refit follows the current focus target.
 defineExpose({
   resetToOriginalExtent,
   refit,
