@@ -80,7 +80,11 @@
       />
     </ol-tile-layer>
 
-    <ol-vector-layer ref="vectorLayer" :display-in-layer-switcher="false" :style="style">
+    <ol-vector-layer
+      ref="vectorLayer"
+      :display-in-layer-switcher="false"
+      :style="style"
+    >
       <ol-source-vector>
         <ol-feature
           v-for="issue in markers"
@@ -147,7 +151,6 @@ import { click } from "ol/events/condition";
 import type Layer from "ol/layer/Layer";
 import Color from "color";
 
-
 // Use lightweight map issues for rendering (only essential fields)
 const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
 const { selectedIssues } = useSelectedIssues();
@@ -188,8 +191,12 @@ interface Size {
 const bottomLeftSize = ref<Size>({ width: 0, height: 0 });
 
 // Keep the bottom-left controls clear of the fitted extent; a hidden panel measures 0
-watch(bottomLeftSize, ({ width }) => {
-  currentPadding.value = [100, 50, 50, width > 0 ? width + 20 : 50];
+watch(bottomLeftSize, ({ width, height }) => {
+  if (width < height) {
+    currentPadding.value = [100, 50, 50, width + 50];
+  } else {
+    currentPadding.value = [100, 50, height + 50, 50];
+  }
   refit();
 });
 
