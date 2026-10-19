@@ -47,8 +47,6 @@ const { getTag } = useTagsApi();
 const { showSuccess, showError } = useSnackbar();
 
 async function copyUrl() {
-  if (typeof window === "undefined") return;
-
   try {
     if (navigator?.clipboard?.writeText) {
       await navigator.clipboard.writeText(window.location.href);
