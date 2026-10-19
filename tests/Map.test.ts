@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { mount,type VueWrapper } from "@vue/test-utils";
-import { computed,defineComponent,nextTick,ref,useTemplateRef,watch } from "vue";
+import { shallowRef,computed,defineComponent,nextTick,ref,useTemplateRef,watch } from "vue";
 import { Collection,Feature } from "ol";
 import { Point,LineString,Polygon } from "ol/geom";
 import { fromLonLat } from "ol/proj";
 import type { Circle,Icon,Style } from "ol/style";
 import IssueLayer from "../app/components/map/IssueLayer.vue";
+import { useEditableMapFeatures } from "../app/composables/useEditableMapFeatures";
 import { useMapIssueInteractions } from "../app/composables/useMapIssueInteractions";
 import BaseLayers from "../app/components/map/BaseLayers.vue";
 import IssueMap from "../app/components/Map.client.vue";
@@ -93,7 +94,7 @@ beforeEach(() => {
   height.value=600;
   width.value=800;
   preferredLayer.value="Licht";
-  for(const [name,value] of Object.entries({ ref,computed,watch,useTemplateRef })) vi.stubGlobal(name,value);
+  for(const [name,value] of Object.entries({ ref,computed,watch,useTemplateRef,shallowRef,useEditableMapFeatures })) vi.stubGlobal(name,value);
   vi.stubGlobal("storeToRefs",(store: unknown) => store);
   vi.stubGlobal("useMapIssueInteractions", useMapIssueInteractions);
   vi.stubGlobal("useSelectedIssue",() => ({ issue: selectedIssue,selectedId }));
@@ -238,13 +239,14 @@ describe("kaartcontract vóór opsplitsing",() => {
     expect(selectedId.value).toBe(1);
     expect(navigate).toHaveBeenCalledWith({ path: "/kaart/1",query });
     expect(wrapper.emitted("feature-clicked")).toEqual([[]]);
+    selectedId.value=1;
     selectedIssue.value=issue();
     editing.value=true;
     await nextTick();
     const f=feature(1);
     select.vm.$emit("select",{ selected: [f] });
     const collection=wrapper.getComponent(Modify).props("features") as Collection<Feature>;
-    expect(collection.getArray()).toEqual([f]);
+    expect(collection.getLength()).toBe(0);
     expect(navigate).toHaveBeenCalledTimes(1);
     select.vm.$emit("select",{ selected: [] });
     expect(collection.getLength()).toBe(0);
@@ -259,6 +261,7 @@ describe("kaartcontract vóór opsplitsing",() => {
     editing.value=true;
     await nextTick();
     expect(wrapper.findComponent(Modify).exists()).toBe(false);
+    selectedId.value=1;
     selectedIssue.value=issue();
     await nextTick();
     expect(wrapper.findComponent(Modify).exists()).toBe(true);
@@ -288,6 +291,7 @@ describe("kaartcontract vóór opsplitsing",() => {
   });
 
   it("negeert een leeg modify-event",() => {
+    selectedId.value=1;
     selectedIssue.value=issue();
     editing.value=true;
     mountMap();

@@ -31,6 +31,7 @@
     <MapBaseLayers />
 
     <MapIssueLayer
+      ref="issueLayer"
       :issues="selectedIssues"
       :feature-style="style"
       :modify-enabled="modifyEnabled"
@@ -59,6 +60,7 @@
 
 <script setup lang="ts">
 import type { Feature } from "ol";
+import type IssueLayer from "./map/IssueLayer.vue";
 import type AddFeature from "./map/AddFeature.vue";
 import { click } from "ol/events/condition";
 import { getIssueMapStyle } from "../utils/issueMapStyle";
@@ -75,6 +77,10 @@ defineSlots<{
   "bottom-left-controls"?: (props: { mapWidth: number }) => unknown;
 }>();
 const emit = defineEmits<{ "feature-clicked": [] }>();
+const issueLayer = useTemplateRef<InstanceType<typeof IssueLayer>>("issueLayer");
+const addFeature = useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
+const isDrawing = computed(() => addFeature.value?.isDrawing || false);
+
 const {
   selectedId,
   selectedIssues,
@@ -83,7 +89,7 @@ const {
   isNotAreaLayer,
   onFeatureSelect,
   onModifyEnd,
-} = useMapIssueInteractions(() => emit("feature-clicked"));
+} = useMapIssueInteractions(() => emit("feature-clicked"), computed(() => issueLayer.value?.source), isDrawing);
 
 // BaseLayers and the layer picker read and write the same saved preference.
 const { preferredLayer } = useMapLayerPreference();
@@ -115,9 +121,6 @@ function resetToOriginalExtent() {
 const mapRef = useTemplateRef("mapRef");
 
 const { mobile } = useVDisplay();
-
-const addFeature = useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
-const isDrawing = computed(() => addFeature.value?.isDrawing || false);
 
 const { zoom } = useMapView(mapRef);
 
