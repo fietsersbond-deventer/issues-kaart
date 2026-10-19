@@ -4,7 +4,8 @@
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
-    <ol-view ref="view" :projection="projection" />
+    <!-- The children below use the map provided by ol-map. -->
+    <ol-view projection="EPSG:3857" />
 
     <MapControlContainer position="top-left">
       <slot name="top-left-controls" />
@@ -22,101 +23,20 @@
       </SizeCalculator>
     </MapControlContainer>
 
+    <!-- While drawing, hide the tooltip and stop clicks from selecting existing issues. -->
     <MapAddFeature ref="addFeature" />
 
-    <ol-tile-layer
-      ref="light"
-      title="Licht"
-      :visible="preferredLayer === 'Licht'"
-      :base-layer="true"
-    >
-      <ol-source-xyz
-        url="https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png?key=cb1_2g3h_1_01ad081dc8ac0a49f3be7436"
-        attributions='© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href= "https://carto.com/about-carto/">CARTO</a>'
-      />
-    </ol-tile-layer>
+    <!-- Add backgrounds first, then issues and area overlays.
+         Layers with an explicit z-index can override this order. -->
+    <MapBaseLayers />
 
-    <ol-tile-layer
-      ref="fietskaart"
-      title="Fiets"
-      :visible="preferredLayer === 'Fiets'"
-      :base-layer="true"
-    >
-      <ol-source-xyz
-        url="https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
-        attributions='&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="http://opencyclemap.org">OpenCycleMap</a>'
-      />
-    </ol-tile-layer>
-
-    <ol-tile-layer
-      ref="luchtfoto"
-      title="Foto"
-      :visible="preferredLayer === 'Foto'"
-      :base-layer="true"
-    >
-      <ol-source-wmts
-        ref="luchtfoto-source"
-        url="https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0?TILEMATRIXSET=EPSG:28992"
-        layer="Actueel_ortho25"
-        :projection="rdProjection"
-        attributions='&copy; <a href="https://www.kadaster.nl">Kadaster</a>'
-        format="image/png"
-        style="default"
-      />
-    </ol-tile-layer>
-
-    <ol-tile-layer
-      ref="lufolabels"
-      title="Straatnamen"
-      :visible="preferredLayer === 'Foto'"
-    >
-      <ol-source-wmts
-        ref="lufolabels-source"
-        url="https://service.pdok.nl/kadaster/brt-achtergrondkaart/wmts/v2_0?TILEMATRIXSET=EPSG:28992"
-        layer="labels"
-        :projection="rdProjection"
-        format="image/png"
-        style="default"
-      />
-    </ol-tile-layer>
-
-    <ol-vector-layer
-      ref="vectorLayer"
-      :display-in-layer-switcher="false"
-      :style="style"
-    >
-      <ol-source-vector>
-        <ol-feature
-          v-for="issue in markers"
-          :key="`marker-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
-        >
-          <ol-geom-point :coordinates="toPointCoords(issue)" />
-        </ol-feature>
-
-        <ol-feature
-          v-for="issue in lines"
-          :key="`line-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
-        >
-          <ol-geom-line-string :coordinates="toLineCoords(issue)" />
-        </ol-feature>
-
-        <ol-feature
-          v-for="issue in polygons"
-          :key="`polygon-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
-        >
-          <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
-        </ol-feature>
-
-        <!-- editor -->
-        <ol-interaction-modify
-          v-if="modifyEnabled"
-          :features="selectedFeatures"
-          @modifyend="onModifyEnd"
-        /> </ol-source-vector
-    ></ol-vector-layer>
+    <MapIssueLayer
+      :issues="selectedIssues"
+      :feature-style="style"
+      :modify-enabled="modifyEnabled"
+      :selected-features="selectedFeatures"
+      @modifyend="onModifyEnd"
+    />
 
     <MapAreas />
 
@@ -124,6 +44,8 @@
 
     <MapTooltip :is-drawing />
 
+    <!-- Selection stays last so the interaction order matches the original map.
+         Areas handle their own clicks, so exclude them here. -->
     <ol-interaction-select
       v-if="!isDrawing"
       :condition="click"
@@ -136,51 +58,35 @@
 </template>
 
 <script setup lang="ts">
-import type { MapIssue, NewIssue } from "~~/shared/types/Issue";
-import { register } from "ol/proj/proj4.js";
-import { transform } from "ol/proj";
-import proj4 from "proj4";
-import Projection from "ol/proj/Projection";
-import type { SelectEvent } from "ol/interaction/Select";
-import { Collection, type Feature } from "ol";
-import type { ModifyEvent } from "ol/interaction/Modify";
-import { GeoJSON } from "ol/format";
-import type { LineString, Point, Polygon } from "ol/geom";
-import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
+import type { Feature } from "ol";
+import type AddFeature from "./map/AddFeature.vue";
 import { click } from "ol/events/condition";
-import type Layer from "ol/layer/Layer";
-import Color from "color";
+import { getIssueMapStyle } from "../utils/issueMapStyle";
+// This component puts the map together and connects it to the page layout.
+// BaseLayers sets up the backgrounds; IssueLayer draws the issues and lets users
+// reshape them. Selection, navigation and geometry updates are handled by
+// useMapIssueInteractions. View tracking, resizing and fitting use the existing
+// useMapView, useMapResize and useMapFocus composables.
 defineOptions({ name: "IssueMap" });
 
-// Use lightweight map issues for rendering (only essential fields)
-const { issue: selectedIssue, selectedId } = storeToRefs(useSelectedIssue());
-const { selectedIssues } = useSelectedIssues();
-const route = useRoute();
+// Desktop and mobile layouts pass their controls through these slots.
+defineSlots<{
+  "top-left-controls"?: () => unknown;
+  "bottom-left-controls"?: (props: { mapWidth: number }) => unknown;
+}>();
+const emit = defineEmits<{ "feature-clicked": [] }>();
+const {
+  selectedId,
+  selectedIssues,
+  selectedFeatures,
+  modifyEnabled,
+  isNotAreaLayer,
+  onFeatureSelect,
+  onModifyEnd,
+} = useMapIssueInteractions(() => emit("feature-clicked"));
 
-function isSelected(issue: MapIssue | NewIssue) {
-  return issue.id === selectedId.value;
-}
-
-// Layer preference management
-const { preferredLayer, watchLayerVisibility } = useMapLayerPreference();
-
-/**
- * Returns the properties object for any OpenLayers feature, with type safety.
- */
-function getFeatureProperties(issue: MapIssue | NewIssue) {
-  const { geometry, ...props } = issue;
-  return props;
-}
-
-// preview images for layers
-const luchtfotoSource = useTemplateRef("luchtfoto-source");
-const light = useTemplateRef("light");
-const fietskaart = useTemplateRef("fietskaart");
-
-// Watch for layer visibility changes and update preferred layer
-watchLayerVisibility(light, "Licht");
-watchLayerVisibility(fietskaart, "Fiets");
-watchLayerVisibility(luchtfotoSource, "Foto");
+// BaseLayers and the layer picker read and write the same saved preference.
+const { preferredLayer } = useMapLayerPreference();
 
 // [top, right, bottom, left]
 const currentPadding = ref<[number, number, number, number]>([100, 50, 50, 50]);
@@ -191,7 +97,8 @@ interface Size {
 }
 const bottomLeftSize = ref<Size>({ width: 0, height: 0 });
 
-// Keep the bottom-left controls clear of the fitted extent; a hidden panel measures 0
+// Leave room for the controls when fitting the map: on the left for a tall panel,
+// below for a wide one. A hidden panel reports zero, leaving only the normal margin.
 watch(bottomLeftSize, ({ width, height }) => {
   if (width < height) {
     currentPadding.value = [100, 50, 50, width + 50];
@@ -209,21 +116,12 @@ const mapRef = useTemplateRef("mapRef");
 
 const { mobile } = useVDisplay();
 
-const { isEditing } = useIsEditing();
-const modifyEnabled = computed(() => {
-  return isEditing.value && selectedIssue.value;
-});
-
-const addFeature = ref(null);
-const isDrawing = computed(() => {
-  // @ts-expect-error - isDrawing is a property of the addFeature component
-  return addFeature.value?.isDrawing || false;
-});
+const addFeature = useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
+const isDrawing = computed(() => addFeature.value?.isDrawing || false);
 
 const { zoom } = useMapView(mapRef);
-const projection = ref("EPSG:3857");
 
-// Setup resize observer to handle container size changes
+// Refit when the map container changes size, for example when the bottom sheet moves.
 const { mapHeight, mapWidth } = useMapResize(mapRef);
 const mapSize = computed<[number, number]>(() => [
   mapWidth.value,
@@ -232,10 +130,9 @@ const mapSize = computed<[number, number]>(() => [
 
 const { refit } = useMapFocus(mapRef, currentPadding, mapSize);
 
-// Hide controls based on actual map height (available space for the map)
+// On mobile, hide controls as the bottom sheet leaves less room for the map.
 const isMapVerySmall = computed(() => {
   if (mobile.value) {
-    // On mobile, use relative size based on available screen percentage
     return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.35;
   }
   return false;
@@ -243,277 +140,20 @@ const isMapVerySmall = computed(() => {
 
 const isMapSmall = computed(() => {
   if (mobile.value) {
-    // On mobile, use relative size based on available screen percentage
     return mapHeight.value > 0 && mapHeight.value / window.innerHeight < 0.45;
   }
   return false;
 });
 
+// Use the same styling for the issue layer and the selection overlay.
+// Read the current selection and zoom each time OpenLayers calls this function.
 function style(feature: Feature) {
-  const properties = feature.getProperties();
-  const issueId = properties.id;
-  const issue = selectedIssues.value?.find((i) => i.id === issueId);
-  if (!issue) return;
-
-  // Provide default color if none specified (for backward compatibility)
-  const issueColor = issue.legend?.color;
-
-  // Set higher zIndex for selected features to bring them to the top
-  const zIndex = isSelected(issue) ? 1000 : 1;
-
-  if (feature.getGeometry()!.getType() === "Point") {
-    // If the issue has an icon, use it with black circle when selected
-    if (issue.legend?.icon) {
-      if (issue.legend?.icon_data_url) {
-        const minScale = 0.3; // Small when zoomed out (low zoom values)
-        const maxScale = 0.7; // larger when zoomed in (high zoom values)
-        const finalScale =
-          minScale + ((zoom.value - 10) / 8) * (maxScale - minScale);
-        // Clamp to min/max bounds
-        const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
-
-        const iconStyle = new Style({
-          image: new Icon({
-            src: issue.legend.icon_data_url,
-            scale: clampedScale,
-            anchor: [0.5, 0.5],
-          }),
-          zIndex,
-        });
-
-        // Add black border overlay if selected (scale border with icon)
-        if (isSelected(issue)) {
-          // Calculate actual rendered icon size: base canvas size (64px) * current scale
-          const baseIconSize = 64; // This matches the canvas size from iconCanvas.ts (32 * 2)
-          const actualIconSize = baseIconSize * clampedScale;
-          const iconRadius = actualIconSize / 2; // Icon is circular, so radius is half the size
-          const borderRadius = iconRadius + 1; // Border extends 1px beyond the icon edge
-          const borderStyle = new Style({
-            image: new Circle({
-              radius: Math.max(6, borderRadius),
-              fill: new Fill({ color: "transparent" }),
-              stroke: new Stroke({ color: "black", width: 3 }),
-            }),
-            zIndex: zIndex + 1, // Border slightly above the icon
-          });
-          return [iconStyle, borderStyle]; // Return both styles
-        }
-
-        return iconStyle;
-      }
-
-      const minRadius = 3; // Small when zoomed out (low zoom values)
-      const maxRadius = 7; // Normal size when zoomed in (high zoom values)
-      const finalRadius =
-        minRadius + ((zoom.value - 10) / 8) * (maxRadius - minRadius);
-      // Clamp to min/max bounds
-      const clampedRadius = Math.max(
-        minRadius,
-        Math.min(maxRadius, finalRadius),
-      );
-
-      const circleStyle = new Style({
-        image: new Circle({
-          radius: clampedRadius,
-          fill: new Fill({ color: issue.legend?.color || "#2196F3" }),
-          stroke: new Stroke({
-            color: "white",
-            width: Math.max(1, clampedRadius / 6),
-          }),
-        }),
-        zIndex,
-      });
-
-      // Add black border overlay if selected (scale with circle)
-      if (isSelected(issue)) {
-        const borderRadius = finalRadius + 3;
-        const borderStyle = new Style({
-          image: new Circle({
-            radius: borderRadius,
-            fill: new Fill({ color: "transparent" }),
-            stroke: new Stroke({ color: "black", width: 3 }),
-          }),
-          zIndex: zIndex + 1, // Border slightly above the circle
-        });
-        return [circleStyle, borderStyle]; // Return both styles
-      }
-
-      return circleStyle;
-    } else {
-      // Fallback to circle for issues without icons
-      return new Style({
-        image: new Circle({
-          radius: 8,
-          fill: new Fill({ color: issueColor }),
-          stroke: new Stroke({
-            color: isSelected(issue) ? "black" : "white",
-            width: 2,
-          }),
-        }),
-        zIndex,
-      });
-    }
-  } else if (feature.getGeometry()!.getType() === "LineString") {
-    const lineWidth = 3;
-    const selectedLineWidth = 6;
-
-    if (isSelected(issue as MapIssue)) {
-      // Draw black border first (thicker), then colored line on top
-      const borderStyle = new Style({
-        stroke: new Stroke({
-          color: "black",
-          width: selectedLineWidth + 2, // 2px wider than the colored line
-        }),
-        zIndex: zIndex, // Border at base z-index
-      });
-
-      const lineStyle = new Style({
-        stroke: new Stroke({
-          color: issueColor,
-          width: selectedLineWidth,
-        }),
-        zIndex: zIndex + 1, // Line slightly above the border
-      });
-
-      return [borderStyle, lineStyle]; // Return both styles - border first, then line
-    } else {
-      return new Style({
-        stroke: new Stroke({
-          color: issueColor,
-          width: lineWidth,
-        }),
-        zIndex,
-      });
-    }
-  } else
-    return new Style({
-      stroke: new Stroke({
-        color: isSelected(issue as MapIssue) ? "black" : issueColor,
-        width: 2,
-      }),
-      fill: new Fill({
-        color: getPolygonFillColor(issue as MapIssue).toString(),
-      }),
-      zIndex,
-    });
+  const issue = selectedIssues.value.find((issue) => issue.id === feature.get("id"));
+  return getIssueMapStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
 }
 
-proj4.defs(
-  "EPSG:28992",
-  "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.9999079 +x_0=155000 +y_0=463000 +ellps=bessel +towgs84=565.417,50.3319,465.552,-0.398957,0.343988,-1.8774,4.0725 +units=m +no_defs",
-);
-register(proj4);
-const rdProjection = new Projection({
-  code: "EPSG:28992",
-  extent: [-285401.92, 22598.08, 595401.92, 903401.92],
-});
-
-const markers = computed(() => {
-  return selectedIssues.value.filter(
-    (issue) => issue.geometry?.type === "Point",
-  );
-});
-
-const polygons = computed(() => {
-  return selectedIssues.value.filter(
-    (issue) => issue.geometry?.type === "Polygon",
-  );
-});
-
-const lines = computed(() => {
-  return selectedIssues.value.filter(
-    (issue) => issue.geometry?.type === "LineString",
-  );
-});
-
-function toPointCoords(issue: MapIssue | NewIssue) {
-  if (issue.geometry?.type !== "Point") return [0, 0];
-  return transform(issue.geometry.coordinates, "EPSG:4326", "EPSG:3857");
-}
-
-function toLineCoords(issue: MapIssue | NewIssue) {
-  if (issue.geometry?.type !== "LineString") return [[0, 0]];
-  return issue.geometry.coordinates.map((coord) =>
-    transform(coord, "EPSG:4326", "EPSG:3857"),
-  );
-}
-
-function toPolygonCoords(issue: MapIssue | NewIssue) {
-  if (issue.geometry?.type !== "Polygon") return [[[0, 0]]];
-  return issue.geometry.coordinates.map((ring) =>
-    ring.map((coord) => transform(coord, "EPSG:4326", "EPSG:3857")),
-  );
-}
-
-function getPolygonFillColor(issue: MapIssue | NewIssue) {
-  const color = new Color(issue.legend?.color || "#000000");
-  return color.fade(0.5);
-}
-
-function navigateToIssue(issue: Pick<MapIssue, "id">) {
-  const { query } = route;
-  navigateTo({ path: `/kaart/${issue.id}`, query });
-}
-
-// Fallback function to create a simple circle icon if icon_data_url is missing
-const selectedFeatures = ref<Collection<Feature<Point | LineString | Polygon>>>(
-  new Collection(),
-);
-
-// ol Select stops at the first hit that fails `filter`, so exclude the layer instead
-function isNotAreaLayer(layer: Layer) {
-  return layer.getClassName() !== "area-layer";
-}
-
-function onFeatureSelect(event: SelectEvent) {
-  const selected = event.selected;
-  if (selected && selected.length > 0) {
-    const feature = selected[0] as Feature<Point | LineString | Polygon>;
-    const properties = feature.getProperties();
-    const issueId = properties.id;
-    if (issueId === selectedId.value) {
-      selectedFeatures.value.push(feature);
-      return;
-    } else {
-      selectedId.value = issueId;
-      navigateToIssue({ id: issueId } as MapIssue);
-      emit("feature-clicked");
-    }
-  } else {
-    selectedFeatures.value.clear();
-  }
-}
-
-function onModifyEnd(event: ModifyEvent) {
-  const writer = new GeoJSON();
-  const feature = event.features.item(0);
-  if (!feature) {
-    console.warn("No feature modified");
-    return;
-  }
-  const geoJSON = writer.writeFeatureObject(feature, {
-    dataProjection: "EPSG:4326",
-    featureProjection: "EPSG:3857",
-  });
-
-  // Update selectedIssue geometry
-  // @ts-expect-error - geometry type is complex
-  selectedIssue.value!.geometry = geoJSON.geometry;
-
-  // ALSO update the geometry in the issues array (which the map renders from)
-  // This prevents the map from reverting to the old geometry
-  const issueIndex = selectedIssues.value.findIndex(
-    (i) => "id" in i && i.id === selectedId.value,
-  );
-  if (issueIndex !== -1) {
-    // @ts-expect-error - geometry type is complex
-    selectedIssues.value[issueIndex].geometry = geoJSON.geometry;
-  }
-}
-
-const emit = defineEmits(["feature-clicked"]);
-
-// Expose functions to parent components
+// Parents can request a refit or change the background through this ref.
+// Reset shows the overview; a normal refit follows the current focus target.
 defineExpose({
   resetToOriginalExtent,
   refit,

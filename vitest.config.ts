@@ -7,6 +7,8 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    // Transform the library's extensionless imports for real OpenLayers integration tests.
+    server: { deps: { inline: ["vue3-openlayers"] } },
   },
   resolve: {
     alias: {
