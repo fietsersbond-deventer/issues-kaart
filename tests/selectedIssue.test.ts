@@ -91,3 +91,21 @@ describe("geselecteerd onderwerp", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 });
+
+it("keeps the most recently selected issue when older requests resolve last", async () => {
+  let resolveOld: (value: typeof loadedIssue) => void;
+  let resolveNew: (value: typeof loadedIssue) => void;
+  vi.mocked(globalThis.$fetch)
+    .mockReturnValueOnce(new Promise((resolve) => { resolveOld = resolve; }))
+    .mockReturnValueOnce(new Promise((resolve) => { resolveNew = resolve; }));
+  route.params.id = "2";
+  await nextTick();
+  route.params.id = "3";
+  await nextTick();
+  resolveNew!({ ...loadedIssue, id: 3 });
+  await nextTick();
+  resolveOld!({ ...loadedIssue, id: 2 });
+  await nextTick();
+  expect(store.selectedId).toBe(3);
+  expect(store.issue?.id).toBe(3);
+});

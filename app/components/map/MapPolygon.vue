@@ -35,9 +35,7 @@ const showTooltip = ref(false);
 
 // Transform coordinates to EPSG:3857
 const transformedCoords = computed(() => {
-  return [
-    props.coordinates.map((ring) => ring.map((coord) => fromLonLat(coord))),
-  ];
+  return props.coordinates.map((ring) => ring.map((coord) => fromLonLat(coord)));
 });
 
 // Calculate center of polygon for tooltip

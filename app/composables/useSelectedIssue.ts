@@ -64,7 +64,11 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
 
   watch(
     () => route.params.id,
-    async (newId) => {
+    async (newId, _oldId, onCleanup) => {
+      let current = true;
+      onCleanup(() => {
+        current = false;
+      });
       if (newId === "new") {
         selectedId.value = null;
         isEditing.value = true;
@@ -76,7 +80,8 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
 
       // Fetch full issue data when selecting an issue
       if (id !== null) {
-        issue.value = await $fetch<Issue>(`/api/issues/${id}`);
+        const loadedIssue = await $fetch<Issue>(`/api/issues/${id}`);
+        if (current) issue.value = loadedIssue;
       }
     },
     { immediate: true },

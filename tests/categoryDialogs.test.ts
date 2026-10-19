@@ -1,0 +1,65 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
+import { defineComponent } from "vue";
+import Dialog from "../app/components/admin/legend/LegendDialog.vue";
+import DeleteDialog from "../app/components/admin/legend/DeleteConfirmDialog.vue";
+import Table from "../app/components/admin/legend/LegendTable.vue";
+import { vueGlobals } from "./helpers/vue";
+import { Field, Slot, uiStubs } from "./helpers/ui";
+import type { Legend } from "../server/database/schema";
+const canvas = vi.hoisted(() => ({ createIconCanvasDataUrl: vi.fn(), createFallbackIconDataUrl: vi.fn() }));
+vi.mock("../app/utils/iconCanvas", () => canvas);
+const Tooltip = defineComponent({ props: ["text"], template: '<span :data-tooltip="text"><slot name="activator" :props="{}" /><slot /></span>' });
+const stubs = { ...uiStubs, VTable: Slot, VTooltip: Tooltip, VIcon: Slot, VList: Slot, VListItem: Slot, VListItemTitle: Slot, VChip: Slot, VColorPicker: Field, IconSelector: Field, LegendIndicator: true };
+const legend = { id: 1, name: "Routes", description: "Safe routes", color: "#123456", icon: "mdi-bike" } as Legend;
+const usage = { 1: { usage_count: 1, used_by_issues: [{ id: 4, title: "Crossing" }] } };
+const wrappers: Array<{
+    unmount(): void;
+}> = [];
+beforeEach(() => { vueGlobals(); canvas.createIconCanvasDataUrl.mockReset().mockResolvedValue("data:icon"); canvas.createFallbackIconDataUrl.mockReturnValue("data:fallback"); vi.spyOn(console, "warn").mockImplementation(() => { }); });
+afterEach(() => { wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+it("creates category form data and regenerates icon previews, with a canvas fallback on failure", async () => {
+    const wrapper = mount(Dialog, { props: { modelValue: true }, global: { stubs } });
+    wrappers.push(wrapper);
+    await wrapper.findAll("input")[0]!.setValue("New");
+    await wrapper.findAll("input")[1]!.setValue("Description");
+    await wrapper.findAll("button")[0]!.trigger("click");
+    await flushPromises();
+    expect(wrapper.emitted("save")?.at(-1)?.[0]).toMatchObject({ name: "New", description: "Description", color: "#2196F3" });
+    await wrapper.setProps({ legend });
+    await flushPromises();
+    expect(wrapper.find("img").attributes("src")).toBe("data:icon");
+    canvas.createIconCanvasDataUrl.mockRejectedValue(new Error("canvas unavailable"));
+    await wrapper.findAll("button")[0]!.trigger("click");
+    await flushPromises();
+    expect(wrapper.emitted("save")?.at(-1)?.[0]).toMatchObject({ icon_data_url: "data:fallback" });
+    await wrapper.findAll("button")[1]!.trigger("click");
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
+    await wrapper.setProps({ legend: undefined });
+    expect(wrapper.findAll("input")[0]!.element.value).toBe("");
+});
+it("prevents deletion of categories in use and emits edit/delete only for appropriate rows", async () => {
+    const wrapper = mount(Table, { props: { legends: [legend, { ...legend, id: 2, name: "Unused" }], usage }, global: { stubs } });
+    wrappers.push(wrapper);
+    const buttons = wrapper.findAll("button");
+    await buttons[0]!.trigger("click");
+    expect(wrapper.emitted("edit")?.[0]?.[0]).toEqual(legend);
+    await buttons[1]!.trigger("click");
+    expect(wrapper.emitted("delete")).toBeUndefined();
+    await buttons[3]!.trigger("click");
+    expect(wrapper.emitted("delete")?.[0]?.[0]).toMatchObject({ id: 2 });
+    expect(wrapper.get('[data-tooltip="Dit legenda item wordt gebruikt"]').exists()).toBe(true);
+});
+it("confirms unused category deletion and shows linked issues for a protected-delete error", async () => {
+    const wrapper = mount(DeleteDialog, { props: { modelValue: true, legend, usage, error: "" }, global: { stubs } });
+    wrappers.push(wrapper);
+    await wrapper.findAll("button")[0]!.trigger("click");
+    expect(wrapper.emitted("confirm")).toHaveLength(1);
+    await wrapper.setProps({ error: "In use" });
+    expect(wrapper.text()).toContain("Crossing");
+    expect(wrapper.text()).toContain("In use");
+    expect(wrapper.text()).not.toContain("Ja, verwijder");
+    await wrapper.get("button").trigger("click");
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
+});

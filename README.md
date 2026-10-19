@@ -204,7 +204,8 @@ De applicatie gebruikt lokale authenticatie met:
 
 ## 🧪 Testing
 
-Tests zijn geschreven met Vitest:
+Tests zijn geschreven met Vitest. Zie [teststrategie en gedragsmatrix](docs/testing.md)
+voor isolatie, de volledige coverage-inventaris en de coverage-eis per meetwaarde:
 
 ```bash
 # Alle tests

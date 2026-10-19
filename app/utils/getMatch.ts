@@ -4,6 +4,12 @@ function snippetAround(
   termLength: number,
   whitespaces: number,
 ) {
+  if (whitespaces <= 0) {
+    return {
+      snippet: `...${string.slice(index, index + termLength)}...`,
+      end: index + termLength,
+    };
+  }
   const _ws = [" ", "\t"];
 
   let whitespace = 0;

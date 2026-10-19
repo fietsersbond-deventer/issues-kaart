@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export type IBoundsObject = {
   south: number;
   west: number;
@@ -9,18 +7,27 @@ export type IBoundsObject = {
 
 export type IBoundsTuples = [[number, number], [number, number]];
 
-export function isBoundsObject(arg: any): arg is IBoundsObject {
+export function isBoundsObject(arg: unknown): arg is IBoundsObject {
   return (
-    arg.south !== undefined &&
-    arg.west !== undefined &&
-    arg.north !== undefined &&
-    arg.east !== undefined
+    typeof arg === "object" &&
+    arg !== null &&
+    "south" in arg &&
+    typeof arg.south === "number" &&
+    "west" in arg &&
+    typeof arg.west === "number" &&
+    "north" in arg &&
+    typeof arg.north === "number" &&
+    "east" in arg &&
+    typeof arg.east === "number"
   );
 }
 
-export function isBoundsTuples(arg: any): arg is IBoundsTuples {
+export function isBoundsTuples(arg: unknown): arg is IBoundsTuples {
   return (
+    Array.isArray(arg) &&
     arg.length === 2 &&
+    Array.isArray(arg[0]) &&
+    Array.isArray(arg[1]) &&
     arg[0].length === 2 &&
     arg[1].length === 2 &&
     typeof arg[0][0] === "number" &&
