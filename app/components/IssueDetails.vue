@@ -1,12 +1,12 @@
 <template>
   <article>
-    <div class="d-flex ga-2 mb-4">
-      <h1 class="mb-0">{{ issue.title }}</h1>
+    <h1 class="mb-4">
+      {{ issue.title }}
       <v-btn variant="text" size="small" aria-label="Kopieer issue URL" @click="copyUrl">
         <v-icon size="28">mdi-share-variant</v-icon>
         <v-tooltip activator="parent" location="top" text="Kopieer URL van huidige issue"/>
       </v-btn>
-    </div>
+    </h1>
 
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
       <CategoryChip v-if="issue.legend" :legend="issue.legend" />
