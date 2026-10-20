@@ -1,102 +1,84 @@
-import type { BrowserContext, Page, WebSocketRoute } from "@playwright/test";
-import { test, expect, login, secondUser, editIssue, selectCategory, saveIssue, selectTag, draw } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
+import { createPages } from "./pages/index.js";
+import { socketConnections, interrupt } from "./support/sockets.js";
 
-async function socketConnections(context: BrowserContext | Page) {
-  const blocked = new Set<string>();
-  const connections: { client: WebSocketRoute; server: WebSocketRoute }[] = [];
-  await context.routeWebSocket("**/ts/**", async (client) => {
-    if (blocked.has(new URL(client.url()).pathname)) {
-      await client.close({ code: 1012 });
-      return;
-    }
-    connections.push({ client, server: client.connectToServer() });
-  });
-  return { connections, blocked };
-}
-
-async function interrupt(sockets: Awaited<ReturnType<typeof socketConnections>>, path: string, whileDisconnected?: () => Promise<void>) {
-  const { connections, blocked } = sockets;
-  const matching = () => connections.filter(({ client }) => new URL(client.url()).pathname === path);
-  await expect.poll(() => matching().length).toBeGreaterThan(0);
-  const before = matching().length;
-  const connection = matching().at(-1)!;
-  blocked.add(path);
-  await connection.server.close({ code: 1012, reason: "E2E transport interruption" });
-  await connection.client.close({ code: 1012, reason: "E2E transport interruption" });
-  if (whileDisconnected) await whileDisconnected();
-  blocked.delete(path);
-  await expect.poll(() => matching().length).toBeGreaterThan(before);
-}
-
-test("6 — lock ownership, competing editor, cancel, reconnect and disconnect release", async ({ page, context, browser }) => {
+test("6 — lock ownership, competing editor, cancel, reconnect and disconnect release", async ({
+  app,
+  page,
+  context,
+  secondUser,
+}) => {
   const sockets = await socketConnections(page);
-  await login(page);
-  const other = await secondUser(browser);
-  try {
-    await other.page.goto("/kaart/101");
-    await expect(other.page.getByRole("button", { name: "Bewerken", exact: true })).toBeEnabled();
-    await editIssue(page);
-    await expect(other.page.getByRole("button", { name: "Bewerkt door E2E User", exact: true })).toBeVisible();
-    await expect(other.page.getByRole("button", { name: "Bewerken", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "Annuleren", exact: true }).first().click();
-    await expect(other.page.getByRole("button", { name: "Bewerken", exact: true })).toBeEnabled();
+  await app.loginPage.login();
+  const other = await secondUser();
+  await other.issueMap.goto(101);
+  await expect(other.issueMap.details.editButton).toBeEnabled();
+  await app.issueMap.editIssue();
+  await expect(other.issueMap.details.lockedBy("E2E User")).toBeVisible();
+  await expect(other.issueMap.details.editButton).toHaveCount(0);
+  await app.issueMap.editor.cancel();
+  await expect(other.issueMap.details.editButton).toBeEnabled();
 
-    await page.getByRole("button", { name: "Bewerken", exact: true }).click();
-    await expect(other.page.getByRole("button", { name: "Bewerkt door E2E User", exact: true })).toBeVisible();
-    await interrupt(sockets, "/ts/auth");
-    await expect(other.page.getByRole("button", { name: "Bewerkt door E2E User", exact: true })).toBeVisible();
-    await expect(page.getByLabel("Titel", { exact: true })).toHaveValue("E2E Point");
-    await context.close();
-    await expect(other.page.getByRole("button", { name: "Bewerken", exact: true })).toBeEnabled();
-    await other.page.getByRole("button", { name: "Bewerken", exact: true }).click();
-    await expect(other.page.getByLabel("Titel", { exact: true })).toHaveValue("E2E Point");
-  } finally {
-    await other.context.close();
-  }
+  await app.issueMap.details.edit();
+  await expect(other.issueMap.details.lockedBy("E2E User")).toBeVisible();
+  await interrupt(sockets, "/ts/auth");
+  await expect(other.issueMap.details.lockedBy("E2E User")).toBeVisible();
+  await expect(app.issueMap.editor.title).toHaveValue("E2E Point");
+  await context.close();
+  await expect(other.issueMap.details.editButton).toBeEnabled();
+  await other.issueMap.details.edit();
+  await expect(other.issueMap.editor.title).toHaveValue("E2E Point");
 });
 
-test("7 — another browser receives real create, update, delete and reconnect recovery", async ({ page, browser, context }) => {
+test("7 — another browser receives real create, update, delete and reconnect recovery", async ({
+  app,
+  page,
+  secondUser,
+  context,
+}) => {
   const sockets = await socketConnections(page);
-  await login(page);
-  await page.goto("/kaart?tag=e2e-route");
-  await expect(page.getByRole("button", { name: /1 plek op de kaart/ })).toBeVisible();
-  const list = await context.newPage();
-  await list.goto("/lijst");
-  await expect(list.getByRole("cell", { name: "E2E Polygon", exact: true })).toBeVisible();
-  const other = await secondUser(browser);
-  try {
-    // Create through the editor in the other browser, not through a fabricated WS message.
-    await other.page.getByRole("link", { name: "Nieuw onderwerp toevoegen", exact: true }).click();
-    await other.page.getByLabel("Titel", { exact: true }).fill("Realtime onderwerp");
-    await other.page.locator(".edit-form .ql-editor").fill("Nieuwe inhoud");
-    await selectCategory(other.page, "E2E Verkeer");
-    await selectTag(other.page, "Route");
-    await draw(other.page, "Point");
-    const created = await saveIssue(other.page, "POST");
-    await expect(page.getByRole("button", { name: /2 plekken op de kaart/ })).toBeVisible();
-    await expect(list.getByRole("cell", { name: "Realtime onderwerp", exact: true })).toBeVisible();
-    await page.goto(`/kaart/${created.id}?tag=e2e-route`);
-    await expect(page.getByRole("heading", { name: "Realtime onderwerp", exact: true })).toBeVisible();
-    await editIssue(other.page, created.id);
-    await other.page.getByLabel("Titel", { exact: true }).fill("Realtime bijgewerkt");
-    await saveIssue(other.page, "PATCH");
-    await expect(page.getByRole("heading", { name: "Realtime bijgewerkt", exact: true })).toBeVisible();
-    await expect(list.getByRole("cell", { name: "Realtime bijgewerkt", exact: true })).toBeVisible();
-    await interrupt(sockets, "/ts/notify", async () => {
-      await editIssue(other.page, created.id);
-      await other.page.getByLabel("Titel", { exact: true }).fill("Na herstel bijgewerkt");
-      await saveIssue(other.page, "PATCH");
-    });
-    await expect(page.getByRole("heading", { name: "Na herstel bijgewerkt", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /2 plekken op de kaart/ })).toBeVisible();
-    await editIssue(other.page, created.id);
-    other.page.once("dialog", (dialog) => dialog.accept());
-    await other.page.getByRole("button", { name: "Verwijderen", exact: true }).first().click();
-    await expect(page).toHaveURL(/\/kaart\?tag=e2e-route$/);
-    await expect(page.getByRole("button", { name: /1 plek op de kaart/ })).toBeVisible();
-    await expect(list.getByRole("cell", { name: "E2E Polygon", exact: true })).toBeVisible();
-    await expect(list.getByRole("cell", { name: /Realtime|Na herstel/ })).toHaveCount(0);
-  } finally {
-    await other.context.close();
-  }
+  await app.loginPage.login();
+  await app.issueMap.goto(undefined, "?tag=e2e-route");
+  await expect(app.issueMap.filters.count(1)).toBeVisible();
+  const listPage = await context.newPage();
+  const list = createPages(listPage).issueList;
+  await list.goto();
+  await expect(list.issueCell("E2E Polygon")).toBeVisible();
+  const other = await secondUser();
+  // Create through the editor in the other browser, not through a fabricated WS message.
+  await other.header.addIssue();
+  await other.issueMap.editor.title.fill("Realtime onderwerp");
+  await other.issueMap.editor.description.fill("Nieuwe inhoud");
+  await other.issueMap.editor.selectCategory("E2E Verkeer");
+  await other.issueMap.editor.selectTag("Route");
+  await other.issueMap.map.draw("Point");
+  const created = await other.issueMap.editor.saveSuccessfully("POST");
+  await expect(app.issueMap.filters.count(2)).toBeVisible();
+  await expect(list.issueCell("Realtime onderwerp")).toBeVisible();
+  await app.issueMap.goto(created.id, "?tag=e2e-route");
+  await expect(
+    app.issueMap.details.heading("Realtime onderwerp"),
+  ).toBeVisible();
+  await other.issueMap.editIssue(created.id);
+  await other.issueMap.editor.title.fill("Realtime bijgewerkt");
+  await other.issueMap.editor.saveSuccessfully("PATCH");
+  await expect(
+    app.issueMap.details.heading("Realtime bijgewerkt"),
+  ).toBeVisible();
+  await expect(list.issueCell("Realtime bijgewerkt")).toBeVisible();
+  await interrupt(sockets, "/ts/notify", async () => {
+    await other.issueMap.editIssue(created.id);
+    await other.issueMap.editor.title.fill("Na herstel bijgewerkt");
+    await other.issueMap.editor.saveSuccessfully("PATCH");
+  });
+  await expect(
+    app.issueMap.details.heading("Na herstel bijgewerkt"),
+  ).toBeVisible();
+  await expect(app.issueMap.filters.count(2)).toBeVisible();
+  await other.issueMap.editIssue(created.id);
+  await other.issueMap.editor.delete(true);
+  await expect(page).toHaveURL(/\/kaart\?tag=e2e-route$/);
+  await expect(app.issueMap.filters.count(1)).toBeVisible();
+  await expect(list.issueCell("E2E Polygon")).toBeVisible();
+  await expect(list.issueCell(/Realtime|Na herstel/)).toHaveCount(0);
 });

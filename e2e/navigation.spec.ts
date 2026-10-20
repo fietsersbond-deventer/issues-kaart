@@ -1,85 +1,106 @@
-import { test, expect, login, renderedPoint } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
 
-for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+for (const viewport of [
+  { width: 1440, height: 1000 },
+  { width: 390, height: 844 },
+]) {
   const mobile = viewport.width < 600;
-  test(`4 — list, deep links, history and map controls (${mobile ? "mobile" : "desktop"})`, async ({ page, request }) => {
+  test(`4 — list, deep links, history and map controls (${mobile ? "mobile" : "desktop"})`, async ({
+    app,
+    page,
+    request,
+  }) => {
     await page.setViewportSize(viewport);
-    await page.goto("/lijst");
-    await page.getByRole("cell", { name: "E2E Point", exact: true }).click();
+    await app.issueList.goto();
+    await app.issueList.issueCell("E2E Point").click();
     await expect(page).toHaveURL(/\/kaart\/101$/);
-    await expect(page.getByRole("heading", { name: "E2E Point", exact: true })).toBeVisible();
+    await expect(app.issueMap.details.heading("E2E Point")).toBeVisible();
     await page.goBack();
-    await expect(page.getByRole("cell", { name: "E2E Point", exact: true })).toBeVisible();
+    await expect(app.issueList.issueCell("E2E Point")).toBeVisible();
     await page.goForward();
-    await expect(page.getByRole("heading", { name: "E2E Point", exact: true })).toBeVisible();
-    await page.goto("/kaart/103");
-    await expect(page.getByRole("heading", { name: "E2E Polygon", exact: true })).toBeVisible();
+    await expect(app.issueMap.details.heading("E2E Point")).toBeVisible();
+    await app.issueMap.goto(103);
+    await expect(app.issueMap.details.heading("E2E Polygon")).toBeVisible();
     if (mobile) {
-      await page.getByRole("button", { name: "Onderpaneel uitklappen", exact: true }).press("Enter");
-      await expect(page.getByRole("button", { name: "Onderpaneel inklappen", exact: true })).toHaveAttribute("aria-pressed", "true");
-      await page.getByRole("button", { name: "Onderpaneel inklappen", exact: true }).press("Enter");
-      await page.getByRole("button", { name: "Kaartlagen en legenda openen", exact: true }).click();
+      await app.issueMap.expandPanel.press("Enter");
+      await expect(app.issueMap.collapsePanel).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      await app.issueMap.collapsePanel.press("Enter");
+      await app.issueMap.filters.open();
     }
-    await page.getByRole("button", { name: "Kaartlaag Foto", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Kaartlaag Foto", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await app.issueMap.filters.photoLayer.click();
+    await expect(app.issueMap.filters.photoLayer).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await page.reload();
-    if (mobile) await page.getByRole("button", { name: "Kaartlagen en legenda openen", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Kaartlaag Foto", exact: true })).toHaveAttribute("aria-pressed", "true");
-    if (mobile) await page.getByRole("button", { name: "Kaartlagen en legenda sluiten", exact: true }).click();
-    await page.getByTitle("Toon alle onderwerpen", { exact: true }).click();
-    await expect(page.getByTestId("issue-map").locator("canvas").first()).toBeVisible();
+    if (mobile) await app.issueMap.filters.open();
+    await expect(app.issueMap.filters.photoLayer).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    if (mobile) await app.issueMap.filters.close();
+    await app.issueMap.filters.showAll();
+    await expect(app.issueMap.map.canvas).toBeVisible();
     // A missing ID must never leave the previous issue in the details panel.
     expect((await request.get("/api/issues/999999")).status()).toBe(404);
-    await page.goto("/kaart/999999");
-    await expect(page.getByRole("heading", { name: "E2E Polygon", exact: true })).toHaveCount(0);
-    await expect(page.getByText("Onderwerp niet gevonden", { exact: true })).toBeVisible();
+    await app.issueMap.goto(999999);
+    await expect(app.issueMap.details.heading("E2E Polygon")).toHaveCount(0);
+    await expect(app.issueMap.details.notFound).toBeVisible();
   });
 
-  test(`5 — search, combined category/tag filters, reset and URL selection (${mobile ? "mobile" : "desktop"})`, async ({ page }) => {
+  test(`5 — search, combined category/tag filters, reset and URL selection (${mobile ? "mobile" : "desktop"})`, async ({
+    app,
+    page,
+  }) => {
     await page.setViewportSize(viewport);
-    await page.goto("/lijst");
-    await page.getByLabel("Zoek", { exact: true }).fill("Point");
-    await expect(page.getByRole("cell", { name: "E2E Point", exact: true })).toBeVisible();
-    await expect(page.getByRole("cell", { name: "E2E LineString", exact: true })).toHaveCount(0);
-    await page.getByRole("cell", { name: "E2E Point", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "E2E Point", exact: true })).toBeVisible();
+    await app.issueList.goto();
+    await app.issueList.search.fill("Point");
+    await expect(app.issueList.issueCell("E2E Point")).toBeVisible();
+    await expect(app.issueList.issueCell("E2E LineString")).toHaveCount(0);
+    await app.issueList.issueCell("E2E Point").click();
+    await expect(app.issueMap.details.heading("E2E Point")).toBeVisible();
     await page.goBack();
-    await expect(page.getByLabel("Zoek", { exact: true })).toHaveValue("Point");
-    await page.getByLabel("Zoek", { exact: true }).fill("geen-bestaand-onderwerp");
-    await expect(page.getByText("Geen gegevens beschikbaar", { exact: true })).toBeVisible();
-    await page.getByLabel("Zoek", { exact: true }).fill("");
-    await expect(page.getByRole("cell", { name: "E2E Polygon", exact: true })).toBeVisible();
-    await page.goto("/kaart");
-    if (mobile) await page.getByRole("button", { name: "Kaartlagen en legenda openen", exact: true }).click();
-    await page.getByRole("checkbox", { name: /E2E Verkeer/ }).click();
-    await page.getByRole("checkbox", { name: /Veilig/ }).click();
+    await expect(app.issueList.search).toHaveValue("Point");
+    await app.issueList.search.fill("geen-bestaand-onderwerp");
+    await expect(app.issueList.empty).toBeVisible();
+    await app.issueList.search.fill("");
+    await expect(app.issueList.issueCell("E2E Polygon")).toBeVisible();
+    await app.issueMap.goto();
+    if (mobile) await app.issueMap.filters.open();
+    await app.issueMap.filters.checkbox(/E2E Verkeer/).click();
+    await app.issueMap.filters.checkbox(/Veilig/).click();
     await expect(page).toHaveURL(/cat=101/);
     await expect(page).toHaveURL(/tag=e2e-veilig/);
-    await expect(page.getByRole("checkbox", { name: /E2E Parkeren/ })).toHaveAttribute("aria-checked", "false");
-    if (mobile) await page.getByRole("button", { name: "Kaartlagen en legenda sluiten", exact: true }).click();
-    await expect(page.getByRole("button", { name: /1 plek op de kaart/ })).toBeVisible();
+    await expect(app.issueMap.filters.checkbox(/E2E Parkeren/)).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    if (mobile) await app.issueMap.filters.close();
+    await expect(app.issueMap.filters.count(1)).toBeVisible();
     const query = new URL(page.url()).search;
     // The one remaining point is focused in the visible area. Click the actual canvas.
-    const pixel = await renderedPoint(page);
-    await page.mouse.click(pixel.x, pixel.y);
+    await app.issueMap.map.clickRenderedPoint();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/kaart/101");
     expect(new URL(page.url()).search).toBe(query);
-    await expect(page.getByRole("heading", { name: "E2E Point", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /1 plek op de kaart/ }).click();
+    await expect(app.issueMap.details.heading("E2E Point")).toBeVisible();
+    await app.issueMap.filters.count(1).click();
     await expect(page).not.toHaveURL(/cat=|tag=/);
-    await page.goto("/kaart?cat=102&tag=e2e-route");
-    await expect(page.getByRole("button", { name: /0 plekken op de kaart/ })).toBeVisible();
-    await page.getByRole("button", { name: /0 plekken op de kaart/ }).click();
+    await app.issueMap.goto(undefined, "?cat=102&tag=e2e-route");
+    await expect(app.issueMap.filters.count(0)).toBeVisible();
+    await app.issueMap.filters.count(0).click();
     await expect(page).not.toHaveURL(/cat=|tag=/);
   });
 }
 
-test("3 — mobile editor remains usable", async ({ page }) => {
+test("3 — mobile editor remains usable", async ({ app, page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await login(page);
-  await page.goto("/kaart/101");
-  await page.getByRole("button", { name: "Bewerken", exact: true }).click();
-  await page.getByLabel("Titel", { exact: true }).fill("Mobiel concept");
-  await page.getByRole("button", { name: "Annuleren", exact: true }).first().click();
-  await expect(page.getByRole("heading", { name: "E2E Point", exact: true })).toBeVisible();
+  await app.loginPage.login();
+  await app.issueMap.goto(101);
+  await app.issueMap.details.edit();
+  await app.issueMap.editor.title.fill("Mobiel concept");
+  await app.issueMap.editor.cancel();
+  await expect(app.issueMap.details.heading("E2E Point")).toBeVisible();
 });

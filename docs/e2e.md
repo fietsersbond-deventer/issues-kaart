@@ -37,6 +37,43 @@ echt, behalve één expliciete 503-injectie bij de foutscenario-test voor opslaa
 WebSockets verbinden met de echte server; de samenwerkingstests verbreken tijdelijk
 het transport en laten de app zelf opnieuw verbinden. Ze fabriceren geen berichten.
 
+## Page Object Model
+
+De specs beschrijven scenario's en controleren zichtbaar gedrag, URL's en
+persistente API-gegevens. UI-selectors en herbruikbare acties staan in:
+
+- `e2e/pages/`: login, wachtwoordherstel, kaart, lijst en de vier beheerpagina's.
+- `e2e/components/`: navigatie, onderwerpdetails, editor, kaartcanvas en filters.
+- `e2e/support/`: tijdelijke runtimepaden, externe-service-isolatie, API-login,
+  SMTP-uitvoer, verlopen resettokens en WebSocket-onderbreking.
+
+Gebruik de testfixture `app` voor de huidige pagina. `createPages(page)` maakt
+dezelfde objecten voor een extra tab. De factory-fixture `secondUser()` opent
+een geïsoleerde context, blokkeert externe diensten en logt in als de tweede
+gebruiker. De fixture sluit alle aangemaakte contexts na de test; een test mag
+een context eerder sluiten om disconnectgedrag te controleren.
+
+```ts
+import { test, expect } from "./fixtures.js";
+
+test("onderwerp bewerken", async ({ app }) => {
+  await app.loginPage.login();
+  await app.issueMap.editIssue(101);
+  await app.issueMap.editor.title.fill("Nieuwe titel");
+  await app.issueMap.editor.saveSuccessfully("PATCH");
+  await expect(app.issueMap.details.heading("Nieuwe titel")).toBeVisible();
+});
+```
+
+Page objects gebruiken compositie en benoemde locators; er is geen algemene
+basisklasse. `loginPage.submit()` en `editor.submit()` eisen geen succes, zodat
+negatieve scenario's dezelfde acties gebruiken. `loginPage.login()` en
+`editor.saveSuccessfully()` wachten wel op een geslaagde overgang. Registreer
+responsewachten en foutinjecties vóór de actie; houd scenarioassertions in de
+spec. `editor.delete(false)` annuleert de native bevestiging en
+`editor.delete(true)` accepteert die. Tekenen en markerselectie blijven echte
+canvasinteracties, zonder Vue/Pinia-state te lezen.
+
 ## Flowgroepen
 
 Er zijn vijftien scenario's voor de tien groepen:
