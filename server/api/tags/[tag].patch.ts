@@ -1,9 +1,9 @@
 import { getDb } from "~~/server/utils/db";
 import { normalizeTag, setTagMetadata } from "~~/server/utils/issueTags";
-import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { requireUserSession } from "~~/server/utils/requireUserSession";
 
 export default defineEventHandler(async (event) => {
-  requireAdminSession(event);
+  requireUserSession(event);
 
   const tagParam = getRouterParam(event, "tag");
   const normalizedTag = normalizeTag(tagParam ?? "");
@@ -32,10 +32,11 @@ export default defineEventHandler(async (event) => {
           ? existing.label
           : normalizedTag
         : body.label,
-    description: body.description === undefined
-      ? existing?.description ?? null
-      : body.description,
-    icon: body.icon === undefined ? existing?.icon ?? null : body.icon,
+    description:
+      body.description === undefined
+        ? (existing?.description ?? null)
+        : body.description,
+    icon: body.icon === undefined ? (existing?.icon ?? null) : body.icon,
   });
 
   if (!updatedTag) {

@@ -142,6 +142,15 @@ it("renders admin navigation, login and welcome entry points, and declares root 
     expect(globalThis.navigateTo).toHaveBeenCalledWith("/kaart");
     expect(meta.render()).toBeNull();
 });
+it("limits ordinary users' admin navigation to categories, tags and texts", () => {
+    vi.stubGlobal("useRoles", () => ({ isAdmin: ref(false) }));
+    const admin = keep(mount(Admin, { global: { stubs } }));
+    expect(admin.get('a[href="/admin/legends"]').text()).toBe("Categorieën");
+    expect(admin.get('a[href="/admin/tags"]').text()).toBe("Tags");
+    expect(admin.get('a[href="/admin/texts"]').text()).toBe("Teksten");
+    expect(admin.find('a[href="/admin/users"]').exists()).toBe(false);
+    expect(admin.text()).not.toContain("Gebruikers");
+});
 it("initializes analytics, records page views/events and installs OpenLayers", async () => {
     vi.useFakeTimers();
     const scope = effectScope();
