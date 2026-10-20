@@ -4,7 +4,11 @@
       <v-card-title class="d-flex align-center">
         <span>Tags</span>
         <v-spacer />
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="openCreateDialog"
+        >
           Nieuwe tag
         </v-btn>
       </v-card-title>
@@ -20,7 +24,11 @@
         >
           <template #[`item.tag`]="{ item }">
             <div class="d-flex align-center ga-2">
-              <AppIcon :icon="item.icon || 'mdi-tag-outline'" size="18" color="grey" />
+              <AppIcon
+                :icon="item.icon || 'mdi-tag-outline'"
+                size="18"
+                color="grey"
+              />
               <span>{{ item.tag }}</span>
             </div>
           </template>
@@ -100,7 +108,11 @@
               <v-col cols="12">
                 <div class="text-subtitle-2 mb-2">Icoon</div>
                 <div class="d-flex align-center ga-2">
-                  <AppIcon :icon="form.icon || 'mdi-tag-outline'" size="24" color="grey" />
+                  <AppIcon
+                    :icon="form.icon || 'mdi-tag-outline'"
+                    size="24"
+                    color="grey"
+                  />
                   <span class="text-caption text-medium-emphasis">
                     {{ form.icon || "Geen icoon" }}
                   </span>
@@ -125,7 +137,12 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn color="primary" :loading="saving" :disabled="!valid" @click="saveTag">
+          <v-btn
+            color="primary"
+            :loading="saving"
+            :disabled="!valid"
+            @click="saveTag"
+          >
             Opslaan
           </v-btn>
           <v-btn variant="text" @click="dialog = false">Annuleren</v-btn>
@@ -137,11 +154,14 @@
       <v-card>
         <v-card-title>Tag verwijderen</v-card-title>
         <v-card-text>
-          Weet je zeker dat je de tag "{{ selectedTagToDelete?.tag }}" wilt verwijderen?
+          Weet je zeker dat je de tag "{{ selectedTagToDelete?.tag }}" wilt
+          verwijderen?
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="error" :loading="saving" @click="deleteTag"> Verwijderen </v-btn>
+          <v-btn color="error" :loading="saving" @click="deleteTag">
+            Verwijderen
+          </v-btn>
           <v-btn @click="deleteDialog = false">Annuleren</v-btn>
         </v-card-actions>
       </v-card>
@@ -155,13 +175,7 @@ import type { Tag } from "~~/shared/types/Tag";
 useTitle("Tag beheer");
 
 definePageMeta({
-  middleware: [
-    "sidebase-auth",
-    function () {
-      const { isAdmin } = useRoles();
-      return isAdmin.value || "/admin";
-    },
-  ],
+  middleware: ["sidebase-auth"],
 });
 
 type TagForm = {
@@ -234,7 +248,7 @@ watch(
   () => form.value.label,
   (label) => {
     form.value.tag = normalizeTagValue(label);
-  }
+  },
 );
 
 async function saveTag() {
@@ -255,13 +269,16 @@ async function saveTag() {
       const updated = await update(tagValue, payload);
       if (tags.value) {
         tags.value = tags.value.map((item: Tag) =>
-          item.tag === updated.tag ? updated : item
+          item.tag === updated.tag ? updated : item,
         );
       }
     } else {
       const created = await create(payload);
       if (tags.value) {
-        tags.value = [...tags.value.filter((item) => item.tag !== created.tag), created];
+        tags.value = [
+          ...tags.value.filter((item) => item.tag !== created.tag),
+          created,
+        ];
       }
     }
 
@@ -284,7 +301,7 @@ async function deleteTag() {
     await remove(selectedTagToDelete.value.tag);
     if (tags.value) {
       tags.value = tags.value.filter(
-        (item: Tag) => item.tag !== selectedTagToDelete.value?.tag
+        (item: Tag) => item.tag !== selectedTagToDelete.value?.tag,
       );
     }
     deleteDialog.value = false;
