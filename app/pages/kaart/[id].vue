@@ -10,7 +10,7 @@
             </v-tooltip>
           </v-btn>
 
-          <v-btn v-else-if="!!isLockedByOther" variant="text" color="warning">
+          <v-btn v-else-if="!!isLockedByOther" :aria-label="`Bewerkt door ${isLockedByOther}`" variant="text" color="warning">
             <v-icon>mdi-lock-outline</v-icon>
             <v-tooltip activator="parent" location="top">
               Dit issue wordt momenteel bewerkt door {{ isLockedByOther }}
@@ -43,6 +43,7 @@
       </Toolbar>
     </v-toolbar>
 
+    <v-alert v-if="loadError" type="error" class="ma-4">{{ loadError }}</v-alert>
     <div v-if="issue" class="pa-4">
       <template v-if="isExistingIssue(issue)">
         <EditForm
@@ -91,7 +92,7 @@ const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
-const { issue } = storeToRefs(useSelectedIssue());
+const { issue, loadError } = storeToRefs(useSelectedIssue());
 const { isLockedByOther } = storeToRefs(useIssueLocks());
 const { isConnected } = useConnectionStatus();
 

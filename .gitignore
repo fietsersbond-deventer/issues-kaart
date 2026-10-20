@@ -33,3 +33,7 @@ logs
 .env
 .env.*
 !.env.example
+
+# Playwright reports and failure artifacts
+playwright-report/
+test-results/

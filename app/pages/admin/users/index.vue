@@ -64,6 +64,7 @@
               </td>
               <td>
                 <v-btn
+                  aria-label="Gebruiker bewerken"
                   icon="mdi-pencil"
                   variant="text"
                   color="primary"
@@ -72,6 +73,7 @@
                   @click="editUser(user)"
                 />
                 <v-btn
+                  aria-label="Gebruiker verwijderen"
                   icon="mdi-delete"
                   variant="text"
                   color="error"

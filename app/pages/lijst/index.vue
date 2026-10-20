@@ -141,10 +141,25 @@ const filters = computed(() =>
     .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
 );
 const { emphasizeFilter } = useFilter(filters);
-const { data: searchResponse, pending } = await useFetch<SearchResponse>(
+const { data: searchResponse, pending, refresh: refreshResults } = await useFetch<SearchResponse>(
   "/api/issues/search",
   { query, dedupe: "cancel" }
 );
+
+// Search results come from a separate endpoint, so invalidate them on persisted changes.
+const ws = useSharedIssuesWebSocket();
+const unsubscribe = ws.subscribe((message) => {
+  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
+    refreshResults();
+  }
+});
+onUnmounted(unsubscribe);
+let hasConnected = ws.status.value === "OPEN";
+watch(ws.status, (state) => {
+  if (state !== "OPEN") return;
+  if (hasConnected) refreshResults();
+  hasConnected = true;
+});
 
 const { categories } = storeToRefs(useCategories());
 const issues = computed(() =>

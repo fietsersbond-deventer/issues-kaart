@@ -51,14 +51,14 @@
                 variant="text"
                 color="primary"
                 size="small"
-                aria-label="`${item.tag} bewerken`"
+                :aria-label="`${item.tag} bewerken`"
                 @click="openEditDialog(item)"
               />
               <v-btn
                 icon="mdi-delete"
                 variant="text"
                 color="error"
-                aria-label="`${item.tag} verwijderen`"
+                :aria-label="`${item.tag} verwijderen`"
                 size="small"
                 @click="confirmDelete(item)"
               />
@@ -261,7 +261,7 @@ async function saveTag() {
     } else {
       const created = await create(payload);
       if (tags.value) {
-        tags.value = [...tags.value, created];
+        tags.value = [...tags.value.filter((item) => item.tag !== created.tag), created];
       }
     }
 

@@ -12,10 +12,12 @@ let store: ReturnType<typeof useSelectedIssue>;
 let route: { params: { id: string } };
 const categories = ref<{ id: number; name: string }[]>([]);
 const navigate = vi.fn();
+const socketStatus = ref("OPEN");
 const loadedIssue = { id: 1, title: "Onderwerp", geometry: { type: "Point", coordinates: [6, 52] } };
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  socketStatus.value = "OPEN";
   categories.value = [];
   route = reactive({ params: { id: "1" } });
   for (const [name, value] of Object.entries({ computed, defineStore, onUnmounted, ref, watch })) vi.stubGlobal(name, value);
@@ -23,7 +25,7 @@ beforeEach(async () => {
   vi.stubGlobal("useRoute", () => route);
   vi.stubGlobal("useIsEditing", () => ({ isEditing: ref(false) }));
   vi.stubGlobal("useCategories", () => ({ categories }));
-  vi.stubGlobal("useSharedIssuesWebSocket", () => ({ subscribe: (listener: typeof receive) => { receive = listener; return vi.fn(); } }));
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({ status: socketStatus, subscribe: (listener: typeof receive) => { receive = listener; return vi.fn(); } }));
   vi.stubGlobal("$fetch", vi.fn().mockResolvedValue(loadedIssue));
   vi.stubGlobal("navigateTo", navigate);
   const pinia = createPinia();
@@ -78,7 +80,7 @@ describe("geselecteerd onderwerp", () => {
 
   it("navigeert terug naar de kaart wanneer het geselecteerde onderwerp wordt verwijderd", () => {
     receive({ type: "issue-deleted", payload: { id: 1, title: "Onderwerp" } });
-    expect(navigate).toHaveBeenCalledWith("/kaart");
+    expect(navigate).toHaveBeenCalledWith({ path: "/kaart", query: undefined });
   });
 
   it("haalt het onderwerp uit de route op", () => {
@@ -108,4 +110,53 @@ it("keeps the most recently selected issue when older requests resolve last", as
   await nextTick();
   expect(store.selectedId).toBe(3);
   expect(store.issue?.id).toBe(3);
+});
+
+it("clears stale details and exposes a missing issue instead of rejecting the route watcher", async () => {
+  vi.mocked(globalThis.$fetch).mockRejectedValueOnce({ statusCode: 404 });
+  route.params.id = "999";
+  await nextTick();
+  await nextTick();
+  expect(store.issue).toBeNull();
+  expect(store.loadError).toBe("Onderwerp niet gevonden");
+});
+
+it("reloads the selected issue after a notification connection recovers", async () => {
+  socketStatus.value = "CLOSED";
+  await nextTick();
+  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, title: "Updated while disconnected" });
+  socketStatus.value = "OPEN";
+  await nextTick();
+  await nextTick();
+  expect(store.issue?.title).toBe("Updated while disconnected");
+});
+
+it("reports a load failure and clears it when another selection succeeds", async () => {
+  vi.mocked(globalThis.$fetch).mockRejectedValueOnce(new Error("offline"));
+  route.params.id = "2";
+  await nextTick();
+  await nextTick();
+  expect(store.issue).toBeNull();
+  expect(store.loadError).toBe("Onderwerp kon niet worden geladen");
+  route.params.id = "3";
+  await nextTick();
+  await nextTick();
+  expect(store.loadError).toBe("");
+  expect(store.issue?.title).toBe("Onderwerp");
+});
+
+it("does not overwrite a newer selection with an older failed response", async () => {
+  let rejectOld: (reason: unknown) => void;
+  vi.mocked(globalThis.$fetch)
+    .mockReturnValueOnce(new Promise((_resolve, reject) => { rejectOld = reject; }))
+    .mockResolvedValueOnce({ ...loadedIssue, id: 3 });
+  route.params.id = "2";
+  await nextTick();
+  route.params.id = "3";
+  await nextTick();
+  await nextTick();
+  rejectOld!({ statusCode: 404 });
+  await nextTick();
+  expect(store.issue?.id).toBe(3);
+  expect(store.loadError).toBe("");
 });
