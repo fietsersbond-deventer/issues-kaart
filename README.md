@@ -146,6 +146,46 @@ Het script:
 - De `DEPLOYMENT_TARGET` environment variabele gezet
 - Een `ecosystem.config.cjs` bestand op de remote server (zie `ecosystem.config.example.cjs` voor een voorbeeld)
 
+**Automatische deployment via CI:**
+
+De workflow `.github/workflows/ci.yml` voert `deploy.sh` automatisch uit na een
+geslaagde `test`-job bij elke push naar `main`. Stel hiervoor in de repository
+(environment `production`) de volgende secrets in:
+
+- `DEPLOY_SSH_KEY`: privésleutel met toegang tot de remote server
+- `DEPLOYMENT_TARGET`: zelfde waarde als lokaal, bijv. `user@host:/path/to/app`
+
+Met de GitHub CLI (`gh`):
+
+```bash
+# Eenmalig inloggen
+gh auth login
+
+# DEPLOYMENT_TARGET instellen
+gh secret set DEPLOYMENT_TARGET --env production -R fietsersbond-deventer/issues-kaart \
+  --body "user@host:/path/to/app"
+
+# Dedicated deploy-sleutel genereren (niet je persoonlijke SSH-sleutel hergebruiken)
+ssh-keygen -t ed25519 -f ~/.ssh/deploy_issues_kaart -N "" -C "ci-deploy@issues-kaart"
+
+# Public key autoriseren op de remote server
+ssh-copy-id -i ~/.ssh/deploy_issues_kaart.pub user@host
+
+# Private key als DEPLOY_SSH_KEY secret uploaden
+gh secret set DEPLOY_SSH_KEY --env production -R fietsersbond-deventer/issues-kaart \
+  < ~/.ssh/deploy_issues_kaart
+
+# Controleren dat beide secrets gezet zijn
+gh secret list --env production -R fietsersbond-deventer/issues-kaart
+
+# Lokale kopie van de private key opruimen
+rm ~/.ssh/deploy_issues_kaart*
+```
+
+`--env production` maakt de GitHub Environment `production` automatisch aan
+als die nog niet bestaat. De `-R`-vlag is nodig omdat `origin` een custom
+SSH-hostalias gebruikt, waardoor `gh` de repository niet automatisch herkent.
+
 **PM2 Configuratie:**
 
 Kopieer `ecosystem.config.example.cjs` naar `ecosystem.config.cjs` en pas de environment variabelen aan:
