@@ -8,6 +8,10 @@
 
 ## Lokale ontwikkeling en controles
 
+- Begin een nieuwe omgeving met `bash scripts/setup-agent.sh --validate`. Dit installeert dependencies, configureert een lokale database en adminaccount en voert lint, types, coverage, build en HTTP-login uit.
+- Na wijzigingen: `bash scripts/validate-agent.sh` met de toolchain hieronder actief. Stop eerst de devserver; poort 3000 moet vrij zijn.
+- Gebruik `bash scripts/setup-agent.sh --with-e2e` als browsertests nodig zijn. Zie [setup voor agents](docs/cloud-setup.md) voor vereisten en foutafhandeling.
+
 - Gebruik de Node.js-versie uit `.nvmrc` (`nvm use`) en pnpm 10.11.0.
 - Installeren: `pnpm install --frozen-lockfile`.
 - Maak `.env` op basis van `.env.example` zonder een bestaande `.env` te overschrijven. Stel lokale geheimen in en laat `NUXT_DB_PATH` verwijzen naar het absolute pad van een lokale SQLite-database. Voer daarna `pnpm run migrate` uit.
