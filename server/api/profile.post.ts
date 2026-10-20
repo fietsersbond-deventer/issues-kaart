@@ -1,3 +1,5 @@
+import type { H3Event } from "h3";
+
 /**
  * Matomo proxy endpoint
  * This endpoint proxies requests to Matomo, bypassing CORS restrictions
@@ -73,15 +75,10 @@ export default defineEventHandler(async (event) => {
 
 /**
  * Extract the real client IP address, handling proxies correctly
- * @ts-ignore - event type issues with H3Event
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getClientIP(event: any): string {
+function getClientIP(event: H3Event): string {
   // Check X-Forwarded-For first (set by reverse proxies like Nginx)
-  const forwarded = event.node.req.headers["x-forwarded-for"] as
-    | string
-    | string[]
-    | undefined;
+  const forwarded = event.node.req.headers["x-forwarded-for"];
   if (forwarded) {
     // X-Forwarded-For can be a comma-separated list, take the first one
     const ips =
@@ -90,10 +87,7 @@ function getClientIP(event: any): string {
   }
 
   // Check X-Real-IP (set by some proxies)
-  const realIP = event.node.req.headers["x-real-ip"] as
-    | string
-    | string[]
-    | undefined;
+  const realIP = event.node.req.headers["x-real-ip"];
   if (realIP) {
     return typeof realIP === "string" ? realIP : realIP[0] || "";
   }

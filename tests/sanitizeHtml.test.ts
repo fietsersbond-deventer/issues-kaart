@@ -204,18 +204,15 @@ describe("HTML Sanitization Security Tests", () => {
     });
 
     it("should handle null input", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(sanitizeHtml(null as any)).toBe("");
+      expect(sanitizeHtml(null as unknown as string)).toBe("");
     });
 
     it("should handle undefined input", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(sanitizeHtml(undefined as any)).toBe("");
+      expect(sanitizeHtml(undefined as unknown as string)).toBe("");
     });
 
     it("should handle non-string input", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(sanitizeHtml(123 as any)).toBe("");
+      expect(sanitizeHtml(123 as unknown as string)).toBe("");
     });
 
     it("should handle malformed HTML", () => {

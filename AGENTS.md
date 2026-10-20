@@ -20,7 +20,9 @@
 ## Run unit tests
 
 - Tests eenmalig: `pnpm run test:run`; automatisch bij wijzigingen: `pnpm run test`; gericht testen: `pnpm exec vitest run tests/<bestand>.test.ts`.
-- Lintcontrole: `pnpm run lint`. Typecontrole: `pnpm run typecheck`.
+- Lint- en formattercontrole: `pnpm run lint`. Automatisch corrigeren: `pnpm run lint:fix`; controleer daarna de diff. Typecontrole: `pnpm run typecheck`.
+- Zie [linting en formatteren](docs/linting.md) voor configuratie, bereik en onderhoud. Lees dit document voordat je lintregels of de formatterconfiguratie wijzigt.
+- Zie [testen](docs/testing.md) voor testconfiguratie, isolatie en coverage-eisen.
 
 ### TDD
 
