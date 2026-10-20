@@ -160,3 +160,23 @@ it("does not overwrite a newer selection with an older failed response", async (
   expect(store.issue?.id).toBe(3);
   expect(store.loadError).toBe("");
 });
+
+
+it("enriches fetched details with the selected category", async () => {
+  categories.value = [{ id: 3, name: "Fietsroute" }];
+  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, id: 2, legend_id: 3 });
+  route.params.id = "2";
+  await nextTick();
+  await nextTick();
+  expect(store.issue?.legend).toEqual(categories.value[0]);
+});
+
+it("enriches details when categories arrive after the issue", async () => {
+  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, id: 2, legend_id: 3 });
+  route.params.id = "2";
+  await nextTick();
+  await nextTick();
+  categories.value = [{ id: 3, name: "Fietsroute" }];
+  await nextTick();
+  expect(store.issue?.legend).toEqual(categories.value[0]);
+});
