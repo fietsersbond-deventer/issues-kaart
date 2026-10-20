@@ -118,7 +118,7 @@ test("9 — admin manages users, categories, tags and texts; validation and role
     page.getByRole("button", { name: "Nieuwe gebruiker", exact: true }),
   ).toHaveCount(0);
   await page.goto("/admin/tags");
-  await expect(page).toHaveURL(/\/admin\/legends$/);
+  await expect(page).toHaveURL(/\/admin\/tags$/);
   const ordinaryHeaders = await apiHeaders(request);
   expect(
     (
