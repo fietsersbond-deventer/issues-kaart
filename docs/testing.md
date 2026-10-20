@@ -98,3 +98,8 @@ Unit- en componenttests gebruiken echte Vue-status en OpenLayers-geometrie,
 maar vereenvoudigde UI-adapters. Ze vervangen geen browsertests voor lay-out,
 widgets of de volledige inlogstroom via HTTP. CI-instellingen en
 branchbeveiliging moeten apart worden gecontroleerd.
+
+## Linting en formatteren
+
+Het lintbeleid, de configuratie en de commando's staan in
+[linting en formatteren](linting.md).

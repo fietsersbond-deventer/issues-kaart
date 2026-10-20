@@ -65,8 +65,11 @@ De applicatie is nu beschikbaar op [http://localhost:3000](http://localhost:3000
 ### Andere handige commando's
 
 ```bash
-# Linting
+# Linting en formattercontrole
 pnpm run lint
+
+# Beschikbare lintfixes en formattering toepassen (controleer de diff)
+pnpm run lint:fix
 
 # Type checking
 pnpm run typecheck
@@ -80,6 +83,9 @@ pnpm run test:coverage
 # Tests met UI
 pnpm run test:ui
 ```
+
+Zie [linting en formatteren](docs/linting.md) voor uitleg over de configuratie,
+importgrenzen, het formatterbereik en het oplossen van lintfouten.
 
 ### Google Maps KML importeren
 
@@ -220,7 +226,10 @@ pnpm run test -- --watch
 
 ## 📝 Coding Richtlijnen
 
-Zie `.github/workflows/copilot-instructions.md` voor gedetailleerde coding richtlijnen en best practices.
+Zie [AGENTS.md](AGENTS.md) voor de ontwikkelafspraken, vereiste controles en
+commit-/PR-richtlijnen. Het [lintdocument](docs/linting.md) beschrijft het
+lintbeleid en formatteren; de [testdocumentatie](docs/testing.md) beschrijft
+teststrategie en coverage.
 
 Belangrijke punten:
 

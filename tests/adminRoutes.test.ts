@@ -122,3 +122,15 @@ describe("admin boundary and metadata persistence", () => {
         await expect(call("texts/[key].patch")).rejects.toMatchObject({ statusCode: 404 });
     });
 });
+
+// Guard behavior is checked before SQL, independently of the handler's syntax.
+it.each(["legends/index.post", "legends/[id].patch", "legends/[id].delete", "texts/[key].patch"])("denies anonymous writes before touching storage: %s", async (route) => {
+    h.event.context.user = null;
+    const prepare = vi.spyOn(db, "prepare");
+    try {
+        await expect(call(route)).rejects.toMatchObject({ statusCode: 401 });
+        expect(prepare).not.toHaveBeenCalled();
+    } finally {
+        prepare.mockRestore();
+    }
+});
