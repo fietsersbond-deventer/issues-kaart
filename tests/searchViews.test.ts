@@ -58,7 +58,15 @@ it("expands mobile search, focuses it, then closes on blur or selection", async 
 });
 it("renders paginated issue search, enriches category/tag labels and opens the selected issue", async () => {
     const response = ref({ items: [{ id: 1, title: "Safe crossing", legend_id: 1, tags: ["bike"], snippets: ["Safe crossing"], imageUrl: "/api/issues/1/image" }, { id: 2, title: "Parking", legend_id: 99, tags: [], snippets: [], imageUrl: null }], total: 2 });
-    const useFetch = vi.fn().mockResolvedValue({ data: response, pending: ref(false) });
+    const refreshList = vi.fn();
+    const socketStatus = ref("OPEN");
+    const unsubscribe = vi.fn();
+    let receiveList: ((message: { type: string }) => void) | undefined;
+    vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+        status: socketStatus,
+        subscribe: (listener: (message: { type: string }) => void) => { receiveList = listener; return unsubscribe; },
+    }));
+    const useFetch = vi.fn().mockResolvedValue({ data: response, pending: ref(false), refresh: refreshList });
     vi.stubGlobal("useFetch", useFetch);
     vi.stubGlobal("useTagsApi", () => ({ getTag: (tag: string) => ({ tag, label: tag }) }));
     vi.stubGlobal("useCategories", () => ({ categories: ref([{ id: 1, name: "Routes", color: "#fff" }]) }));
@@ -82,4 +90,13 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     const query = useFetch.mock.calls[0]![1].query.value;
     expect(query).toMatchObject({ search: "crossing", itemsPerPage: 10, orderBy: "created_at", order: "desc" });
     expect(wrapper.findAll("img")).toHaveLength(1);
+    receiveList?.({ type: "issue-created" });
+    expect(refreshList).toHaveBeenCalledTimes(1);
+    socketStatus.value = "CLOSED";
+    await flushPromises();
+    socketStatus.value = "OPEN";
+    await flushPromises();
+    expect(refreshList).toHaveBeenCalledTimes(2);
+    wrapper.unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
 });

@@ -61,7 +61,9 @@ Bekijk het rapport in `coverage/index.html`. JSON-rapporten staan in
 
 `.github/workflows/ci.yml` draait bij pushes en pull requests naar `main` en
 `develop`. Na installatie volgen lint, typecheck, tests met dekkingscontrole
-en de build. Als een stap faalt, stoppen de volgende stappen.
+en de build. De Playwright-code wordt ook typegecontroleerd; browserinstallatie
+en E2E-uitvoering zijn uit deze PR/MR-workflow gehaald. Zie [browsertests](e2e.md)
+voor lokale reproductie en debugging. Als een stap faalt, stoppen de volgende stappen.
 
 De workflow uploadt momenteel geen coverage-rapporten. Er is dus geen
 artifactopslag of bewaartermijn voor deze rapporten ingesteld.

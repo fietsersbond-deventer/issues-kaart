@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import { defineComponent, h, ref } from "vue";
+import { defineComponent, h, ref, shallowRef } from "vue";
 import { vueGlobals } from "./helpers/vue";
 import { Field, Form, Slot, uiStubs } from "./helpers/ui";
 import Tags from "../app/pages/admin/tags/index.vue";
@@ -9,10 +9,10 @@ import Categories from "../app/pages/admin/legends/index.vue";
 import Users from "../app/pages/admin/users/index.vue";
 import Texts from "../app/pages/admin/texts/index.vue";
 const Table = defineComponent({ props: ["items"], setup(props, { slots }) { return () => h("div", (props.items ?? []).map((item: unknown) => h("section", Object.entries(slots).filter(([name]) => name.startsWith("item.")).map(([, slot]) => slot?.({ item }))))); } });
-const Child = defineComponent({ name: "BoundaryChild", props: ["modelValue", "entry", "legend", "error", "usage", "user", "loading"], emits: ["save", "saved", "submit", "cancel", "confirm", "edit", "delete"], template: "<div />" });
+const Child = defineComponent({ name: "BoundaryChild", props: ["modelValue", "entry", "legend", "legends", "error", "usage", "user", "loading"], emits: ["save", "saved", "submit", "cancel", "confirm", "edit", "delete"], template: "<div>{{ legends?.length }}</div>" });
 const stubs = { ...uiStubs, VDataTable: Table, VTable: Slot, VTextarea: Field, VChip: Slot, IconSelector: Field, AppIcon: true, UserForm: Child, AdminLegendTable: Child, AdminLegendDialog: Child, AdminLegendDeleteConfirmDialog: Child, TextEditorDialog: Child };
 const create = vi.fn(), update = vi.fn(), remove = vi.fn(), showError = vi.fn(), showSuccess = vi.fn();
-const rows = ref<Record<string, unknown>[]>([]), categories = ref<Record<string, unknown>[]>([]), users = ref<Record<string, unknown>[]>([]);
+const rows = ref<Record<string, unknown>[]>([]), categories = shallowRef<Record<string, unknown>[]>([]), users = ref<Record<string, unknown>[]>([]);
 const wrappers: Array<{
     unmount(): void;
 }> = [];
@@ -51,7 +51,11 @@ it("creates normalized tags and preserves the form on failure", async () => {
     await flushPromises();
     expect(showError).toHaveBeenCalledWith("Tag kon niet worden opgeslagen");
     expect(wrapper.get("input").element.value).toBe(" Café Lane ");
-    create.mockResolvedValueOnce({ tag: "cafe-lane", label: "Café Lane", description: null, icon: null });
+    create.mockImplementationOnce(async () => {
+        const created = { tag: "cafe-lane", label: "Café Lane", description: null, icon: null };
+        rows.value = [created]; // useTagsApi refreshes before returning the created tag.
+        return created;
+    });
     await button(wrapper, "Opslaan").trigger("click");
     await flushPromises();
     expect(create).toHaveBeenLastCalledWith({ tag: "cafe-lane", label: "Café Lane", description: null, icon: null });
@@ -83,6 +87,7 @@ it("creates/edits categories and displays protected-delete errors without droppi
     dialog.vm.$emit("save", { name: "New", color: "#fff", description: "" });
     await flushPromises();
     expect(categories.value).toHaveLength(2);
+    expect(table.text()).toBe("2");
     table.vm.$emit("edit", categories.value[0]);
     await flushPromises();
     dialog.vm.$emit("save", { name: "Changed", color: "#fff", description: "" });

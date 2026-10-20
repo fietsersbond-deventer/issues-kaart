@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { resolve } from "path";
 import vue from "@vitejs/plugin-vue";
 import { createRequire } from "node:module";
@@ -23,6 +23,7 @@ export default defineConfig({
     },
   ],
   test: {
+    exclude: [...configDefaults.exclude, "e2e/**"],
     environment: "node",
     globals: true,
     coverage: {

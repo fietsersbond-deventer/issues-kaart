@@ -1,6 +1,7 @@
 <template>
   <ol-map
     ref="mapRef"
+    data-testid="issue-map"
     :class="{ 'map-small': isMapSmall, 'map-very-small': isMapVerySmall }"
     :controls="[]"
   >
