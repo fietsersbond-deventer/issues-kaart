@@ -5,7 +5,10 @@
 
 set -e
 
-. ./.env
+# .env is optional: CI providers set DEPLOYMENT_TARGET etc. directly as secrets
+if [ -f ./.env ]; then
+  . ./.env
+fi
 
 if [ -z "$DEPLOYMENT_TARGET" ]; then
   echo "DEPLOYMENT_TARGET environment variable is not set."

@@ -52,7 +52,7 @@ export function ensureStreetViewEmbedBlotRegistered(): Promise<void> {
       // "video"-embed, die op dezelfde manier is opgebouwd). We casten naar
       // `any` omdat Quill's eigen types hier geen bruikbare generieke variant
       // van bieden.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill.import lacks a constructible blot type; remove when the wrapper exports it.
       const BlockEmbed = Quill.import("blots/block/embed") as any;
 
       class StreetViewEmbedBlot extends BlockEmbed {

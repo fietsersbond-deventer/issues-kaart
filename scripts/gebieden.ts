@@ -20,7 +20,7 @@
  *     Rotterdam Schiedam "Voorne aan Zee" --name Rotterdam
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import union from "@turf/union";
 import { featureCollection } from "@turf/helpers";
 import type {
@@ -175,14 +175,18 @@ function usage(): never {
   process.exit(1);
 }
 
-const [command, ...rest] = process.argv.slice(2);
-try {
+export async function main(args: string[]) {
+  const [command, ...rest] = args;
   if (command === "add") await add(rest);
   else if (command === "remove") remove(rest[0]);
   else if (command === "list") list();
   else if (command === "gemeenten") await listGemeenten(rest[0]);
   else usage();
-} catch (e) {
-  console.error((e as Error).message);
-  process.exit(1);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main(process.argv.slice(2)).catch((e: unknown) => {
+    console.error(e instanceof Error ? e.message : String(e));
+    process.exitCode = 1;
+  });
 }

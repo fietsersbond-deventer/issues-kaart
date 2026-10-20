@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     .prepare(
       "SELECT prt.*, u.id as user_id FROM password_reset_tokens prt " +
         "JOIN users u ON u.id = prt.user_id " +
-        "WHERE prt.token = ? AND prt.expires_at > datetime('now')"
+        "WHERE prt.token = ? AND julianday(prt.expires_at) > julianday('now')"
     )
     .get(token) as { user_id: number } | undefined;
 

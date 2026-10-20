@@ -102,7 +102,7 @@ async function save(
       // Creating
       const newItem = await create(legendItem);
       if (categories.value) {
-        categories.value.push(newItem);
+        categories.value = [...categories.value, newItem];
       }
     }
     dialog.value = false;

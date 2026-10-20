@@ -383,7 +383,7 @@ function parseArguments(args: string[]): CliOptions {
   return result;
 }
 
-async function main(args: string[]): Promise<void> {
+export async function main(args: string[]): Promise<void> {
   const options = parseArguments(args);
   const kmlPath = resolve(options.kmlPath);
   if (!existsSync(kmlPath)) throw new Error(`KML file not found: ${kmlPath}`);

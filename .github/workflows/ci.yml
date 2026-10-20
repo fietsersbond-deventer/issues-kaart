@@ -6,10 +6,14 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: "Run Tests"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -36,5 +40,50 @@ jobs:
       - name: Run tests with coverage
         run: pnpm test:coverage
 
+      - name: Typecheck browser tests
+        run: pnpm typecheck:e2e
+
       - name: Build
         run: pnpm build
+
+  deploy:
+    name: "Deploy to production"
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure deploy SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Trust remote host key
+        env:
+          DEPLOYMENT_TARGET: ${{ secrets.DEPLOYMENT_TARGET }}
+        run: |
+          mkdir -p ~/.ssh
+          host="${DEPLOYMENT_TARGET%%:*}"
+          ssh-keyscan -H "${host#*@}" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          DEPLOYMENT_TARGET: ${{ secrets.DEPLOYMENT_TARGET }}
+        run: ./deploy.sh

@@ -1,4 +1,4 @@
-import type { Issue, NewIssue, ExistingIssue } from "~~/shared/types/Issue";
+import { isExistingIssue, type Issue, type NewIssue, type ExistingIssue } from "~~/shared/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
@@ -8,6 +8,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   const selectedId = ref<number | null>(null);
 
   const issue = ref<Issue | NewIssue | null>(null);
+  const loadError = ref("");
 
   // Use shared WebSocket to receive updates for the selected issue
   const ws = useSharedIssuesWebSocket();
@@ -30,6 +31,16 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     }
     return issueData;
   }
+
+  watch(
+    categories,
+    () => {
+      if (issue.value && isExistingIssue(issue.value)) {
+        issue.value = enrichIssueWithLegend(issue.value);
+      }
+    },
+    { deep: true },
+  );
 
   // Subscribe to WebSocket messages
   const unsubscribe = ws.subscribe((parsed) => {
@@ -54,7 +65,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
       const deletedId = (parsed.payload as WebSocketMessage<"issue-deleted">["payload"]).id;
       // If the issue we're viewing was deleted, navigate away
       if (deletedId === selectedId.value) {
-        navigateTo("/kaart");
+        navigateTo({ path: "/kaart", query: route.query });
       }
     }
   });
@@ -62,9 +73,22 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   // Cleanup subscription when store is disposed
   onUnmounted(unsubscribe);
 
+  const reload = ref(0);
+  let hasConnected = ws.status.value === "OPEN";
+  watch(ws.status, (state) => {
+    if (state !== "OPEN") return;
+    if (hasConnected && !isEditing.value) reload.value++;
+    hasConnected = true;
+  });
+
   watch(
-    () => route.params.id,
-    async (newId) => {
+    [() => route.params.id, reload],
+    async ([newId], _oldValue, onCleanup) => {
+      let current = true;
+      onCleanup(() => {
+        current = false;
+      });
+      loadError.value = "";
       if (newId === "new") {
         selectedId.value = null;
         isEditing.value = true;
@@ -76,7 +100,17 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
 
       // Fetch full issue data when selecting an issue
       if (id !== null) {
-        issue.value = await $fetch<Issue>(`/api/issues/${id}`);
+        issue.value = null;
+        try {
+          const loadedIssue = await $fetch<Issue>(`/api/issues/${id}`);
+          if (current) issue.value = enrichIssueWithLegend(loadedIssue);
+        } catch (error) {
+          if (!current) return;
+          const status = (error as { statusCode?: number }).statusCode;
+          loadError.value = status === 404
+            ? "Onderwerp niet gevonden"
+            : "Onderwerp kon niet worden geladen";
+        }
       }
     },
     { immediate: true },
@@ -101,5 +135,6 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   return {
     selectedId,
     issue,
+    loadError,
   };
 });

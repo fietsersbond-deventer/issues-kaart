@@ -9,7 +9,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("kaartlagen", () => {
   it("toont drie lagen en kiest een laag via muis of toetsenbord", async () => {
-    vi.stubGlobal("useMapView", () => ({ center: ref([0, 0]), zoom: ref(12), rotation: ref(0) }));
+    vi.stubGlobal("useMapViewState", () => ({ center: ref([0, 0]), zoom: ref(12), rotation: ref(0) }));
     const wrapper = mount(LayerSwitcher, { props: { modelValue: "Licht" }, global: { components: { MapLayerPreview: LayerPreview }, stubs: {
       "ol-map": { template: "<div><slot /></div>" },
       "ol-view": true,

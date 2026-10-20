@@ -1,9 +1,9 @@
 import { getDb } from "~~/server/utils/db";
 import { normalizeTag } from "~~/server/utils/issueTags";
-import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { requireUserSession } from "~~/server/utils/requireUserSession";
 
 export default defineEventHandler(async (event) => {
-  requireAdminSession(event);
+  requireUserSession(event);
 
   const tagParam = getRouterParam(event, "tag");
   const normalizedTag = normalizeTag(tagParam ?? "");

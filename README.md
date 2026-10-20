@@ -52,6 +52,16 @@ Deze applicatie is gebouwd met Nuxt 4 en biedt:
    pnpm run migrate
    ```
 
+Voor agents en een herhaalbare lokale installatie:
+
+```bash
+bash scripts/setup-agent.sh --validate
+```
+
+Dit installeert dependencies, maakt ontbrekende lokale configuratie en een
+adminaccount en voert de controles uit. Zie [setup voor agents](docs/cloud-setup.md)
+voor vereisten, herhalen en browsertests.
+
 ## 🏃 Development
 
 Start de development server:
@@ -65,8 +75,11 @@ De applicatie is nu beschikbaar op [http://localhost:3000](http://localhost:3000
 ### Andere handige commando's
 
 ```bash
-# Linting
+# Linting en formattercontrole
 pnpm run lint
+
+# Beschikbare lintfixes en formattering toepassen (controleer de diff)
+pnpm run lint:fix
 
 # Type checking
 pnpm run typecheck
@@ -80,6 +93,9 @@ pnpm run test:coverage
 # Tests met UI
 pnpm run test:ui
 ```
+
+Zie [linting en formatteren](docs/linting.md) voor uitleg over de configuratie,
+importgrenzen, het formatterbereik en het oplossen van lintfouten.
 
 ### Google Maps KML importeren
 
@@ -139,6 +155,46 @@ Het script:
 - PM2 geïnstalleerd op de remote server
 - De `DEPLOYMENT_TARGET` environment variabele gezet
 - Een `ecosystem.config.cjs` bestand op de remote server (zie `ecosystem.config.example.cjs` voor een voorbeeld)
+
+**Automatische deployment via CI:**
+
+De workflow `.github/workflows/ci.yml` voert `deploy.sh` automatisch uit na een
+geslaagde `test`-job bij elke push naar `main`. Stel hiervoor in de repository
+(environment `production`) de volgende secrets in:
+
+- `DEPLOY_SSH_KEY`: privésleutel met toegang tot de remote server
+- `DEPLOYMENT_TARGET`: zelfde waarde als lokaal, bijv. `user@host:/path/to/app`
+
+Met de GitHub CLI (`gh`):
+
+```bash
+# Eenmalig inloggen
+gh auth login
+
+# DEPLOYMENT_TARGET instellen
+gh secret set DEPLOYMENT_TARGET --env production -R fietsersbond-deventer/issues-kaart \
+  --body "user@host:/path/to/app"
+
+# Dedicated deploy-sleutel genereren (niet je persoonlijke SSH-sleutel hergebruiken)
+ssh-keygen -t ed25519 -f ~/.ssh/deploy_issues_kaart -N "" -C "ci-deploy@issues-kaart"
+
+# Public key autoriseren op de remote server
+ssh-copy-id -i ~/.ssh/deploy_issues_kaart.pub user@host
+
+# Private key als DEPLOY_SSH_KEY secret uploaden
+gh secret set DEPLOY_SSH_KEY --env production -R fietsersbond-deventer/issues-kaart \
+  < ~/.ssh/deploy_issues_kaart
+
+# Controleren dat beide secrets gezet zijn
+gh secret list --env production -R fietsersbond-deventer/issues-kaart
+
+# Lokale kopie van de private key opruimen
+rm ~/.ssh/deploy_issues_kaart*
+```
+
+`--env production` maakt de GitHub Environment `production` automatisch aan
+als die nog niet bestaat. De `-R`-vlag is nodig omdat `origin` een custom
+SSH-hostalias gebruikt, waardoor `gh` de repository niet automatisch herkent.
 
 **PM2 Configuratie:**
 
@@ -204,7 +260,8 @@ De applicatie gebruikt lokale authenticatie met:
 
 ## 🧪 Testing
 
-Tests zijn geschreven met Vitest:
+Tests zijn geschreven met Vitest. Zie [teststrategie en gedragsmatrix](docs/testing.md)
+voor isolatie, de volledige coverage-inventaris en de coverage-eis per meetwaarde:
 
 ```bash
 # Alle tests
@@ -219,7 +276,10 @@ pnpm run test -- --watch
 
 ## 📝 Coding Richtlijnen
 
-Zie `.github/workflows/copilot-instructions.md` voor gedetailleerde coding richtlijnen en best practices.
+Zie [AGENTS.md](AGENTS.md) voor de ontwikkelafspraken, vereiste controles en
+commit-/PR-richtlijnen. Het [lintdocument](docs/linting.md) beschrijft het
+lintbeleid en formatteren; de [testdocumentatie](docs/testing.md) beschrijft
+teststrategie en coverage.
 
 Belangrijke punten:
 
