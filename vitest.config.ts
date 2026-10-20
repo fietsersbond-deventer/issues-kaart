@@ -32,7 +32,7 @@ export default defineConfig({
         "app/**/*.{ts,vue}",
         "server/**/*.{ts,js}",
         "shared/**/*.ts",
-        "scripts/**/*.ts",
+        "scripts/**/*.{ts,mjs}",
       ],
       // These files contain declarations only; executable shared guards stay included.
       exclude: [

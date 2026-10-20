@@ -52,6 +52,16 @@ Deze applicatie is gebouwd met Nuxt 4 en biedt:
    pnpm run migrate
    ```
 
+Voor agents en een herhaalbare lokale installatie:
+
+```bash
+bash scripts/setup-agent.sh --validate
+```
+
+Dit installeert dependencies, maakt ontbrekende lokale configuratie en een
+adminaccount en voert de controles uit. Zie [setup voor agents](docs/cloud-setup.md)
+voor vereisten, herhalen en browsertests.
+
 ## 🏃 Development
 
 Start de development server:
