@@ -18,17 +18,30 @@ import TextEditor from "../app/components/TextEditorDialog.client.vue";
 import { getContrastColor } from "../app/utils/getContrastColor";
 import { useStreetViewEmbeds } from "../app/composables/useStreetViewEmbeds";
 import type { Issue } from "../shared/types/Issue";
+
 vi.mock("@vueup/vue-quill", () => ({ QuillEditor: { template: "<div />" } }));
 const Tooltip = defineComponent({ props: ["text"], template: '<span :data-tooltip="text"><slot name="activator" :props="{}" /><slot /></span>' });
 const Icon = defineComponent({ props: ["name", "icon", "color", "size"], template: '<i :data-icon="name || icon"><slot /></i>' });
 const stubs = { ...uiStubs, VChip: Slot, VTooltip: Tooltip, VIcon: Icon, Icon, AppIcon, VAvatar: Slot };
+const showError = vi.fn(), showSuccess = vi.fn();
 const mobile = ref(false), auth = ref("authenticated");
 const wrappers: Array<{
     unmount(): void;
 }> = [];
 const legend = { id: 1, name: "Routes", description: "Safe routes", color: "#123456", created_at: "2026-01-01" };
-beforeEach(() => { vueGlobals(); auth.value = "authenticated"; mobile.value = false; vi.stubGlobal("useVDisplay", () => ({ mobile })); vi.stubGlobal("getContrastColor", getContrastColor); vi.stubGlobal("useAuth", () => ({ status: auth })); vi.stubGlobal("storeToRefs", (value: unknown) => value); });
-afterEach(() => { wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+beforeEach(() => {
+  vueGlobals(); auth.value = "authenticated"; mobile.value = false;
+  vi.stubGlobal("useVDisplay", () => ({ mobile }));
+  vi.stubGlobal("getContrastColor", getContrastColor);
+  vi.stubGlobal("useAuth", () => ({ status: auth }));
+  vi.stubGlobal("storeToRefs", (value: unknown) => value);
+  vi.stubGlobal("useSnackbar", () => ({ showError, showSuccess }));
+});
+afterEach(() => {
+  wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); vi.restoreAllMocks();
+});
+
 function keep<T extends {
     unmount(): void;
 }>(wrapper: T): T { wrappers.push(wrapper); return wrapper; }
@@ -103,14 +116,14 @@ it("routes relative description links locally and preserves external/hash links"
     vi.stubGlobal("useTagsApi", () => ({ getTag: (tag: string) => ({ tag, label: tag }) }));
     vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
     const issue = { ...legend, title: "Crossing", description: '<a href="/kaart/2?cat=1#detail"><span>Local</span></a><a href="https://example.test">External</a><a href="#same">Hash</a>', tags: ["bike"], legend } as unknown as Issue;
-    const wrapper = keep(mount(IssueDetails, { props: { issue }, global: { stubs: { ...stubs, ImageViewer: Slot, CategoryChip: true, Tag: defineComponent({ template: "<button>Tag</button>" }) } } }));
+    const wrapper = keep(mount(IssueDetails, { props: { issue }, global: { stubs: { ...stubs, ImageViewer: Slot, CategoryChip: true, Tag: defineComponent({ template: "<button class=\"tag\">Tag</button>" }) } } }));
     await wrapper.get("a span").trigger("click");
     expect(navigate).toHaveBeenCalledWith("/kaart/2?cat=1#detail");
     wrapper.findAll("a")[1]!.element.addEventListener("click", (event) => event.preventDefault(), { once: true });
     await wrapper.findAll("a")[1]!.trigger("click");
     await wrapper.findAll("a")[2]!.trigger("click");
     expect(navigate).toHaveBeenCalledTimes(1);
-    await wrapper.get("button").trigger("click");
+    await wrapper.get("button.tag").trigger("click");
     expect(toggleTag).toHaveBeenCalledWith("bike");
     await wrapper.setProps({ issue: { ...issue, description: "<p>Updated</p>" } });
     expect(wrapper.text()).toContain("Updated");
