@@ -1,4 +1,4 @@
-import type { Issue, NewIssue, ExistingIssue } from "~~/shared/types/Issue";
+import { isExistingIssue, type Issue, type NewIssue, type ExistingIssue } from "~~/shared/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
@@ -31,6 +31,16 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     }
     return issueData;
   }
+
+  watch(
+    categories,
+    () => {
+      if (issue.value && isExistingIssue(issue.value)) {
+        issue.value = enrichIssueWithLegend(issue.value);
+      }
+    },
+    { deep: true },
+  );
 
   // Subscribe to WebSocket messages
   const unsubscribe = ws.subscribe((parsed) => {
@@ -93,7 +103,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         issue.value = null;
         try {
           const loadedIssue = await $fetch<Issue>(`/api/issues/${id}`);
-          if (current) issue.value = loadedIssue;
+          if (current) issue.value = enrichIssueWithLegend(loadedIssue);
         } catch (error) {
           if (!current) return;
           const status = (error as { statusCode?: number }).statusCode;

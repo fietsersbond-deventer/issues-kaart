@@ -3,7 +3,7 @@
     <h1 class="mb-4">{{ issue.title }}</h1>
 
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
-      <CategoryChip :legend="issue.legend" />
+      <CategoryChip v-if="issue.legend" :legend="issue.legend" />
 
       <Tag
         v-for="tag in issue.tags"

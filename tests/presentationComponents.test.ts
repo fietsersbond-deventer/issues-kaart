@@ -115,6 +115,18 @@ it("routes relative description links locally and preserves external/hash links"
     await wrapper.setProps({ issue: { ...issue, description: "<p>Updated</p>" } });
     expect(wrapper.text()).toContain("Updated");
 });
+it("renders issue details while the category is unavailable and shows it when loaded", async () => {
+    vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
+    vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
+    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+    const issue = { title: "Crossing", description: "<p>Details</p>", tags: [] } as unknown as Issue;
+    const wrapper = keep(mount(IssueDetails, { props: { issue }, global: { mocks: { getContrastColor }, stubs: { ...stubs, ImageViewer: Slot, CategoryChip } } }));
+    expect(wrapper.get("h1").text()).toBe("Crossing");
+    expect(wrapper.text()).toContain("Details");
+    expect(wrapper.findComponent(CategoryChip).exists()).toBe(false);
+    await wrapper.setProps({ issue: { ...issue, legend } });
+    expect(wrapper.findComponent(CategoryChip).text()).toContain("Routes");
+});
 it("saves text entries, keeps failed edits open and cancels without saving", async () => {
     const updateText = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
     vi.stubGlobal("useTexts", () => ({ updateText }));
