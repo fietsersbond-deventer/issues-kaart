@@ -116,3 +116,36 @@ test("GeoJSON preview separates attribute groups and creates categories only on 
   await expect(page.getByRole("checkbox", { name: /^Park\b/ })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /^Plein\b/ })).toBeVisible();
 });
+
+test("GeoJSON joins road blocks in preview and imports one editable continuous line", async ({ app, page, request }) => {
+  await app.loginPage.login("admin@example.test");
+  await page.goto("/admin/import");
+  const line = (coordinates: number[][], network = "Plus") => ({ type: "Feature", properties: { STT_NAAM: "Teststraat", network }, geometry: { type: "LineString", coordinates } });
+  const data = { type: "FeatureCollection", features: [line([[6.15,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.18,52.25]], "Hoofd")] };
+  await page.locator('input[type="file"]').setInputFiles({ name: "roads.geojson", mimeType: "application/geo+json", buffer: Buffer.from(JSON.stringify(data)) });
+  const merge = page.getByRole("checkbox", { name: "Aansluitende lijnsegmenten samenvoegen", exact: true });
+  await expect(merge).toBeChecked();
+  await page.getByLabel("Titel (standaard voor ieder object)").fill("Road dataset");
+  await page.getByLabel("Beschrijving", { exact: true }).fill("Gemeentelijke wegen");
+  await page.getByLabel("Categorie", { exact: true }).press("Enter");
+  await page.getByRole("option").filter({ hasText: "E2E Verkeer" }).click();
+  const inspect = page.getByRole("button", { name: "Bekijk importvoorbeeld", exact: true });
+  await inspect.click();
+  await expect(page.getByText("Lijnsegmenten: 3 → 2 lijnen na samenvoegen.")).toBeVisible();
+  await merge.uncheck();
+  await expect(page.getByText("Importvoorbeeld", { exact: true })).toHaveCount(0);
+  await inspect.click();
+  await expect(page.getByText("Lijnsegmenten: 3 → 3 lijnen (samenvoegen uit).")).toBeVisible();
+  await merge.check();
+  await inspect.click();
+  await page.getByRole("button", { name: "Importeer 2 meldingen", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "2 meldingen geïmporteerd." })).toBeVisible();
+  const rows = await (await request.get("/api/issues?fields=id,title,geometry")).json();
+  const roads = rows.filter((row: { title: string }) => row.title === "Teststraat");
+  expect(roads).toHaveLength(2);
+  const joined = roads.find((row: { geometry: { coordinates: number[][] } }) => row.geometry.coordinates.length === 3);
+  expect(joined.geometry.coordinates).toEqual([[6.15,52.25],[6.16,52.25],[6.17,52.25]]);
+  await app.issueMap.editIssue(joined.id);
+  await app.issueMap.editor.title.fill("Doorlopende straat");
+  await app.issueMap.editor.saveSuccessfully("PATCH");
+});

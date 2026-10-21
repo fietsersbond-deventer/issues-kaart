@@ -299,3 +299,19 @@ it("commits a 27000-feature import and publishes exactly one summary", async () 
     expect(emitted).toHaveBeenCalledTimes(1);
     expect(emitted).toHaveBeenCalledWith({ count: 27000, createdBy: "Test Admin", createdByUserId: 1 });
 }, 15000);
+
+it("previews and imports the same joined road and supports normal geometry editing afterwards", async () => {
+    h.input.body = { title: "Road", description: "Gemeente", titleProperty: "street", mergeLines: true, mergeProperty: "street", legend_id: 1, geojson: { type: "FeatureCollection", features: [
+        { type: "Feature", properties: { street: "Teststraat" }, geometry: { type: "LineString", coordinates: [[4,52],[4.1,52]] } },
+        { type: "Feature", properties: { street: "Teststraat" }, geometry: { type: "LineString", coordinates: [[4.2,52],[4.1,52]] } },
+    ] } };
+    const preview = await (await import("../server/api/admin/import/preview.post")).default(h.event);
+    expect(preview).toMatchObject({ issues: 1, lineSegments: 2, lines: 1 });
+    expect(await (await import("../server/api/admin/import.post")).default(h.event)).toEqual({ imported: preview.issues });
+    h.input.params.id = "1";
+    const issue = await routes.get(h.event);
+    expect(issue).toMatchObject({ title: "Teststraat", geometry: { type: "LineString", coordinates: [[4,52],[4.1,52],[4.2,52]] } });
+    h.input.body = { geometry: { type: "LineString", coordinates: [[4,52],[4.3,52]] } };
+    await routes.update(h.event);
+    expect((await routes.get(h.event)).geometry).toEqual(h.input.body.geometry);
+});

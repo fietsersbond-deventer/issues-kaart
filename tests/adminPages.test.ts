@@ -183,3 +183,18 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(wrapper.text()).toContain("3 meldingen geïmporteerd");
 });
+
+it("does not require a missing street attribute when only Amsterdam area layers are available", async () => {
+    const ImportPage = (await import("../app/pages/admin/import/index.vue")).default;
+    vi.stubGlobal("useAuth", () => ({ token: ref("Bearer test") }));
+    const fetch = vi.fn().mockResolvedValueOnce({ geojson: { type: "FeatureCollection", features: [{ type: "Feature", properties: { layer: "Park" }, geometry: { type: "Point", coordinates: [4,52] } }] }, titleProperty: "STT_NAAM", categoryProperty: "layer", sourceUrl: "https://maps.amsterdam.nl", sources: [], layers: [], warnings: ["Network unavailable"] }).mockResolvedValueOnce({ sourceFeatures: 1, issues: 1, geometries: { Point: 1 }, groups: [{ key: '"Park"', label: "Park", sourceFeatures: 1, issues: 1 }] });
+    vi.stubGlobal("$fetch", fetch);
+    const wrapper = mount(ImportPage, { global: { stubs: { ...stubs, VFileInput: Field, VSelect: Field, CategorySelect: Field, VCheckbox: Field, NuxtLink: Slot } } });
+    wrappers.push(wrapper);
+    await button(wrapper, "Laad Amsterdam Plus- en Hoofdnetten").trigger("click");
+    await flushPromises();
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(fetch.mock.calls[1]![1].body).toMatchObject({ mergeLines: false });
+    expect(wrapper.text()).toContain("1 bewerkbare meldingen");
+});

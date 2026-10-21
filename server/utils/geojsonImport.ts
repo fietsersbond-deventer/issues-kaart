@@ -1,5 +1,6 @@
 import type { Geometry, Point, LineString, Polygon } from "geojson";
 import type { ImportPreview } from "~~/shared/types/GeojsonImport";
+import { mergeLineSegments } from "./mergeLineSegments";
 import { booleanValid } from "@turf/boolean-valid";
 
 type EditableGeometry = Point | LineString | Polygon;
@@ -40,12 +41,24 @@ function splitGeometry(geometry: Geometry): EditableGeometry[] {
   }
 }
 
+function canonicalProperties(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalProperties);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, canonicalProperties(item)]),
+    );
+  return value;
+}
+
 export function parseGeojsonImport(
   data: unknown,
   title: string,
   description: string,
   titleProperty?: string,
   categoryProperty?: string,
+  mergeProperty?: string,
 ) {
   const collection = data as {
     type?: string;
@@ -107,6 +120,18 @@ export function parseGeojsonImport(
         typeof propertyTitle === "string" || typeof propertyTitle === "number"
           ? String(propertyTitle).trim()
           : "";
+      const mergeValue = mergeProperty ? properties[mergeProperty] : undefined;
+      // Matching complete attributes prevents discarding different network classes,
+      // IDs or other source information when combining a road's blocks.
+      const mergeKey =
+        (typeof mergeValue === "string" && mergeValue.trim()) ||
+        typeof mergeValue === "number"
+          ? JSON.stringify([
+              categoryValue,
+              issueTitle || title,
+              canonicalProperties(properties),
+            ])
+          : undefined;
       const attributes = Object.entries(properties)
         .map(
           ([key, value]) =>
@@ -118,6 +143,8 @@ export function parseGeojsonImport(
         description: `<p>${escapeHtml(description)}</p>${attributes}`,
         geometry,
         sourceIndex: index,
+        sourceIndexes: [index],
+        mergeKey,
         groupKey: categoryProperty ? JSON.stringify(categoryValue) : "all",
         groupLabel: categoryProperty
           ? categoryValue === null
@@ -146,6 +173,8 @@ export function prepareGeojsonImport(body: unknown) {
     description?: unknown;
     titleProperty?: unknown;
     categoryProperty?: unknown;
+    mergeLines?: unknown;
+    mergeProperty?: unknown;
   } | null;
   if (
     !input ||
@@ -156,18 +185,22 @@ export function prepareGeojsonImport(body: unknown) {
     (input.titleProperty !== undefined &&
       typeof input.titleProperty !== "string") ||
     (input.categoryProperty !== undefined &&
-      typeof input.categoryProperty !== "string")
+      typeof input.categoryProperty !== "string") ||
+    (input.mergeLines !== undefined && typeof input.mergeLines !== "boolean") ||
+    (input.mergeProperty !== undefined &&
+      typeof input.mergeProperty !== "string")
   ) {
     throw new Error(
       "Titel en beschrijving zijn verplicht; attribuutnamen moeten tekst zijn",
     );
   }
-  const issues = parseGeojsonImport(
+  const segments = parseGeojsonImport(
     input.geojson,
     input.title.trim(),
     input.description.trim(),
     input.titleProperty as string | undefined,
     input.categoryProperty as string | undefined,
+    input.mergeLines ? (input.mergeProperty as string | undefined) : undefined,
   );
   const collection = input.geojson as {
     features: {
@@ -187,6 +220,16 @@ export function prepareGeojsonImport(body: unknown) {
     !attributes.includes(input.categoryProperty as string)
   )
     throw new Error("Categorieattribuut bestaat niet");
+  if (
+    input.mergeLines &&
+    (typeof input.mergeProperty !== "string" ||
+      !input.mergeProperty.trim() ||
+      !attributes.includes(input.mergeProperty))
+  )
+    throw new Error(
+      "Kies een bestaand straatattribuut om lijnen samen te voegen",
+    );
+  const issues = input.mergeLines ? mergeLineSegments(segments) : segments;
   const geometries: Record<string, number> = {};
   for (const feature of collection.features)
     geometries[feature.geometry.type] =
@@ -201,7 +244,7 @@ export function prepareGeojsonImport(body: unknown) {
       sources: new Set<number>(),
       issues: 0,
     };
-    group.sources.add(issue.sourceIndex);
+    for (const index of issue.sourceIndexes) group.sources.add(index);
     group.issues++;
     groups.set(issue.groupKey, group);
   }
@@ -211,6 +254,11 @@ export function prepareGeojsonImport(body: unknown) {
     );
   const preview: ImportPreview = {
     sourceFeatures: collection.features.length,
+    lineSegments: segments.filter(
+      (issue) => issue.geometry.type === "LineString",
+    ).length,
+    lines: issues.filter((issue) => issue.geometry.type === "LineString")
+      .length,
     issues: issues.length,
     attributes,
     geometries,

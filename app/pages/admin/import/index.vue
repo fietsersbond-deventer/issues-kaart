@@ -50,6 +50,26 @@
         hint="Zonder waarde wordt de standaardtitel gebruikt."
         persistent-hint
       />
+      <v-checkbox
+        v-model="mergeLines"
+        label="Aansluitende lijnsegmenten samenvoegen"
+        :disabled="loading"
+        hide-details
+      />
+      <p class="text-body-2 mb-4">
+        Alleen dezelfde straatnaam, categorie en overige attributen worden
+        samengevoegd. Alleen exacte eindpunten tellen; vertakkingen en gaten
+        blijven apart. Punten en vlakken veranderen niet.
+      </p>
+      <v-select
+        v-if="mergeLines"
+        v-model="mergeProperty"
+        :items="attributes"
+        label="Straatattribuut voor samenvoegen"
+        :disabled="loading"
+        hint="Segmenten zonder straatnaam worden niet samengevoegd."
+        persistent-hint
+      />
       <v-select
         v-model="categoryProperty"
         :items="[
@@ -70,7 +90,13 @@
       <v-btn
         type="submit"
         :loading="loading"
-        :disabled="!geojson || !title.trim() || !description.trim() || loading"
+        :disabled="
+          !geojson ||
+          !title.trim() ||
+          !description.trim() ||
+          (mergeLines && !mergeProperty) ||
+          loading
+        "
         >Bekijk importvoorbeeld</v-btn
       >
     </v-form>
@@ -81,6 +107,12 @@
         <p>
           {{ preview.sourceFeatures }} objecten na laagselectie →
           {{ preview.issues }} bewerkbare meldingen.
+        </p>
+        <p v-if="preview.lineSegments" class="mb-4">
+          Lijnsegmenten: {{ preview.lineSegments }} →
+          {{ preview.lines }} lijnen{{
+            mergeLines ? " na samenvoegen" : " (samenvoegen uit)"
+          }}.
         </p>
         <p class="mb-4">
           Geometrieën:
@@ -183,6 +215,8 @@ const attributes = ref<string[]>([]);
 const categoryId = ref<number | null>(null);
 const categoryProperty = ref("");
 const titleProperty = ref<string | null>(null);
+const mergeLines = ref(false);
+const mergeProperty = ref<string | null>(null);
 const title = ref("");
 const description = ref("");
 const preview = shallowRef<ImportPreview | null>(null);
@@ -224,6 +258,10 @@ const requestBody = () => ({
   description: description.value,
   titleProperty: titleProperty.value || undefined,
   categoryProperty: categoryProperty.value || undefined,
+  mergeLines: mergeLines.value,
+  mergeProperty: mergeLines.value
+    ? mergeProperty.value || undefined
+    : undefined,
 });
 
 function showFailure(cause: unknown) {
@@ -246,9 +284,20 @@ function setData(data: unknown) {
   preview.value = null;
   imported.value = null;
 }
-watch([title, description, titleProperty, categoryProperty, geojson], () => {
-  preview.value = null;
-});
+watch(
+  [
+    title,
+    description,
+    titleProperty,
+    categoryProperty,
+    geojson,
+    mergeLines,
+    mergeProperty,
+  ],
+  () => {
+    preview.value = null;
+  },
+);
 watch(file, async (current) => {
   if (!current) return;
   loading.value = true;
@@ -263,7 +312,9 @@ watch(file, async (current) => {
     setData(data);
     sourceName.value = current.name;
     categoryProperty.value = "";
-    titleProperty.value = null;
+    mergeLines.value = attributes.value.includes("STT_NAAM");
+    mergeProperty.value = mergeLines.value ? "STT_NAAM" : null;
+    titleProperty.value = mergeProperty.value;
   } catch (cause) {
     showFailure(cause);
   } finally {
@@ -286,6 +337,8 @@ async function loadAmsterdam() {
     setData(data.geojson);
     categoryProperty.value = data.categoryProperty;
     titleProperty.value = data.titleProperty;
+    mergeLines.value = attributes.value.includes(data.titleProperty);
+    mergeProperty.value = mergeLines.value ? data.titleProperty : null;
     title.value = "Plus- en Hoofdnetten";
     description.value = `Gemeente Amsterdam — Plus- en Hoofdnetten. Bron: ${data.sourceUrl}`;
     sourceName.value = "Amsterdam Plus- en Hoofdnetten";

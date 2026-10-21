@@ -135,3 +135,11 @@ Volledige geometrieën worden na kaartbeweging opgehaald met `bbox` en `cat`, vi
 de SQLite R-tree `issue_bounds`. Migratie `0016` vult deze index voor bestaande
 meldingen; triggers onderhouden hem bij aanmaken, verplaatsen en verwijderen.
 De editor blijft de oorspronkelijke geometrie ophalen via `/api/issues/:id`.
+
+Bij de GeoJSON-import controleert `importWorkflow` ook het samenvoegen van
+27.000 aansluitende lijnsegmenten tot één lijn. De import gebruikt een index
+van eindpunten, stopt bij vertakkingen en koppelt uitsluitend gelijke
+straatnamen, categorieën en overige attributen. Testgevallen dekken omgekeerde
+segmenten, gesloten ringen, gaten, dubbele segmenten en ontbrekende namen.
+De browsercontrole in `admin.spec.ts` vergelijkt het voorbeeld met opgeslagen
+geometrieën en controleert uitschakelen van samenvoegen en normaal bewerken.

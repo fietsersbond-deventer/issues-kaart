@@ -8,6 +8,8 @@ export type ImportGroup = {
 };
 
 export type ImportPreview = {
+  lineSegments: number;
+  lines: number;
   sourceFeatures: number;
   issues: number;
   attributes: string[];
