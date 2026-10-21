@@ -8,6 +8,7 @@ type IssueRow = {
   description?: string;
   legend_id?: number;
   geometry?: string;
+  bbox?: string;
   created_at?: string;
 };
 
@@ -35,6 +36,7 @@ export default defineEventHandler(async (event) => {
     description: "i.description",
     legend_id: "i.legend_id",
     geometry: "i.geometry",
+    bbox: "json_array(b.min_x, b.min_y, b.max_x, b.max_y) AS bbox",
     created_at: "i.created_at",
     imageUrl: "i.description", // Special field - will be processed
     tags: "i.id", // Special field - will be processed
@@ -83,19 +85,59 @@ export default defineEventHandler(async (event) => {
     includeTags = true;
   }
 
-  const whereClause = requestedTag
-    ? `WHERE EXISTS (
-        SELECT 1
-        FROM issue_tags it
-        WHERE it.issue_id = i.id AND it.tag = ?
-      )`
+  const clauses: string[] = [];
+  const values: (string | number)[] = [];
+  if (requestedTag) {
+    clauses.push(
+      "EXISTS (SELECT 1 FROM issue_tags it WHERE it.issue_id = i.id AND it.tag = ?)",
+    );
+    values.push(requestedTag);
+  }
+  if (query.bbox !== undefined) {
+    if (typeof query.bbox !== "string")
+      throw createError({ statusCode: 400, message: "Invalid bbox" });
+    const parts = query.bbox.split(",");
+    if (parts.some((part) => !part.trim()))
+      throw createError({ statusCode: 400, message: "Invalid bbox" });
+    const bounds = parts.map(Number);
+    if (
+      bounds.length !== 4 ||
+      bounds.some((value) => !Number.isFinite(value)) ||
+      bounds[0]! < -180 ||
+      bounds[2]! > 180 ||
+      bounds[1]! < -90 ||
+      bounds[3]! > 90 ||
+      bounds[0]! >= bounds[2]! ||
+      bounds[1]! >= bounds[3]!
+    )
+      throw createError({ statusCode: 400, message: "Invalid bbox" });
+    clauses.push(
+      "i.id IN (SELECT id FROM issue_bounds WHERE max_x >= ? AND min_x <= ? AND max_y >= ? AND min_y <= ?)",
+    );
+    values.push(bounds[0]!, bounds[2]!, bounds[1]!, bounds[3]!);
+  }
+  if (query.cat !== undefined) {
+    if (typeof query.cat !== "string" || !/^\d+(,\d+)*$/.test(query.cat))
+      throw createError({ statusCode: 400, message: "Invalid categories" });
+    const ids = query.cat.split(",").map(Number);
+    if (
+      ids.length > 500 ||
+      ids.some((id) => !Number.isSafeInteger(id) || id <= 0)
+    )
+      throw createError({ statusCode: 400, message: "Invalid categories" });
+    clauses.push(`i.legend_id IN (${ids.map(() => "?").join(",")})`);
+    values.push(...ids);
+  }
+  const whereClause = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const boundsJoin = requestedFields?.includes("bbox")
+    ? "LEFT JOIN issue_bounds b ON b.id = i.id"
     : "";
-  const values = requestedTag ? [requestedTag] : [];
 
   const rows = db
     .prepare(
       `SELECT ${selectFields}
      FROM issues i
+     ${boundsJoin}
      ${whereClause}
      ORDER BY i.created_at DESC`,
     )
@@ -117,6 +159,13 @@ export default defineEventHandler(async (event) => {
     // Parse geometry if included
     if (includeGeometry && typeof issue.geometry === "string") {
       result.geometry = JSON.parse(issue.geometry);
+    }
+
+    if (typeof issue.bbox === "string") {
+      const bbox = JSON.parse(issue.bbox);
+      result.bbox = bbox.every((value: unknown) => typeof value === "number")
+        ? bbox
+        : undefined;
     }
 
     // Add imageUrl if requested (returns URL path, not actual data)

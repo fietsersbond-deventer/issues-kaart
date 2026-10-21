@@ -71,3 +71,20 @@ it("does not mark a failed migration as applied and can retry after a read failu
         expect(recovered.prepare("SELECT COUNT(*) AS n FROM _hub_migrations").get()!.n).toBe(migrationFiles.length);
     } finally { recovered.close(); }
 });
+
+it("backfills spatial bounds for existing point, line and polygon records", () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+        db.exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, geometry TEXT)");
+        const insert = db.prepare("INSERT INTO issues VALUES (?, ?)");
+        insert.run(1, JSON.stringify({ type: "Point", coordinates: [4, 52] }));
+        insert.run(2, JSON.stringify({ type: "LineString", coordinates: [[4, 51], [6, 53]] }));
+        insert.run(3, JSON.stringify({ type: "Polygon", coordinates: [[[3, 50], [5, 50], [5, 52], [3, 50]]] }));
+        db.exec(fs.readFileSync("server/database/migrations/0016_issue_spatial_index.sql", "utf8"));
+        expect(db.prepare("SELECT * FROM issue_bounds ORDER BY id").all()).toEqual([
+            { id: 1, min_x: 4, max_x: 4, min_y: 52, max_y: 52 },
+            { id: 2, min_x: 4, max_x: 6, min_y: 51, max_y: 53 },
+            { id: 3, min_x: 3, max_x: 5, min_y: 50, max_y: 52 },
+        ]);
+    } finally { db.close(); }
+});

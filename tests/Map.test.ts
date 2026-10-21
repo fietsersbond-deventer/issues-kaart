@@ -3,6 +3,7 @@ import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
 import { mount,type VueWrapper } from "@vue/test-utils";
 import { shallowRef,computed,defineComponent,nextTick,ref,useTemplateRef,watch } from "vue";
 import { Collection,Feature } from "ol";
+import VectorSource from "ol/source/Vector";
 import { Point,LineString,Polygon } from "ol/geom";
 import { fromLonLat } from "ol/proj";
 import type { Circle,Icon,Style } from "ol/style";
@@ -38,6 +39,7 @@ const query={ tag: "veilig",cat: "1" };
 let padding: { value: number[] };
 let focusMapSize: { value: [number, number] };
 let wrapper: VueWrapper;
+const Source=defineComponent({ setup(_, { expose }) { expose({ source: new VectorSource() }); }, template: "<div><slot /></div>" });
 const Container=defineComponent({ template: "<div><slot /></div>" });
 const FeatureStub=defineComponent({ props: ["properties"],template: "<div><slot /></div>" });
 const Tile=defineComponent({ props: ["title","visible","baseLayer"],template: "<div><slot /></div>" });
@@ -66,7 +68,7 @@ function mountMap(withSlots=false) {
         "ol-map": Container,"ol-view": true,MapControlContainer: Container,MapResetExtentControl: Reset,
         MapFilterSummary: true,SizeCalculator: Size,MapAddFeature: AddFeature,
         "ol-tile-layer": Tile,"ol-source-xyz": true,"ol-source-wmts": true,
-        "ol-vector-layer": Vector,"ol-source-vector": Container,"ol-feature": FeatureStub,
+        "ol-vector-layer": Vector,"ol-source-vector": Source,"ol-feature": FeatureStub,
         "ol-geom-point": PointStub,"ol-geom-line-string": LineStub,"ol-geom-polygon": PolygonStub,
         "ol-interaction-modify": Modify,MapAreas: true,"ol-attribution-control": true,
         MapTooltip: Tooltip,"ol-interaction-select": Select,
@@ -99,6 +101,7 @@ beforeEach(() => {
   vi.stubGlobal("useMapIssueInteractions", useMapIssueInteractions);
   vi.stubGlobal("useSelectedIssue",() => ({ issue: selectedIssue,selectedId }));
   vi.stubGlobal("useSelectedIssues",() => ({ selectedIssues }));
+  vi.stubGlobal("useMapViewportIssues", () => ({ issues: selectedIssues, error: ref("") }));
   vi.stubGlobal("useRoute",() => ({ query }));
   vi.stubGlobal("navigateTo",navigate);
   vi.stubGlobal("useMapLayerPreference",() => ({ preferredLayer,watchLayerVisibility: vi.fn() }));
@@ -118,15 +121,17 @@ afterEach(() => {
 });
 
 describe("kaartcontract vóór opsplitsing",() => {
-  it("rendert geometrieën in Web Mercator en behoudt feature-eigenschappen",() => {
+  it("rendert geometrieën in Web Mercator en behoudt feature-eigenschappen", async () => {
     selectedIssues.value=[issue(1),issue(2,line),issue(3,polygon)];
     mountMap();
-    expect(wrapper.findAllComponents(FeatureStub).map(w => w.props("properties"))).toEqual(
-      selectedIssues.value.map(({ geometry: _geometry,...properties }) => properties),
-    );
-    expect(wrapper.getComponent(PointStub).props("coordinates")).toEqual(fromLonLat([6,52]));
-    expect(wrapper.getComponent(LineStub).props("coordinates")).toEqual([[6,52],[6.1,52.1]].map(c => fromLonLat(c)));
-    expect(wrapper.getComponent(PolygonStub).props("coordinates")).toEqual([polygon.coordinates[0]!.map(c => fromLonLat(c))]);
+    await nextTick(); await nextTick();
+    const source = (wrapper.getComponent(Source).vm as unknown as { source: VectorSource }).source;
+    const features = source.getFeatures().sort((a,b) => a.get("id") - b.get("id"));
+    expect(features.map(feature => feature.get("id"))).toEqual([1,2,3]);
+    expect(features.map(feature => feature.get("title"))).toEqual(["Onderwerp", "Onderwerp", "Onderwerp"]);
+    expect((features[0]!.getGeometry() as Point).getCoordinates()).toEqual(fromLonLat([6,52]));
+    expect((features[1]!.getGeometry() as LineString).getCoordinates()).toEqual([[6,52],[6.1,52.1]].map(c => fromLonLat(c)));
+    expect((features[2]!.getGeometry() as Polygon).getCoordinates()).toEqual([polygon.coordinates[0]!.map(c => fromLonLat(c))]);
   });
 
   it("behoudt laagvolgorde en koppelt straatnamen aan de fotolaag",async () => {
@@ -164,7 +169,7 @@ describe("kaartcontract vóór opsplitsing",() => {
     selectedIssues.value=[issue(2,line)];
     await nextTick();
     expect(wrapper.findComponent(PointStub).exists()).toBe(false);
-    expect(wrapper.findAllComponents(FeatureStub)).toHaveLength(1);
+    expect((wrapper.getComponent(Source).vm as unknown as { source: VectorSource }).source.getFeatures()).toHaveLength(1);
     expect(styles(feature(1))).toEqual([]);
   });
 
@@ -246,10 +251,10 @@ describe("kaartcontract vóór opsplitsing",() => {
     const f=feature(1);
     select.vm.$emit("select",{ selected: [f] });
     const collection=wrapper.getComponent(Modify).props("features") as Collection<Feature>;
-    expect(collection.getLength()).toBe(0);
+    expect(collection.getLength()).toBe(1);
     expect(navigate).toHaveBeenCalledTimes(1);
     select.vm.$emit("select",{ selected: [] });
-    expect(collection.getLength()).toBe(0);
+    expect(collection.getLength()).toBe(1);
     mobile.value=true;
     await nextTick();
     expect(select.props("hitTolerance")).toBe(15);
@@ -362,3 +367,17 @@ describe("kaartstyling vóór opsplitsing",() => {
     expect(polyStyle.getFill()!.getColor()).toBe("rgba(18, 52, 86, 0.5)");
   });
 });
+
+it("styles a large layer using indexed IDs rather than rescanning 27000 records", async () => {
+  let idReads = 0;
+  selectedIssues.value = Array.from({ length: 27000 }, (_, index) => {
+    const item = issue(index + 1, line);
+    Object.defineProperty(item, "id", { enumerable: true, get: () => { idReads++; return index + 1; } });
+    return item;
+  });
+  mountMap();
+  await nextTick(); await nextTick();
+  idReads = 0;
+  for (let index = 0; index < 1000; index++) styles(new Feature({ id: 27000, geometry: new LineString([[0,0],[1,1]]) }));
+  expect(idReads).toBeLessThanOrEqual(29000);
+}, 15000);

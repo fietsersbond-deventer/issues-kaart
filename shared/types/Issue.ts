@@ -31,8 +31,8 @@ export type NewIssue = Omit<
 
 export type MapIssue = Pick<
   Issue,
-  "id" | "title" | "geometry" | "legend" | "legend_id" | "imageUrl" | "tags"
->;
+  "id" | "title" | "legend" | "legend_id" | "imageUrl" | "tags"
+> & { geometry?: Issue["geometry"]; bbox?: import("geojson").BBox };
 export type ExistingIssue = Issue;
 
 export type AdminListIssue = Pick<

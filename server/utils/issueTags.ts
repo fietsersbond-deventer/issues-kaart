@@ -153,20 +153,15 @@ export function getTagsForIssueIds(
   ids.forEach((id) => tagsByIssueId.set(id, []));
   if (ids.length === 0) return tagsByIssueId;
 
-  const placeholders = ids.map(() => "?").join(", ");
-  const rows = db
-    .prepare(
-      `SELECT issue_id, tag
-       FROM issue_tags
-       WHERE issue_id IN (${placeholders})
-       ORDER BY tag ASC`,
-    )
-    .all(...ids) as { issue_id: number; tag: string }[];
-
-  for (const row of rows) {
-    const issueTags = tagsByIssueId.get(row.issue_id) ?? [];
-    issueTags.push(row.tag);
-    tagsByIssueId.set(row.issue_id, issueTags);
+  // Keep well below SQLite's variable limit, including builds with a 999 limit.
+  const uniqueIds = [...new Set(ids)];
+  for (let offset = 0; offset < uniqueIds.length; offset += 900) {
+    const batch = uniqueIds.slice(offset, offset + 900);
+    const placeholders = batch.map(() => "?").join(", ");
+    const rows = db.prepare(
+      `SELECT issue_id, tag FROM issue_tags WHERE issue_id IN (${placeholders}) ORDER BY tag ASC`,
+    ).all(...batch) as { issue_id: number; tag: string }[];
+    for (const row of rows) tagsByIssueId.get(row.issue_id)!.push(row.tag);
   }
 
   return tagsByIssueId;

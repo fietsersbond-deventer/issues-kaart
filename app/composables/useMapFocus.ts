@@ -122,8 +122,9 @@ export function useMapFocus(
   const schedule = useDebounceFn(() => apply(), 150);
 
   watch(key, (k) => {
-    if (isEditing.value) {
-      // own edits must not move the map
+    if (isEditing.value && appliedKey !== undefined) {
+      // Own edits must not move an already focused map. Allow the first focus
+      // when a large catalogue finishes loading after the editor was opened.
       appliedKey = k;
       return;
     }

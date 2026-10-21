@@ -103,3 +103,35 @@ branchbeveiliging moeten apart worden gecontroleerd.
 
 Het lintbeleid, de configuratie en de commando's staan in
 [linting en formatteren](linting.md).
+
+## Schaalbaarheid van de kaart
+
+De bestaande suites bevatten schaaltests voor gemeentelijke datasets:
+
+- `IssueLayer` laadt 27.000 lijnen zonder Vue-component per object en behoudt
+  ongewijzigde OpenLayers-features bij updates.
+- `Map` controleert dat stijlberekening een ID-index gebruikt; `issueMapStyle`
+  controleert het delen en vernieuwen van categoriekleuren.
+- `issueRoutes` importeert 27.000 objecten met één realtime samenvatting en
+  controleert ruimtelijke selectie op een database met 27.000 objecten.
+- `issueTagPersistence` haalt tags voor 50.000 IDs op, boven de SQL-parameterlimiet.
+- `mapLifecycle` controleert verouderde aanvragen, annuleren, kaartinitialisatie
+  en voorrang van de exacte geometrie uit de editor.
+
+```sh
+pnpm exec vitest run tests/IssueLayer.test.ts tests/Map.test.ts tests/issueMapStyle.test.ts tests/issueRoutes.test.ts tests/issueTagPersistence.test.ts tests/mapLifecycle.test.ts
+pnpm run test:e2e --grep 'large datasets'
+```
+
+De browsertest maakt 27.000 lijnen in de tijdelijke E2E-database. De beginuitsnede
+bevat slechts 100 daarvan. De test controleert dat de catalogus geen geometrieën
+bevat, de uitsnede minder dan 200 objecten teruggeeft, de DOM klein blijft en een
+animatieframe binnen een seconde wordt afgehandeld. Daarna opent en bewerkt hij
+een melding in de andere uitsnede, waar bijna alle lijnen samenkomen. De ruime
+tijdgrenzen zijn regressiecontroles, geen productie-SLA.
+
+De kaart gebruikt één lichte catalogus voor legenda-aantallen en filterextenten.
+Volledige geometrieën worden na kaartbeweging opgehaald met `bbox` en `cat`, via
+de SQLite R-tree `issue_bounds`. Migratie `0016` vult deze index voor bestaande
+meldingen; triggers onderhouden hem bij aanmaken, verplaatsen en verwijderen.
+De editor blijft de oorspronkelijke geometrie ophalen via `/api/issues/:id`.

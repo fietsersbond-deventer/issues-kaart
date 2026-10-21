@@ -16,7 +16,7 @@ export interface FocusInput {
   /** the loaded selected issue; may lag behind selectedId */
   issue?: { id?: number; geometry?: Geometry | null } | null;
   filterActive: boolean;
-  selectedIssues: { geometry?: Geometry | null }[];
+  selectedIssues: { geometry?: Geometry | null; bbox?: BBox }[];
 }
 
 /**

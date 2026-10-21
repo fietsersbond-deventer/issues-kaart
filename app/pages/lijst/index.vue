@@ -149,7 +149,7 @@ const { data: searchResponse, pending, refresh: refreshResults } = await useFetc
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
 const unsubscribe = ws.subscribe((message) => {
-  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
+  if (["issue-created", "issue-modified", "issue-deleted", "issues-imported"].includes(message.type)) {
     refreshResults();
   }
 });

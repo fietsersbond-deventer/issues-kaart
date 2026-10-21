@@ -106,3 +106,19 @@ describe("getIssueMapStyle", () => {
     expect(item).toEqual(before);
   });
 });
+
+it("shares styles across 27000 features and invalidates changed category colours", async () => {
+  const { createIssueMapStyleCache } = await import("../app/utils/issueMapStyle");
+  const cached = createIssueMapStyleCache();
+  const item = issue();
+  const first = cached(line, item, false, 14);
+  for (let i = 0; i < 27000; i++) expect(cached(line, item, false, 14)).toBe(first);
+  item.legend!.color = "#ff0000";
+  const changed = cached(line, item, false, 14);
+  expect(changed).not.toBe(first);
+  expect((changed as Style).getStroke()!.getColor()).toBe("#ff0000");
+  expect(cached(line, item, true, 14)).not.toBe(changed);
+  expect(cached(line, undefined, false, 14)).toBeUndefined();
+  item.legend!.icon = "mdi-bike";
+  for (let zoom = 1; zoom <= 100; zoom++) cached(point, item, false, zoom);
+});

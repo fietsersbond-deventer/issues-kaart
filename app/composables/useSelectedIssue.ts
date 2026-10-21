@@ -1,3 +1,4 @@
+import { onScopeDispose } from "vue";
 import { isExistingIssue, type Issue, type NewIssue, type ExistingIssue } from "~~/shared/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
@@ -71,7 +72,7 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
   });
 
   // Cleanup subscription when store is disposed
-  onUnmounted(unsubscribe);
+  onScopeDispose(unsubscribe);
 
   const reload = ref(0);
   let hasConnected = ws.status.value === "OPEN";

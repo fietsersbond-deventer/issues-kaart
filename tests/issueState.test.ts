@@ -62,7 +62,7 @@ it("applies created/modified/deleted notifications and upserts unseen modificati
     message("issue-deleted", { id: 1 });
     expect(store.issues.map((x) => x.id)).toEqual([2]);
 });
-it("keeps a single live preview per selected draft or saved issue and removes its subscription on unmount", async () => {
+it("keeps a single live preview per selected draft or saved issue and retains updates across page navigation until the store is disposed", async () => {
     const store = await setup();
     selected.value = { title: "Draft", tags: [], description: "text" };
     await nextTick();
@@ -82,6 +82,10 @@ it("keeps a single live preview per selected draft or saved issue and removes it
     await vi.advanceTimersByTimeAsync(101);
     expect(store.issues).toHaveLength(2);
     wrappers[0]!.unmount();
+    expect(unsubscribe).not.toHaveBeenCalled();
+    message("issues-imported", { count: 27000, createdBy: "Admin", createdByUserId: 1 });
+    expect(refresh).toHaveBeenCalledTimes(1);
+    store.$dispose();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
 });
 it("shows short own-action notifications, attributed remote notifications and ignores anonymous sessions", async () => {
@@ -140,4 +144,15 @@ it.each([undefined, 1])("preserves the active geometry after reconnect for issue
     data.value = [{ id: 1, title: "Latest saved", geometry, tags: [] }];
     await nextTick();
     expect(store.issues).toEqual(data.value);
+});
+
+it("refreshes once for a completed 27000-object import instead of receiving per-object updates", async () => {
+    data.value = Array.from({ length: 27000 }, (_, index) => ({ id: index + 1, title: "Line", geometry: { type: "LineString", coordinates: [[4, 52], [5, 53]] }, tags: [] }));
+    const store = await setup();
+    expect(store.issues).toHaveLength(27000);
+    message("issues-imported", { count: 27000, createdBy: "Admin", createdByUserId: 1 });
+    await nextTick();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    message("issue-modified", { id: 27000, title: "Changed", geometry, tags: [] });
+    expect(store.issues[26999]!.title).toBe("Changed");
 });

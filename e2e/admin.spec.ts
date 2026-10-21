@@ -84,3 +84,35 @@ test("9 — admin manages users, categories, tags and texts; validation and role
   ).toBeTruthy();
   // Tags/categories/texts APIs are intentionally available to authenticated ordinary users; only user management is admin-only.
 });
+
+test("GeoJSON preview separates attribute groups and creates categories only on confirmation", async ({ app, page, request }) => {
+  await app.loginPage.login("admin@example.test");
+  await app.issueMap.goto();
+  await page.getByRole("link", { name: "Beheer", exact: true }).click();
+  await page.getByRole("link", { name: "GeoJSON importeren" }).click();
+  const data = { type: "FeatureCollection", features: [
+    { type: "Feature", properties: { plein_park: "Park" }, geometry: { type: "MultiPoint", coordinates: [[4.9,52.3],[4.91,52.31]] } },
+    { type: "Feature", properties: { plein_park: "Plein" }, geometry: { type: "Point", coordinates: [4.92,52.32] } },
+  ] };
+  await page.locator('input[type="file"]').setInputFiles({ name: "gemeente.geojson", mimeType: "application/geo+json", buffer: Buffer.from(JSON.stringify(data)) });
+  await page.getByLabel("Titel (standaard voor ieder object)").fill("Importvoorbeeldtest");
+  await page.getByLabel("Beschrijving", { exact: true }).fill("Gemeentelijke dataset");
+  await page.getByLabel("Categorie-indeling", { exact: true }).press("Enter");
+  await page.getByRole("option", { name: "plein_park", exact: true }).click();
+  await page.getByRole("button", { name: "Bekijk importvoorbeeld", exact: true }).click();
+  await expect(page.getByText("2 objecten na laagselectie → 3 bewerkbare meldingen.")).toBeVisible();
+  expect((await (await request.get("/api/issues?fields=id")).json()).length).toBe(3);
+  await expect(page.getByLabel("Nieuwe categorie voor Park", { exact: true })).toHaveValue("Park");
+  await expect(page.getByLabel("Nieuwe categorie voor Plein", { exact: true })).toHaveValue("Plein");
+  await page.getByRole("button", { name: "Importeer 3 meldingen", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "3 meldingen geïmporteerd." })).toBeVisible();
+  const rows = await (await request.get("/api/issues?fields=id,title,legend_id")).json();
+  const categories = await (await request.get("/api/legends")).json();
+  const parks = categories.find((category: { name: string }) => category.name === "Park");
+  const squares = categories.find((category: { name: string }) => category.name === "Plein");
+  expect(rows.filter((row: { legend_id: number }) => row.legend_id === parks.id)).toHaveLength(2);
+  expect(rows.filter((row: { legend_id: number }) => row.legend_id === squares.id)).toHaveLength(1);
+  await page.getByRole("link", { name: "Naar de kaart", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: /^Park\b/ })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /^Plein\b/ })).toBeVisible();
+});

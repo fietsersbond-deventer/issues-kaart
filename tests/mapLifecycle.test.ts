@@ -73,7 +73,7 @@ it("persists only visible layer changes and accepts both OpenLayers component re
     layerRef.value = { layer };
     await nextTick();
 });
-it("focuses selected issues after loading, uses filters for overview and never moves during edits", async () => {
+it("focuses the initial selection despite early editing, then preserves the view during edits", async () => {
     vi.useFakeTimers();
     try {
         const selectedId = ref<number | null>(1), issue = ref({ id: 1, geometry: { type: "Point", coordinates: [6, 52] } });
@@ -101,6 +101,8 @@ it("focuses selected issues after loading, uses filters for overview and never m
         ]>([800, 600]);
         const focus = scope.run(() => useMapFocus(mapRef as unknown as Parameters<typeof useMapFocus>[0], padding, size))!;
         expect(fit).toHaveBeenCalledTimes(1);
+        // The editor may open before the large metadata catalogue finishes.
+        editing.value = true;
         loaded.value = true;
         await nextTick();
         await vi.advanceTimersByTimeAsync(150);
@@ -137,4 +139,62 @@ it("resolves the current deployment area from the local hostname", async () => {
     expect(area.hostname).toBe("deventer.kaart.fietsersbond.nl");
     expect(area.area?.geometry.type).toMatch(/Polygon/);
     expect(area.bbox).toHaveLength(4);
+});
+
+it("loads viewport geometry, cancels stale requests, preserves exact editor geometry and cleans up listeners", async () => {
+    const { useMapViewportIssues } = await import("../app/composables/useMapViewportIssues");
+    const { flushPromises } = await import("@vue/test-utils");
+    const { default: Observable } = await import("ol/Observable");
+    const view = new View({ center: fromLonLat([4.9, 52.3]), zoom: 13 });
+    const map = Object.assign(new Observable(), { getView: () => view, getSize: () => [800, 600] });
+    const revision = ref(0);
+    const selected = shallowRef<import("../shared/types/Issue").MapIssue[]>([{ id: 1, title: "Line", legend_id: 1, tags: [], imageUrl: null, legend: { id: 1, name: "Cat", color: "red", description: "", created_at: "" } }]);
+    vi.stubGlobal("storeToRefs", (value: unknown) => value);
+    vi.stubGlobal("useIssues", () => ({ viewportRevision: revision }));
+    let firstResolve: (value: unknown) => void;
+    const fetch = vi.fn().mockImplementationOnce(() => new Promise(resolve => { firstResolve = resolve; })).mockResolvedValue([{ id: 1, geometry: { type: "Point", coordinates: [4.9, 52.3] } }]);
+    vi.stubGlobal("$fetch", fetch);
+    const value = scope.run(() => useMapViewportIssues(shallowRef({ map }) as unknown as Parameters<typeof useMapViewportIssues>[0], selected, ref(1)))!;
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0]![1].query).toMatchObject({ fields: "id,geometry", cat: "1", bbox: expect.any(String) });
+    view.setCenter(fromLonLat([4.91, 52.31]));
+    map.dispatchEvent("moveend");
+    await nextTick(); await flushPromises();
+    expect(fetch.mock.calls[0]![1].signal.aborted).toBe(true);
+    expect(value.issues.value[0]!.geometry).toEqual({ type: "Point", coordinates: [4.9, 52.3] });
+    firstResolve!([{ id: 1, geometry: { type: "Point", coordinates: [6, 52] } }]);
+    await flushPromises();
+    expect(value.issues.value[0]!.geometry!.coordinates).toEqual([4.9, 52.3]);
+    selected.value = [{ ...selected.value[0]!, geometry: { type: "Point", coordinates: [5, 53] } }];
+    expect(value.issues.value[0]!.geometry!.coordinates).toEqual([5, 53]);
+    fetch.mockRejectedValueOnce(new Error("offline"));
+    revision.value++;
+    await nextTick(); await flushPromises();
+    expect(value.error.value).toContain("laden mislukt");
+    revision.value++;
+    await nextTick(); await flushPromises();
+    expect(value.error.value).toBe("");
+    selected.value = [];
+    await nextTick();
+    expect(value.issues.value).toEqual([]);
+    scope.stop();
+    expect(map.hasListener("moveend")).toBe(false);
+    expect(map.hasListener("change:size")).toBe(false);
+});
+
+it("waits for an initialized map view before requesting viewport geometry", async () => {
+    const { useMapViewportIssues } = await import("../app/composables/useMapViewportIssues");
+    const { default: Observable } = await import("ol/Observable");
+    const view = new View();
+    const map = Object.assign(new Observable(), { getView: () => view, getSize: () => [800, 600] });
+    vi.stubGlobal("storeToRefs", (value: unknown) => value);
+    vi.stubGlobal("useIssues", () => ({ viewportRevision: ref(0) }));
+    const fetch = vi.fn().mockResolvedValue([]);
+    vi.stubGlobal("$fetch", fetch);
+    scope.run(() => useMapViewportIssues(shallowRef({ map }) as unknown as Parameters<typeof useMapViewportIssues>[0], shallowRef([{ id: 1, title: "X", legend_id: 1 } as import("../shared/types/Issue").MapIssue])));
+    expect(fetch).not.toHaveBeenCalled();
+    view.setCenter(fromLonLat([4.9, 52.3])); view.setZoom(12);
+    map.dispatchEvent("moveend");
+    await nextTick();
+    expect(fetch).toHaveBeenCalledTimes(1);
 });

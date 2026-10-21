@@ -27,6 +27,7 @@ const navigate = vi.fn();
 
 function mountMap(geometry: Point | LineString | Polygon = new Point([6, 52])) {
   const feature = new Feature({ id: 1, geometry });
+  feature.setId(1);
   source.addFeature(feature);
   issue.value = { id: 1, title: "Onderwerp", geometry: { type: geometry.getType(), coordinates: geometry.getCoordinates() } };
   mapIssues.value = [JSON.parse(JSON.stringify(issue.value))];
@@ -77,6 +78,7 @@ beforeEach(() => {
   vi.stubGlobal("storeToRefs", (store: unknown) => store);
   vi.stubGlobal("useSelectedIssue", () => ({ issue, selectedId }));
   vi.stubGlobal("useSelectedIssues", () => ({ selectedIssues: mapIssues }));
+  vi.stubGlobal("useMapViewportIssues", () => ({ issues: mapIssues, error: ref("") }));
   vi.stubGlobal("useRoute", () => ({ query: { tag: "fiets" } }));
   vi.stubGlobal("useMapLayerPreference", () => ({ preferredLayer: ref("Licht"), watchLayerVisibility: vi.fn() }));
   vi.stubGlobal("useVDisplay", () => ({ mobile: ref(false) }));
@@ -142,6 +144,7 @@ describe("kaartselectie", () => {
     await nextTick();
     expect(wrapper.findComponent(ModifyStub).exists()).toBe(false);
     const next = new Feature({ id: 2, geometry: new Point([6.1, 52.1]) });
+    next.setId(2);
     source.addFeature(next);
     issue.value = { id: 2, geometry: { type: "Point", coordinates: [6.1, 52.1] } };
     await nextTick();

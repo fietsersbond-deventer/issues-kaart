@@ -34,3 +34,12 @@ it("replaces links and returns sorted tags, including empty and invalid ID selec
     replaceTagsForIssue(db, 1, []);
     expect(getTagsForIssueId(db, 1)).toEqual([]);
 });
+
+it("loads tags beyond SQLite's parameter limit, retaining empty and sorted results", () => {
+    replaceTagsForIssue(db, 1, ["Zebra", "Bike"]);
+    const ids = Array.from({ length: 50000 }, (_, i) => i + 1);
+    const result = getTagsForIssueIds(db, ids);
+    expect(result.size).toBe(50000);
+    expect(result.get(1)).toEqual(["bike", "zebra"]);
+    expect(result.get(50000)).toEqual([]);
+});

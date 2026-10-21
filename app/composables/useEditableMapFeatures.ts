@@ -27,7 +27,7 @@ export function useEditableMapFeatures(
   watch([source, selectedId, enabled], ([currentSource, selectedIssueId, editingEnabled], _, onCleanup) => {
     function syncEditableFeature() {
       const feature = editingEnabled && selectedIssueId !== null
-        ? currentSource?.getFeatures().find(feature => feature.get("id") === selectedIssueId)
+        ? currentSource?.getFeatureById(selectedIssueId)
         : undefined;
       const features = editableFeatures.value;
       // Dragging a vertex also changes the source. If the same

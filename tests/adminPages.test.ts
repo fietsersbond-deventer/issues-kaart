@@ -149,3 +149,37 @@ it("renders text previews/types and opens the selected text editor", async () =>
     editor.vm.$emit("saved");
     expect(refresh).toHaveBeenCalledTimes(1);
 });
+
+it("previews uploaded groups before import, maps new categories and invalidates a stale preview", async () => {
+    const ImportPage = (await import("../app/pages/admin/import/index.vue")).default;
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("useCategories", () => ({ categories, refresh }));
+    vi.stubGlobal("useAuth", () => ({ token: ref("Bearer test") }));
+    const preview = { sourceFeatures: 2, issues: 3, attributes: ["kind"], geometries: { Point: 1, MultiPoint: 1 }, groups: [{ key: '"Park"', label: "Park", sourceFeatures: 1, issues: 2 }, { key: '"Plein"', label: "Plein", sourceFeatures: 1, issues: 1 }] };
+    const fetch = vi.fn().mockResolvedValueOnce(preview).mockResolvedValueOnce(preview).mockResolvedValueOnce({ imported: 3 });
+    vi.stubGlobal("$fetch", fetch);
+    const wrapper = mount(ImportPage, { global: { stubs: { ...stubs, VFileInput: Field, VSelect: Field, CategorySelect: Field, VCheckbox: Field, NuxtLink: Slot } } });
+    wrappers.push(wrapper);
+    const field = (label: string) => wrapper.findAllComponents(Field).find(component => component.props("label") === label)!;
+    field("GeoJSON-bestand").vm.$emit("update:modelValue", { name: "dataset.json", size: 100, text: async () => JSON.stringify({ type: "FeatureCollection", features: [{ properties: { kind: "Park" } }] }) });
+    await flushPromises();
+    field("Titel (standaard voor ieder object)").vm.$emit("update:modelValue", "Dataset");
+    field("Beschrijving").vm.$emit("update:modelValue", "Gemeente");
+    field("Categorie-indeling").vm.$emit("update:modelValue", "kind");
+    await flushPromises();
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(wrapper.text()).toContain("3 bewerkbare meldingen");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0]![0]).toBe("/api/admin/import/preview");
+    field("Titel (standaard voor ieder object)").vm.$emit("update:modelValue", "Changed");
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("Importeer 3 meldingen");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    await button(wrapper, "Importeer 3 meldingen").trigger("click");
+    await flushPromises();
+    expect(fetch.mock.calls[2]![1].body.mappings).toEqual([{ key: '"Park"', name: "Park", color: "#2196F3" }, { key: '"Plein"', name: "Plein", color: "#2196F3" }]);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain("3 meldingen geïmporteerd");
+});

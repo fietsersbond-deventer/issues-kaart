@@ -1,21 +1,24 @@
 import toBbox from "@turf/bbox";
-import { featureCollection } from "@turf/helpers";
 import type { BBox, Geometry } from "geojson";
 import { fromLonLat } from "ol/proj";
 
 /** WGS84 bbox of all geometries, undefined when there are none */
 export function getIssuesBbox(
-  issues: { geometry?: Geometry | null }[],
+  issues: { geometry?: Geometry | null; bbox?: BBox }[],
 ): BBox | undefined {
-  const features = issues
-    .filter((issue) => issue.geometry)
-    .map((issue) => ({
-      type: "Feature" as const,
-      properties: {},
-      geometry: issue.geometry as Geometry,
-    }));
-  if (features.length === 0) return undefined;
-  return toBbox(featureCollection(features));
+  let bounds: BBox | undefined;
+  for (const issue of issues) {
+    const bbox = issue.geometry ? toBbox(issue.geometry) : issue.bbox;
+    if (!bbox) continue;
+    if (!bounds) bounds = [...bbox] as BBox;
+    else {
+      bounds[0] = Math.min(bounds[0], bbox[0]);
+      bounds[1] = Math.min(bounds[1], bbox[1]);
+      bounds[2] = Math.max(bounds[2], bbox[2]);
+      bounds[3] = Math.max(bounds[3], bbox[3]);
+    }
+  }
+  return bounds;
 }
 
 /** [west, south, east, north] WGS84 -> EPSG:3857 */

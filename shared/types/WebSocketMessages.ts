@@ -37,6 +37,8 @@ export interface WebSocketEvents {
   "online-users": OnlineUser[];
   "peer-connected": string; // peer ID
 
+  "issues-imported": { count: number; createdBy: string; createdByUserId: number };
+
   // Issue notification messages
   "issue-created": Issue & { createdBy: string; createdByUserId: number };
   "issue-modified": Issue & { modifiedBy: string; modifiedByUserId: number };

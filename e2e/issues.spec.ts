@@ -134,3 +134,64 @@ test("8 — cancel and confirm deletion; deny unauthenticated mutations and non-
   await expect(app.issueList.issueCell("E2E LineString")).toBeVisible();
   await expect(app.issueList.issueCell("E2E Point")).toHaveCount(0);
 });
+
+test("large datasets load viewport geometry without freezing and remain editable", async ({ app, page }) => {
+  test.setTimeout(60000);
+  const { DatabaseSync } = await import("node:sqlite");
+  const { runtime } = await import("./support/runtime.js");
+  const db = new DatabaseSync(runtime().dbPath);
+  try {
+    const insert = db.prepare("INSERT INTO issues (title, description, plain_text, legend_id, geometry) VALUES (?, '<p>Scale dataset</p>', 'Scale dataset', 101, ?)");
+    db.exec("BEGIN");
+    for (let index = 0; index < 27000; index++) {
+      const lon = index < 100 ? 6.157 + (index % 10) * 0.0001 : 4.9;
+      const lat = index < 100 ? 52.251 : 52.37;
+      insert.run(`Scale ${index}`, JSON.stringify({ type: "LineString", coordinates: [[lon, lat], [lon + 0.001, lat + 0.001]] }));
+    }
+    db.exec("COMMIT");
+  } finally { db.close(); }
+  await app.loginPage.login("admin@example.test");
+  const start = Date.now();
+  const catalogue = page.waitForResponse(async response => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/issues" && url.searchParams.get("fields")?.includes("bbox") === true && (await response.finished()) === null;
+  });
+  const viewport = page.waitForResponse(async response => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/issues" && url.searchParams.has("bbox") && (await response.finished()) === null;
+  });
+  await app.issueMap.goto();
+  const metadata = await (await catalogue).json();
+  expect(metadata).toHaveLength(27003);
+  expect(metadata.every((row: { geometry?: unknown }) => row.geometry === undefined)).toBe(true);
+  const visible = await (await viewport).json();
+  expect(visible.length).toBeGreaterThan(0);
+  expect(visible.length).toBeLessThan(200);
+  await expect(app.issueMap.map.canvas).toBeVisible();
+  expect(await page.locator("*").count()).toBeLessThan(3000);
+  expect(Date.now() - start).toBeLessThan(15000);
+  const frameMs = await page.evaluate(() => new Promise<number>(resolve => {
+    const start = performance.now(); requestAnimationFrame(() => resolve(performance.now() - start));
+  }));
+  expect(frameMs).toBeLessThan(1000);
+  console.log(`Scale: catalogue=${metadata.length}, viewport=${visible.length}, load=${Date.now() - start}ms, frame=${Math.round(frameMs)}ms`);
+  // Focus Amsterdam: the overview can still render almost the entire dataset.
+  const denseViewport = page.waitForResponse(async response => {
+    const url = new URL(response.url());
+    if (url.pathname !== "/api/issues" || !url.searchParams.has("bbox") || (await response.finished()) !== null) return false;
+    return (await response.json()).length >= 26900;
+  });
+  await app.issueMap.editIssue(27103);
+  await denseViewport;
+  const denseFrameMs = await page.evaluate(() => new Promise<number>(resolve => {
+    const start = performance.now(); requestAnimationFrame(() => requestAnimationFrame(() => resolve(performance.now() - start)));
+  }));
+  expect(denseFrameMs).toBeLessThan(1000);
+  expect(await page.locator("*").count()).toBeLessThan(3000);
+  console.log(`Scale dense viewport=26900+, frame=${Math.round(denseFrameMs)}ms`);
+  await app.issueMap.editor.title.fill("Scale edited");
+  await app.issueMap.editor.saveSuccessfully("PATCH");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Scale edited", exact: true })).toBeVisible();
+  expect(await page.locator("*").count()).toBeLessThan(3000);
+});

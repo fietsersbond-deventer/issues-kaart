@@ -32,6 +32,7 @@ beforeEach(async () => {
     getEmitter().on("issue:created", emitted);
     getEmitter().on("issue:modified", emitted);
     getEmitter().on("issue:deleted", emitted);
+    getEmitter().on("issues:imported", emitted);
     emitted.mockClear();
 });
 afterEach(() => { getEmitter().removeAllListeners(); db.close(); vi.unstubAllGlobals(); });
@@ -168,7 +169,8 @@ describe("GeoJSON admin import", () => {
         const issue = await routes.get(h.event);
         expect(issue.geometry).toEqual({ type: "Point", coordinates: [4.9, 52.3] });
         expect(issue.description).toContain("&lt;script&gt;");
-        expect(emitted).toHaveBeenCalledTimes(2);
+        expect(emitted).toHaveBeenCalledTimes(1);
+        expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ count: 2 }));
         h.input.body = { title: "Aangepast" };
         expect(await routes.update(h.event)).toMatchObject({ title: "Aangepast" });
     });
@@ -196,3 +198,104 @@ describe("GeoJSON admin import", () => {
         expect(emitted).not.toHaveBeenCalled();
     });
 });
+
+describe("GeoJSON category planning", () => {
+    const geojson = { type: "FeatureCollection", features: [
+        { type: "Feature", properties: { kind: "Park" }, geometry: { type: "MultiPoint", coordinates: [[4, 52], [5, 52]] } },
+        { type: "Feature", properties: { kind: "Plein" }, geometry },
+        { type: "Feature", properties: {}, geometry },
+    ] };
+    const body = () => ({ geojson, title: "Gemeente", description: "Dataset", categoryProperty: "kind" });
+    async function preview() { return (await import("../server/api/admin/import/preview.post")).default(h.event); }
+    async function save() { return (await import("../server/api/admin/import.post")).default(h.event); }
+    it("previews source and split counts without writing, including missing values", async () => {
+        h.input.body = body();
+        const plan = await preview();
+        expect(plan).toMatchObject({ sourceFeatures: 3, issues: 4, attributes: ["kind"], geometries: { MultiPoint: 1, Point: 2 }, groups: [
+            { key: '"Park"', label: "Park", sourceFeatures: 1, issues: 2 },
+            { key: '"Plein"', label: "Plein", sourceFeatures: 1, issues: 1 },
+            { key: "null", label: "(ontbreekt)", sourceFeatures: 1, issues: 1 },
+        ] });
+        expect(db.prepare("SELECT * FROM issues").all()).toEqual([]);
+        expect(emitted).not.toHaveBeenCalled();
+    });
+    it("maps every group to an existing or newly created category in one transaction", async () => {
+        h.input.body = { ...body(), mappings: [
+            { key: '"Park"', name: "Parken", color: "#009E3D" },
+            { key: '"Plein"', legend_id: 2 },
+            { key: "null", legend_id: 1 },
+        ] };
+        expect(await save()).toEqual({ imported: 4 });
+        expect(db.prepare("SELECT name, color FROM legend WHERE name = 'Parken'").get()).toEqual({ name: "Parken", color: "#009E3D" });
+        expect(db.prepare("SELECT l.name, COUNT(*) AS count FROM issues i JOIN legend l ON l.id = i.legend_id GROUP BY l.name ORDER BY l.name").all()).toEqual([{ name: "Parken", count: 2 }, { name: "Parking", count: 1 }, { name: "Routes", count: 1 }]);
+    });
+    it.each([
+        [],
+        [{ key: '"Park"', legend_id: 1 }],
+        [{ key: '"Park"', legend_id: 999 }, { key: '"Plein"', legend_id: 1 }, { key: "null", legend_id: 1 }],
+        [{ key: '"Park"', name: "Parken", color: "invalid" }, { key: '"Plein"', legend_id: 1 }, { key: "null", legend_id: 1 }],
+    ])("rejects incomplete or invalid mappings without writes: %j", async (...mappings) => {
+        h.input.body = { ...body(), mappings };
+        await expect(save()).rejects.toMatchObject({ statusCode: 400 });
+        expect(db.prepare("SELECT COUNT(*) AS n FROM issues").get()!.n).toBe(0);
+        expect(db.prepare("SELECT COUNT(*) AS n FROM legend").get()!.n).toBe(2);
+    });
+    it("rolls back new categories and all issues when any issue fails", async () => {
+        db.exec("CREATE TRIGGER fail_import BEFORE INSERT ON issues WHEN (SELECT COUNT(*) FROM issues) > 0 BEGIN SELECT RAISE(ABORT, 'failed'); END");
+        h.input.body = { ...body(), mappings: [{ key: '"Park"', name: "Parken", color: "#009E3D" }, { key: '"Plein"', legend_id: 1 }, { key: "null", legend_id: 1 }] };
+        await expect(save()).rejects.toThrow("failed");
+        expect(db.prepare("SELECT * FROM issues").all()).toEqual([]);
+        expect(db.prepare("SELECT COUNT(*) AS n FROM legend").get()!.n).toBe(2);
+        expect(emitted).not.toHaveBeenCalled();
+    });
+    it("protects preview and Amsterdam loading with admin authorization", async () => {
+        h.event.context.user = { id: 2, role: "user" };
+        await expect(preview()).rejects.toMatchObject({ statusCode: 403 });
+        await expect((await import("../server/api/admin/import/amsterdam.get")).default(h.event)).rejects.toMatchObject({ statusCode: 403 });
+    });
+});
+
+describe("spatial map queries", () => {
+    it("maintains indexed bounds across create, move and delete and intersects crossing lines", async () => {
+        await create();
+        h.input.body = { title: "Crossing", description: "Line", legend_id: 2, geometry: { type: "LineString", coordinates: [[4, 52], [8, 52]] } };
+        const line = await routes.create(h.event);
+        h.input.query = { fields: "id,geometry", bbox: "5,51,7,53", cat: "2" };
+        expect(await routes.list(h.event)).toEqual([expect.objectContaining({ id: line.id })]);
+        h.input.params.id = String(line.id);
+        h.input.body = { geometry: { type: "Point", coordinates: [10, 50] } };
+        await routes.update(h.event);
+        expect(await routes.list(h.event)).toEqual([]);
+        expect(db.prepare("SELECT min_x FROM issue_bounds WHERE id = ?").get(line.id!)!.min_x).toBe(10);
+        await routes.remove(h.event);
+        expect(db.prepare("SELECT * FROM issue_bounds WHERE id = ?").get(line.id!)).toBeUndefined();
+        h.input.query = { fields: "id,bbox" };
+        expect(await routes.list(h.event)).toEqual([{ id: 1, bbox: expect.arrayContaining([expect.any(Number)]) }]);
+    });
+    it.each([{ bbox: "4,,5,53" }, { bbox: "x" }, { bbox: "4,52,3,53" }, { bbox: "-181,0,10,50" }, { bbox: ["4,52,5,53"] }, { cat: "1;DROP" }, { cat: "0" }])("rejects invalid spatial filters: %j", async query => {
+        h.input.query = query;
+        await expect(routes.list(h.event)).rejects.toMatchObject({ statusCode: 400 });
+    });
+    it("keeps a 27000-row map query bounded to its viewport and omits full geometry from the catalogue", async () => {
+        const insert = db.prepare("INSERT INTO issues (title,description,legend_id,geometry) VALUES ('Scale','Scale',1,?)");
+        db.exec("BEGIN");
+        for (let index = 0; index < 27000; index++) insert.run(JSON.stringify({ type: "Point", coordinates: index < 10 ? [4.9, 52.3] : [6.1, 52.2] }));
+        db.exec("COMMIT");
+        h.input.query = { fields: "id,geometry", bbox: "4.8,52.2,5,52.4", cat: "1" };
+        expect(await routes.list(h.event)).toHaveLength(10);
+        h.input.query = { fields: "id,bbox,tags" };
+        const catalogue = await routes.list(h.event);
+        expect(catalogue).toHaveLength(27000);
+        expect(catalogue.every(row => !("geometry" in row) && Array.isArray(row.bbox))).toBe(true);
+        expect(db.prepare("EXPLAIN QUERY PLAN SELECT id FROM issue_bounds WHERE min_x <= 5 AND max_x >= 4").all().some(row => String(row.detail).includes("VIRTUAL TABLE INDEX"))).toBe(true);
+    });
+});
+
+it("commits a 27000-feature import and publishes exactly one summary", async () => {
+    h.input.body = { title: "Scale", description: "Scale dataset", legend_id: 1, geojson: { type: "FeatureCollection", features: Array.from({ length: 27000 }, () => ({ type: "Feature", geometry, properties: {} })) } };
+    const route = (await import("../server/api/admin/import.post")).default;
+    expect(await route(h.event)).toEqual({ imported: 27000 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM issues").get()!.n).toBe(27000);
+    expect(emitted).toHaveBeenCalledTimes(1);
+    expect(emitted).toHaveBeenCalledWith({ count: 27000, createdBy: "Test Admin", createdByUserId: 1 });
+}, 15000);

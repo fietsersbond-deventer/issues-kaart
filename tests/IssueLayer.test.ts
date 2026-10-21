@@ -97,3 +97,22 @@ describe("IssueLayer met echte OpenLayers-componenten", () => {
     expect(map.removeInteraction).toHaveBeenCalledWith(interaction);
   });
 });
+
+it("loads 27000 lines without per-feature Vue components and preserves unchanged feature identity", async () => {
+  const large = Array.from({ length: 27000 }, (_, index) => issue(index + 1, { type: "LineString", coordinates: [[4.9, 52.3], [4.91, 52.31]] }));
+  mountLayer();
+  await wrapper.setProps({ issues: large });
+  await settle();
+  const source = layer.getSource() as VectorSource;
+  expect(source.getFeatures()).toHaveLength(27000);
+  expect(wrapper.findAllComponents(OlFeature)).toHaveLength(0);
+  expect(wrapper.findAll('*').length).toBeLessThan(20);
+  const retained = source.getFeatureById(27000);
+  expect(retained?.get('title')).toBe('Onderwerp 27000');
+  await wrapper.setProps({ issues: [...large.slice(1, -1), { ...large[26999]!, title: 'Changed' }] });
+  await settle();
+  expect(source.getFeatureById(27000)).toBe(retained);
+  expect(retained?.get('title')).toBe('Changed');
+  expect(source.getFeatureById(1)).toBeNull();
+  expect(source.getFeatures()).toHaveLength(26999);
+}, 15000);

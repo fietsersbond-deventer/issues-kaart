@@ -92,11 +92,13 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     expect(wrapper.findAll("img")).toHaveLength(1);
     receiveList?.({ type: "issue-created" });
     expect(refreshList).toHaveBeenCalledTimes(1);
+    receiveList?.({ type: "issues-imported" });
+    expect(refreshList).toHaveBeenCalledTimes(2);
     socketStatus.value = "CLOSED";
     await flushPromises();
     socketStatus.value = "OPEN";
     await flushPromises();
-    expect(refreshList).toHaveBeenCalledTimes(2);
+    expect(refreshList).toHaveBeenCalledTimes(3);
     wrapper.unmount();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
 });

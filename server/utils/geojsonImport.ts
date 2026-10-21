@@ -1,4 +1,5 @@
 import type { Geometry, Point, LineString, Polygon } from "geojson";
+import type { ImportPreview } from "~~/shared/types/GeojsonImport";
 import { booleanValid } from "@turf/boolean-valid";
 
 type EditableGeometry = Point | LineString | Polygon;
@@ -44,6 +45,7 @@ export function parseGeojsonImport(
   title: string,
   description: string,
   titleProperty?: string,
+  categoryProperty?: string,
 ) {
   const collection = data as {
     type?: string;
@@ -60,8 +62,8 @@ export function parseGeojsonImport(
   ) {
     throw new Error("Upload een GeoJSON FeatureCollection met objecten");
   }
-  if (collection.features.length > 10000)
-    throw new Error("Maximaal 10000 objecten per import");
+  if (collection.features.length > 50000)
+    throw new Error("Maximaal 50000 objecten per import");
   const issues = collection.features.flatMap((feature, index) => {
     try {
       if (feature.type !== "Feature" || !feature.geometry)
@@ -86,6 +88,18 @@ export function parseGeojsonImport(
           throw new Error("Ongeldige WGS84-geometrie");
       }
       const properties = feature.properties ?? {};
+      if (typeof properties !== "object" || Array.isArray(properties))
+        throw new Error("Ongeldige attributen");
+      const categoryValue = categoryProperty
+        ? (properties[categoryProperty] ?? null)
+        : null;
+      if (
+        categoryValue !== null &&
+        !["string", "number", "boolean"].includes(typeof categoryValue)
+      )
+        throw new Error(
+          "Kies een categorieattribuut met tekst, getallen of booleans",
+        );
       const propertyTitle = titleProperty
         ? properties[titleProperty]
         : undefined;
@@ -103,6 +117,15 @@ export function parseGeojsonImport(
         title: issueTitle || title,
         description: `<p>${escapeHtml(description)}</p>${attributes}`,
         geometry,
+        sourceIndex: index,
+        groupKey: categoryProperty ? JSON.stringify(categoryValue) : "all",
+        groupLabel: categoryProperty
+          ? categoryValue === null
+            ? "(ontbreekt)"
+            : categoryValue === ""
+              ? "(leeg)"
+              : String(categoryValue)
+          : "Alle objecten",
       }));
     } catch (error) {
       throw new Error(
@@ -111,7 +134,92 @@ export function parseGeojsonImport(
       );
     }
   });
-  if (issues.length > 10000)
-    throw new Error("Maximaal 10000 geometrieën per import");
+  if (issues.length > 50000)
+    throw new Error("Maximaal 50000 geometrieën per import");
   return issues;
+}
+
+export function prepareGeojsonImport(body: unknown) {
+  const input = body as {
+    geojson?: unknown;
+    title?: unknown;
+    description?: unknown;
+    titleProperty?: unknown;
+    categoryProperty?: unknown;
+  } | null;
+  if (
+    !input ||
+    typeof input.title !== "string" ||
+    !input.title.trim() ||
+    typeof input.description !== "string" ||
+    !input.description.trim() ||
+    (input.titleProperty !== undefined &&
+      typeof input.titleProperty !== "string") ||
+    (input.categoryProperty !== undefined &&
+      typeof input.categoryProperty !== "string")
+  ) {
+    throw new Error(
+      "Titel en beschrijving zijn verplicht; attribuutnamen moeten tekst zijn",
+    );
+  }
+  const issues = parseGeojsonImport(
+    input.geojson,
+    input.title.trim(),
+    input.description.trim(),
+    input.titleProperty as string | undefined,
+    input.categoryProperty as string | undefined,
+  );
+  const collection = input.geojson as {
+    features: {
+      geometry: Geometry;
+      properties?: Record<string, unknown> | null;
+    }[];
+  };
+  const attributes = [
+    ...new Set(
+      collection.features.flatMap((feature) =>
+        Object.keys(feature.properties ?? {}),
+      ),
+    ),
+  ].sort();
+  if (
+    input.categoryProperty &&
+    !attributes.includes(input.categoryProperty as string)
+  )
+    throw new Error("Categorieattribuut bestaat niet");
+  const geometries: Record<string, number> = {};
+  for (const feature of collection.features)
+    geometries[feature.geometry.type] =
+      (geometries[feature.geometry.type] ?? 0) + 1;
+  const groups = new Map<
+    string,
+    { label: string; sources: Set<number>; issues: number }
+  >();
+  for (const issue of issues) {
+    const group = groups.get(issue.groupKey) ?? {
+      label: issue.groupLabel,
+      sources: new Set<number>(),
+      issues: 0,
+    };
+    group.sources.add(issue.sourceIndex);
+    group.issues++;
+    groups.set(issue.groupKey, group);
+  }
+  if (groups.size > 200)
+    throw new Error(
+      "Meer dan 200 categoriegroepen. Kies een ander attribuut of één categorie voor alle objecten.",
+    );
+  const preview: ImportPreview = {
+    sourceFeatures: collection.features.length,
+    issues: issues.length,
+    attributes,
+    geometries,
+    groups: [...groups].map(([key, group]) => ({
+      key,
+      label: group.label,
+      sourceFeatures: group.sources.size,
+      issues: group.issues,
+    })),
+  };
+  return { issues, preview };
 }

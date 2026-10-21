@@ -64,3 +64,13 @@ it("broadcasts one notification per connected peer and never sends to closed pee
     expect(b.send).toHaveBeenCalledTimes(4);
     notify.close(cast(b));
 });
+
+it("broadcasts one bounded notification for a 27000-object import", () => {
+    const p = peer("bulk");
+    notify.open(cast(p));
+    getEmitter().emit("issues:imported", { count: 27000, createdBy: "Admin", createdByUserId: 1 });
+    expect(p.send).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(p.send.mock.calls[0]![0])).toEqual({ type: "issues-imported", payload: { count: 27000, createdBy: "Admin", createdByUserId: 1 } });
+    expect(p.send.mock.calls[0]![0].length).toBeLessThan(200);
+    notify.close(cast(p));
+});

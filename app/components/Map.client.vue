@@ -33,9 +33,10 @@
 
     <MapIssueLayer
       ref="issueLayer"
-      :issues="selectedIssues"
+      :issues="viewportIssues"
       :feature-style="style"
       :modify-enabled="modifyEnabled"
+      :selected-id="selectedId"
       :selected-features="selectedFeatures"
       @modifyend="onModifyEnd"
     />
@@ -45,6 +46,7 @@
     <ol-attribution-control :collapsible="mobile" />
 
     <MapTooltip :is-drawing />
+    <div v-if="viewportError" class="map-load-error" role="alert">{{ viewportError }}</div>
 
     <!-- Selection stays last so the interaction order matches the original map.
          Areas handle their own clicks, so exclude them here. -->
@@ -64,7 +66,7 @@ import type { Feature } from "ol";
 import type IssueLayer from "./map/IssueLayer.vue";
 import type AddFeature from "./map/AddFeature.vue";
 import { click } from "ol/events/condition";
-import { getIssueMapStyle } from "../utils/issueMapStyle";
+import { createIssueMapStyleCache } from "../utils/issueMapStyle";
 // This component puts the map together and connects it to the page layout.
 // BaseLayers sets up the backgrounds; IssueLayer draws the issues and lets users
 // reshape them. Selection, navigation and geometry updates are handled by
@@ -120,6 +122,7 @@ function resetToOriginalExtent() {
 }
 
 const mapRef = useTemplateRef("mapRef");
+const { issues: viewportIssues, error: viewportError } = useMapViewportIssues(mapRef, selectedIssues, selectedId);
 
 const { mobile } = useVDisplay();
 
@@ -151,9 +154,11 @@ const isMapSmall = computed(() => {
 
 // Use the same styling for the issue layer and the selection overlay.
 // Read the current selection and zoom each time OpenLayers calls this function.
+const issuesById = computed(() => new Map(viewportIssues.value.map(issue => [issue.id, issue])));
+const cachedStyle = createIssueMapStyleCache();
 function style(feature: Feature) {
-  const issue = selectedIssues.value.find((issue) => issue.id === feature.get("id"));
-  return getIssueMapStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
+  const issue = issuesById.value.get(feature.get("id"));
+  return cachedStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
 }
 
 // Parents can request a refit or change the background through this ref.
@@ -231,4 +236,8 @@ defineExpose({
   font-weight: bold;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
+</style>
+
+<style scoped>
+.map-load-error { position: absolute; top: 12px; left: 60px; background: white; color: #b71c1c; padding: 12px; z-index: 10; }
 </style>

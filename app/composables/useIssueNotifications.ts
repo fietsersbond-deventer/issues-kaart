@@ -1,3 +1,4 @@
+import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import type { Issue } from "~~/shared/types/Issue";
 
 /**
@@ -16,6 +17,11 @@ export function useIssueNotifications() {
     if (!isAuthenticated.value) return;
 
     switch (parsed.type) {
+      case "issues-imported": {
+        const payload = (parsed as WebSocketMessage<"issues-imported">).payload;
+        snackbar.showMessage(`${payload.count} meldingen geïmporteerd door ${payload.createdBy}`);
+        break;
+      }
       case "issue-created": {
         const payload = parsed.payload as Issue & {
           createdBy: string;

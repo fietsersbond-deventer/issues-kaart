@@ -19,6 +19,7 @@ describe("bewerkselectie", () => {
   ])("selecteert de huidige geometrie bij starten via URL of lijst (%s)", geometry => {
     const scope = effectScope();
     const feature = new Feature({ id: 125, geometry });
+    feature.setId(125);
     const source = shallowRef(new VectorSource({ features: [feature] }));
     const id = ref<number | null>(125);
     const enabled = ref(false);
@@ -40,6 +41,7 @@ describe("bewerkselectie", () => {
     expect(features.value.getLength()).toBe(0);
     const first = new Feature({ id: 125, geometry: new Point([0, 0]) });
     const second = new Feature({ id: 126, geometry: new Point([1, 1]) });
+    first.setId(125); second.setId(126);
     source.value = new VectorSource({ features: [first, second] });
     expect(features.value.getArray()).toEqual([first]);
     first.getGeometry()!.setCoordinates([2, 2]);
@@ -49,6 +51,7 @@ describe("bewerkselectie", () => {
     source.value.removeFeature(second);
     expect(features.value.getLength()).toBe(0);
     const replacement = new Feature({ id: 126, geometry: new Point([3, 3]) });
+    replacement.setId(126);
     source.value.addFeature(replacement);
     expect(features.value.getArray()).toEqual([replacement]);
     enabled.value = false; // drawing or cancelling

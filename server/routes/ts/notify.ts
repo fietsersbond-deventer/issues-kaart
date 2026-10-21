@@ -62,6 +62,11 @@ emitter.on(
   },
 );
 
+emitter.on("issues:imported", (payload: WebSocketEvents["issues-imported"]) => {
+  const message = createNotifyMessage("issues-imported", payload);
+  connectedPeers.forEach(peer => peer.send(message));
+});
+
 export default defineWebSocketHandler({
   open(peer: WebSocketPeer) {
     console.log(`[ws/notify] Connection opened: ${peer.toString()}`);

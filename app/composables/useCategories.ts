@@ -69,6 +69,7 @@ export const useCategories = defineStore("categories", () => {
   }
 
   return {
+    refresh,
     categories,
     getUsage,
     create,

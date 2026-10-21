@@ -13,7 +13,7 @@ beforeEach(async () => {
     path = join(dir, "test.db");
     kml = join(dir, "test.kml");
     const source = await migratedDatabase();
-    const sql = source.prepare("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' ORDER BY type DESC").all();
+    const sql = source.prepare("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name NOT IN ('issue_bounds_node', 'issue_bounds_parent', 'issue_bounds_rowid') ORDER BY CASE type WHEN 'table' THEN 0 ELSE 1 END").all();
     const target = new DatabaseSync(path);
     for (const row of sql)
         target.exec(String(row.sql));
@@ -93,5 +93,34 @@ it("converts municipal GeoJSON geometry types and retains safe attribute text", 
         expect(() => parseGeojsonImport(data(geometry), "Title", "Text")).toThrow();
     }
     expect(parseGeojsonImport(data({ type: "Point", coordinates: [4, 52] }), "Fallback", "Text")[0]!.title).toBe("Fallback");
-    expect(() => parseGeojsonImport({ type: "FeatureCollection", features: Array(10001).fill({}) }, "Title", "Text")).toThrow("10000");
+    expect(() => parseGeojsonImport({ type: "FeatureCollection", features: Array(50001).fill({}) }, "Title", "Text")).toThrow("50000");
+});
+
+it("loads each Amsterdam dataset once and applies every legend filter without silently hiding missing sources", async () => {
+    const { loadAmsterdamImport, parseAmsterdamLegend } = await import("../server/utils/amsterdamImport");
+    const legend = 'NAAM;TABEL;SELECTIEKOLOM;SELECTIE;OBJECTKLEUR\n"Plusnet fiets";NETWORK;FIETS;PLUS;#007A35\n"Hoofdnet fiets";NETWORK;FIETS;HOOFD;#2FD900\n"Voetgangers";NETWORK;VOET;PLUS;#783000\n"Metro";METRO;MODE;Metro;#ff0000\n';
+    const feature = (properties: unknown) => ({ type: "Feature", properties, geometry: { type: "LineString", coordinates: [[4, 52], [5, 53]] } });
+    const fetch = vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes("legenda.php")) return new Response(legend);
+        if (url.includes("KAARTLAAG=METRO")) return new Response("Dataset niet beschikbaar");
+        return new Response(JSON.stringify({ type: "FeatureCollection", features: [feature({ FIETS: "PLUS", VOET: "PLUS" }), feature({ FIETS: "HOOFD" }), feature({ FIETS: "" })] }));
+    });
+    vi.stubGlobal("fetch", fetch);
+    const result = await loadAmsterdamImport();
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(result.sources).toEqual([{ table: "NETWORK", features: 3 }]);
+    expect(result.geojson.features.map(feature => feature.properties![result.categoryProperty])).toEqual(["Plusnet fiets", "Hoofdnet fiets", "Voetgangers"]);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain("METRO");
+    expect(parseAmsterdamLegend('\uFEFFNAAM;TABEL;SELECTIEKOLOM;SELECTIE;OBJECTKLEUR\n"Name; with ""quotes""";TABLE;KEY;VALUE;#ffffff')[0]!.NAAM).toBe('Name; with "quotes"');
+    expect(() => parseAmsterdamLegend("invalid")).toThrow("legenda");
+    fetch.mockResolvedValueOnce(new Response("failure", { status: 503 }));
+    await expect(loadAmsterdamImport()).rejects.toThrow("503");
+});
+
+it("rejects a high-cardinality category attribute before creating an unbounded admin form", async () => {
+    const { prepareGeojsonImport } = await import("../server/utils/geojsonImport");
+    const features = Array.from({ length: 201 }, (_, index) => ({ type: "Feature", properties: { kind: `Unique ${index}` }, geometry: { type: "Point", coordinates: [4, 52] } }));
+    expect(() => prepareGeojsonImport({ geojson: { type: "FeatureCollection", features }, title: "Dataset", description: "Gemeente", categoryProperty: "kind" })).toThrow("200 categoriegroepen");
+    expect(prepareGeojsonImport({ geojson: { type: "FeatureCollection", features }, title: "Dataset", description: "Gemeente" }).preview.groups).toHaveLength(1);
 });

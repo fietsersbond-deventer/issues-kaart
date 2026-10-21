@@ -1,22 +1,29 @@
+import { shallowRef, toRaw, triggerRef, onScopeDispose } from "vue";
 import { defineStore } from "pinia";
-import {
-  isExistingIssue,
-  type Issue,
-  type NewIssue,
-  type MapIssue,
-} from "~~/shared/types/Issue";
+import type { Issue, NewIssue, MapIssue } from "~~/shared/types/Issue";
 import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
 export const useIssues = defineStore("issues", () => {
   const ws = useSharedIssuesWebSocket();
-  const issues = ref<(MapIssue | NewIssue)[]>([]);
+  const issues = shallowRef<(MapIssue | NewIssue)[]>([]);
+  const viewportRevision = ref(0);
+  const indices = new Map<number | undefined, number>();
 
   // Get categories for enriching issues
-  const { categories } = storeToRefs(useCategories());
+  const categoriesStore = useCategories();
+  const { categories } = storeToRefs(categoriesStore);
+
+  const legendsById = computed(
+    () =>
+      new Map(
+        (categories.value ?? []).map((legend) => [legend.id, toRaw(legend)]),
+      ),
+  );
 
   const fetchOptions = {
-    query: { fields: "id,title,legend_id,geometry,imageUrl,tags" },
+    deep: false,
+    query: { fields: "id,title,legend_id,bbox,imageUrl,tags" },
   };
   const {
     data,
@@ -31,57 +38,54 @@ export const useIssues = defineStore("issues", () => {
     hasConnected = true;
   });
 
-  function processIssue<T extends MapIssue | NewIssue>(issue: T): T {
-    if (issue.geometry && typeof issue.geometry === "string") {
-      issue.geometry = JSON.parse(issue.geometry);
+  function processIssue<T extends MapIssue | NewIssue>(input: T): T {
+    const issue = { ...toRaw(input) };
+    if (issue.geometry)
+      issue.geometry =
+        typeof issue.geometry === "string"
+          ? JSON.parse(issue.geometry)
+          : toRaw(issue.geometry);
+    if (issue.legend_id && categories.value) {
+      issue.legend = toRaw(
+        legendsById.value.get(issue.legend_id) ?? issue.legend,
+      );
     }
-
-    // Enrich with legend data if legend_id exists
-    if ("legend_id" in issue && issue.legend_id && categories.value) {
-      const legend = categories.value.find((l) => l.id === issue.legend_id);
-      if (legend) {
-        // Add the full legend object to the issue
-        const enrichedIssue = issue;
-        enrichedIssue.legend = legend;
-        return enrichedIssue;
-      }
-    }
-
-    return issue;
+    return issue as T;
   }
 
-  // Subscribe to WebSocket messages
+  function upsert(issue: MapIssue | NewIssue, invalidate = true) {
+    const index = indices.get(issue.id);
+    if (index === undefined) {
+      indices.set(issue.id, issues.value.length);
+      issues.value.push(issue);
+    } else issues.value[index] = issue;
+    triggerRef(issues);
+    if (invalidate) viewportRevision.value++;
+  }
+
+  function replaceSnapshot(rows: (MapIssue | NewIssue)[]) {
+    indices.clear();
+    rows.forEach((issue, index) => indices.set(issue.id, index));
+    issues.value = rows;
+    viewportRevision.value++;
+  }
+
   const unsubscribe = ws.subscribe((parsed: WebSocketMessage) => {
     switch (parsed.type) {
-      case "issue-created": {
-        const issue = processIssue(parsed.payload as Issue);
-        const existingIndex = issues.value.findIndex((entry) => entry.id === issue.id);
-        if (existingIndex === -1) issues.value.push(issue);
-        else issues.value[existingIndex] = issue;
+      case "issue-created":
+      case "issue-modified":
+        upsert(processIssue(parsed.payload as Issue));
         break;
-      }
-      case "issue-modified": {
-        const issue = processIssue(parsed.payload as Issue);
-        const existingIndex = issues.value.findIndex(
-          (i) => "id" in i && i.id === ("id" in issue ? issue.id : undefined),
-        );
-
-        if (existingIndex !== -1) {
-          issues.value[existingIndex] = issue;
-        } else {
-          issues.value.push(issue);
-        }
-        break;
-      }
       case "issue-deleted": {
-        const payload = (parsed as WebSocketMessage<"issue-deleted">).payload;
-        const issueId = payload.id;
-
-        issues.value = issues.value.filter((i) => i.id !== issueId);
+        const id = (parsed as WebSocketMessage<"issue-deleted">).payload.id;
+        replaceSnapshot(issues.value.filter((issue) => issue.id !== id));
         break;
       }
-      default:
-        console.debug("Unknown WebSocket message type:", parsed.type);
+      case "issues-imported":
+        viewportRevision.value++;
+        refreshIssues();
+        categoriesStore.refresh?.();
+        break;
     }
   });
 
@@ -91,19 +95,11 @@ export const useIssues = defineStore("issues", () => {
   function updateIssue(issue: Issue | NewIssue | null) {
     if (!issue) return;
 
-    const existingIndex = issues.value.findIndex(
-      (i) =>
-        (isNewIssue(issue) && isNewIssue(i)) ||
-        (isExistingIssue(issue) && isExistingIssue(i) && i.id === issue.id),
-    );
-
-    if (existingIndex !== -1) {
-      // Update existing issue in store
-      issues.value[existingIndex] = processIssue(issue);
-    } else {
-      // Add new issue to store
-      issues.value.push(processIssue(issue));
-    }
+    const preview = processIssue(issue);
+    // Only the selected editor record needs a detached geometry snapshot.
+    if (preview.geometry)
+      preview.geometry = structuredClone(toRaw(preview.geometry));
+    upsert(preview, false);
   }
   const throttledUpdate = useThrottleFn(updateIssue, 100);
 
@@ -117,15 +113,15 @@ export const useIssues = defineStore("issues", () => {
   );
 
   // Cleanup subscription when store is disposed
-  onUnmounted(unsubscribe);
+  onScopeDispose(unsubscribe);
 
   watch(
     data,
     (newData) => {
       if (newData) {
-        issues.value = newData.map((issue) => processIssue(issue));
+        replaceSnapshot(newData.map((issue) => processIssue(issue)));
       } else {
-        issues.value = [];
+        replaceSnapshot([]);
       }
       // Keep the editor's local preview when replacing the persisted snapshot.
       if (isEditing.value) updateIssue(issue.value);
@@ -138,7 +134,7 @@ export const useIssues = defineStore("issues", () => {
     categories,
     () => {
       if (issues.value.length > 0) {
-        issues.value = issues.value.map((issue) => processIssue(issue));
+        replaceSnapshot(issues.value.map((issue) => processIssue(issue)));
       }
     },
     { deep: true },
@@ -155,6 +151,7 @@ export const useIssues = defineStore("issues", () => {
 
   return {
     issues,
+    viewportRevision,
     isLoaded,
     refresh,
     ...methods,

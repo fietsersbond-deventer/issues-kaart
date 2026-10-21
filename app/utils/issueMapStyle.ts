@@ -35,8 +35,7 @@ function createPointStyle(
     if (issue.legend?.icon_data_url) {
       const minScale = 0.3; // Small when zoomed out (low zoom values)
       const maxScale = 0.7; // larger when zoomed in (high zoom values)
-      const finalScale =
-        minScale + ((zoom - 10) / 8) * (maxScale - minScale);
+      const finalScale = minScale + ((zoom - 10) / 8) * (maxScale - minScale);
       // Clamp to min/max bounds
       const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
 
@@ -72,13 +71,9 @@ function createPointStyle(
 
     const minRadius = 3; // Small when zoomed out (low zoom values)
     const maxRadius = 7; // Normal size when zoomed in (high zoom values)
-    const finalRadius =
-      minRadius + ((zoom - 10) / 8) * (maxRadius - minRadius);
+    const finalRadius = minRadius + ((zoom - 10) / 8) * (maxRadius - minRadius);
     // Clamp to min/max bounds
-    const clampedRadius = Math.max(
-      minRadius,
-      Math.min(maxRadius, finalRadius),
-    );
+    const clampedRadius = Math.max(minRadius, Math.min(maxRadius, finalRadius));
 
     const circleStyle = new Style({
       image: new Circle({
@@ -163,7 +158,10 @@ function createLineStyle(
   }
 }
 
-function createPolygonStyle(issue: MapIssue | NewIssue, selected: boolean): Style {
+function createPolygonStyle(
+  issue: MapIssue | NewIssue,
+  selected: boolean,
+): Style {
   const issueColor = issue.legend?.color;
   const zIndex = selected ? 1000 : 1;
 
@@ -182,4 +180,50 @@ function createPolygonStyle(issue: MapIssue | NewIssue, selected: boolean): Styl
 function getPolygonFillColor(issue: MapIssue | NewIssue) {
   const color = new Color(issue.legend?.color || "#000000");
   return color.fade(0.5);
+}
+
+/** Share immutable styles by category instead of allocating one per feature/frame. */
+export function createIssueMapStyleCache() {
+  type Entry = {
+    color?: string;
+    icon?: string;
+    image?: string;
+    styles: Map<string, Style | Style[] | undefined>;
+  };
+  const cache = new WeakMap<object, Entry>();
+  const fallback = {};
+  return (
+    feature: Feature,
+    issue: MapIssue | NewIssue | undefined,
+    selected: boolean,
+    zoom: number,
+  ) => {
+    if (!issue) return;
+    const legend = issue.legend;
+    const owner = legend ?? fallback;
+    let entry = cache.get(owner);
+    if (
+      !entry ||
+      entry.color !== legend?.color ||
+      entry.icon !== legend?.icon ||
+      entry.image !== legend?.icon_data_url
+    ) {
+      entry = {
+        color: legend?.color,
+        icon: legend?.icon,
+        image: legend?.icon_data_url,
+        styles: new Map(),
+      };
+      cache.set(owner, entry);
+    }
+    const type = feature.getGeometry()!.getType();
+    const key = `${type}:${selected}:${type === "Point" && legend?.icon ? zoom : ""}`;
+    if (!entry.styles.has(key)) {
+      // Continuous zoom values must not grow the cache indefinitely.
+      if (entry.styles.size >= 64)
+        entry.styles.delete(entry.styles.keys().next().value!);
+      entry.styles.set(key, getIssueMapStyle(feature, issue, selected, zoom));
+    }
+    return entry.styles.get(key);
+  };
 }
