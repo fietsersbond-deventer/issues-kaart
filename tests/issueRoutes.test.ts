@@ -152,3 +152,47 @@ describe("issue persistence contracts with the migrated schema", () => {
         await expect(routes.search(h.event)).rejects.toMatchObject({ statusCode: 400 });
     });
 });
+
+
+describe("GeoJSON admin import", () => {
+    async function runImport() {
+        return (await import("../server/api/admin/import.post")).default(h.event);
+    }
+    beforeEach(() => {
+        h.input.body = { title: "Gemeente", description: "Dataset", legend_id: 1, titleProperty: "NAAM", geojson: { type: "FeatureCollection", features: [{ type: "Feature", properties: { NAAM: "Brug", info: "<script>unsafe</script>" }, geometry: { type: "MultiPoint", coordinates: [[4.9, 52.3], [4.8, 52.4]] } }] } };
+    });
+    it("imports editable parts with attributes, then supports normal editing", async () => {
+        expect(await runImport()).toEqual({ imported: 2 });
+        expect(db.prepare("SELECT title, legend_id FROM issues").all()).toEqual([{ title: "Brug", legend_id: 1 }, { title: "Brug", legend_id: 1 }]);
+        h.input.params.id = "1";
+        const issue = await routes.get(h.event);
+        expect(issue.geometry).toEqual({ type: "Point", coordinates: [4.9, 52.3] });
+        expect(issue.description).toContain("&lt;script&gt;");
+        expect(emitted).toHaveBeenCalledTimes(2);
+        h.input.body = { title: "Aangepast" };
+        expect(await routes.update(h.event)).toMatchObject({ title: "Aangepast" });
+    });
+    it("requires admin and valid metadata", async () => {
+        h.event.context.user = null;
+        await expect(runImport()).rejects.toMatchObject({ statusCode: 401 });
+        h.event.context.user = { id: 2, role: "user" };
+        await expect(runImport()).rejects.toMatchObject({ statusCode: 403 });
+        h.event.context.user = { id: 1, role: "admin" };
+        h.input.body.legend_id = 999;
+        await expect(runImport()).rejects.toMatchObject({ statusCode: 400 });
+        h.input.body = {};
+        await expect(runImport()).rejects.toMatchObject({ statusCode: 400 });
+    });
+    it("rejects invalid features before writing and rolls back database failures", async () => {
+        const original = structuredClone(h.input.body);
+        h.input.body.geojson = { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Point", coordinates: [400, 52] } }] };
+        await expect(runImport()).rejects.toMatchObject({ statusCode: 400 });
+        h.input.body.geojson = {};
+        await expect(runImport()).rejects.toMatchObject({ statusCode: 400 });
+        h.input.body = original;
+        db.exec("CREATE TRIGGER fail_import BEFORE INSERT ON issues WHEN (SELECT COUNT(*) FROM issues) > 0 BEGIN SELECT RAISE(ABORT, 'failed'); END");
+        await expect(runImport()).rejects.toThrow("failed");
+        expect(db.prepare("SELECT * FROM issues").all()).toEqual([]);
+        expect(emitted).not.toHaveBeenCalled();
+    });
+});

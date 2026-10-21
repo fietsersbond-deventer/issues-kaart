@@ -12,6 +12,7 @@
           title="Categorieën"
           to="/admin/legends"
         />
+        <v-list-item v-if="isAdmin" prepend-icon="mdi-upload" title="GeoJSON importeren" to="/admin/import" />
         <v-list-item prepend-icon="mdi-tag" title="Tags" to="/admin/tags" />
 
         <v-list-item

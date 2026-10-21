@@ -71,3 +71,27 @@ it("downloads each distinct remote image once and rejects unsupported or oversiz
     fetch.mockResolvedValueOnce({ ok: true, headers: new Headers({ "content-type": "image/png" }), arrayBuffer: async () => new ArrayBuffer(10 * 1024 * 1024 + 1) });
     await expect(inlineImageUrls('<img src="https://example.test/a">')).rejects.toThrow("10 MB");
 });
+
+it("converts municipal GeoJSON geometry types and retains safe attribute text", async () => {
+    const { parseGeojsonImport } = await import("../server/utils/geojsonImport");
+    const line = [[4, 52], [5, 53]];
+    const polygon = [[[4, 52], [5, 52], [5, 53], [4, 52]]];
+    const data = (geometry: unknown, properties: unknown = null) => ({ type: "FeatureCollection", features: [{ type: "Feature", geometry, properties }] });
+    for (const geometry of [
+        { type: "LineString", coordinates: line },
+        { type: "Polygon", coordinates: polygon },
+        { type: "MultiLineString", coordinates: [line] },
+        { type: "MultiPolygon", coordinates: [polygon] },
+        { type: "GeometryCollection", geometries: [{ type: "Point", coordinates: [4, 52] }] },
+    ]) {
+        const issues = parseGeojsonImport(data(geometry, { nested: { key: "value" }, missing: null, number: 42 }), "Fallback", "Description");
+        expect(issues).toHaveLength(1);
+        expect(issues[0]!.title).toBe("Fallback");
+        expect(issues[0]!.description).toContain("nested");
+    }
+    for (const geometry of [null, { type: "Unknown" }, { type: "Point", coordinates: [] }, { type: "Point", coordinates: [4, NaN] }, { type: "LineString", coordinates: [[4, 52]] }, { type: "GeometryCollection", geometries: [] }]) {
+        expect(() => parseGeojsonImport(data(geometry), "Title", "Text")).toThrow();
+    }
+    expect(parseGeojsonImport(data({ type: "Point", coordinates: [4, 52] }), "Fallback", "Text")[0]!.title).toBe("Fallback");
+    expect(() => parseGeojsonImport({ type: "FeatureCollection", features: Array(10001).fill({}) }, "Title", "Text")).toThrow("10000");
+});
