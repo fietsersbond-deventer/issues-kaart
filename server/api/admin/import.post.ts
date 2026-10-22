@@ -19,20 +19,31 @@ export default defineEventHandler(async (event) => {
       message: error instanceof Error ? error.message : "Ongeldige GeoJSON",
     });
   }
+  const availableKeys = new Set(plan.preview.groups.map((group) => group.key));
+  const selectedKeys: unknown = body.selectedGroupKeys === undefined ? [...availableKeys] : body.selectedGroupKeys;
+  if (
+    !Array.isArray(selectedKeys) ||
+    !selectedKeys.length ||
+    selectedKeys.some((key) => typeof key !== "string" || !availableKeys.has(key)) ||
+    new Set(selectedKeys).size !== selectedKeys.length
+  ) {
+    throw createError({ statusCode: 400, message: "Selecteer minstens één geldige laag" });
+  }
+  const selectedGroups = new Set<string>(selectedKeys);
   // Recompute the plan on save; never trust preview counts or client category IDs.
   const mappings: CategoryMapping[] = body.categoryProperty
     ? body.mappings
     : [{ key: "all", legend_id: body.legend_id }];
   if (
     !Array.isArray(mappings) ||
-    mappings.length !== plan.preview.groups.length
+    mappings.length !== selectedGroups.size
   ) {
     throw createError({
       statusCode: 400,
       message: "Koppel iedere groep aan een categorie",
     });
   }
-  const groupKeys = new Set(plan.preview.groups.map((group) => group.key));
+  const groupKeys = selectedGroups;
   const targets = new Map<string, CategoryMapping>();
   for (const mapping of mappings) {
     if (!mapping || targets.has(mapping.key) || !groupKeys.has(mapping.key))
@@ -99,6 +110,7 @@ export default defineEventHandler(async (event) => {
       categoryIds.set(key, id);
     }
     for (const issue of plan.issues) {
+      if (!selectedGroups.has(issue.groupKey)) continue;
       const description = sanitizeHtml(issue.description);
       insert.run(
         issue.title,

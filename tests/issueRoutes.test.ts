@@ -219,6 +219,19 @@ describe("GeoJSON category planning", () => {
         expect(db.prepare("SELECT * FROM issues").all()).toEqual([]);
         expect(emitted).not.toHaveBeenCalled();
     });
+    it("imports only selected layers without creating categories for skipped groups", async () => {
+        h.input.body = { ...body(), selectedGroupKeys: ['"Park"'], mappings: [{ key: '"Park"', name: "Parken", color: "#009E3D" }] };
+        expect(await save()).toEqual({ imported: 2 });
+        expect(db.prepare("SELECT COUNT(*) AS n FROM issues").get()!.n).toBe(2);
+        expect(db.prepare("SELECT COUNT(*) AS n FROM legend").get()!.n).toBe(3);
+        expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ count: 2 }));
+    });
+    it.each([null, [], ["unknown"], ['"Park"', '"Park"'], "Park", [42]].map(selectedGroupKeys => ({ selectedGroupKeys })))("rejects invalid layer selections without writes: %j", async ({ selectedGroupKeys }) => {
+        h.input.body = { ...body(), selectedGroupKeys, mappings: [] };
+        await expect(save()).rejects.toMatchObject({ statusCode: 400 });
+        expect(db.prepare("SELECT COUNT(*) AS n FROM issues").get()!.n).toBe(0);
+        expect(db.prepare("SELECT COUNT(*) AS n FROM legend").get()!.n).toBe(2);
+    });
     it("maps every group to an existing or newly created category in one transaction", async () => {
         h.input.body = { ...body(), mappings: [
             { key: '"Park"', name: "Parken", color: "#009E3D" },

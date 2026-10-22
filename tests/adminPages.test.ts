@@ -156,7 +156,7 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     vi.stubGlobal("useCategories", () => ({ categories, refresh }));
     vi.stubGlobal("useAuth", () => ({ token: ref("Bearer test") }));
     const preview = { sourceFeatures: 2, issues: 3, attributes: ["kind"], geometries: { Point: 1, MultiPoint: 1 }, groups: [{ key: '"Park"', label: "Park", sourceFeatures: 1, issues: 2 }, { key: '"Plein"', label: "Plein", sourceFeatures: 1, issues: 1 }] };
-    const fetch = vi.fn().mockResolvedValueOnce(preview).mockResolvedValueOnce(preview).mockResolvedValueOnce({ imported: 3 });
+    const fetch = vi.fn().mockResolvedValueOnce(preview).mockResolvedValueOnce(preview).mockResolvedValueOnce({ imported: 2 });
     vi.stubGlobal("$fetch", fetch);
     const wrapper = mount(ImportPage, { global: { stubs: { ...stubs, VFileInput: Field, VSelect: Field, CategorySelect: Field, VCheckbox: Field, NuxtLink: Slot } } });
     wrappers.push(wrapper);
@@ -177,11 +177,17 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     expect(wrapper.text()).not.toContain("Importeer 3 meldingen");
     await wrapper.get("form").trigger("submit");
     await flushPromises();
-    await button(wrapper, "Importeer 3 meldingen").trigger("click");
+    field("Importeer Park").vm.$emit("update:modelValue", []);
     await flushPromises();
-    expect(fetch.mock.calls[2]![1].body.mappings).toEqual([{ key: '"Park"', name: "Park", color: "#2196F3" }, { key: '"Plein"', name: "Plein", color: "#2196F3" }]);
+    expect(button(wrapper, "Importeer 0 meldingen").attributes("disabled")).toBeDefined();
+    field("Importeer Park").vm.$emit("update:modelValue", ['"Park"']);
+    await flushPromises();
+    await button(wrapper, "Importeer 2 meldingen").trigger("click");
+    await flushPromises();
+    expect(fetch.mock.calls[2]![1].body.mappings).toEqual([{ key: '"Park"', name: "Park", color: "#2196F3" }]);
+    expect(fetch.mock.calls[2]![1].body.selectedGroupKeys).toEqual(['"Park"']);
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain("3 meldingen geïmporteerd");
+    expect(wrapper.text()).toContain("2 meldingen geïmporteerd");
 });
 
 it("does not require a missing street attribute when only Amsterdam area layers are available", async () => {

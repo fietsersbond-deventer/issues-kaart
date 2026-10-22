@@ -85,7 +85,7 @@ test("9 — admin manages users, categories, tags and texts; validation and role
   // Tags/categories/texts APIs are intentionally available to authenticated ordinary users; only user management is admin-only.
 });
 
-test("GeoJSON preview separates attribute groups and creates categories only on confirmation", async ({ app, page, request }) => {
+test("GeoJSON preview imports selected layers and creates categories only on confirmation", async ({ app, page, request }) => {
   await app.loginPage.login("admin@example.test");
   await app.issueMap.goto();
   await page.getByRole("link", { name: "Beheer", exact: true }).click();
@@ -93,6 +93,7 @@ test("GeoJSON preview separates attribute groups and creates categories only on 
   const data = { type: "FeatureCollection", features: [
     { type: "Feature", properties: { plein_park: "Park" }, geometry: { type: "MultiPoint", coordinates: [[4.9,52.3],[4.91,52.31]] } },
     { type: "Feature", properties: { plein_park: "Plein" }, geometry: { type: "Point", coordinates: [4.92,52.32] } },
+    { type: "Feature", properties: { plein_park: "Overslaan" }, geometry: { type: "Point", coordinates: [4.93,52.33] } },
   ] };
   await page.locator('input[type="file"]').setInputFiles({ name: "gemeente.geojson", mimeType: "application/geo+json", buffer: Buffer.from(JSON.stringify(data)) });
   await page.getByLabel("Titel (standaard voor ieder object)").fill("Importvoorbeeldtest");
@@ -100,14 +101,20 @@ test("GeoJSON preview separates attribute groups and creates categories only on 
   await page.getByLabel("Categorie-indeling", { exact: true }).press("Enter");
   await page.getByRole("option", { name: "plein_park", exact: true }).click();
   await page.getByRole("button", { name: "Bekijk importvoorbeeld", exact: true }).click();
-  await expect(page.getByText("2 objecten na laagselectie → 3 bewerkbare meldingen.")).toBeVisible();
+  await expect(page.getByText("3 beschikbare objecten → 4 bewerkbare meldingen.")).toBeVisible();
   expect((await (await request.get("/api/issues?fields=id")).json()).length).toBe(3);
   await expect(page.getByLabel("Nieuwe categorie voor Park", { exact: true })).toHaveValue("Park");
   await expect(page.getByLabel("Nieuwe categorie voor Plein", { exact: true })).toHaveValue("Plein");
+  await page.getByRole("button", { name: "Selectie wissen", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Importeer 0 meldingen", exact: true })).toBeDisabled();
+  await page.getByRole("checkbox", { name: "Importeer Park", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Importeer Plein", exact: true }).check();
+  await expect(page.getByLabel("Nieuwe categorie voor Overslaan", { exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Importeer 3 meldingen", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "3 meldingen geïmporteerd." })).toBeVisible();
   const rows = await (await request.get("/api/issues?fields=id,title,legend_id")).json();
   const categories = await (await request.get("/api/legends")).json();
+  expect(categories.some((category: { name: string }) => category.name === "Overslaan")).toBe(false);
   const parks = categories.find((category: { name: string }) => category.name === "Park");
   const squares = categories.find((category: { name: string }) => category.name === "Plein");
   expect(rows.filter((row: { legend_id: number }) => row.legend_id === parks.id)).toHaveLength(2);

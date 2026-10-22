@@ -105,7 +105,7 @@
       <v-card-title>Importvoorbeeld</v-card-title>
       <v-card-text>
         <p>
-          {{ preview.sourceFeatures }} objecten na laagselectie →
+          {{ preview.sourceFeatures }} beschikbare objecten →
           {{ preview.issues }} bewerkbare meldingen.
         </p>
         <p v-if="preview.lineSegments" class="mb-4">
@@ -131,9 +131,22 @@
               .join(", ")
           }}.
         </p>
+        <p class="mb-2">
+          Vink de lagen aan die je wilt importeren.
+          {{ selectedGroups.length }} van {{ preview.groups.length }} lagen geselecteerd.
+        </p>
+        <v-btn
+          :disabled="loading"
+          @click="selectedGroupKeys = preview.groups.map((group) => group.key)"
+          >Alles selecteren</v-btn
+        >
+        <v-btn :disabled="loading" @click="selectedGroupKeys = []"
+          >Selectie wissen</v-btn
+        >
         <v-table>
           <thead>
             <tr>
+              <th>Importeren</th>
               <th>Groep</th>
               <th>Objecten</th>
               <th>Meldingen</th>
@@ -142,6 +155,15 @@
           </thead>
           <tbody>
             <tr v-for="group in preview.groups" :key="group.key">
+              <td>
+                <v-checkbox
+                  v-model="selectedGroupKeys"
+                  :value="group.key"
+                  :label="`Importeer ${group.label}`"
+                  :disabled="loading"
+                  hide-details
+                />
+              </td>
               <td>{{ group.label }}</td>
               <td>{{ group.sourceFeatures }}</td>
               <td>{{ group.issues }}</td>
@@ -150,21 +172,21 @@
                   v-model="targets[group.key]!.legend_id"
                   :items="categoryChoices"
                   :label="`Categorie voor ${group.label}`"
-                  :disabled="loading"
+                  :disabled="loading || !selectedGroupKeys.includes(group.key)"
                   hide-details
                 />
                 <template v-if="targets[group.key]!.legend_id === null">
                   <v-text-field
                     v-model="targets[group.key]!.name"
                     :label="`Nieuwe categorie voor ${group.label}`"
-                    :disabled="loading"
+                    :disabled="loading || !selectedGroupKeys.includes(group.key)"
                     hide-details
                   />
                   <v-text-field
                     v-model="targets[group.key]!.color"
                     :label="`Kleur voor ${group.label}`"
                     type="color"
-                    :disabled="loading"
+                    :disabled="loading || !selectedGroupKeys.includes(group.key)"
                     hide-details
                   />
                 </template>
@@ -184,7 +206,7 @@
           :loading="loading"
           :disabled="!canImport"
           @click="submit"
-          >Importeer {{ preview.issues }} meldingen</v-btn
+          >Importeer {{ selectedIssueCount }} meldingen</v-btn
         >
       </v-card-text>
     </v-card>
@@ -220,6 +242,13 @@ const mergeProperty = ref<string | null>(null);
 const title = ref("");
 const description = ref("");
 const preview = shallowRef<ImportPreview | null>(null);
+const selectedGroupKeys = ref<string[]>([]);
+const selectedGroups = computed(() =>
+  preview.value?.groups.filter((group) => selectedGroupKeys.value.includes(group.key)) ?? [],
+);
+const selectedIssueCount = computed(() =>
+  selectedGroups.value.reduce((count, group) => count + group.issues, 0),
+);
 const targets = ref<
   Record<string, { legend_id: number | null; name: string; color: string }>
 >({});
@@ -239,9 +268,10 @@ const canImport = computed(
   () =>
     !loading.value &&
     preview.value &&
+    selectedGroups.value.length > 0 &&
     (!warnings.value.length || acceptMissing.value) &&
     (categoryProperty.value
-      ? preview.value.groups.every((group) => {
+      ? selectedGroups.value.every((group) => {
           const target = targets.value[group.key];
           return (
             target &&
@@ -378,6 +408,7 @@ async function inspect() {
         ];
       }),
     );
+    selectedGroupKeys.value = result.groups.map((group) => group.key);
     preview.value = result;
   } catch (cause) {
     showFailure(cause);
@@ -390,7 +421,7 @@ async function submit() {
   loading.value = true;
   error.value = "";
   try {
-    const mappings = preview.value!.groups.map((group) => {
+    const mappings = selectedGroups.value.map((group) => {
       const target = targets.value[group.key]!;
       return target.legend_id === null
         ? { key: group.key, name: target.name, color: target.color }
@@ -399,7 +430,7 @@ async function submit() {
     const result = await $fetch<{ imported: number }>("/api/admin/import", {
       method: "POST",
       headers: headers.value,
-      body: { ...requestBody(), legend_id: categoryId.value, mappings },
+      body: { ...requestBody(), legend_id: categoryId.value, mappings, selectedGroupKeys: selectedGroupKeys.value },
     });
     imported.value = result.imported;
     preview.value = null;
