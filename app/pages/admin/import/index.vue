@@ -1,108 +1,155 @@
 <template>
   <div style="max-width: 1000px">
     <h1 class="text-h4 mb-4">GeoJSON importeren</h1>
-    <p class="mb-4">
-      Upload GeoJSON in WGS84 of laad de Plus- en Hoofdnettenkaart van
-      Amsterdam. Controleer de groepen en aantallen voordat je importeert. Elk
-      object wordt een bewerkbare melding; meervoudige geometrieën worden
-      opgesplitst. Opnieuw importeren maakt nieuwe meldingen.
-    </p>
-    <v-btn
-      class="mb-4"
-      :loading="loading"
-      :disabled="loading"
-      @click="loadAmsterdam"
-      >Laad Amsterdam Plus- en Hoofdnetten</v-btn
+    <nav aria-label="Importstappen" class="import-steps mb-6">
+      <ol>
+        <li v-for="(label, index) in stepLabels" :key="label">
+          <button
+            type="button"
+            :aria-current="step === index + 1 ? 'step' : undefined"
+            :disabled="loading || imported !== null || index + 1 > step"
+            @click="step = index + 1"
+          >
+            <span class="import-step-number">{{ index + 1 }}</span>
+            {{ label }}
+          </button>
+        </li>
+      </ol>
+    </nav>
+    <v-alert v-if="error" type="error" class="my-4" role="alert">{{
+      error
+    }}</v-alert>
+    <section
+      v-show="step === 1 && imported === null"
+      aria-labelledby="source-heading"
     >
-    <v-file-input
-      v-model="file"
-      label="GeoJSON-bestand"
-      accept=".geojson,.json,application/geo+json,application/json"
-      :disabled="loading"
-    />
-    <p v-if="sourceName" class="mb-4">Bron: {{ sourceName }}</p>
-    <v-alert v-if="warnings.length" type="warning" class="mb-4">
-      <p v-for="warning in warnings" :key="warning">{{ warning }}</p>
-      <v-checkbox
-        v-model="acceptMissing"
-        label="Ik wil alleen de beschikbare lagen importeren"
-        :disabled="loading"
-        hide-details
-      />
-    </v-alert>
-    <v-form @submit.prevent="inspect">
-      <v-text-field
-        v-model="title"
-        label="Titel (standaard voor ieder object)"
-        :disabled="loading"
-      />
-      <v-textarea
-        v-model="description"
-        label="Beschrijving"
-        :disabled="loading"
-      />
-      <v-select
-        v-model="titleProperty"
-        :items="attributes"
-        label="Attribuut voor titel (optioneel)"
-        clearable
-        :disabled="loading"
-        hint="Zonder waarde wordt de standaardtitel gebruikt."
-        persistent-hint
-      />
-      <v-checkbox
-        v-model="mergeLines"
-        label="Aansluitende lijnsegmenten samenvoegen"
-        :disabled="loading"
-        hide-details
-      />
-      <p class="text-body-2 mb-4">
-        Alleen dezelfde straatnaam, categorie en overige attributen worden
-        samengevoegd. Alleen exacte eindpunten tellen; vertakkingen en gaten
-        blijven apart. Punten en vlakken veranderen niet.
+      <h2 id="source-heading" class="text-h6 mb-3">Kies een bron</h2>
+      <p class="mb-4">
+        Upload GeoJSON in WGS84 of laad de Plus- en Hoofdnettenkaart van
+        Amsterdam.
       </p>
-      <v-select
-        v-if="mergeLines"
-        v-model="mergeProperty"
-        :items="attributes"
-        label="Straatattribuut voor samenvoegen"
-        :disabled="loading"
-        hint="Segmenten zonder straatnaam worden niet samengevoegd."
-        persistent-hint
-      />
-      <v-select
-        v-model="categoryProperty"
-        :items="[
-          { title: 'Eén categorie voor alle objecten', value: '' },
-          ...attributes.map((value) => ({ title: value, value })),
-        ]"
-        label="Categorie-indeling"
-        :disabled="loading"
-      />
-      <CategorySelect
-        v-if="!categoryProperty"
-        v-model="categoryId"
-        :legends="categories || []"
-        label="Categorie"
-        class="mb-4"
-        :disabled="loading"
-      />
       <v-btn
-        type="submit"
+        class="mb-4"
         :loading="loading"
-        :disabled="
-          !geojson ||
-          !title.trim() ||
-          !description.trim() ||
-          (mergeLines && !mergeProperty) ||
-          loading
-        "
-        >Bekijk importvoorbeeld</v-btn
+        :disabled="loading"
+        @click="loadAmsterdam"
+        >Laad Amsterdam Plus- en Hoofdnetten</v-btn
       >
-    </v-form>
-    <v-alert v-if="error" type="error" class="my-4">{{ error }}</v-alert>
-    <v-card v-if="preview" class="my-4">
-      <v-card-title>Importvoorbeeld</v-card-title>
+      <v-file-input
+        v-model="file"
+        label="GeoJSON-bestand"
+        accept=".geojson,.json,application/geo+json,application/json"
+        :disabled="loading"
+      />
+      <p v-if="sourceName" class="mb-4">Bron: {{ sourceName }}</p>
+      <v-alert v-if="warnings.length" type="warning" class="mb-4">
+        <p v-for="warning in warnings" :key="warning">{{ warning }}</p>
+        <v-checkbox
+          v-model="acceptMissing"
+          label="Ik wil alleen de beschikbare lagen importeren"
+          :disabled="loading"
+          hide-details
+        />
+      </v-alert>
+      <v-btn
+        color="primary"
+        :disabled="
+          !geojson || loading || (warnings.length > 0 && !acceptMissing)
+        "
+        @click="step = 2"
+      >
+        Verder naar instellingen
+      </v-btn>
+    </section>
+    <section
+      v-show="step === 2 && imported === null"
+      aria-labelledby="settings-heading"
+    >
+      <h2 id="settings-heading" class="text-h6 mb-3">Stel de import in</h2>
+      <p class="mb-4">
+        Bron: {{ sourceName }}. Elk object wordt een bewerkbare melding.
+        Meervoudige geometrieën worden opgesplitst.
+      </p>
+      <v-form @submit.prevent="inspect">
+        <v-text-field
+          v-model="title"
+          label="Titel (standaard voor ieder object)"
+          :disabled="loading"
+        />
+        <v-textarea
+          v-model="description"
+          label="Beschrijving"
+          :disabled="loading"
+        />
+        <v-select
+          v-model="titleProperty"
+          :items="attributes"
+          label="Attribuut voor titel (optioneel)"
+          clearable
+          :disabled="loading"
+          hint="Zonder waarde wordt de standaardtitel gebruikt."
+          persistent-hint
+        />
+        <v-checkbox
+          v-model="mergeLines"
+          label="Aansluitende lijnsegmenten samenvoegen"
+          :disabled="loading"
+          hide-details
+        />
+        <p class="text-body-2 mb-4">
+          Alleen dezelfde straatnaam, categorie en overige attributen worden
+          samengevoegd. Alleen exacte eindpunten tellen; vertakkingen en gaten
+          blijven apart. Punten en vlakken veranderen niet.
+        </p>
+        <v-select
+          v-if="mergeLines"
+          v-model="mergeProperty"
+          :items="attributes"
+          label="Straatattribuut voor samenvoegen"
+          :disabled="loading"
+          hint="Segmenten zonder straatnaam worden niet samengevoegd."
+          persistent-hint
+        />
+        <v-select
+          v-model="categoryProperty"
+          :items="[
+            { title: 'Eén categorie voor alle objecten', value: '' },
+            ...attributes.map((value) => ({ title: value, value })),
+          ]"
+          label="Categorie-indeling"
+          :disabled="loading"
+        />
+        <CategorySelect
+          v-if="!categoryProperty"
+          v-model="categoryId"
+          :legends="categories || []"
+          label="Categorie"
+          class="mb-4"
+          :disabled="loading"
+        />
+        <v-btn
+          type="submit"
+          :loading="loading"
+          :disabled="
+            !geojson ||
+            !title.trim() ||
+            !description.trim() ||
+            (mergeLines && !mergeProperty) ||
+            loading
+          "
+          >Bekijk importvoorbeeld</v-btn
+        >
+        <v-btn class="ml-2" :disabled="loading" @click="step = 1">Vorige</v-btn>
+      </v-form>
+    </section>
+    <v-card
+      v-if="preview && step === 3 && imported === null"
+      class="my-4"
+      variant="flat"
+    >
+      <v-card-title
+        ><h2 class="text-h6">Selecteer lagen en importeer</h2></v-card-title
+      >
       <v-card-text>
         <p>
           {{ preview.sourceFeatures }} beschikbare objecten →
@@ -133,7 +180,8 @@
         </p>
         <p class="mb-2">
           Vink de lagen aan die je wilt importeren.
-          {{ selectedGroups.length }} van {{ preview.groups.length }} lagen geselecteerd.
+          {{ selectedGroups.length }} van {{ preview.groups.length }} lagen
+          geselecteerd.
         </p>
         <v-btn
           :disabled="loading"
@@ -143,7 +191,7 @@
         <v-btn :disabled="loading" @click="selectedGroupKeys = []"
           >Selectie wissen</v-btn
         >
-        <v-table>
+        <v-table height="min(55vh, 560px)" fixed-header>
           <thead>
             <tr>
               <th>Importeren</th>
@@ -179,14 +227,18 @@
                   <v-text-field
                     v-model="targets[group.key]!.name"
                     :label="`Nieuwe categorie voor ${group.label}`"
-                    :disabled="loading || !selectedGroupKeys.includes(group.key)"
+                    :disabled="
+                      loading || !selectedGroupKeys.includes(group.key)
+                    "
                     hide-details
                   />
                   <v-text-field
                     v-model="targets[group.key]!.color"
                     :label="`Kleur voor ${group.label}`"
                     type="color"
-                    :disabled="loading || !selectedGroupKeys.includes(group.key)"
+                    :disabled="
+                      loading || !selectedGroupKeys.includes(group.key)
+                    "
                     hide-details
                   />
                 </template>
@@ -200,6 +252,10 @@
             </tr>
           </tbody>
         </v-table>
+        <p class="mt-4">Opnieuw importeren maakt nieuwe meldingen.</p>
+        <v-btn class="mt-4 mr-2" :disabled="loading" @click="step = 2"
+          >Vorige</v-btn
+        >
         <v-btn
           class="mt-4"
           color="primary"
@@ -212,7 +268,8 @@
     </v-card>
     <v-alert v-if="imported !== null" type="success" class="my-4"
       >{{ imported }} meldingen geïmporteerd.
-      <NuxtLink to="/kaart">Naar de kaart</NuxtLink></v-alert
+      <NuxtLink to="/kaart">Naar de kaart</NuxtLink>
+      <v-btn class="ml-3" @click="startNewImport">Nieuwe import</v-btn></v-alert
     >
   </div>
 </template>
@@ -229,6 +286,8 @@ useTitle("GeoJSON importeren");
 const categoriesStore = useCategories();
 const { categories } = storeToRefs(categoriesStore);
 const { token } = useAuth();
+const step = ref(1);
+const stepLabels = ["Bron", "Instellingen", "Lagen en import"];
 const file = ref<File | null>(null);
 const geojson = shallowRef<unknown>(null);
 const amsterdam = shallowRef<AmsterdamImport | null>(null);
@@ -243,8 +302,11 @@ const title = ref("");
 const description = ref("");
 const preview = shallowRef<ImportPreview | null>(null);
 const selectedGroupKeys = ref<string[]>([]);
-const selectedGroups = computed(() =>
-  preview.value?.groups.filter((group) => selectedGroupKeys.value.includes(group.key)) ?? [],
+const selectedGroups = computed(
+  () =>
+    preview.value?.groups.filter((group) =>
+      selectedGroupKeys.value.includes(group.key),
+    ) ?? [],
 );
 const selectedIssueCount = computed(() =>
   selectedGroups.value.reduce((count, group) => count + group.issues, 0),
@@ -380,6 +442,10 @@ async function loadAmsterdam() {
 }
 async function inspect() {
   if (!geojson.value || loading.value) return;
+  if (preview.value) {
+    step.value = 3;
+    return;
+  }
   loading.value = true;
   error.value = "";
   imported.value = null;
@@ -410,11 +476,30 @@ async function inspect() {
     );
     selectedGroupKeys.value = result.groups.map((group) => group.key);
     preview.value = result;
+    step.value = 3;
   } catch (cause) {
     showFailure(cause);
   } finally {
     loading.value = false;
   }
+}
+function startNewImport() {
+  imported.value = null;
+  error.value = "";
+  sourceName.value = "";
+  title.value = "";
+  description.value = "";
+  titleProperty.value = null;
+  categoryProperty.value = "";
+  categoryId.value = null;
+  mergeLines.value = false;
+  mergeProperty.value = null;
+  amsterdam.value = null;
+  attributes.value = [];
+  targets.value = {};
+  selectedGroupKeys.value = [];
+  acceptMissing.value = false;
+  step.value = 1;
 }
 async function submit() {
   if (!canImport.value) return;
@@ -430,7 +515,12 @@ async function submit() {
     const result = await $fetch<{ imported: number }>("/api/admin/import", {
       method: "POST",
       headers: headers.value,
-      body: { ...requestBody(), legend_id: categoryId.value, mappings, selectedGroupKeys: selectedGroupKeys.value },
+      body: {
+        ...requestBody(),
+        legend_id: categoryId.value,
+        mappings,
+        selectedGroupKeys: selectedGroupKeys.value,
+      },
     });
     imported.value = result.imported;
     preview.value = null;
@@ -444,3 +534,43 @@ async function submit() {
   }
 }
 </script>
+
+<style scoped>
+.import-steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  list-style: none;
+  padding: 0;
+}
+.import-steps button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 3px solid transparent;
+}
+.import-steps button[aria-current="step"] {
+  border-color: rgb(var(--v-theme-primary));
+  font-weight: 600;
+}
+.import-steps button:disabled {
+  opacity: 0.6;
+}
+.import-steps button:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 4px;
+}
+.import-step-number {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+</style>

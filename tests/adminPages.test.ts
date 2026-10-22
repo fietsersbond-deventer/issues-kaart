@@ -163,6 +163,10 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     const field = (label: string) => wrapper.findAllComponents(Field).find(component => component.props("label") === label)!;
     field("GeoJSON-bestand").vm.$emit("update:modelValue", { name: "dataset.json", size: 100, text: async () => JSON.stringify({ type: "FeatureCollection", features: [{ properties: { kind: "Park" } }] }) });
     await flushPromises();
+    expect(wrapper.get('[aria-labelledby="settings-heading"]').isVisible()).toBe(false);
+    await button(wrapper, "Verder naar instellingen").trigger("click");
+    expect(wrapper.get('[aria-labelledby="source-heading"]').isVisible()).toBe(false);
+    expect(wrapper.get('[aria-labelledby="settings-heading"]').attributes("style")).not.toContain("display: none");
     field("Titel (standaard voor ieder object)").vm.$emit("update:modelValue", "Dataset");
     field("Beschrijving").vm.$emit("update:modelValue", "Gemeente");
     field("Categorie-indeling").vm.$emit("update:modelValue", "kind");
@@ -172,6 +176,7 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     expect(wrapper.text()).toContain("3 bewerkbare meldingen");
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0]![0]).toBe("/api/admin/import/preview");
+    await wrapper.get("nav li:nth-child(2) button").trigger("click");
     field("Titel (standaard voor ieder object)").vm.$emit("update:modelValue", "Changed");
     await flushPromises();
     expect(wrapper.text()).not.toContain("Importeer 3 meldingen");
@@ -188,6 +193,9 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     expect(fetch.mock.calls[2]![1].body.selectedGroupKeys).toEqual(['"Park"']);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(wrapper.text()).toContain("2 meldingen geïmporteerd");
+    await button(wrapper, "Nieuwe import").trigger("click");
+    expect(wrapper.get('[aria-labelledby="source-heading"]').attributes("style")).not.toContain("display: none");
+    expect(wrapper.text()).not.toContain("2 meldingen geïmporteerd");
 });
 
 it("does not require a missing street attribute when only Amsterdam area layers are available", async () => {

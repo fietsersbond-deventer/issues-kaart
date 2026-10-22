@@ -95,7 +95,11 @@ test("GeoJSON preview imports selected layers and creates categories only on con
     { type: "Feature", properties: { plein_park: "Plein" }, geometry: { type: "Point", coordinates: [4.92,52.32] } },
     { type: "Feature", properties: { plein_park: "Overslaan" }, geometry: { type: "Point", coordinates: [4.93,52.33] } },
   ] };
+  await expect(page.getByLabel("Titel (standaard voor ieder object)")).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Verder naar instellingen", exact: true })).toBeDisabled();
   await page.locator('input[type="file"]').setInputFiles({ name: "gemeente.geojson", mimeType: "application/geo+json", buffer: Buffer.from(JSON.stringify(data)) });
+  await page.getByRole("button", { name: "Verder naar instellingen", exact: true }).click();
+  await expect(page.locator('input[type="file"]')).not.toBeVisible();
   await page.getByLabel("Titel (standaard voor ieder object)").fill("Importvoorbeeldtest");
   await page.getByLabel("Beschrijving", { exact: true }).fill("Gemeentelijke dataset");
   await page.getByLabel("Categorie-indeling", { exact: true }).press("Enter");
@@ -110,6 +114,12 @@ test("GeoJSON preview imports selected layers and creates categories only on con
   await page.getByRole("checkbox", { name: "Importeer Park", exact: true }).check();
   await page.getByRole("checkbox", { name: "Importeer Plein", exact: true }).check();
   await expect(page.getByLabel("Nieuwe categorie voor Overslaan", { exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Vorige", exact: true }).click();
+  await expect(page.getByLabel("Titel (standaard voor ieder object)")).toHaveValue("Importvoorbeeldtest");
+  await page.getByRole("button", { name: "Bekijk importvoorbeeld", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: "Importeer Overslaan", exact: true })).not.toBeChecked();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: test.info().outputPath("import-stepper.png"), fullPage: true });
   await page.getByRole("button", { name: "Importeer 3 meldingen", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "3 meldingen geïmporteerd." })).toBeVisible();
   const rows = await (await request.get("/api/issues?fields=id,title,legend_id")).json();
@@ -130,6 +140,7 @@ test("GeoJSON joins road blocks in preview and imports one editable continuous l
   const line = (coordinates: number[][], network = "Plus") => ({ type: "Feature", properties: { STT_NAAM: "Teststraat", network }, geometry: { type: "LineString", coordinates } });
   const data = { type: "FeatureCollection", features: [line([[6.15,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.18,52.25]], "Hoofd")] };
   await page.locator('input[type="file"]').setInputFiles({ name: "roads.geojson", mimeType: "application/geo+json", buffer: Buffer.from(JSON.stringify(data)) });
+  await page.getByRole("button", { name: "Verder naar instellingen", exact: true }).click();
   const merge = page.getByRole("checkbox", { name: "Aansluitende lijnsegmenten samenvoegen", exact: true });
   await expect(merge).toBeChecked();
   await page.getByLabel("Titel (standaard voor ieder object)").fill("Road dataset");
@@ -139,10 +150,12 @@ test("GeoJSON joins road blocks in preview and imports one editable continuous l
   const inspect = page.getByRole("button", { name: "Bekijk importvoorbeeld", exact: true });
   await inspect.click();
   await expect(page.getByText("Lijnsegmenten: 3 → 2 lijnen na samenvoegen.")).toBeVisible();
+  await page.getByRole("button", { name: "Vorige", exact: true }).click();
   await merge.uncheck();
   await expect(page.getByText("Importvoorbeeld", { exact: true })).toHaveCount(0);
   await inspect.click();
   await expect(page.getByText("Lijnsegmenten: 3 → 3 lijnen (samenvoegen uit).")).toBeVisible();
+  await page.getByRole("button", { name: "Vorige", exact: true }).click();
   await merge.check();
   await inspect.click();
   await page.getByRole("button", { name: "Importeer 2 meldingen", exact: true }).click();
