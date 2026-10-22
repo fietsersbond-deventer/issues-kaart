@@ -175,7 +175,7 @@ test("large datasets load viewport geometry without freezing and remain editable
   }));
   expect(frameMs).toBeLessThan(1000);
   console.log(`Scale: catalogue=${metadata.length}, viewport=${visible.length}, load=${Date.now() - start}ms, frame=${Math.round(frameMs)}ms`);
-  // Focus Amsterdam: the overview can still render almost the entire dataset.
+  // Focus the dense area: the overview can still render almost the entire dataset.
   const denseViewport = page.waitForResponse(async response => {
     const url = new URL(response.url());
     if (url.pathname !== "/api/issues" || !url.searchParams.has("bbox") || (await response.finished()) !== null) return false;

@@ -102,7 +102,7 @@ export function parseGeojsonImport(
       }
       const properties = feature.properties ?? {};
       if (typeof properties !== "object" || Array.isArray(properties))
-        throw new Error("Ongeldige attributen");
+        throw new Error("Ongeldige gegevensvelden");
       const categoryValue = categoryProperty
         ? (properties[categoryProperty] ?? null)
         : null;
@@ -111,7 +111,7 @@ export function parseGeojsonImport(
         !["string", "number", "boolean"].includes(typeof categoryValue)
       )
         throw new Error(
-          "Kies een categorieattribuut met tekst, getallen of booleans",
+          "Kies voor de categorie-indeling een gegevensveld met tekst, getallen of ja/nee-waarden",
         );
       const propertyTitle = titleProperty
         ? properties[titleProperty]
@@ -191,7 +191,7 @@ export function prepareGeojsonImport(body: unknown) {
       typeof input.mergeProperty !== "string")
   ) {
     throw new Error(
-      "Titel en beschrijving zijn verplicht; attribuutnamen moeten tekst zijn",
+      "Titel en beschrijving zijn verplicht; veldnamen moeten tekst zijn",
     );
   }
   const segments = parseGeojsonImport(
@@ -219,7 +219,7 @@ export function prepareGeojsonImport(body: unknown) {
     input.categoryProperty &&
     !attributes.includes(input.categoryProperty as string)
   )
-    throw new Error("Categorieattribuut bestaat niet");
+    throw new Error("Gegevensveld voor categorie-indeling bestaat niet");
   if (
     input.mergeLines &&
     (typeof input.mergeProperty !== "string" ||
@@ -227,7 +227,7 @@ export function prepareGeojsonImport(body: unknown) {
       !attributes.includes(input.mergeProperty))
   )
     throw new Error(
-      "Kies een bestaand straatattribuut om lijnen samen te voegen",
+      "Kies een bestaand gegevensveld met de weg- of routenaam om lijnen samen te voegen",
     );
   const issues = input.mergeLines ? mergeLineSegments(segments) : segments;
   const geometries: Record<string, number> = {};
@@ -250,7 +250,7 @@ export function prepareGeojsonImport(body: unknown) {
   }
   if (groups.size > 200)
     throw new Error(
-      "Meer dan 200 categoriegroepen. Kies een ander attribuut of één categorie voor alle objecten.",
+      "Meer dan 200 categoriegroepen. Kies een ander gegevensveld of één categorie voor alle objecten.",
     );
   const preview: ImportPreview = {
     sourceFeatures: collection.features.length,

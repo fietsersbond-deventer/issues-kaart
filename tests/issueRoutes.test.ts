@@ -261,10 +261,9 @@ describe("GeoJSON category planning", () => {
         expect(db.prepare("SELECT COUNT(*) AS n FROM legend").get()!.n).toBe(2);
         expect(emitted).not.toHaveBeenCalled();
     });
-    it("protects preview and Amsterdam loading with admin authorization", async () => {
+    it("protects preview with admin authorization", async () => {
         h.event.context.user = { id: 2, role: "user" };
         await expect(preview()).rejects.toMatchObject({ statusCode: 403 });
-        await expect((await import("../server/api/admin/import/amsterdam.get")).default(h.event)).rejects.toMatchObject({ statusCode: 403 });
     });
 });
 

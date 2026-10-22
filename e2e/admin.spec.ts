@@ -91,9 +91,9 @@ test("GeoJSON preview imports selected layers and creates categories only on con
   await page.getByRole("link", { name: "Beheer", exact: true }).click();
   await page.getByRole("link", { name: "GeoJSON importeren" }).click();
   const data = { type: "FeatureCollection", features: [
-    { type: "Feature", properties: { plein_park: "Park" }, geometry: { type: "MultiPoint", coordinates: [[4.9,52.3],[4.91,52.31]] } },
-    { type: "Feature", properties: { plein_park: "Plein" }, geometry: { type: "Point", coordinates: [4.92,52.32] } },
-    { type: "Feature", properties: { plein_park: "Overslaan" }, geometry: { type: "Point", coordinates: [4.93,52.33] } },
+    { type: "Feature", properties: { type: "Park" }, geometry: { type: "MultiPoint", coordinates: [[4.9,52.3],[4.91,52.31]] } },
+    { type: "Feature", properties: { type: "Plein" }, geometry: { type: "Point", coordinates: [4.92,52.32] } },
+    { type: "Feature", properties: { type: "Overslaan" }, geometry: { type: "Point", coordinates: [4.93,52.33] } },
   ] };
   await expect(page.getByLabel("Titel (standaard voor ieder object)")).not.toBeVisible();
   await expect(page.getByRole("button", { name: "Verder naar instellingen", exact: true })).toBeDisabled();
@@ -103,7 +103,7 @@ test("GeoJSON preview imports selected layers and creates categories only on con
   await page.getByLabel("Titel (standaard voor ieder object)").fill("Importvoorbeeldtest");
   await page.getByLabel("Beschrijving", { exact: true }).fill("Gemeentelijke dataset");
   await page.getByLabel("Categorie-indeling", { exact: true }).press("Enter");
-  await page.getByRole("option", { name: "plein_park", exact: true }).click();
+  await page.getByRole("option", { name: "type", exact: true }).click();
   await page.getByRole("button", { name: "Bekijk importvoorbeeld", exact: true }).click();
   await expect(page.getByText("3 beschikbare objecten → 4 bewerkbare meldingen.")).toBeVisible();
   expect((await (await request.get("/api/issues?fields=id")).json()).length).toBe(3);
@@ -137,12 +137,17 @@ test("GeoJSON preview imports selected layers and creates categories only on con
 test("GeoJSON joins road blocks in preview and imports one editable continuous line", async ({ app, page, request }) => {
   await app.loginPage.login("admin@example.test");
   await page.goto("/admin/import");
-  const line = (coordinates: number[][], network = "Plus") => ({ type: "Feature", properties: { STT_NAAM: "Teststraat", network }, geometry: { type: "LineString", coordinates } });
-  const data = { type: "FeatureCollection", features: [line([[6.15,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.18,52.25]], "Hoofd")] };
+  const line = (coordinates: number[][], network = "Regionaal") => ({ type: "Feature", properties: { street_name: "Teststraat", network }, geometry: { type: "LineString", coordinates } });
+  const data = { type: "FeatureCollection", features: [line([[6.15,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.16,52.25]]), line([[6.17,52.25],[6.18,52.25]], "Lokaal")] };
   await page.locator('input[type="file"]').setInputFiles({ name: "roads.geojson", mimeType: "application/geo+json", buffer: Buffer.from(JSON.stringify(data)) });
   await page.getByRole("button", { name: "Verder naar instellingen", exact: true }).click();
   const merge = page.getByRole("checkbox", { name: "Aansluitende lijnsegmenten samenvoegen", exact: true });
-  await expect(merge).toBeChecked();
+  await expect(merge).not.toBeChecked();
+  await merge.check();
+  await page.getByLabel("Gegevensveld voor samenvoegen", { exact: true }).press("Enter");
+  await page.getByRole("option", { name: "street_name", exact: true }).click();
+  await page.getByLabel("Gegevensveld voor titel (optioneel)", { exact: true }).press("Enter");
+  await page.getByRole("option", { name: "street_name", exact: true }).click();
   await page.getByLabel("Titel (standaard voor ieder object)").fill("Road dataset");
   await page.getByLabel("Beschrijving", { exact: true }).fill("Gemeentelijke wegen");
   await page.getByLabel("Categorie", { exact: true }).press("Enter");

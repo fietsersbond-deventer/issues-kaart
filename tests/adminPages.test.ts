@@ -198,17 +198,34 @@ it("previews uploaded groups before import, maps new categories and invalidates 
     expect(wrapper.text()).not.toContain("2 meldingen geïmporteerd");
 });
 
-it("does not require a missing street attribute when only Amsterdam area layers are available", async () => {
+it("lets any department choose dataset fields explicitly and clears a removed upload", async () => {
     const ImportPage = (await import("../app/pages/admin/import/index.vue")).default;
     vi.stubGlobal("useAuth", () => ({ token: ref("Bearer test") }));
-    const fetch = vi.fn().mockResolvedValueOnce({ geojson: { type: "FeatureCollection", features: [{ type: "Feature", properties: { layer: "Park" }, geometry: { type: "Point", coordinates: [4,52] } }] }, titleProperty: "STT_NAAM", categoryProperty: "layer", sourceUrl: "https://maps.amsterdam.nl", sources: [], layers: [], warnings: ["Network unavailable"] }).mockResolvedValueOnce({ sourceFeatures: 1, issues: 1, geometries: { Point: 1 }, groups: [{ key: '"Park"', label: "Park", sourceFeatures: 1, issues: 1 }] });
+    const fetch = vi.fn().mockResolvedValue({ sourceFeatures: 1, issues: 1, geometries: { LineString: 1 }, groups: [{ key: "all", label: "Alle objecten", sourceFeatures: 1, issues: 1 }] });
     vi.stubGlobal("$fetch", fetch);
     const wrapper = mount(ImportPage, { global: { stubs: { ...stubs, VFileInput: Field, VSelect: Field, CategorySelect: Field, VCheckbox: Field, NuxtLink: Slot } } });
     wrappers.push(wrapper);
-    await button(wrapper, "Laad Amsterdam Plus- en Hoofdnetten").trigger("click");
+    const field = (label: string) => wrapper.findAllComponents(Field).find(component => component.props("label") === label)!;
+    expect(button(wrapper, "Verder naar instellingen").attributes("disabled")).toBeDefined();
+    field("GeoJSON-bestand").vm.$emit("update:modelValue", { name: "routes.json", size: 100, text: async () => JSON.stringify({ type: "FeatureCollection", features: [{ properties: { route_name: "Dorpsstraat", type: "Fietsroute" }, geometry: { type: "LineString", coordinates: [[6,52],[6.1,52]] } }] }) });
     await flushPromises();
+    expect(fetch).not.toHaveBeenCalled();
+    await button(wrapper, "Verder naar instellingen").trigger("click");
+    expect(field("Aansluitende lijnsegmenten samenvoegen").props("modelValue")).toBe(false);
+    expect(field("Gegevensveld voor titel (optioneel)").props("modelValue")).toBeNull();
+    field("Titel (standaard voor ieder object)").vm.$emit("update:modelValue", "Fietsroutes");
+    field("Beschrijving").vm.$emit("update:modelValue", "Inventarisatie afdeling");
+    field("Aansluitende lijnsegmenten samenvoegen").vm.$emit("update:modelValue", true);
+    await flushPromises();
+    expect(button(wrapper, "Bekijk importvoorbeeld").attributes("disabled")).toBeDefined();
+    field("Gegevensveld voor samenvoegen").vm.$emit("update:modelValue", "route_name");
+    field("Gegevensveld voor titel (optioneel)").vm.$emit("update:modelValue", "route_name");
     await wrapper.get("form").trigger("submit");
     await flushPromises();
-    expect(fetch.mock.calls[1]![1].body).toMatchObject({ mergeLines: false });
-    expect(wrapper.text()).toContain("1 bewerkbare meldingen");
+    expect(fetch).toHaveBeenCalledWith("/api/admin/import/preview", expect.objectContaining({ body: expect.objectContaining({ mergeLines: true, mergeProperty: "route_name", titleProperty: "route_name" }) }));
+    await wrapper.get("nav li:first-child button").trigger("click");
+    field("GeoJSON-bestand").vm.$emit("update:modelValue", null);
+    await flushPromises();
+    expect(button(wrapper, "Verder naar instellingen").attributes("disabled")).toBeDefined();
+    expect(wrapper.text()).not.toContain("Bron: routes.json");
 });

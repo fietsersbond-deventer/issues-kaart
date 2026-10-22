@@ -25,16 +25,16 @@
     >
       <h2 id="source-heading" class="text-h6 mb-3">Kies een bron</h2>
       <p class="mb-4">
-        Upload GeoJSON in WGS84 of laad de Plus- en Hoofdnettenkaart van
-        Amsterdam.
+        Importeer kaartgegevens voor je afdeling, bijvoorbeeld fietspaden,
+        oversteekplaatsen of knelpunten. Kies een GeoJSON-bestand (.geojson of
+        .json, maximaal 25 MB) van bijvoorbeeld een gemeente, provincie of je
+        eigen afdeling.
       </p>
-      <v-btn
-        class="mb-4"
-        :loading="loading"
-        :disabled="loading"
-        @click="loadAmsterdam"
-        >Laad Amsterdam Plus- en Hoofdnetten</v-btn
-      >
+      <p class="mb-4">
+        Gebruik lengte- en breedtegraden (WGS84 / EPSG:4326). Heb je een ander
+        kaartformaat of coördinatenstelsel? Exporteer het eerst als GeoJSON in
+        WGS84.
+      </p>
       <v-file-input
         v-model="file"
         label="GeoJSON-bestand"
@@ -42,22 +42,7 @@
         :disabled="loading"
       />
       <p v-if="sourceName" class="mb-4">Bron: {{ sourceName }}</p>
-      <v-alert v-if="warnings.length" type="warning" class="mb-4">
-        <p v-for="warning in warnings" :key="warning">{{ warning }}</p>
-        <v-checkbox
-          v-model="acceptMissing"
-          label="Ik wil alleen de beschikbare lagen importeren"
-          :disabled="loading"
-          hide-details
-        />
-      </v-alert>
-      <v-btn
-        color="primary"
-        :disabled="
-          !geojson || loading || (warnings.length > 0 && !acceptMissing)
-        "
-        @click="step = 2"
-      >
+      <v-btn color="primary" :disabled="!geojson || loading" @click="step = 2">
         Verder naar instellingen
       </v-btn>
     </section>
@@ -79,15 +64,17 @@
         <v-textarea
           v-model="description"
           label="Beschrijving"
+          hint="Vermeld bijvoorbeeld de bron, datum en wat deze gegevens voor je afdeling betekenen."
+          persistent-hint
           :disabled="loading"
         />
         <v-select
           v-model="titleProperty"
           :items="attributes"
-          label="Attribuut voor titel (optioneel)"
+          label="Gegevensveld voor titel (optioneel)"
           clearable
           :disabled="loading"
-          hint="Zonder waarde wordt de standaardtitel gebruikt."
+          hint="Kies bijvoorbeeld het veld met de straatnaam. Zonder keuze gebruiken alle meldingen de standaardtitel."
           persistent-hint
         />
         <v-checkbox
@@ -97,17 +84,17 @@
           hide-details
         />
         <p class="text-body-2 mb-4">
-          Alleen dezelfde straatnaam, categorie en overige attributen worden
-          samengevoegd. Alleen exacte eindpunten tellen; vertakkingen en gaten
-          blijven apart. Punten en vlakken veranderen niet.
+          Alleen dezelfde weg- of routenaam, categorie en overige gegevens
+          worden samengevoegd. Alleen exacte eindpunten tellen; vertakkingen en
+          gaten blijven apart. Punten en vlakken veranderen niet.
         </p>
         <v-select
           v-if="mergeLines"
           v-model="mergeProperty"
           :items="attributes"
-          label="Straatattribuut voor samenvoegen"
+          label="Gegevensveld voor samenvoegen"
           :disabled="loading"
-          hint="Segmenten zonder straatnaam worden niet samengevoegd."
+          hint="Kies het veld met de weg- of routenaam. Segmenten zonder waarde worden niet samengevoegd."
           persistent-hint
         />
         <v-select
@@ -117,6 +104,8 @@
             ...attributes.map((value) => ({ title: value, value })),
           ]"
           label="Categorie-indeling"
+          hint="Kies een gegevensveld om lagen te maken, bijvoorbeeld type of route. Elke unieke waarde wordt een laag die je in de volgende stap kunt aan- of uitvinken en aan een categorie koppelt."
+          persistent-hint
           :disabled="loading"
         />
         <CategorySelect
@@ -168,15 +157,6 @@
               .map(([name, count]) => `${name}: ${count}`)
               .join(", ")
           }}
-        </p>
-        <p v-if="amsterdam" class="mb-4">
-          Een straat kan bij meerdere vervoersnetten horen en krijgt dan per
-          laag een melding. Bronbestanden:
-          {{
-            amsterdam.sources
-              .map((source) => `${source.table}: ${source.features}`)
-              .join(", ")
-          }}.
         </p>
         <p class="mb-2">
           Vink de lagen aan die je wilt importeren.
@@ -275,10 +255,7 @@
 </template>
 
 <script setup lang="ts">
-import type {
-  AmsterdamImport,
-  ImportPreview,
-} from "~~/shared/types/GeojsonImport";
+import type { ImportPreview } from "~~/shared/types/GeojsonImport";
 definePageMeta({
   middleware: ["sidebase-auth", () => useRoles().isAdmin.value || "/admin"],
 });
@@ -290,7 +267,6 @@ const step = ref(1);
 const stepLabels = ["Bron", "Instellingen", "Lagen en import"];
 const file = ref<File | null>(null);
 const geojson = shallowRef<unknown>(null);
-const amsterdam = shallowRef<AmsterdamImport | null>(null);
 const sourceName = ref("");
 const attributes = ref<string[]>([]);
 const categoryId = ref<number | null>(null);
@@ -317,8 +293,6 @@ const targets = ref<
 const loading = ref(false);
 const error = ref("");
 const imported = ref<number | null>(null);
-const warnings = computed(() => amsterdam.value?.warnings ?? []);
-const acceptMissing = ref(false);
 const categoryChoices = computed(() => [
   { title: "Nieuwe categorie", value: null },
   ...(categories.value ?? []).map((category) => ({
@@ -331,7 +305,6 @@ const canImport = computed(
     !loading.value &&
     preview.value &&
     selectedGroups.value.length > 0 &&
-    (!warnings.value.length || acceptMissing.value) &&
     (categoryProperty.value
       ? selectedGroups.value.every((group) => {
           const target = targets.value[group.key];
@@ -391,12 +364,16 @@ watch(
   },
 );
 watch(file, async (current) => {
-  if (!current) return;
+  if (!current) {
+    geojson.value = null;
+    preview.value = null;
+    sourceName.value = "";
+    return;
+  }
   loading.value = true;
   error.value = "";
   geojson.value = null;
   preview.value = null;
-  amsterdam.value = null;
   try {
     if (current.size > 25 * 1024 * 1024)
       throw new Error("Het bestand mag maximaal 25 MB zijn");
@@ -404,42 +381,15 @@ watch(file, async (current) => {
     setData(data);
     sourceName.value = current.name;
     categoryProperty.value = "";
-    mergeLines.value = attributes.value.includes("STT_NAAM");
-    mergeProperty.value = mergeLines.value ? "STT_NAAM" : null;
-    titleProperty.value = mergeProperty.value;
+    mergeLines.value = false;
+    mergeProperty.value = null;
+    titleProperty.value = null;
   } catch (cause) {
     showFailure(cause);
   } finally {
     loading.value = false;
   }
 });
-async function loadAmsterdam() {
-  loading.value = true;
-  error.value = "";
-  preview.value = null;
-  geojson.value = null;
-  amsterdam.value = null;
-  acceptMissing.value = false;
-  try {
-    const data = await $fetch<AmsterdamImport>("/api/admin/import/amsterdam", {
-      headers: headers.value,
-    });
-    amsterdam.value = data;
-    file.value = null;
-    setData(data.geojson);
-    categoryProperty.value = data.categoryProperty;
-    titleProperty.value = data.titleProperty;
-    mergeLines.value = attributes.value.includes(data.titleProperty);
-    mergeProperty.value = mergeLines.value ? data.titleProperty : null;
-    title.value = "Plus- en Hoofdnetten";
-    description.value = `Gemeente Amsterdam — Plus- en Hoofdnetten. Bron: ${data.sourceUrl}`;
-    sourceName.value = "Amsterdam Plus- en Hoofdnetten";
-  } catch (cause) {
-    showFailure(cause);
-  } finally {
-    loading.value = false;
-  }
-}
 async function inspect() {
   if (!geojson.value || loading.value) return;
   if (preview.value) {
@@ -466,10 +416,7 @@ async function inspect() {
           {
             legend_id: existing?.id ?? null,
             name: group.label,
-            color:
-              amsterdam.value?.layers.find(
-                (layer) => layer.name === group.label,
-              )?.color ?? "#2196F3",
+            color: "#2196F3",
           },
         ];
       }),
@@ -494,11 +441,9 @@ function startNewImport() {
   categoryId.value = null;
   mergeLines.value = false;
   mergeProperty.value = null;
-  amsterdam.value = null;
   attributes.value = [];
   targets.value = {};
   selectedGroupKeys.value = [];
-  acceptMissing.value = false;
   step.value = 1;
 }
 async function submit() {

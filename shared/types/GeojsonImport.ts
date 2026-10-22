@@ -1,5 +1,3 @@
-import type { FeatureCollection } from "geojson";
-
 export type ImportGroup = {
   key: string;
   label: string;
@@ -22,14 +20,4 @@ export type CategoryMapping = {
   legend_id?: number;
   name?: string;
   color?: string;
-};
-
-export type AmsterdamImport = {
-  geojson: FeatureCollection;
-  categoryProperty: string;
-  titleProperty: string;
-  layers: { name: string; color: string }[];
-  sources: { table: string; features: number }[];
-  sourceUrl: string;
-  warnings: string[];
 };

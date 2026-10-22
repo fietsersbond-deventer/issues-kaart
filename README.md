@@ -9,6 +9,7 @@ Deze applicatie is gebouwd met Nuxt 4 en biedt:
 - **Interactieve kaart** met OpenLayers voor het weergeven van onderwerpen
 - **Gebruikersbeheer** met authenticatie en autorisatie
 - **Admin dashboard** voor het beheren van onderwerpen, categorieën en gebruikers
+- **GeoJSON-import** voor kaartgegevens van je eigen afdeling of externe bronnen; zie de [handleiding voor afdelingen](docs/geojson-import.md)
 - **Real-time updates** via WebSockets
 - **Meerdere kaartlagen** (luchtfoto, fietskaart, etc.)
 - **Responsive design** voor mobiel en desktop
