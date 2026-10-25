@@ -1,21 +1,19 @@
-import { zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core";
+import { ZxcvbnFactory } from "@zxcvbn-ts/core";
 import * as zxcvbnCommonPackage from "@zxcvbn-ts/language-common";
 import * as zxcvbnEnPackage from "@zxcvbn-ts/language-en";
 
-// Initialize zxcvbn with English language
 const options = {
-  translations: zxcvbnEnPackage.translations,
-  graphs: zxcvbnCommonPackage.adjacencyGraphs,
   dictionary: {
     ...zxcvbnCommonPackage.dictionary,
     ...zxcvbnEnPackage.dictionary,
   },
+  graphs: zxcvbnCommonPackage.adjacencyGraphs,
+  translations: zxcvbnEnPackage.translations,
 };
-
-zxcvbnOptions.setOptions(options);
+const zxcvbn = new ZxcvbnFactory(options);
 
 export function testPassword(password: string) {
-  const result = zxcvbn(password);
+  const result = zxcvbn.check(password);
 
   return {
     score: result.score,
