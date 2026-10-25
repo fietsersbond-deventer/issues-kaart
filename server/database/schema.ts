@@ -47,3 +47,13 @@ export type TextEntry = {
   created_at: string;
   updated_at: string;
 };
+
+export type Comment = {
+  id: number;
+  issue_id: number;
+  author_id: number | null;
+  body: string;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+};

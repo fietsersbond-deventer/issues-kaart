@@ -29,6 +29,7 @@ it("creates the real schema and safely skips every previously applied migration 
     expect(db.prepare("SELECT COUNT(*) AS n FROM _hub_migrations").get()!.n).toBe(count);
     expect(db.prepare("SELECT username FROM users").all()).toEqual([{ username: "keep@example.test" }]);
     expect(db.prepare("PRAGMA table_info(issues)").all().map((row) => row.name)).toContain("plain_text");
+    expect(db.prepare("PRAGMA table_info(comments)").all().map((row) => row.name)).toEqual(["id", "issue_id", "author_id", "body", "created_at", "updated_at", "deleted_at"]);
     db.close();
     vi.stubGlobal("defineNitroPlugin", <T>(plugin: T) => plugin);
     try {

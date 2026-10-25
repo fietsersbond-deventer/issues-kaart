@@ -64,3 +64,42 @@ it("broadcasts one notification per connected peer and never sends to closed pee
     expect(b.send).toHaveBeenCalledTimes(4);
     notify.close(cast(b));
 });
+it("broadcasts comment events to authenticated peers and never leaks to unauthenticated or closed peers", async () => {
+    const authPeer1 = peer("auth-1", "valid");
+    const authPeer2 = peer("auth-2", "valid");
+    const unauthPeer = peer("unauth", "");
+    verify.mockResolvedValue({ id: 1, username: "test", name: "Test", role: "user" });
+
+    await auth.open(cast(authPeer1));
+    await auth.open(cast(authPeer2));
+    await auth.open(cast(unauthPeer));
+
+    authPeer1.send.mockClear();
+    authPeer2.send.mockClear();
+    unauthPeer.send.mockClear();
+
+    const commentData = { id: 10, issue_id: 1, body: "Comment text", author_id: 1, author_name: "Test", createdBy: "Test", createdByUserId: 1 };
+    getEmitter().emit("comment:created", commentData);
+
+    expect(authPeer1.send).toHaveBeenCalledWith(JSON.stringify({ type: "comment-created", payload: commentData }));
+    expect(authPeer2.send).toHaveBeenCalledWith(JSON.stringify({ type: "comment-created", payload: commentData }));
+    expect(unauthPeer.send).not.toHaveBeenCalled();
+
+    auth.close(cast(authPeer1));
+    authPeer1.send.mockClear();
+    authPeer2.send.mockClear();
+
+    const updateData = { id: 10, issue_id: 1, body: "Updated", author_id: 1, author_name: "Test", modifiedBy: "Test", modifiedByUserId: 1 };
+    getEmitter().emit("comment:modified", updateData);
+
+    expect(authPeer1.send).not.toHaveBeenCalled();
+    expect(authPeer2.send).toHaveBeenCalledWith(JSON.stringify({ type: "comment-modified", payload: updateData }));
+
+    const deleteData = { id: 10, issue_id: 1, deletedBy: "Test", deletedByUserId: 1, soft: true };
+    getEmitter().emit("comment:deleted", deleteData);
+
+    expect(authPeer1.send).not.toHaveBeenCalled();
+    expect(authPeer2.send).toHaveBeenCalledWith(JSON.stringify({ type: "comment-deleted", payload: deleteData }));
+
+    auth.close(cast(authPeer2));
+});

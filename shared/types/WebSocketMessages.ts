@@ -1,6 +1,7 @@
 // Shared WebSocket message types for both client and server
 
 import type { Issue } from "./Issue";
+import type { Comment } from "./Comment";
 
 export interface OnlineUser {
   peerId: string;
@@ -46,6 +47,20 @@ export interface WebSocketEvents {
     deletedBy: string;
     deletedByUserId: number;
   };
+
+  // Comment notification messages (authenticated channel only)
+  "comment-created": Comment & { createdBy: string; createdByUserId: number };
+  "comment-modified": Comment & {
+    modifiedBy: string;
+    modifiedByUserId: number;
+  };
+  "comment-deleted": {
+    id: number;
+    issue_id: number;
+    deletedBy: string;
+    deletedByUserId: number;
+    soft: boolean;
+  };
 }
 
 // Generic message structure
@@ -72,6 +87,9 @@ export type PeerConnectedMessage = WebSocketMessage<"peer-connected">;
 export type IssueCreatedMessage = WebSocketMessage<"issue-created">;
 export type IssueModifiedMessage = WebSocketMessage<"issue-modified">;
 export type IssueDeletedMessage = WebSocketMessage<"issue-deleted">;
+export type CommentCreatedMessage = WebSocketMessage<"comment-created">;
+export type CommentModifiedMessage = WebSocketMessage<"comment-modified">;
+export type CommentDeletedMessage = WebSocketMessage<"comment-deleted">;
 
 // Helper functions for type-safe message creation
 export function createWebSocketMessage<T extends keyof WebSocketEvents>(
@@ -119,6 +137,22 @@ export function isIssueMessage(
     message !== null &&
     "type" in message &&
     ["issue-created", "issue-modified", "issue-deleted"].includes(
+      (message as Record<string, unknown>).type as string,
+    )
+  );
+}
+
+export function isCommentMessage(
+  message: unknown,
+): message is
+  | CommentCreatedMessage
+  | CommentModifiedMessage
+  | CommentDeletedMessage {
+  return (
+    typeof message === "object" &&
+    message !== null &&
+    "type" in message &&
+    ["comment-created", "comment-modified", "comment-deleted"].includes(
       (message as Record<string, unknown>).type as string,
     )
   );

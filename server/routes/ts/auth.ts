@@ -16,6 +16,10 @@ import {
   initializePresenceForPeer,
   cleanupPresenceForPeer,
 } from "../../utils/presenceHandler";
+import {
+  registerCommentBroadcastPeer,
+  unregisterCommentBroadcastPeer,
+} from "../../utils/broadcastComment.ts";
 
 export default defineWebSocketHandler({
   async open(peer: WebSocketPeer) {
@@ -52,6 +56,7 @@ export default defineWebSocketHandler({
 
       // Store authenticated session
       setPeerSession(peer.toString(), user);
+      registerCommentBroadcastPeer(peer);
 
       console.log(
         `[ws/auth] Gebruiker ${user.name || user.username} geauthenticeerd (${peer.toString()})`,
@@ -121,6 +126,7 @@ export default defineWebSocketHandler({
 
   close(peer: WebSocketPeer) {
     // Remove authenticated session
+    unregisterCommentBroadcastPeer(peer);
     removePeerSession(peer.toString());
 
     // Cleanup both lock and presence functionality
