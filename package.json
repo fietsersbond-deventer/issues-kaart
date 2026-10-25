@@ -23,7 +23,6 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ci": "vitest run --reporter=verbose --coverage.enabled=false",
-    "migrate": "tsx server/database/runMigrations.ts",
     "import:kml": "tsx scripts/import-google-maps-kml.ts",
     "gebieden": "tsx scripts/gebieden.ts",
     "test:e2e": "pnpm run typecheck:e2e && playwright test",
