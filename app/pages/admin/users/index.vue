@@ -171,7 +171,7 @@ const hasActiveResetTokens = computed(() => {
 });
 
 const runtimeConfig = useRuntimeConfig();
-const appUrl = runtimeConfig.public.appUrl || window.location.origin;
+const appUrl = runtimeConfig.public.appUrl || window?.location.origin;
 const { showSuccess, showError } = useSnackbar();
 
 function getResetLink(user: User): string {

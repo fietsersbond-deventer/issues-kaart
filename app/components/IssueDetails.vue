@@ -2,9 +2,18 @@
   <article>
     <div class="d-flex">
       <h1>{{ issue.title }}</h1>
-      <v-btn variant="text" aria-label="Kopieer URL van dit onderwerp" class="mt-7" @click="copyUrl">
+      <v-btn
+        variant="text"
+        aria-label="Kopieer URL van dit onderwerp"
+        class="mt-7"
+        @click="copyUrl"
+      >
         <v-icon size="28">mdi-share-variant</v-icon>
-        <v-tooltip activator="parent" location="top" text="Kopieer URL van dit onderwerp"/>
+        <v-tooltip
+          activator="parent"
+          location="top"
+          text="Kopieer URL van dit onderwerp"
+        />
       </v-btn>
     </div>
 
@@ -48,7 +57,7 @@ const { showSuccess, showError } = useSnackbar();
 
 async function copyUrl() {
   try {
-    if (navigator?.clipboard?.writeText) {
+    if (navigator?.clipboard?.writeText && window) {
       await navigator.clipboard.writeText(window.location.href);
       showSuccess("URL gekopieerd!");
     } else {

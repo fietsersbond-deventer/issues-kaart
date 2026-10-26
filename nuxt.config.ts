@@ -5,7 +5,7 @@ import { nl } from "vuetify/locale";
 export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
-  ssr: false,
+  ssr: true,
   app: {
     head: {
       link: [{ rel: "icon", type: "image/jpeg", href: "/fietsersbond.jpeg" }],
@@ -143,6 +143,10 @@ export default defineNuxtConfig({
   vuetify: {
     moduleOptions: {
       prefixComposables: true,
+      ssrClientHints: {
+        viewportSize: true,
+        reloadOnFirstRequest: true,
+      },
     },
     vuetifyOptions: {
       /* vuetify options */

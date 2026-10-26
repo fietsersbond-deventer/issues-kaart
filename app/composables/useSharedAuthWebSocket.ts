@@ -33,16 +33,17 @@ const createAuthWebSocketEventBus = () => {
  * Shared WebSocket connection for all authenticated user features (locks + presence)
  * Singleton pattern with reference counting to minimize overhead
  */
-export const useSharedAuthWebSocket = (() => {
+export function useSharedAuthWebSocket() {
   let wsInstance: ReturnType<typeof useWebSocket> | null = null;
   let eventBus: ReturnType<typeof createAuthWebSocketEventBus> | null = null;
   let refCount = 0;
   const peerId = ref<string | null>(null);
+  const requestUrl = useRequestURL();
+  const protocol = requestUrl.toString().startsWith("https") ? "wss" : "ws";
 
   return () => {
     if (!wsInstance) {
       const { token } = useAuth();
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
       // Include JWT token as query parameter for authentication
       // Strip "Bearer " prefix if present - JWT verification expects raw token
@@ -144,4 +145,4 @@ export const useSharedAuthWebSocket = (() => {
       sendMessage, // New type-safe send
     };
   };
-})();
+}
