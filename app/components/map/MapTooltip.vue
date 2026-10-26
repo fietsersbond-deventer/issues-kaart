@@ -6,9 +6,17 @@
       positioning="bottom-center"
     >
       <div class="tooltip">
-        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" >
+        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
         <span class="tooltip-title">{{ tooltipContent }}</span>
-        <Tag v-for="tag in tags" :key="tag.tag" :tag="tag" class="mt-2" />
+        <Tag
+          v-for="tag in selectedTags"
+          :key="tag.tag"
+          :tag="tag"
+          class="mt-2"
+        />
+        <div v-if="overflowTagsCount > 0" class="ml-2 text-gray-500">
+          +{{ overflowTagsCount }} andere tags
+        </div>
       </div>
     </ol-overlay>
   </div>
@@ -57,8 +65,17 @@ function slugsToTags(slugs: string[]) {
   }
 }
 
-let pointerListener: ((evt: MapBrowserEvent) => void) | null =
-  null;
+// get the first 3 tags
+const selectedTags = computed(() => {
+  return tags.value.slice(0, 3);
+});
+
+// count the number of tags that have not been selected
+const overflowTagsCount = computed(() => {
+  return Math.max(tags.value.length - selectedTags.value.length, 0);
+});
+
+let pointerListener: ((evt: MapBrowserEvent) => void) | null = null;
 
 onMounted(() => {
   if (!map) return;
