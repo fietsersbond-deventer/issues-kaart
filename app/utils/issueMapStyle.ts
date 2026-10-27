@@ -33,10 +33,9 @@ function createPointStyle(
   // If the issue has an icon, use it with black circle when selected
   if (issue.legend?.icon) {
     if (issue.legend?.icon_data_url) {
-      const minScale = 0.3; // Small when zoomed out (low zoom values)
+      const minScale = 0.1; // Small when zoomed out (low zoom values)
       const maxScale = 0.7; // larger when zoomed in (high zoom values)
-      const finalScale =
-        minScale + ((zoom - 10) / 8) * (maxScale - minScale);
+      const finalScale = minScale + ((zoom - 10) / 8) * (maxScale - minScale);
       // Clamp to min/max bounds
       const clampedScale = Math.max(minScale, Math.min(maxScale, finalScale));
 
@@ -72,13 +71,9 @@ function createPointStyle(
 
     const minRadius = 3; // Small when zoomed out (low zoom values)
     const maxRadius = 7; // Normal size when zoomed in (high zoom values)
-    const finalRadius =
-      minRadius + ((zoom - 10) / 8) * (maxRadius - minRadius);
+    const finalRadius = minRadius + ((zoom - 10) / 8) * (maxRadius - minRadius);
     // Clamp to min/max bounds
-    const clampedRadius = Math.max(
-      minRadius,
-      Math.min(maxRadius, finalRadius),
-    );
+    const clampedRadius = Math.max(minRadius, Math.min(maxRadius, finalRadius));
 
     const circleStyle = new Style({
       image: new Circle({
@@ -163,7 +158,10 @@ function createLineStyle(
   }
 }
 
-function createPolygonStyle(issue: MapIssue | NewIssue, selected: boolean): Style {
+function createPolygonStyle(
+  issue: MapIssue | NewIssue,
+  selected: boolean,
+): Style {
   const issueColor = issue.legend?.color;
   const zIndex = selected ? 1000 : 1;
 
