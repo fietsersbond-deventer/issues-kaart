@@ -33,7 +33,7 @@ function createPointStyle(
   // If the issue has an icon, use it with black circle when selected
   if (issue.legend?.icon) {
     if (issue.legend?.icon_data_url) {
-      const minScale = 0.1; // Small when zoomed out (low zoom values)
+      const minScale = 0.2; // Small when zoomed out (low zoom values)
       const maxScale = 0.7; // larger when zoomed in (high zoom values)
       const finalScale = minScale + ((zoom - 10) / 8) * (maxScale - minScale);
       // Clamp to min/max bounds
