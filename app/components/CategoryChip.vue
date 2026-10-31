@@ -1,6 +1,5 @@
 <template>
   <v-chip
-    :style="{ marginLeft: '12px' }"
     label
     variant="flat"
     size="small"

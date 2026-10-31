@@ -37,6 +37,7 @@ export default withNuxt(
           minimumDescriptionLength: 10,
         },
       ],
+      "vue/html-self-closing": 0,
     },
   },
   {
