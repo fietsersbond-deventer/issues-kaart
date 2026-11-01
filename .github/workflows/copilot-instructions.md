@@ -1,3 +1,14 @@
+## Git Commits
+
+**CRITICAL:** Never make git commits yourself. Always leave code changes staged or unstaged for the user to commit.
+
+The user must maintain full control over commits and decide when, how, and with which messages to commit changes. After completing code changes:
+
+- Stage changes with `git add` if appropriate
+- Do NOT run `git commit`
+- Do NOT run `git push`
+- Explicitly tell the user that changes are ready to be committed
+
 - treat changes to tsconfig*.json as last resort. Keep changes to a minimum. Every change to a tsconfig*.json should be tested with an 'npm run build' command
 - Every time you choose to apply a rule(s), explicitly state the rule(s) in the output. You can abbreviate the rule description to a single word or phrase
 - always prefer simple solutions
