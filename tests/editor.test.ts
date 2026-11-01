@@ -32,6 +32,7 @@ beforeEach(() => {
     vi.stubGlobal("useAuth", () => ({ data: ref({ name: "Tester" }), token: ref("Bearer token") }));
     vi.stubGlobal("navigateTo", navigate);
     vi.stubGlobal("useRoute", () => ({ params: { id: "draft" }, query: {} }));
+    vi.stubGlobal("useRequestURL", () => new URL("https://issues.example.test/kaart/new"));
     vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
     vi.stubGlobal("$fetch", fetch);
 });
@@ -73,6 +74,37 @@ describe("issue editor persistence boundaries", () => {
 
         expect(slugInput.element.value).toBe("occupied-3");
         expect(getUniqueSlug).toHaveBeenCalledWith("occupied-2", undefined);
+    });
+    it("waits for the title to settle before generating a new slug and shows the pending state", async () => {
+        vi.useFakeTimers();
+        const wrapper = editor({ title: "", description: "text", tags: [] });
+        const titleInput = wrapper.findAll("input")[0]!;
+        const slugInput = wrapper.findAll("input")[1]!;
+
+        await titleInput.setValue("De Brink op slot");
+        expect(slugInput.element.value).toBe("");
+        expect(wrapper.text()).toContain("Wachten tot de titel compleet is");
+        expect(getUniqueSlug).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(slugInput.element.value).toBe("");
+        await vi.advanceTimersByTimeAsync(1);
+        await flushPromises();
+
+        expect(slugInput.element.value).toBe("de-brink-op-slot");
+        expect(wrapper.findAllComponents(Field)[1]!.props("hint"))
+            .toBe("https://issues.example.test/kaart/de-brink-op-slot");
+        expect(getUniqueSlug).toHaveBeenCalledWith("de-brink-op-slot", undefined);
+        vi.useRealTimers();
+    });
+    it("generates a new title slug immediately when the title field loses focus", async () => {
+        const wrapper = editor({ title: "", description: "text", tags: [] });
+        await wrapper.findAll("input")[0]!.setValue("De Brink op slot");
+        wrapper.findAllComponents(Field)[0]!.vm.$emit("blur");
+        await flushPromises();
+
+        expect(wrapper.findAll("input")[1]!.element.value).toBe("de-brink-op-slot");
+        expect(getUniqueSlug).toHaveBeenCalledWith("de-brink-op-slot", undefined);
     });
     it("updates existing issues, exits editing and blocks submission while disconnected", async () => {
         const wrapper = editor({ ...draft(), id: 3 } as Issue);
