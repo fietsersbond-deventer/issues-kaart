@@ -69,8 +69,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       h3:
-        specifier: ^2.0.8
-        version: 2.0.8(crossws@0.4.15(srvx@1.0.7))
+        specifier: ^1.15.11
+        version: 1.15.11
       jose:
         specifier: ^6.2.13
         version: 6.2.13

@@ -4,6 +4,7 @@ import {
   type NewIssue,
   type ExistingIssue,
 } from "~~/shared/types/Issue";
+import { onServerPrefetch } from "vue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
@@ -88,65 +89,90 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     hasConnected = true;
   });
 
+  // Bewaar de promise van de huidige selectie, zodat SSR kan wachten op hetzelfde
+  // verzoek dat de store vult. Zo is geen tweede verzoek voor socialmediagegevens
+  // nodig en blijft de bestaande laadwijze in de browser behouden.
+  let pendingLoad: Promise<void> | undefined;
+  const loadSelectedIssue = async (
+    newId: unknown,
+    onCleanup: (cleanup: () => void) => void,
+  ) => {
+    // Een routewijziging maakt het vorige verzoek ongeldig. Het antwoord mag de
+    // gegevens of foutmelding van een later geselecteerd onderwerp niet vervangen.
+    let current = true;
+    onCleanup(() => {
+      current = false;
+    });
+    loadError.value = "";
+    if (newId === "new") {
+      selectedId.value = null;
+      isEditing.value = true;
+      return;
+    }
+    const identifier = typeof newId === "string" ? newId : "";
+    const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
+    selectedId.value =
+      numericId !== null && Number.isSafeInteger(numericId) && numericId > 0
+        ? numericId
+        : null;
+    isEditing.value = false;
+
+    // Fetch full issue data when selecting an issue
+    if (identifier) {
+      issue.value = null;
+      try {
+        const loadedIssue = await $fetch<Issue>(
+          `/api/issues/${encodeURIComponent(identifier)}`,
+        );
+        if (current) {
+          selectedId.value = loadedIssue.id;
+          issue.value = enrichIssueWithLegend(loadedIssue);
+
+          // Redirect numeric IDs to slugs
+          if (
+            numericId !== null &&
+            loadedIssue.slug &&
+            loadedIssue.slug !== identifier
+          ) {
+            navigateTo(
+              {
+                path: `/kaart/${loadedIssue.slug}`,
+                query: route.query,
+              },
+              { replace: true },
+            );
+          }
+        }
+      } catch (error) {
+        if (!current) return;
+        const status = (error as { statusCode?: number }).statusCode;
+        loadError.value =
+          status === 404
+            ? "Onderwerp niet gevonden"
+            : "Onderwerp kon niet worden geladen";
+      }
+    }
+  };
+
   watch(
     [() => route.params.id, reload],
-    async ([newId], _oldValue, onCleanup) => {
-      let current = true;
-      onCleanup(() => {
-        current = false;
-      });
-      loadError.value = "";
-      if (newId === "new") {
-        selectedId.value = null;
-        isEditing.value = true;
-        return;
-      }
-      const identifier = typeof newId === "string" ? newId : "";
-      const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
-      selectedId.value =
-        numericId !== null && Number.isSafeInteger(numericId) && numericId > 0
-          ? numericId
-          : null;
-      isEditing.value = false;
-
-      // Fetch full issue data when selecting an issue
-      if (identifier) {
-        issue.value = null;
-        try {
-          const loadedIssue = await $fetch<Issue>(
-            `/api/issues/${encodeURIComponent(identifier)}`,
-          );
-          if (current) {
-            selectedId.value = loadedIssue.id;
-            issue.value = enrichIssueWithLegend(loadedIssue);
-
-            // Redirect numeric IDs to slugs
-            if (
-              numericId !== null &&
-              loadedIssue.slug &&
-              loadedIssue.slug !== identifier
-            ) {
-              navigateTo(
-                {
-                  path: `/kaart/${loadedIssue.slug}`,
-                  query: route.query,
-                },
-                { replace: true },
-              );
-            }
-          }
-        } catch (error) {
-          if (!current) return;
-          const status = (error as { statusCode?: number }).statusCode;
-          loadError.value =
-            status === 404
-              ? "Onderwerp niet gevonden"
-              : "Onderwerp kon niet worden geladen";
-        }
-      }
+    ([newId], _oldValue, onCleanup) => {
+      pendingLoad = loadSelectedIssue(newId, onCleanup);
+      return pendingLoad;
     },
-    { immediate: true },
+    // Vue stopt niet-synchrone immediate-watchers tijdens SSR na de eerste uitvoering.
+    // Daardoor zou onCleanup hierboven worden aangeroepen terwijl $fetch nog loopt.
+    // Het antwoord wordt dan ongeldig, ook al is de route niet gewijzigd.
+    // Een synchrone watcher blijft actief tijdens SSR en stelt pendingLoad meteen
+    // in, voordat de server-prefetch-hook deze promise uitleest.
+    { immediate: true, flush: "sync" },
   );
+
+  // Vue wacht op deze hook voordat de component die deze store aanmaakt wordt
+  // gerenderd. Het geselecteerde onderwerp is daardoor beschikbaar wanneer de
+  // pagina en metadata worden opgebouwd, ook voor crawlers zonder JavaScript.
+  // Deze hook draait alleen tijdens SSR; browsernavigatie blijft de watcher gebruiken.
+  onServerPrefetch(() => pendingLoad);
 
   const newIssue: NewIssue = {
     title: "",

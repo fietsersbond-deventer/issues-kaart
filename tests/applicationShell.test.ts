@@ -87,6 +87,7 @@ beforeEach(() => {
   }));
   vi.stubGlobal("useVDisplay", () => ({ mobile }));
   vi.stubGlobal("useTitle", vi.fn());
+  vi.stubGlobal("useIssueOpenGraph", vi.fn());
   vi.stubGlobal("definePageMeta", vi.fn());
   vi.stubGlobal("navigateTo", vi.fn());
   vi.stubGlobal("useMapEventBus", () => ({ provide: vi.fn() }));

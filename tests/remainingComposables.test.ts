@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { defineComponent, h } from "vue";
+import { defineComponent, h, ref } from "vue";
 import { mount } from "@vue/test-utils";
 import { vueGlobals } from "./helpers/vue";
 import type { Issue } from "../shared/types/Issue";
@@ -57,6 +57,24 @@ it("generates issue metadata, adds images when present and supplies empty-conten
     useIssueOpenGraph({ id: 2, title: "", description: "", imageUrl: null } as Issue);
     expect(render!().title).toBe("Onderwerp");
     expect(render!().meta.find((meta) => meta.property === "og:image")).toBeUndefined();
+});
+
+it("updates social previews when an issue loads, changes or is cleared", async () => {
+    let render: () => { meta?: Array<{ property?: string; name?: string; content: string }> };
+    vi.stubGlobal("useHead", (callback: typeof render) => { render = callback; });
+    vi.stubGlobal("useRequestURL", () => new URL("https://example.test/kaart/first"));
+    vi.stubGlobal("useRuntimeConfig", () => ({ public: { organization: { name: "Test Organization" } } }));
+    const { useIssueOpenGraph } = await import("../app/composables/useIssueOpenGraph");
+    const issue = ref<Issue | null>(null);
+    useIssueOpenGraph(issue);
+    expect(render!()).toEqual({});
+    issue.value = { id: 1, slug: "first", title: "First", description: "", imageUrl: "/api/issues/1/image" } as Issue;
+    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/image" });
+    issue.value = { ...issue.value, id: 2, slug: "second", imageUrl: "/api/issues/2/image" };
+    expect(render!().meta).toContainEqual({ property: "og:url", content: "https://example.test/kaart/second" });
+    expect(render!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/2/image" });
+    issue.value = null;
+    expect(render!()).toEqual({});
 });
 
 it("keeps tag separators readable while safely encoding other query characters", async () => {

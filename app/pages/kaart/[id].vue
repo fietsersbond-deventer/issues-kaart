@@ -87,6 +87,8 @@
 </template>
 
 <script setup lang="ts">
+import { isExistingIssue } from "~~/shared/types/Issue";
+
 const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
@@ -107,6 +109,12 @@ function safeToggleEditing() {
 
 const title = computed(() => issue.value?.title ?? "");
 useTitle(title);
+// Registreer de metadata tijdens setup, niet pas in een watcher na het laden.
+// Alleen opgeslagen onderwerpen hebben een deelbare URL en afbeelding; concepten niet.
+// De computed-bron volgt ook vervangingen door navigatie of WebSocket-berichten.
+useIssueOpenGraph(computed(() =>
+  isExistingIssue(issue.value) ? issue.value : null,
+));
 
 if (!id || typeof id !== "string") {
   navigateTo("/kaart");

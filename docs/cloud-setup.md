@@ -31,9 +31,27 @@ opnieuw valideren met de al geactiveerde toolchain:
 bash scripts/validate-agent.sh
 ```
 
+Voor de lokale productiebuild: `pnpm build` en daarna `pnpm start`.
+Het startcommando draait de gebouwde server vanuit de projectmap en leest de
+lokale `.env` als die bestaat. Reeds ingestelde omgevingsvariabelen gaan voor.
+Zo blijven relatieve databasepaden en de migratiemappen gelijk aan development;
+rechtstreeks starten vanuit `.output` verandert die paden. Gebruik voor een
+deployment bij voorkeur een absoluut `NUXT_DB_PATH`.
+
 De HTTP-controle start tijdelijk de productiebuild op 127.0.0.1:3000, controleert
-homepage, loginpagina, issues-API en adminlogin en stopt zijn eigen server.
+homepage, loginpagina, lijst, issues-API en adminlogin en stopt zijn eigen server.
+Twee opeenvolgende ingelogde SSR-verzoeken naar de lijst controleren of de
+geroteerde access- en refresh-tokens via cookies behouden blijven.
 Poort 3000 moet vrij zijn. De login maakt een refresh-token in de lokale DB.
+De auth-configuratie gebruikt `refreshOnlyToken: false`, omdat de backend bij
+iedere refresh ook het refresh-token vervangt.
+De WebSocket-composables delen hun verbinding via VueUse `createSharedComposable`
+in de browser. Tijdens SSR blijft de status per verzoek gescheiden en wordt
+geen WebSocket-verbinding geopend. De URL gebruikt de host van `useRequestURL`,
+niet de huidige paginaroute of `window`.
+De HTTP-controle stuurt ook een Chrome-user-agent en viewport-client-hints naar
+de lijst en kaart. De directe H3-dependency blijft op versie 1, passend bij
+Nitro 2; H3 2 is niet compatibel met de response-headerhelpers voor deze SSR-flow.
 E2E gebruikt een eigen tijdelijke database, SMTP-opvanger en poort 3100; zie
 [browsertests](e2e.md). Chromium-installatie vereist netwerktoegang en kan op
 Linux rootrechten nodig hebben voor systeemlibraries. Rapporten staan in

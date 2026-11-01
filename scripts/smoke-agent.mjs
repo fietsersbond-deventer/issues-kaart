@@ -38,9 +38,24 @@ try {
     if (Date.now() >= deadline) throw new Error('Smoke server did not become ready within 30 seconds.');
     await delay(200);
   }
-  for (const route of ['/', '/login', '/api/issues']) {
+  for (const route of ['/', '/login', '/lijst', '/api/issues']) {
     const response = await fetch(`${baseUrl}${route}`, { signal: AbortSignal.timeout(5000) });
     if (response.status !== 200) throw new Error(`Smoke failed: ${route} returned ${response.status}.`);
+  }
+  const browserHeaders = {
+    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    'sec-ch-viewport-width': '1280',
+    'sec-ch-viewport-height': '800',
+  };
+  for (const route of ['/lijst', '/kaart']) {
+    const page = await fetch(`${baseUrl}${route}`, {
+      headers: browserHeaders, signal: AbortSignal.timeout(5000),
+    });
+    if (page.status !== 200) throw new Error(`Browser SSR failed: ${route} returned ${page.status}.`);
+    if (!page.headers.get('accept-ch')?.toLowerCase().includes('sec-ch-viewport-width')) {
+      throw new Error(`Browser SSR did not advertise viewport client hints: ${route}.`);
+    }
+    await page.text();
   }
   const credentials = JSON.parse(readFileSync(join(root, '.data/local-login.json'), 'utf8'));
   const response = await fetch(`${baseUrl}/api/auth/login`, {
@@ -49,7 +64,26 @@ try {
   });
   const body = await response.json();
   if (response.status !== 200 || !body.token || body.user?.role !== 'admin') throw new Error('Local admin login failed.');
-  console.log('HTTP smoke passed: homepage, login, issues API and admin login.');
+  const cookies = { 'auth.token': body.token, 'auth.refresh-token': body.refreshToken };
+  for (let request = 0; request < 2; request++) {
+    const previousRefreshToken = cookies['auth.refresh-token'];
+    const page = await fetch(`${baseUrl}/lijst`, {
+      headers: { ...browserHeaders, cookie: Object.entries(cookies).map(([name, value]) => `${name}=${encodeURIComponent(value)}`).join('; ') },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (page.status !== 200) throw new Error(`Authenticated list returned ${page.status}.`);
+    for (const header of page.headers.getSetCookie()) {
+      const pair = header.split(';', 1)[0];
+      const separator = pair.indexOf('=');
+      const name = pair.slice(0, separator);
+      if (Object.hasOwn(cookies, name)) cookies[name] = decodeURIComponent(pair.slice(separator + 1));
+    }
+    if (!cookies['auth.token'] || !cookies['auth.refresh-token'] || cookies['auth.refresh-token'] === previousRefreshToken) {
+      throw new Error('SSR did not preserve rotated authentication cookies.');
+    }
+    await page.text();
+  }
+  console.log('HTTP smoke passed: homepage, login, list, issues API, admin login and SSR token rotation.');
 } catch (error) {
   console.error(`HTTP smoke failed: ${error.message}`);
   process.exitCode = 1;

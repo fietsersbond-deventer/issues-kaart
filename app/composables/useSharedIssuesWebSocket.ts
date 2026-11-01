@@ -1,4 +1,4 @@
-import { useWebSocket } from "@vueuse/core";
+import { createSharedComposable, useWebSocket } from "@vueuse/core";
 import type { AnyWebSocketMessage } from "~~/shared/types/WebSocketMessages";
 
 /**
@@ -30,12 +30,12 @@ const createWebSocketEventBus = () => {
  * Shared WebSocket connection for all issue stores
  * Singleton pattern to ensure only one connection and one message processor
  */
-export function useSharedIssuesWebSocket() {
+export const useSharedIssuesWebSocket = createSharedComposable(() => {
   let wsInstance: ReturnType<typeof useWebSocket> | null = null;
   let eventBus: ReturnType<typeof createWebSocketEventBus> | null = null;
-  const requestUrl = useRequestURL().toString().replace(/^http/, "ws");
-
-  const websocketUrl = `${requestUrl}/ts/notify`;
+  const requestUrl = useRequestURL();
+  const protocol = requestUrl.protocol === "https:" ? "wss" : "ws";
+  const websocketUrl = `${protocol}://${requestUrl.host}/ts/notify`;
 
   eventBus = createWebSocketEventBus();
 
@@ -67,4 +67,4 @@ export function useSharedIssuesWebSocket() {
     close: wsInstance.close,
     open: wsInstance.open,
   };
-}
+});

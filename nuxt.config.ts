@@ -90,6 +90,7 @@ export default defineNuxtConfig({
       },
       refresh: {
         isEnabled: true,
+        refreshOnlyToken: false,
         endpoint: { path: "/refresh", method: "post" },
       },
     },
