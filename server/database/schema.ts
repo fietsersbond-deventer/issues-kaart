@@ -48,3 +48,18 @@ export type TextEntry = {
   created_at: string;
   updated_at: string;
 };
+
+export type TagSchema = {
+  id: number;
+  tag: string;
+  label: string | null;
+  description: string | null;
+  icon: string | null;
+  created_at: Date;
+};
+
+export type IssueTagSchema = {
+  issue_id: number;
+  tag_id: number;
+  created_at: Date;
+};

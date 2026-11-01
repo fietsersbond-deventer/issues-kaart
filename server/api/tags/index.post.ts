@@ -25,9 +25,10 @@ export default defineEventHandler(async (event) => {
   });
 
   const row = db
-    .prepare("SELECT tag, label, description, icon FROM tags WHERE tag = ?")
+    .prepare("SELECT id, tag, label, description, icon FROM tags WHERE tag = ?")
     .get(tag) as
     | {
+        id: number;
         tag: string;
         label: string | null;
         description: string | null;
@@ -43,6 +44,7 @@ export default defineEventHandler(async (event) => {
   }
 
   return {
+    id: row.id,
     tag: row.tag,
     label: row.label ?? row.tag,
     description: row.description ?? null,

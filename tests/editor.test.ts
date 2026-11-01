@@ -30,6 +30,7 @@ beforeEach(() => {
     vi.stubGlobal("useConnectionStatus", () => ({ isConnected: connected }));
     vi.stubGlobal("useMatomoTracking", () => ({ trackEvent }));
     vi.stubGlobal("useAuth", () => ({ data: ref({ name: "Tester" }), token: ref("Bearer token") }));
+    vi.stubGlobal("useTagsApi", () => ({ refreshTags: vi.fn() }));
     vi.stubGlobal("navigateTo", navigate);
     vi.stubGlobal("useRoute", () => ({ params: { id: "draft" }, query: {} }));
     vi.stubGlobal("useRequestURL", () => new URL("https://issues.example.test/kaart/new"));

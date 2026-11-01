@@ -392,6 +392,7 @@ const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
 const { data: user, token } = useAuth();
+const { refreshTags } = useTagsApi();
 
 // Zelfde patroon als useIssuesMethods.ts: de server herkent een ingelogde
 // gebruiker via een "Authorization: Bearer <token>"-header (geen cookies),
@@ -413,6 +414,7 @@ async function onSubmit() {
     const username = user.value?.name || "anonymous";
     if (isExistingIssue(issue.value)) {
       const updatedIssue = await update(issue.value.id, issue.value);
+      await refreshTags();
       // Track issue modification in Matomo
       trackEvent(
         "Issue",
@@ -431,6 +433,7 @@ async function onSubmit() {
       }
     } else {
       const result = await create(issue.value);
+      await refreshTags();
       if (isExistingIssue(result)) {
         // Track issue creation in Matomo
         trackEvent(

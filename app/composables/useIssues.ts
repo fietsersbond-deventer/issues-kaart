@@ -144,6 +144,15 @@ export const useIssues = defineStore("issues", () => {
     { deep: true },
   );
 
+  // Refresh issues when tags change (tags are removed/updated)
+  const tagsApi = useTagsApi();
+  watch(
+    () => tagsApi.tags.value,
+    () => {
+      refreshIssues();
+    },
+  );
+
   function refresh() {
     refreshIssues();
   }

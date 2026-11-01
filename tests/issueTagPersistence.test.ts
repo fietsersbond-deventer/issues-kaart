@@ -18,14 +18,17 @@ it("ensures metadata without overwriting labels and supplies fallback metadata f
     ensureTagMetadata(db, ["bike"]);
     db.exec("UPDATE tags SET label = 'Bicycles' WHERE tag = 'bike'");
     ensureTagMetadata(db, ["bike"]);
-    expect([...getTagMetadata(db, ["bike", "new"]).values()]).toEqual([{ tag: "bike", label: "Bicycles", description: null, icon: null }, { tag: "new", label: "new", description: null, icon: null }]);
+    const metadata = [...getTagMetadata(db, ["bike", "new"]).values()];
+    expect(metadata).toHaveLength(2);
+    expect(metadata[0]).toMatchObject({ tag: "bike", label: "Bicycles", description: null, icon: null });
+    expect(metadata[1]).toMatchObject({ tag: "new", label: "new", description: null, icon: null });
     expect(getTagMetadata(db, []).size).toBe(0);
 });
 it("changes descriptions preserving existing label/icon, creates missing metadata and rejects empty tags", () => {
     ensureTagMetadata(db, ["bike"]);
     db.exec("UPDATE tags SET label = NULL, icon = 'mdi-bike' WHERE tag = 'bike'");
     expect(setTagDescription(db, "bike", " Description ")).toBe("bike");
-    expect(getTagMetadata(db, ["bike"]).get("bike")).toEqual({ tag: "bike", label: "bike", icon: "mdi-bike", description: "Description" });
+    expect(getTagMetadata(db, ["bike"]).get("bike")).toMatchObject({ tag: "bike", label: "bike", icon: "mdi-bike", description: "Description" });
     expect(setTagDescription(db, "new", null)).toBe("new");
     expect(setTagDescription(db, "!!!", null)).toBeNull();
 });

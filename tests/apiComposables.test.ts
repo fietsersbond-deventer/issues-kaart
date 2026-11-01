@@ -66,21 +66,21 @@ describe("API composable contracts", () => {
         await expect(texts.updateText("intro", "Lost")).rejects.toThrow("save failed");
         expect(refresh).not.toHaveBeenCalled();
     });
-    it("looks up tag labels and safely encodes slugs on writes", async () => {
+    it("looks up tag labels and uses tag ID on writes", async () => {
         const { useTagsApi } = await import("../app/composables/useTagsApi");
-        data.value = [{ tag: "bike", label: "Bicycle", description: null, icon: null }];
+        data.value = [{ id: 1, tag: "bike", label: "Bicycle", description: null, icon: null }];
         const tags = useTagsApi();
         expect(tags.list.value).toEqual(["bike"]);
         expect(tags.getTag("bike").label).toBe("Bicycle");
-        expect(tags.getTag("unknown")).toEqual({ tag: "unknown", label: "unknown", description: null, icon: null });
+        expect(tags.getTag("unknown")).toMatchObject({ tag: "unknown", label: "unknown", description: null, icon: null });
         await tags.create({ tag: "new" });
-        await tags.update("a/b", { label: "changed" });
-        expect(fetch).toHaveBeenLastCalledWith("/api/tags/a%2Fb", expect.objectContaining({ method: "PATCH", body: { label: "changed" } }));
-        await tags.remove("a/b");
+        await tags.update(1, { label: "changed" });
+        expect(fetch).toHaveBeenLastCalledWith("/api/tags/1", expect.objectContaining({ method: "PATCH", body: { label: "changed" } }));
+        await tags.remove(1);
         expect(refresh).toHaveBeenCalledTimes(3);
         fetch.mockResolvedValueOnce({ success: false });
         refresh.mockClear();
-        await tags.remove("missing");
+        await tags.remove(999);
         expect(refresh).not.toHaveBeenCalled();
     });
     it("refreshes user data after successful writes and retains data on failed updates", async () => {
