@@ -46,6 +46,71 @@ async function create(title = "Safe cycle route") {
     return result;
 }
 describe("issue persistence contracts with the migrated schema", () => {
+    it.each(["", "?tag=veilig&search=fiets%20route"])("stuurt numerieke kaart-URL's naar de slug met behoud van queryparameters: %s", async (query) => {
+        const issue = await create();
+        const redirect = vi.fn();
+        vi.stubGlobal("sendRedirect", redirect);
+        vi.stubGlobal("getRequestURL", () => new URL(`https://example.test/kaart/00${issue.id}${query}`));
+        const middleware = (await import("../server/middleware/redirect-numeric-issue-ids")).default;
+        middleware(h.event);
+        expect(redirect).toHaveBeenCalledExactlyOnceWith(h.event, `/kaart/${issue.slug}${query}`, 302);
+    });
+
+    it("laat niet-numerieke routes, onbekende IDs en onderwerpen zonder slug ongemoeid", async () => {
+        const issue = await create();
+        const redirect = vi.fn();
+        vi.stubGlobal("sendRedirect", redirect);
+        let url = new URL("https://example.test/");
+        vi.stubGlobal("getRequestURL", () => url);
+        const middleware = (await import("../server/middleware/redirect-numeric-issue-ids")).default;
+        for (const path of ["/", "/lijst", `/kaart/${issue.slug}`, `/api/issues/${issue.id}`, "/kaart/999", `/kaart/${issue.id}/extra`]) {
+            url = new URL(path, "https://example.test");
+            middleware(h.event);
+            expect(redirect).not.toHaveBeenCalled();
+        }
+        db.prepare("UPDATE issues SET slug = '' WHERE id = ?").run(issue.id!);
+        url = new URL(`/kaart/${issue.id}`, "https://example.test");
+        middleware(h.event);
+        expect(redirect).not.toHaveBeenCalled();
+    });
+
+    it("maakt zonder tags een onderwerp met aangepaste slug en kan de slug terugzetten naar de titel", async () => {
+        h.input.body = { title: "Titel als slug", slug: " Eigen slug ", description: "<p>Beschrijving</p>", legend_id: 1, geometry };
+        const created = await routes.create(h.event);
+        expect(created).toMatchObject({ slug: "eigen-slug", tags: [], imageUrl: null });
+        expect(db.prepare("SELECT * FROM issue_tags WHERE issue_id = ?").all(created.id!)).toEqual([]);
+        h.input.params.id = String(created.id);
+        h.input.body = { slug: "   " };
+        expect((await routes.update(h.event)).slug).toBe("titel-als-slug");
+        expect((await routes.get(h.event)).slug).toBe("titel-als-slug");
+    });
+
+    it.each([
+        { username: "admin@example.test", expectedName: "admin@example.test" },
+        { username: "", expectedName: "Onbekend" },
+    ])("gebruikt $expectedName in meldingen wanneer de weergavenaam ontbreekt", async ({ username, expectedName }) => {
+        h.event.context.user = { ...h.event.context.user!, name: "", username };
+        const created = await create();
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({
+            id: created.id, createdBy: expectedName, createdByUserId: 1,
+        }));
+        h.input.body = { title: "Gewijzigde titel" };
+        await routes.update(h.event);
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({
+            id: created.id, modifiedBy: expectedName, modifiedByUserId: 1,
+        }));
+    });
+
+    it.each(["create", "update"] as const)("weigert een niet-tekstuele slug bij %s zonder gegevens te wijzigen", async (action) => {
+        const created = await create();
+        emitted.mockClear();
+        h.input.body = { title: "Niet opslaan", slug: 123, description: "<p>Nieuw</p>", legend_id: 1, geometry };
+        await expect(routes[action](h.event)).rejects.toMatchObject({ statusCode: 400 });
+        expect(db.prepare("SELECT COUNT(*) AS count FROM issues").get()).toEqual({ count: 1 });
+        expect((await routes.get(h.event)).title).toBe(created.title);
+        expect(emitted).not.toHaveBeenCalled();
+    });
+
     it("creates sanitized content, searchable plain text and normalized deduplicated tags", async () => {
         const issue = await create();
         expect(issue.slug).toBe("safe-cycle-route");
