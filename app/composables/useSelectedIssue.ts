@@ -114,7 +114,9 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
     selectedId.value =
       numericId !== null && Number.isSafeInteger(numericId) && numericId > 0
         ? numericId
-        : null;
+        // Bij een slug is het ID pas na ophalen bekend. Behoud de selectie,
+        // zodat de kaart niet tussendoor naar het overzicht uitzoomt.
+        : numericId === null && identifier ? selectedId.value : null;
     isEditing.value = false;
 
     // Fetch full issue data when selecting an issue

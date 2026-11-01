@@ -4,6 +4,7 @@ import { computed, defineComponent, h, nextTick, onUnmounted, reactive, ref, wat
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import { renderToString } from "vue/server-renderer";
+import { resolveFocusTarget } from "../app/utils/mapFocusTarget";
 vi.stubGlobal("defineStore", defineStore);
 const { useSelectedIssue } = await import("../app/composables/useSelectedIssue");
 
@@ -38,6 +39,30 @@ beforeEach(async () => {
 afterEach(() => { store.$dispose(); wrapper.unmount(); vi.unstubAllGlobals(); });
 
 describe("geselecteerd onderwerp", () => {
+  it("wacht bij slugnavigatie op het aangeklikte onderwerp zonder eerst het kaartoverzicht te tonen", async () => {
+    let resolveIssue: (value: typeof loadedIssue) => void;
+    vi.mocked(globalThis.$fetch).mockReturnValueOnce(new Promise((resolve) => {
+      resolveIssue = resolve;
+    }));
+    store.selectedId = 2;
+    route.params.id = "ander-onderwerp";
+    await nextTick();
+    expect(store.selectedId).toBe(2);
+    expect(store.issue).toBeNull();
+    const target = () => resolveFocusTarget({
+      prefer: "issue",
+      areaBbox: [5, 51, 7, 53],
+      selectedId: store.selectedId,
+      issue: store.issue,
+      filterActive: false,
+      selectedIssues: [],
+    });
+    expect(target()).toBeUndefined();
+    resolveIssue!({ ...loadedIssue, id: 2 });
+    await nextTick();
+    expect(target()).toMatchObject({ type: "issue", id: 2 });
+  });
+
   it("waits for issue details before completing server rendering", async () => {
     setActivePinia(createPinia());
     let resolveIssue: (value: typeof loadedIssue & { slug: string; imageUrl: string }) => void;

@@ -22,7 +22,10 @@ export const useIssues = defineStore("issues", () => {
     data,
     refresh: refreshIssues,
     status,
-  } = useFetch<MapIssue[]>("/api/issues", fetchOptions);
+  } = useFetch<MapIssue[]>("/api/issues", {
+    ...fetchOptions,
+    immediate: false,
+  });
 
   let hasConnected = ws.status.value === "OPEN";
   watch(ws.status, (state) => {
@@ -130,7 +133,7 @@ export const useIssues = defineStore("issues", () => {
       // Keep the editor's local preview when replacing the persisted snapshot.
       if (isEditing.value) updateIssue(issue.value);
     },
-    { immediate: true },
+    { immediate: true, flush: "sync" },
   );
 
   // Reprocess issues when categories change
@@ -153,6 +156,10 @@ export const useIssues = defineStore("issues", () => {
     },
   );
 
+  async function load() {
+    await refreshIssues();
+  }
+
   function refresh() {
     refreshIssues();
   }
@@ -165,6 +172,7 @@ export const useIssues = defineStore("issues", () => {
   return {
     issues,
     isLoaded,
+    load,
     refresh,
     ...methods,
   };

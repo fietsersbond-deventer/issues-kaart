@@ -54,6 +54,19 @@ it("processes fetched rows, enriches categories reactively and clears unloaded d
     await nextTick();
     expect(store.issues).toEqual([]);
 });
+it("copies fetched rows into the store synchronously for SSR state", async () => {
+    const store = await setup();
+    data.value = [{ id: 1, title: "Issue", geometry, tags: [] }];
+    expect(store.issues).toEqual([{ id: 1, title: "Issue", geometry, tags: [] }]);
+});
+it("awaits the initial issue load before exposing SSR store state", async () => {
+    const store = await setup();
+    refresh.mockImplementationOnce(async () => {
+        data.value = [{ id: 1, title: "Issue", geometry, tags: [] }];
+    });
+    await store.load();
+    expect(store.issues).toEqual([{ id: 1, title: "Issue", geometry, tags: [] }]);
+});
 it("applies created/modified/deleted notifications and upserts unseen modifications", async () => {
     const store = await setup();
     message("issue-created", { id: 1, title: "One", geometry, tags: [] });

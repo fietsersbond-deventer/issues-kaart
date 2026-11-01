@@ -27,6 +27,19 @@ it("shares projected initial map state and tracks map movement", async () => {
     expect(view.getRotation()).toBe(0);
     expect(useMapViewState().zoom.value).toBe(12);
 });
+it("starts tracking when the OpenLayers map is exposed after mount", async () => {
+    const { useMapView } = await import("../app/composables/useMapView");
+    const mapRef = ref<{ map?: { getView: () => View } } | null>({});
+    const mounted = withSetup(() => useMapView(mapRef as never));
+    wrappers.push(mounted.wrapper);
+    const view = new View({ center: [0, 0], zoom: 10 });
+    mapRef.value!.map = { getView: () => view };
+    await nextTick();
+    await nextTick();
+    view.setCenter([100, 200]);
+    await nextTick();
+    expect(mounted.value.center.value).toEqual([100, 200]);
+});
 it("observes container size and disconnects its observer on unmount", async () => {
     const { useMapResize } = await import("../app/composables/useMapResize");
     let notify: ResizeObserverCallback;

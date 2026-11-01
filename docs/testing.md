@@ -82,6 +82,10 @@ Alle suites staan in `tests/`. Enkele startpunten:
 | Beheer en interface | `adminPages`, `categoryDialogs`, `applicationShell`, `presentationComponents` |
 | Migraties en imports | `migrations`, `importWorkflow`, `areasCommand` en KML-tests |
 
+`selectedIssue` controleert ook kaartfocus tijdens slugnavigatie: zolang de
+gegevens van het aangeklikte onderwerp laden, mag de kaart niet eerst naar
+het overzicht uitzoomen. Na het laden wordt alleen dat onderwerp gefocust.
+
 ## Isolatie en grenzen
 
 - Gebruik SQLite in het geheugen; migratie- en importtests gebruiken tijdelijke

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import { defineComponent, ref, effectScope } from "vue";
+import { defineComponent, ref, effectScope, h, Suspense } from "vue";
 import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import NavBar from "../app/components/NavBar.vue";
@@ -117,6 +117,8 @@ beforeEach(() => {
   }));
   vi.stubGlobal("useRoute", () => ({ params: { id: "1" } }));
   vi.stubGlobal("useIssueNotifications", vi.fn());
+  vi.stubGlobal("useIssues", vi.fn(() => ({ load: vi.fn() })));
+  vi.stubGlobal("callOnce", (_key: string, callback: () => unknown) => callback());
   vi.stubGlobal("isExistingIssue", isExistingIssue);
   vi.stubGlobal("useRoles", () => ({ isAdmin: ref(true) }));
 });
@@ -199,7 +201,12 @@ it("toggles the mobile sheet accessibly and opens the map menu", async () => {
   expect(menu.value).toBe(true);
 });
 it("chooses the correct map layout", async () => {
-  const wrapper = keep(mount(MapPage, { global: { stubs } }));
+  const Page = defineComponent({
+    setup: () => () => h(Suspense, null, { default: () => h(MapPage) }),
+  });
+  const wrapper = keep(mount(Page, { global: { stubs } }));
+  await flushPromises();
+  expect(globalThis.useIssues).toHaveBeenCalledTimes(1);
   expect(wrapper.find("layout-desktop-stub").exists()).toBe(true);
   mobile.value = true;
   await flushPromises();

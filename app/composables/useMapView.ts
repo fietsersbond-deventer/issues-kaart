@@ -31,19 +31,17 @@ export function useMapViewState() {
  * Composable to track and share map view state (center, zoom, rotation)
  * @param mapRef - Template ref to the ol-map component
  */
-export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
+export function useMapView(mapRef?: Ref<{ map?: Map } | null>) {
   const { center, zoom, rotation } = useMapViewState();
 
-  // Try to get map from injection first, then from mapRef parameter
-  let olMap = inject<Map | null>("map", null);
+  const injectedMap = inject<Map | null>("map", null);
+  let trackedMap: Map | null = null;
 
   const setupMapViewTracking = (map: Map) => {
     const view = map.getView();
 
-    if (!view) {
-      console.warn("View not available from map");
-      return;
-    }
+    if (!view || trackedMap === map) return;
+    trackedMap = map;
 
     // Separate listeners for different types of changes
     const updateCenter = useThrottleFn(() => {
@@ -71,31 +69,16 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
     });
   };
 
-  onMounted(() => {
-    // If injection didn't work, try to get map from mapRef
-    if (!olMap && mapRef?.value?.map) {
-      olMap = mapRef.value.map;
-    }
-
-    if (!olMap) {
-      console.warn("OpenLayers Map not found in component");
-      return;
-    }
-
-    setupMapViewTracking(olMap);
-  });
-
-  // Also watch mapRef in case it becomes available later
-  if (mapRef) {
+  if (injectedMap) {
+    onMounted(() => setupMapViewTracking(injectedMap));
+  } else if (mapRef) {
     watch(
-      mapRef,
-      (newMapRef) => {
-        if (newMapRef?.map && !olMap) {
-          olMap = newMapRef.map;
-          setupMapViewTracking(olMap);
-        }
+      () => mapRef.value?.map,
+      (map) => {
+        if (!map || trackedMap === map) return;
+        setupMapViewTracking(map);
       },
-      { immediate: true },
+      { immediate: true, flush: "post" },
     );
   }
 
