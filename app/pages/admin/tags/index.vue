@@ -4,7 +4,7 @@
       <v-card-title class="d-flex align-center">
         <span>Tags</span>
         <v-spacer />
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="editorRef?.openCreateDialog()">
           Nieuwe tag
         </v-btn>
       </v-card-title>
@@ -52,7 +52,7 @@
                 color="primary"
                 size="small"
                 :aria-label="`${item.tag} bewerken`"
-                @click="openEditDialog(item)"
+                @click="editorRef?.openEditDialog(item)"
               />
               <v-btn
                 icon="mdi-delete"
@@ -68,74 +68,7 @@
       </v-card-text>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="700px">
-      <v-card>
-        <v-card-title>
-          {{ isEditing ? "Tag bewerken" : "Nieuwe tag" }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-form v-model="valid">
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="form.label"
-                  label="Label"
-                  hint="Gebruikersvriendelijke naam"
-                  persistent-hint
-                  :rules="[requiredRule]"
-                />
-              </v-col>
-
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="form.tag"
-                  label="Slug / key"
-                  :disabled="true"
-                  hint="Wordt automatisch genormaliseerd"
-                  persistent-hint
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <div class="text-subtitle-2 mb-2">Icoon</div>
-                <div class="d-flex align-center ga-2">
-                  <AppIcon
-                    :icon="form.icon || 'mdi-tag-outline'"
-                    size="24"
-                    color="grey"
-                  />
-                  <span class="text-caption text-medium-emphasis">
-                    {{ form.icon || "Geen icoon" }}
-                  </span>
-                </div>
-              </v-col>
-
-              <v-col cols="12">
-                <v-textarea
-                  v-model="form.description"
-                  label="Omschrijving"
-                  rows="3"
-                  auto-grow
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <IconSelector v-model="form.icon" :preview-color="'#808080'" />
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" :loading="saving" :disabled="!valid" @click="saveTag">
-            Opslaan
-          </v-btn>
-          <v-btn variant="text" @click="dialog = false">Annuleren</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <TagEditor ref="editorRef" v-model:open="editorOpen" @saved="handleSaved" />
 
     <v-dialog v-model="deleteDialog" max-width="420px">
       <v-card>
@@ -145,7 +78,9 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="error" :loading="saving" @click="deleteTag"> Verwijderen </v-btn>
+          <v-btn color="error" :loading="saving" @click="handleDelete">
+            Verwijderen
+          </v-btn>
           <v-btn @click="deleteDialog = false">Annuleren</v-btn>
         </v-card-actions>
       </v-card>
@@ -162,13 +97,6 @@ definePageMeta({
   middleware: ["sidebase-auth"],
 });
 
-type TagForm = {
-  tag: string;
-  label: string;
-  description: string;
-  icon?: string;
-};
-
 const headers = [
   { title: "Label", value: "label", sortable: true },
   { title: "Slug", value: "tag", sortable: true },
@@ -177,107 +105,19 @@ const headers = [
   { title: "Acties", value: "actions", sortable: false },
 ];
 
-const { tags, create, update, remove, refreshTags } = useTagsApi();
-
-const dialog = ref(false);
+const { tags, remove, refreshTags } = useTagsApi();
+const editorRef = ref();
+const editorOpen = ref(false);
 const deleteDialog = ref(false);
 const saving = ref(false);
 const selectedTagToDelete = ref<Tag | null>(null);
-const isEditing = ref(false);
-const editingTagId = ref<number | null>(null);
-const form = ref<TagForm>({
-  tag: "",
-  label: "",
-  description: "",
-  icon: undefined,
-});
-
-const valid = ref(false);
-
-function openCreateDialog() {
-  isEditing.value = false;
-  editingTagId.value = null;
-  form.value = { tag: "", label: "", description: "", icon: undefined };
-  dialog.value = true;
-}
-
-function openEditDialog(item: Tag) {
-  isEditing.value = true;
-  editingTagId.value = item.id;
-  form.value = {
-    tag: item.tag,
-    label: item.label ?? item.tag,
-    description: item.description ?? "",
-    icon: item.icon ?? undefined,
-  };
-  dialog.value = true;
-}
 
 function confirmDelete(item: Tag) {
   selectedTagToDelete.value = item;
   deleteDialog.value = true;
 }
 
-function normalizeTagValue(tag: string) {
-  return tag
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-")
-    .slice(0, 30)
-    .replace(/-+$/g, "");
-}
-
-watch(
-  () => form.value.label,
-  (label) => {
-    form.value.tag = normalizeTagValue(label);
-  }
-);
-
-async function saveTag() {
-  const tagValue = normalizeTagValue(form.value.tag || "");
-  if (!tagValue) return;
-
-  saving.value = true;
-
-  try {
-    const payload = {
-      tag: tagValue,
-      label: form.value.label.trim() || form.value.tag.trim() || tagValue,
-      description: form.value.description.trim() || null,
-      icon: form.value.icon?.trim() || null,
-    };
-
-    if (isEditing.value && editingTagId.value !== null) {
-      const updated = await update(editingTagId.value, payload);
-      if (tags.value) {
-        tags.value = tags.value.map((item: Tag) =>
-          item.id === updated.id ? updated : item
-        );
-      }
-    } else {
-      const created = await create(payload);
-      if (tags.value) {
-        tags.value = [...tags.value.filter((item) => item.id !== created.id), created];
-      }
-    }
-
-    dialog.value = false;
-    form.value = { tag: "", label: "", description: "", icon: undefined };
-    editingTagId.value = null;
-  } catch (error) {
-    console.error("Failed to save tag:", error);
-    useSnackbar().showError("Tag kon niet worden opgeslagen");
-  } finally {
-    saving.value = false;
-  }
-}
-
-async function deleteTag() {
+async function handleDelete() {
   if (!selectedTagToDelete.value) return;
 
   saving.value = true;
@@ -286,7 +126,7 @@ async function deleteTag() {
     await remove(selectedTagToDelete.value.id);
     if (tags.value) {
       tags.value = tags.value.filter(
-        (item: Tag) => item.id !== selectedTagToDelete.value?.id
+        (item: Tag) => item.id !== selectedTagToDelete.value?.id,
       );
     }
     deleteDialog.value = false;
@@ -298,5 +138,9 @@ async function deleteTag() {
     saving.value = false;
     await refreshTags();
   }
+}
+
+async function handleSaved() {
+  // TagEditor handles UI updates internally
 }
 </script>
