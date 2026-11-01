@@ -4,7 +4,11 @@
       <v-card-title class="d-flex align-center">
         <span>Tags</span>
         <v-spacer />
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="editorRef?.openCreateDialog()">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="editorRef?.openCreateDialog()"
+        >
           Nieuwe tag
         </v-btn>
       </v-card-title>
@@ -101,7 +105,6 @@ const headers = [
   { title: "Label", value: "label", sortable: true },
   { title: "Slug", value: "tag", sortable: true },
   { title: "Omschrijving", value: "description", sortable: false },
-  { title: "Icoon", value: "icon", sortable: false },
   { title: "Acties", value: "actions", sortable: false },
 ];
 
@@ -126,7 +129,7 @@ async function handleDelete() {
     await remove(selectedTagToDelete.value.id);
     if (tags.value) {
       tags.value = tags.value.filter(
-        (item: Tag) => item.id !== selectedTagToDelete.value?.id,
+        (item: Tag) => item.id !== selectedTagToDelete.value?.id
       );
     }
     deleteDialog.value = false;
