@@ -59,8 +59,12 @@ geven een expliciete fout. Bronafbeeldingen zijn begrensd op 40 miljoen pixels.
 
 De image- en og-image-routes worden via `routeRules` één uur server-side
 gecachet, zonder stale-while-revalidate. Cachehits vermijden databasewerk en
-beeldverwerking. Wijzigingen en verwijderingen kunnen daardoor maximaal één uur
-later zichtbaar worden; er is geen directe cache-invalidatie. Het gewone
+beeldverwerking. De API geeft afbeeldings-URL's met `?v=<SHA-256-hash>` terug,
+ook bij opslaan en in WebSocket-updates. Open Graph neemt dezelfde versie over.
+Een gewijzigde afbeelding krijgt direct een nieuwe URL en omzeilt daarmee zowel
+de browsercache als de servercache. Alleen tekst wijzigen behoudt de URL.
+Een verwijderde afbeelding verdwijnt uit de actuele gegevens; oude URL's kunnen
+nog maximaal één uur beschikbaar blijven. Er is geen directe cache-invalidatie. Het gewone
 image-endpoint geeft eveneens één uur browsercache mee in plaats van één jaar.
 Nitro overschrijft ook voor og-image de cacheheader met `max-age=3600`.
 De plugin `server/plugins/image-cache.ts` herstelt de Buffers die Nitro 2 als JSON

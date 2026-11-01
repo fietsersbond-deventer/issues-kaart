@@ -1,5 +1,5 @@
 import { getDb } from "~~/server/utils/db";
-import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueIds, normalizeTag } from "~~/server/utils/issueTags";
 
 type IssueRow = {
@@ -128,9 +128,7 @@ export default defineEventHandler(async (event) => {
       typeof issue.id === "number" &&
       typeof issue.description === "string"
     ) {
-      // Check if issue has an image in description
-      const hasImage = extractImageUrl(issue.description) !== null;
-      result.imageUrl = hasImage ? `/api/issues/${issue.id}/image` : null;
+      result.imageUrl = getIssueImageUrl(issue.id, issue.description);
 
       // Remove description from result if it wasn't explicitly requested
       if (requestedFields && !requestedFields.includes("description")) {

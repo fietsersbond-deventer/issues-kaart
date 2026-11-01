@@ -30,7 +30,9 @@ export function useIssueOpenGraph(source: MaybeRefOrGetter<Issue | null>) {
       : "Bekijk dit onderwerp op de kaart";
 
     const url = `${baseUrl}/kaart/${issue.slug || issue.id}`;
-    const imageUrl = issue.imageUrl ? `/api/issues/${issue.id}/og-image` : null;
+    const imageUrl = issue.imageUrl
+      ? issue.imageUrl.replace(/\/image(?=\?|$)/, "/og-image")
+      : null;
     const fullImageUrl = imageUrl ? `${baseUrl}${imageUrl}` : null;
 
     const meta = [

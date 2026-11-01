@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DatabaseSync } from "node:sqlite";
 import { migratedDatabase, routeHarness, seed } from "./helpers/server";
 import { getEmitter } from "../server/utils/getEmitter";
+import { createHash } from "node:crypto";
+const imageVersion = createHash("sha256").update("data:image/png;base64,aGVsbG8=").digest("hex");
 let db: DatabaseSync;
 vi.mock("../server/utils/db", () => ({ getDb: () => db }));
 let h: ReturnType<typeof routeHarness>;
@@ -52,9 +54,37 @@ describe("issue persistence contracts with the migrated schema", () => {
         expect(db.prepare("SELECT plain_text FROM issues WHERE id = ?").get(issue.id!)).toEqual({ plain_text: "Safe crossing" });
         expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ id: issue.id, createdBy: "Test Admin", tags: ["cafe", "bike"] }));
         const loaded = await routes.get(h.event);
-        expect(loaded).toMatchObject({ geometry, tags: ["bike", "cafe"], imageUrl: `/api/issues/${issue.id}/image` });
+        expect(loaded).toMatchObject({ geometry, tags: ["bike", "cafe"], imageUrl: `/api/issues/${issue.id}/image?v=${imageVersion}` });
         h.input.params.id = `00${issue.id}`;
         expect(await routes.get(h.event)).toMatchObject({ id: issue.id, slug: issue.slug });
+    });
+    it("houdt afbeeldingsversies gelijk in ophalen, opslaan, lijsten, zoeken en WebSocket-updates", async () => {
+        const created = await create();
+        const originalUrl = `/api/issues/${created.id}/image?v=${imageVersion}`;
+        expect(created.imageUrl).toBe(originalUrl);
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ imageUrl: originalUrl }));
+        h.input.body = { description: '<p>Andere tekst</p><img src="data:image/png;base64,aGVsbG8=">' };
+        expect((await routes.update(h.event)).imageUrl).toBe(originalUrl);
+
+        const source = "data:image/png;base64,bmV3";
+        const newUrl = `/api/issues/${created.id}/image?v=${createHash("sha256").update(source).digest("hex")}`;
+        h.input.body = { description: `<p>Andere afbeelding</p><img src="${source}">` };
+        expect((await routes.update(h.event)).imageUrl).toBe(newUrl);
+        expect(newUrl).not.toBe(originalUrl);
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ imageUrl: newUrl }));
+        expect((await routes.get(h.event)).imageUrl).toBe(newUrl);
+        expect(await routes.list(h.event)).toEqual([expect.objectContaining({ imageUrl: newUrl })]);
+        h.input.query = { fields: "imageUrl" };
+        expect(await routes.list(h.event)).toEqual([{ id: created.id, imageUrl: newUrl }]);
+        h.input.query = {};
+        expect((await routes.search(h.event)).items).toEqual([expect.objectContaining({ imageUrl: newUrl })]);
+
+        h.input.body = { description: "<p>Afbeelding verwijderd</p>" };
+        expect((await routes.update(h.event)).imageUrl).toBeNull();
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ imageUrl: null }));
+        expect((await routes.get(h.event)).imageUrl).toBeNull();
+        expect(await routes.list(h.event)).toEqual([expect.objectContaining({ imageUrl: null })]);
+        expect((await routes.search(h.event)).items).toEqual([expect.objectContaining({ imageUrl: null })]);
     });
     it("creates unique title slugs, permits custom slugs, and resolves both slugs and numeric IDs", async () => {
         const first = await create("De Brink op slot");
@@ -161,7 +191,7 @@ describe("issue persistence contracts with the migrated schema", () => {
         h.input.query = { fields: "id,title" };
         expect(await routes.list(h.event)).toEqual([{ id: 1, title: "Safe cycle route" }]);
         h.input.query = { fields: "imageUrl,tags", tag: "Café" };
-        expect(await routes.list(h.event)).toEqual([{ id: 1, imageUrl: "/api/issues/1/image", tags: ["bike", "cafe"] }]);
+        expect(await routes.list(h.event)).toEqual([{ id: 1, imageUrl: `/api/issues/1/image?v=${imageVersion}`, tags: ["bike", "cafe"] }]);
         h.input.query = { tag: "absent" };
         expect(await routes.list(h.event)).toEqual([]);
         h.input.query = { fields: "password_hash,SQL" };
@@ -177,7 +207,7 @@ describe("issue persistence contracts with the migrated schema", () => {
         h.input.query = { search: '"safe crossing"', orderBy: "id", order: "DESC", itemsPerPage: "1", page: "2" };
         const result = await routes.search(h.event);
         expect(result.total).toBe(2);
-        expect(result.items).toEqual([expect.objectContaining({ id: 1, slug: "safe-cycle-route", tags: ["bike", "cafe"], snippets: expect.any(Array), imageUrl: "/api/issues/1/image" })]);
+        expect(result.items).toEqual([expect.objectContaining({ id: 1, slug: "safe-cycle-route", tags: ["bike", "cafe"], snippets: expect.any(Array), imageUrl: `/api/issues/1/image?v=${imageVersion}` })]);
         for (const term of ["routes", "cafe"]) {
             h.input.query = { search: term };
             expect((await routes.search(h.event)).total).toBe(2);
