@@ -19,7 +19,7 @@ const route = { query: { tag: "veilig", cat: "2" } };
 const geometry: Issue["geometry"] = { type: "Point", coordinates: [6, 52] };
 function issue(id = 1): Issue {
   return {
-    id, title: "Onderwerp", description: "", geometry: structuredClone(geometry),
+    id, slug: `onderwerp-${id}`, title: "Onderwerp", description: "", geometry: structuredClone(geometry),
     tags: [], legend_id: 1, imageUrl: null, created_at: new Date(),
     legend: { id: 1, name: "Categorie", color: "red", description: "", created_at: "2026-01-01" },
   };
@@ -57,6 +57,16 @@ describe("useMapIssueInteractions", () => {
     expect(navigate).toHaveBeenCalledExactlyOnceWith({ path: "/kaart/2", query: route.query });
     expect(clicked).toHaveBeenCalledOnce();
     expect(interaction.selectedFeatures.value.getLength()).toBe(0);
+  });
+
+  it("gebruikt de slug bij navigatie naar een onderwerp op de kaart", () => {
+    selectedIssues.value = [{ ...issue(1), slug: "fietsstraat-veilig" }];
+    const interaction = useMapIssueInteractions(clicked);
+    interaction.onFeatureSelect(select([new Feature({ id: 1 })]));
+    expect(navigate).toHaveBeenCalledExactlyOnceWith({
+      path: "/kaart/fietsstraat-veilig",
+      query: route.query,
+    });
   });
 
   it("laat herselecties en deselectie zonder bron ongemoeid", () => {

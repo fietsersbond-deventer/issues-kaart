@@ -29,6 +29,7 @@ export type Legend = {
 
 export type Issue = {
   id: number;
+  slug: string;
   title: string;
   description: string;
   plain_text: string; // description with HTML/images stripped, kept in sync for search

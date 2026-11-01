@@ -16,7 +16,7 @@
             <v-list-item
               v-for="issue in usage[legend.id]?.used_by_issues || []"
               :key="issue.id"
-              :to="`/kaart/${issue.id}`"
+              :to="`/kaart/${issue.slug || issue.id}`"
               class="px-0"
             >
               <v-list-item-title>{{ issue.title }}</v-list-item-title>

@@ -53,6 +53,15 @@ describe("geselecteerd onderwerp", () => {
     expect(store.issue?.id).toBe(2);
   });
 
+  it("laadt een onderwerp via de slug en houdt het numerieke ID voor websocketupdates", async () => {
+    route.params.id = "de-brink-op-slot";
+    await nextTick();
+    await nextTick();
+    expect(globalThis.$fetch).toHaveBeenLastCalledWith("/api/issues/de-brink-op-slot");
+    expect(store.selectedId).toBe(1);
+    expect(store.issue?.id).toBe(1);
+  });
+
   it("negeert berichten als er geen bestaand onderwerp is geselecteerd", () => {
     store.selectedId = null;
     receive({ type: "issue-deleted", payload: { id: 1 } });

@@ -41,6 +41,20 @@
             </v-col>
 
             <v-col cols="12">
+              <v-text-field
+                v-model.trim="issue.slug"
+                label="URL-slug"
+                prepend-inner-text="/kaart/"
+                hint="Wordt eenmalig uit de titel voorgesteld en kan daarna worden aangepast"
+                :loading="isCheckingSlug"
+                :error-messages="slugError ? [slugError] : []"
+                persistent-hint
+                @update:model-value="onSlugInput"
+                @blur="checkSlugOnBlur"
+              />
+            </v-col>
+
+            <v-col cols="12">
               <div class="mb-4">
                 <div class="quill-editor-container">
                   <QuillEditor
@@ -196,6 +210,15 @@ void ensureStreetViewEmbedBlotRegistered();
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue | NewIssue>({ required: true });
+const route = useRoute();
+const {
+  isChecking: isCheckingSlug,
+  error: slugError,
+  isValid: isSlugValid,
+  onInput: onSlugInput,
+  checkOnBlur: checkSlugOnBlur,
+} = useIssueSlug(issue);
+const { update, create, remove } = useIssuesMethods();
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
@@ -216,7 +239,8 @@ const geometryRules = [
 
 // Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
 const canSubmit = computed(() => {
-  return valid.value && isModified.value && isConnected.value;
+  return valid.value && isModified.value && isConnected.value &&
+    isSlugValid.value;
 });
 
 const modules = [
@@ -357,7 +381,6 @@ async function insertStreetView() {
   showStreetViewDialog.value = false;
 }
 
-const { update, create, remove } = useIssuesMethods();
 const { categories } = storeToRefs(useCategories());
 const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
@@ -376,20 +399,30 @@ const authHeaders = computed(() => {
 
 async function onSubmit() {
   // Prevent submission if connection is lost
-  if (!isConnected.value) {
+  if (!isConnected.value || !isSlugValid.value) {
     return;
   }
 
   if (issue.value && valid.value) {
     const username = user.value?.name || "anonymous";
     if (isExistingIssue(issue.value)) {
-      await update(issue.value.id, issue.value);
+      const updatedIssue = await update(issue.value.id, issue.value);
       // Track issue modification in Matomo
       trackEvent(
         "Issue",
         "Modified",
         `Issue #${issue.value.id} by ${username}: ${issue.value.title}`,
       );
+      if (updatedIssue.slug !== issue.value.slug) {
+        issue.value.slug = updatedIssue.slug;
+      }
+      if (updatedIssue.slug !== route.params.id) {
+        showDialog.value = false;
+        return navigateTo({
+          path: `/kaart/${updatedIssue.slug}`,
+          query: route.query,
+        });
+      }
     } else {
       const result = await create(issue.value);
       if (isExistingIssue(result)) {
@@ -400,7 +433,7 @@ async function onSubmit() {
           `Issue #${result.id} by ${username}: ${result.title}`,
         );
         showDialog.value = false;
-        return navigateTo(`/kaart/${result.id}`);
+        return navigateTo(`/kaart/${result.slug}`);
       }
     }
   }

@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
     .get(...likeParams) as { total: number };
 
   const offset = (page - 1) * itemsPerPage;
-  const sqlStatement = `SELECT i.id, i.title, i.description, i.plain_text, i.legend_id, i.created_at,
+  const sqlStatement = `SELECT i.id, i.slug, i.title, i.description, i.plain_text, i.legend_id, i.created_at,
       l.name AS legend_name
      FROM issues i
      LEFT JOIN legend l ON l.id = i.legend_id

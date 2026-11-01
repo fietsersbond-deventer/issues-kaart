@@ -1,5 +1,6 @@
 import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
+import { getIssueIdFromIdentifier } from "~~/server/utils/issueSlugs";
 
 export default defineEventHandler(async (event) => {
   const emitter = getEmitter();
@@ -14,9 +15,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
+  const issueId = getIssueIdFromIdentifier(db, id);
+  if (issueId === null) {
+    throw createError({
+      statusCode: 404,
+      message: `Issue with ID or slug ${id} not found`,
+    });
+  }
   
   // Get the issue title before deletion
-  const issue = db.prepare("SELECT title FROM issues WHERE id = ?").get(id) as { title: string } | undefined;
+  const issue = db.prepare("SELECT title FROM issues WHERE id = ?").get(issueId) as { title: string } | undefined;
   if (!issue) {
     throw createError({
       statusCode: 404,
@@ -24,7 +32,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const result = db.prepare("DELETE FROM issues WHERE id = ?").run(id);
+  const result = db.prepare("DELETE FROM issues WHERE id = ?").run(issueId);
   if (result.changes === 0) {
     throw createError({
       statusCode: 404,
@@ -37,10 +45,10 @@ export default defineEventHandler(async (event) => {
   const deletedBy = user?.name || user?.username || "Onbekend";
   const deletedByUserId = user?.id || 0;
   emitter.emit("issue:deleted", {
-    id: Number(id),
+    id: issueId,
     title: issue.title,
     deletedBy,
     deletedByUserId,
   });
-  return { id };
+  return { id: String(issueId) };
 });

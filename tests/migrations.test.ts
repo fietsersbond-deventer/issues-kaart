@@ -54,6 +54,21 @@ it("backfills searchable text for existing rich descriptions, including empty co
     } finally { db.close(); }
 });
 
+it("backfills unique normalized slugs for existing issues", async () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+        db.exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, title TEXT)");
+        db.exec("INSERT INTO issues (id, title) VALUES (1, 'De Brink op slot'), (2, 'De Brink op slot'), (3, '123')");
+        const { default: addIssueSlugs } = await import("../server/database/migrations/0016_add_issue_slugs.js");
+        addIssueSlugs(db);
+        expect(db.prepare("SELECT id, slug FROM issues ORDER BY id").all()).toEqual([
+            { id: 1, slug: "de-brink-op-slot" },
+            { id: 2, slug: "de-brink-op-slot-2" },
+            { id: 3, slug: "onderwerp-123" },
+        ]);
+    } finally { db.close(); }
+});
+
 
 it("does not mark a failed migration as applied and can retry after a read failure", async () => {
     const listing = vi.spyOn(fs, "readdirSync").mockReturnValueOnce(["missing.sql"] as never);

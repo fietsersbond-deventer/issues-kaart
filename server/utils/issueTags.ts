@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Tag } from "~~/shared/types/Tag";
+import { normalizeSlug } from "~~/shared/utils/slug";
 
 const MAX_TAG_LENGTH = 30;
 const MAX_TAGS_PER_ISSUE = 10;
@@ -7,22 +8,8 @@ const MAX_TAGS_PER_ISSUE = 10;
 export function normalizeTag(tag: unknown): string | null {
   if (typeof tag !== "string") return null;
 
-  const normalized = tag
-    .trim()
-    .toLowerCase()
-    // Splits diacritische tekens in base letters + accenten, zodat í -> i.
-    .normalize("NFD")
-    // Verwijder diacritische tekens (accents) na de normalisatie.
-    .replace(/[\u0300-\u036f]/g, "")
-    // Vervang groepen van niet-alfanumerieke tekens door een enkele streep.
-    .replace(/[^a-z0-9]+/g, "-")
-    // Verwijder streepjes aan het begin of einde van de tag.
-    .replace(/^-+|-+$/g, "")
-    // Verminder meerdere streepjes achter elkaar tot één.
-    .replace(/-{2,}/g, "-")
-    // Beperk de tag tot de maximale lengte.
+  const normalized = normalizeSlug(tag)
     .slice(0, MAX_TAG_LENGTH)
-    // Verwijder eventueel een streepje aan het einde na truncatie.
     .replace(/-+$/g, "");
 
   return normalized || null;

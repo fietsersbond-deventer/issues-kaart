@@ -5,7 +5,7 @@ export default defineEventHandler(async () => {
   const db = getDb();
   const issues = db
     .prepare(
-      `SELECT i.id, i.title, i.description, 
+      `SELECT i.id, i.slug, i.title, i.description,
      i.legend_id,
      i.geometry, i.created_at
      FROM issues i 
@@ -25,6 +25,7 @@ export default defineEventHandler(async () => {
         geometry,
         properties: {
           id: issue.id as number,
+          slug: issue.slug as string,
           title: issue.title as string,
           description: issue.description as string,
           legend_id: issue.legend_id as number,

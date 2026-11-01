@@ -6,21 +6,24 @@ import { vueGlobals } from "./helpers/vue";
 import { Field, Form, uiStubs } from "./helpers/ui";
 import type { Issue, NewIssue } from "../shared/types/Issue";
 import EditForm from "../app/components/EditForm.client.vue";
+import { useIssueSlug } from "../app/composables/useIssueSlug";
 vi.mock("@vueup/vue-quill", () => ({ QuillEditor: { name: "QuillEditor", template: "<div />" } }));
 vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
 vi.mock("../app/utils/streetViewEmbedBlot", () => ({ ensureStreetViewEmbedBlotRegistered: vi.fn().mockResolvedValue(undefined) }));
-const update = vi.fn(), create = vi.fn(), remove = vi.fn(), navigate = vi.fn(), trackEvent = vi.fn(), fetch = vi.fn();
+const update = vi.fn(), create = vi.fn(), remove = vi.fn(), getUniqueSlug = vi.fn(), navigate = vi.fn(), trackEvent = vi.fn(), fetch = vi.fn();
 const editing = ref(true), connected = ref(true);
 const wrappers: Array<{
     unmount(): void;
 }> = [];
-const draft = (): NewIssue => ({ title: "Draft", description: "text", tags: [], legend_id: 1, geometry: { type: "Point", coordinates: [6, 52] } });
+const draft = (): NewIssue => ({ title: "Draft", slug: "draft", description: "text", tags: [], legend_id: 1, geometry: { type: "Point", coordinates: [6, 52] } });
 beforeEach(() => {
     vueGlobals();
     vi.clearAllMocks();
+    getUniqueSlug.mockImplementation(async (slug: string) => ({ slug }));
     editing.value = true;
     connected.value = true;
-    vi.stubGlobal("useIssuesMethods", () => ({ update, create, remove }));
+    vi.stubGlobal("useIssuesMethods", () => ({ update, create, getUniqueSlug, remove }));
+    vi.stubGlobal("useIssueSlug", useIssueSlug);
     vi.stubGlobal("storeToRefs", (value: unknown) => value);
     vi.stubGlobal("useCategories", () => ({ categories: ref([]) }));
     vi.stubGlobal("useIsEditing", () => ({ isEditing: editing }));
@@ -28,10 +31,11 @@ beforeEach(() => {
     vi.stubGlobal("useMatomoTracking", () => ({ trackEvent }));
     vi.stubGlobal("useAuth", () => ({ data: ref({ name: "Tester" }), token: ref("Bearer token") }));
     vi.stubGlobal("navigateTo", navigate);
+    vi.stubGlobal("useRoute", () => ({ params: { id: "draft" }, query: {} }));
     vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
     vi.stubGlobal("$fetch", fetch);
 });
-afterEach(() => { wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); });
+afterEach(() => { vi.useRealTimers(); wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); });
 function editor(issue: Issue | NewIssue = draft()) {
     const wrapper = mount(EditForm, { props: { modelValue: issue, dialog: true }, global: { stubs: { ...uiStubs, CategorySelect: true, TagSelect: true, QuillEditor: defineComponent({ methods: { getQuill: () => null }, template: "<div />" }) } } });
     wrappers.push(wrapper);
@@ -40,16 +44,35 @@ function editor(issue: Issue | NewIssue = draft()) {
 const button = (wrapper: ReturnType<typeof editor>, text: string) => wrapper.findAll("button").find((b) => b.text() === text)!;
 describe("issue editor persistence boundaries", () => {
     it("creates drafts, navigates to the saved identity and reports analytics only after success", async () => {
+        vi.useFakeTimers();
         const wrapper = editor();
-        create.mockResolvedValueOnce({ ...draft(), id: 5 });
+        await vi.advanceTimersByTimeAsync(300);
+        await flushPromises();
+        create.mockResolvedValueOnce({ ...draft(), id: 5, slug: "draft" });
         await wrapper.get("input").setValue("Changed");
         expect(button(wrapper, "Opslaan").attributes("disabled")).toBeUndefined();
         await wrapper.get("form").trigger("submit");
         await flushPromises();
-        expect(create).toHaveBeenCalledWith(expect.objectContaining({ title: "Changed" }));
+        expect(create).toHaveBeenCalledWith(expect.objectContaining({ title: "Changed", slug: "draft" }));
         expect(update).not.toHaveBeenCalled();
-        expect(navigate).toHaveBeenCalledWith("/kaart/5");
+        expect(navigate).toHaveBeenCalledWith("/kaart/draft");
         expect(trackEvent).toHaveBeenCalledWith("Issue", "Created", expect.stringContaining("#5"));
+        vi.useRealTimers();
+    });
+    it("checks uniqueness on blur and replaces an existing numeric suffix", async () => {
+        const wrapper = editor();
+        getUniqueSlug.mockImplementation(async (slug: string) => ({
+            slug: slug === "occupied-2" ? "occupied-3" : slug,
+        }));
+
+        const slugInput = wrapper.findAll("input")[1]!;
+        await slugInput.setValue("occupied-2");
+        expect(getUniqueSlug).not.toHaveBeenCalled();
+        wrapper.findAllComponents(Field)[1]!.vm.$emit("blur");
+        await flushPromises();
+
+        expect(slugInput.element.value).toBe("occupied-3");
+        expect(getUniqueSlug).toHaveBeenCalledWith("occupied-2", undefined);
     });
     it("updates existing issues, exits editing and blocks submission while disconnected", async () => {
         const wrapper = editor({ ...draft(), id: 3 } as Issue);
@@ -57,6 +80,7 @@ describe("issue editor persistence boundaries", () => {
         await wrapper.get("form").trigger("submit");
         expect(update).not.toHaveBeenCalled();
         connected.value = true;
+        update.mockResolvedValueOnce({ slug: "draft" });
         await wrapper.get("form").trigger("submit");
         await flushPromises();
         expect(update).toHaveBeenCalledWith(3, expect.objectContaining({ id: 3 }));
@@ -72,9 +96,13 @@ describe("issue editor persistence boundaries", () => {
         expect(editing.value).toBe(false);
     });
     it("keeps a failed save open with its edited content intact", async () => {
+        vi.useFakeTimers();
         const errors = vi.fn();
         const wrapper = mount(EditForm, { props: { modelValue: { ...draft(), id: 3 } as Issue, dialog: true }, global: { stubs: { ...uiStubs, CategorySelect: true, TagSelect: true, QuillEditor: true }, config: { errorHandler: errors } } });
         wrappers.push(wrapper);
+        await vi.advanceTimersByTimeAsync(300);
+        await flushPromises();
+        vi.useRealTimers();
         update.mockRejectedValueOnce(new Error("offline"));
         await wrapper.get("input").setValue("Keep me");
         await wrapper.get("form").trigger("submit");
@@ -101,7 +129,7 @@ describe("issue editor persistence boundaries", () => {
         await flushPromises();
         await wrapper.get("form").trigger("submit");
         expect(create).not.toHaveBeenCalled();
-        const geometry = wrapper.findAllComponents(Field)[1]!;
+        const geometry = wrapper.findAllComponents(Field)[2]!;
         expect(geometry.props("rules")[0]("")).toContain("Voeg een locatie");
     });
     it("fetches a Street View preview with auth, inserts it in the draft and handles parse failures", async () => {
