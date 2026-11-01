@@ -102,4 +102,21 @@ describe("API composable contracts", () => {
         expect(refresh).not.toHaveBeenCalled();
         categories.$dispose();
     });
+    it("handles comments CRUD with authorization headers and deletion flags", async () => {
+        const { useCommentsApi } = await import("../app/composables/useCommentsApi");
+        const comments = useCommentsApi();
+        await comments.list(1);
+        expect(fetch).toHaveBeenLastCalledWith("/api/issues/1/comments", { method: "GET", headers: expect.objectContaining(auth) });
+        await comments.create(1, "New comment");
+        expect(fetch).toHaveBeenLastCalledWith("/api/issues/1/comments", { method: "POST", body: { body: "New comment" }, headers: expect.objectContaining(auth) });
+        await comments.update(2, "Updated comment");
+        expect(fetch).toHaveBeenLastCalledWith("/api/comments/2", { method: "PATCH", body: { body: "Updated comment" }, headers: expect.objectContaining(auth) });
+        await comments.remove(2);
+        expect(fetch).toHaveBeenLastCalledWith("/api/comments/2", { method: "DELETE", headers: expect.objectContaining(auth) });
+        await comments.remove(2, true);
+        expect(fetch).toHaveBeenLastCalledWith("/api/comments/2?hard=true", { method: "DELETE", headers: expect.objectContaining(auth) });
+        token.value = null;
+        await comments.list(1);
+        expect(fetch).toHaveBeenLastCalledWith("/api/issues/1/comments", { method: "GET", headers: undefined });
+    });
 });

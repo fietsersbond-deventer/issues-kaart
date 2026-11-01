@@ -15,11 +15,15 @@ import Intro from "../app/components/Intro.vue";
 import IssueDetails from "../app/components/IssueDetails.vue";
 import ImageViewer from "../app/components/ImageViewer.vue";
 import TextEditor from "../app/components/TextEditorDialog.client.vue";
+import IssueComments from "../app/components/IssueComments.client.vue";
+import CommentEditor from "../app/components/CommentEditor.client.vue";
 import { getContrastColor } from "../app/utils/getContrastColor";
 import { useStreetViewEmbeds } from "../app/composables/useStreetViewEmbeds";
 import type { Issue } from "../shared/types/Issue";
 
-vi.mock("@vueup/vue-quill", () => ({ QuillEditor: { template: "<div />" } }));
+vi.mock("@vueup/vue-quill", () => ({ QuillEditor: { name: "QuillEditor", template: "<div />" } }));
+vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
+vi.mock("../app/utils/streetViewEmbedBlot", () => ({ ensureStreetViewEmbedBlotRegistered: vi.fn().mockResolvedValue(undefined) }));
 const Tooltip = defineComponent({ props: ["text"], template: '<span :data-tooltip="text"><slot name="activator" :props="{}" /><slot /></span>' });
 const Icon = defineComponent({ props: ["name", "icon", "color", "size"], template: '<i :data-icon="name || icon"><slot /></i>' });
 const stubs = { ...uiStubs, VChip: Slot, VTooltip: Tooltip, VIcon: Icon, Icon, AppIcon, VAvatar: Slot };
@@ -171,4 +175,161 @@ it("opens desktop image previews and prevents mobile lightboxes", async () => {
     const second = keep(mount(ImageViewer, { slots: { default: '<img src="https://example.test/photo.png">' }, global: { stubs } }));
     await second.get("img").trigger("click");
     expect(second.findAll("img")).toHaveLength(1);
+});
+it("renders comments only for authenticated users on IssueDetails and excludes them when logged out", async () => {
+    vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
+    vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
+    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+    const IssueCommentsStub = defineComponent({ props: ["issueId"], template: '<div class="issue-comments-stub">Comments for {{ issueId }}</div>' });
+    const issue = { id: 42, title: "Issue with comments", description: "<p>Details</p>", tags: [] } as unknown as Issue;
+
+    auth.value = "authenticated";
+    const wrapper = keep(mount(IssueDetails, { props: { issue }, global: { stubs: { ...stubs, ImageViewer: Slot, CategoryChip: true, IssueComments: IssueCommentsStub } } }));
+    expect(wrapper.find(".issue-comments-stub").exists()).toBe(true);
+    expect(wrapper.find(".issue-comments-stub").text()).toBe("Comments for 42");
+
+    auth.value = "unauthenticated";
+    await flushPromises();
+    expect(wrapper.find(".issue-comments-stub").exists()).toBe(false);
+});
+it("manages issue comments lifecycle, permissions, edits, deletions and live WebSocket updates", async () => {
+    const list = vi.fn().mockResolvedValue([
+        { id: 1, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>First comment</p>", created_at: "2026-01-01T10:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
+        { id: 2, issue_id: 10, author_id: 2, author_name: "Bob", body: "[deleted comment]", created_at: "2026-01-01T11:00:00Z", updated_at: null, deleted_at: "2026-01-01T12:00:00Z", is_deleted: true },
+    ]);
+    const create = vi.fn().mockResolvedValue({ id: 3, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>Brand new</p>", created_at: "2026-01-01T13:00:00Z", updated_at: null, deleted_at: null, is_deleted: false });
+    const update = vi.fn().mockResolvedValue({ id: 1, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>Updated text</p>", created_at: "2026-01-01T10:00:00Z", updated_at: "2026-01-01T14:00:00Z", deleted_at: null, is_deleted: false });
+    const remove = vi.fn().mockResolvedValue({ id: 1, deleted: true, soft: true });
+
+    vi.stubGlobal("useCommentsApi", () => ({ list, create, update, remove }));
+    vi.stubGlobal("useAuth", () => ({ status: ref("authenticated"), data: ref({ id: 1, name: "Alice", role: "user" }), token: ref("Bearer token") }));
+    vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
+    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+    vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
+
+    let wsSubscriber: ((msg: unknown) => void) | null = null;
+    vi.stubGlobal("useSharedAuthWebSocket", () => ({
+        subscribe: (cb: (msg: unknown) => void) => {
+            wsSubscriber = cb;
+            return () => { wsSubscriber = null; };
+        },
+    }));
+
+    const CommentEditorStub = defineComponent({
+        name: "CommentEditor",
+        props: ["modelValue", "submitText", "loading"],
+        emits: ["submit", "cancel", "update:modelValue"],
+        template: '<div class="comment-editor-stub"><input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /><button class="submit-btn" @click="$emit(\'submit\', modelValue)">{{ submitText }}</button><button class="cancel-btn" @click="$emit(\'cancel\')">Cancel</button></div>',
+    });
+
+    const wrapper = keep(mount(IssueComments, { props: { issueId: 10 }, global: { stubs: { ...stubs, ImageViewer: Slot, CommentEditor: CommentEditorStub } } }));
+
+    await flushPromises();
+    expect(list).toHaveBeenCalledWith(10);
+    expect(wrapper.text()).toContain("Alice");
+    expect(wrapper.text()).toContain("First comment");
+    expect(wrapper.text()).toContain("[deleted comment]");
+
+    // Edit own comment
+    const editBtn = wrapper.find('button[aria-label="Reactie bewerken"]');
+    expect(editBtn.exists()).toBe(true);
+    await editBtn.trigger("click");
+    expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
+    await wrapper.find(".comment-editor-stub input").setValue("<p>Updated text</p>");
+    await wrapper.find(".comment-editor-stub .submit-btn").trigger("click");
+    await flushPromises();
+    expect(update).toHaveBeenCalledWith(1, "<p>Updated text</p>");
+    expect(showSuccess).toHaveBeenCalledWith("Reactie gewijzigd");
+
+    // Delete comment
+    const deleteBtn = wrapper.find('button[aria-label="Reactie verwijderen"]');
+    await deleteBtn.trigger("click");
+    await flushPromises();
+    expect(remove).toHaveBeenCalledWith(1);
+    expect(showSuccess).toHaveBeenCalledWith("Reactie verwijderd");
+
+    // Create new comment
+    const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
+    newEditor.vm.$emit("update:modelValue", "<p>Brand new</p>");
+    newEditor.vm.$emit("submit", "<p>Brand new</p>");
+    await flushPromises();
+    expect(create).toHaveBeenCalledWith(10, "<p>Brand new</p>");
+    expect(showSuccess).toHaveBeenCalledWith("Reactie geplaatst");
+
+    // WebSocket message handling
+    expect(wsSubscriber).toBeTruthy();
+    wsSubscriber!({
+        type: "comment-created",
+        payload: { id: 4, issue_id: 10, author_id: 3, author_name: "Charlie", body: "<p>Live comment</p>", created_at: "2026-01-01T15:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain("Charlie");
+    expect(wrapper.text()).toContain("Live comment");
+
+    wsSubscriber!({
+        type: "comment-modified",
+        payload: { id: 4, issue_id: 10, author_id: 3, author_name: "Charlie", body: "<p>Modified live</p>", created_at: "2026-01-01T15:00:00Z", updated_at: "2026-01-01T15:30:00Z", deleted_at: null, is_deleted: false },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain("Modified live");
+
+    wsSubscriber!({
+        type: "comment-deleted",
+        payload: { id: 4, issue_id: 10, deletedBy: "Charlie", deletedByUserId: 3, soft: true },
+    });
+    await flushPromises();
+    expect(wrapper.find(".comment-deleted").exists()).toBe(true);
+});
+it("validates CommentEditor submission constraints and inserts Street View embeds", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("$fetch", fetchMock);
+    vi.stubGlobal("useAuth", () => ({ token: ref("Bearer token") }));
+    vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
+
+    const wrapper = keep(mount(CommentEditor, {
+        props: { modelValue: "", placeholder: "Schrijf een reactie..." },
+        global: {
+            stubs: {
+                ...stubs,
+                QuillEditor: defineComponent({
+                    methods: {
+                        getQuill: () => ({
+                            getLength: () => 0,
+                            getSelection: () => ({ index: 0, length: 0 }),
+                            insertEmbed: vi.fn(),
+                            setSelection: vi.fn(),
+                        }),
+                    },
+                    template: "<div />",
+                }),
+            },
+        },
+    }));
+
+    // Disabled initially because content is empty
+    const submitBtn = wrapper.findAll("button").find((b) => b.text() === "Plaatsen")!;
+    expect(submitBtn.attributes("disabled")).toBeDefined();
+
+    // Enable when non-empty
+    await wrapper.setProps({ modelValue: "<p>Non-empty content</p>" });
+    expect(submitBtn.attributes("disabled")).toBeUndefined();
+    await submitBtn.trigger("click");
+    expect(wrapper.emitted("submit")?.at(-1)).toEqual(["<p>Non-empty content</p>"]);
+
+    // Street view preview insertion
+    const svBtn = wrapper.findAll("button").find((b) => b.text().includes("Street View toevoegen"))!;
+    await svBtn.trigger("click");
+    const svInput = wrapper.findAll("input").at(-1)!;
+    await svInput.setValue("https://maps.app.goo.gl/street");
+
+    const preview = { lat: 52.1, lng: 5.1, heading: 10, pitch: 0, fov: 90, panoId: "pano123", previewDataUrl: "data:image/png;base64,123", embedSrc: "https://embed.google.com" };
+    fetchMock.mockResolvedValueOnce(preview);
+    const getPreviewBtn = wrapper.findAll("button").find((b) => b.text() === "Ophalen")!;
+    await getPreviewBtn.trigger("click");
+    await flushPromises();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/streetview/parse", expect.objectContaining({ body: { url: "https://maps.app.goo.gl/street" } }));
+    const insertBtn = wrapper.findAll("button").find((b) => b.text() === "Invoegen")!;
+    await insertBtn.trigger("click");
+    await flushPromises();
 });
