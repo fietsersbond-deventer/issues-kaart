@@ -58,7 +58,9 @@ export const useIssues = defineStore("issues", () => {
     switch (parsed.type) {
       case "issue-created": {
         const issue = processIssue(parsed.payload as Issue);
-        const existingIndex = issues.value.findIndex((entry) => entry.id === issue.id);
+        const existingIndex = issues.value.findIndex(
+          (entry) => entry.id === issue.id,
+        );
         if (existingIndex === -1) issues.value.push(issue);
         else issues.value[existingIndex] = issue;
         break;

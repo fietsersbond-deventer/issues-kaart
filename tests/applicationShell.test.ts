@@ -117,8 +117,13 @@ beforeEach(() => {
   }));
   vi.stubGlobal("useRoute", () => ({ params: { id: "1" } }));
   vi.stubGlobal("useIssueNotifications", vi.fn());
-  vi.stubGlobal("useIssues", vi.fn(() => ({ load: vi.fn() })));
-  vi.stubGlobal("callOnce", (_key: string, callback: () => unknown) => callback());
+  vi.stubGlobal(
+    "useIssues",
+    vi.fn(() => ({ load: vi.fn() })),
+  );
+  vi.stubGlobal("callOnce", (_key: string, callback: () => unknown) =>
+    callback(),
+  );
   vi.stubGlobal("isExistingIssue", isExistingIssue);
   vi.stubGlobal("useRoles", () => ({ isAdmin: ref(true) }));
 });
