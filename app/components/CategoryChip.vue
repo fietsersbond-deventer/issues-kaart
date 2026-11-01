@@ -9,6 +9,9 @@
     <v-tooltip v-if="legend.description" location="top" activator="parent">
       {{ legend.description }}
     </v-tooltip>
+    <template v-if="legend.icon" #prepend>
+      <AppIcon :icon="legend.icon" size="16" class="mr-2" />
+    </template>
   </v-chip>
 </template>
 
