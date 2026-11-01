@@ -142,11 +142,10 @@ onUnmounted(() => {
 }
 
 .tooltip-img {
-  max-width: 100px;
-  max-height: 100px;
+  max-width: 100%;
+  max-height: 200px;
   display: block;
   margin: 0 auto 0.5rem auto;
-  text-align: center;
 }
 
 .tooltip-title {
