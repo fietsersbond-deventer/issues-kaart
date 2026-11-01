@@ -175,7 +175,8 @@ describe("admin boundary and metadata persistence", () => {
       description: "Stop",
       icon: "mdi-coffee",
     };
-    expect(await call("tags/index.post")).toEqual({
+    const tag1 = (await call("tags/index.post")) as { id: number; tag: string };
+    expect(tag1).toMatchObject({
       tag: "cafe",
       label: "Coffee",
       description: "Stop",
@@ -188,31 +189,31 @@ describe("admin boundary and metadata persistence", () => {
     expect(await call("tags/index.get")).toEqual([
       expect.objectContaining({ tag: "cafe" }),
     ]);
-    h.input.params.tag = "Café";
+    h.input.params.id = String(tag1.id);
     h.input.body = { description: " New " };
-    expect(await call("tags/[tag].patch")).toEqual({
+    expect(await call("tags/[id].patch")).toMatchObject({
       tag: "cafe",
       label: "Coffee",
       description: "New",
       icon: "mdi-coffee",
     });
     h.input.body = { label: null, description: null, icon: null };
-    expect(await call("tags/[tag].patch")).toEqual({
+    expect(await call("tags/[id].patch")).toMatchObject({
       tag: "cafe",
       label: "cafe",
       description: null,
       icon: null,
     });
     db.exec(
-      "INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'x', '{}', 1); INSERT INTO issue_tags (issue_id, tag) VALUES (1, 'cafe')",
+      "INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'x', '{}', 1); INSERT INTO issue_tags (issue_id, tag_id) SELECT 1, id FROM tags WHERE tag = 'cafe'",
     );
-    expect(await call("tags/[tag].delete")).toEqual({ success: true });
+    expect(await call("tags/[id].delete")).toEqual({ success: true });
     expect(db.prepare("SELECT * FROM issue_tags").all()).toEqual([]);
-    await expect(call("tags/[tag].delete")).rejects.toMatchObject({
+    await expect(call("tags/[id].delete")).rejects.toMatchObject({
       statusCode: 404,
     });
   });
-  it.each(["tags/index.post", "tags/[tag].patch", "tags/[tag].delete"])(
+  it.each(["tags/index.post", "tags/[id].patch", "tags/[id].delete"])(
     "rejects missing tag in %s",
     async (route) => {
       await expect(call(route)).rejects.toMatchObject({ statusCode: 400 });
@@ -221,14 +222,15 @@ describe("admin boundary and metadata persistence", () => {
   it("allows ordinary users to create, update and delete tags", async () => {
     h.event.context.user = member;
     h.input.body = { tag: "bike" };
-    expect(await call("tags/index.post")).toMatchObject({ tag: "bike" });
-    h.input.params.tag = "bike";
+    const tag = (await call("tags/index.post")) as { id: number };
+    expect(tag).toMatchObject({ tag: "bike" });
+    h.input.params.id = String(tag.id);
     h.input.body = { label: "Bike" };
-    expect(await call("tags/[tag].patch")).toMatchObject({
+    expect(await call("tags/[id].patch")).toMatchObject({
       tag: "bike",
       label: "Bike",
     });
-    expect(await call("tags/[tag].delete")).toEqual({ success: true });
+    expect(await call("tags/[id].delete")).toEqual({ success: true });
   });
   it("updates text with type-specific validation and records the editor", async () => {
     expect(await call("texts/index.get")).toHaveLength(4);
@@ -273,8 +275,8 @@ it.each([
   "legends/[id].delete",
   "texts/[key].patch",
   "tags/index.post",
-  "tags/[tag].patch",
-  "tags/[tag].delete",
+  "tags/[id].patch",
+  "tags/[id].delete",
 ])("denies anonymous writes before touching storage: %s", async (route) => {
   h.event.context.user = null;
   const prepare = vi.spyOn(db, "prepare");

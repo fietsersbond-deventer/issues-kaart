@@ -9,7 +9,7 @@ export default defineEventHandler((event) => {
   const rows = search
     ? db
         .prepare(
-          `SELECT tag, label, description, icon
+          `SELECT id, tag, label, description, icon
            FROM tags
            WHERE tag LIKE ?
            ORDER BY tag ASC`,
@@ -17,13 +17,14 @@ export default defineEventHandler((event) => {
         .all(`%${search}%`)
     : db
         .prepare(
-          `SELECT tag, label, description, icon
+          `SELECT id, tag, label, description, icon
            FROM tags
            ORDER BY tag ASC`,
         )
         .all();
 
   return rows.map((row) => ({
+    id: Number(row.id),
     tag: String(row.tag),
     label: row.label ?? String(row.tag),
     description: row.description ?? null,

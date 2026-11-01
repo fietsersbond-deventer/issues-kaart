@@ -89,7 +89,8 @@ export default defineEventHandler(async (event) => {
     ? `WHERE EXISTS (
         SELECT 1
         FROM issue_tags it
-        WHERE it.issue_id = i.id AND it.tag = ?
+        JOIN tags t ON t.id = it.tag_id
+        WHERE it.issue_id = i.id AND t.tag = ?
       )`
     : "";
   const values = requestedTag ? [requestedTag] : [];

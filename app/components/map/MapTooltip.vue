@@ -75,6 +75,7 @@ const overflowTagsCount = computed(() => {
 
 const overflowTag = computed(() => {
   const tag: Tag = {
+    id: -1,
     tag: "",
     label: `+ ${overflowTagsCount.value}`,
     description: null,

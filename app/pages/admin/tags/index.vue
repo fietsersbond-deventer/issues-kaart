@@ -200,6 +200,7 @@ const deleteDialog = ref(false);
 const saving = ref(false);
 const selectedTagToDelete = ref<Tag | null>(null);
 const isEditing = ref(false);
+const editingTagId = ref<number | null>(null);
 const form = ref<TagForm>({
   tag: "",
   label: "",
@@ -211,12 +212,14 @@ const valid = ref(false);
 
 function openCreateDialog() {
   isEditing.value = false;
+  editingTagId.value = null;
   form.value = { tag: "", label: "", description: "", icon: undefined };
   dialog.value = true;
 }
 
 function openEditDialog(item: Tag) {
   isEditing.value = true;
+  editingTagId.value = item.id;
   form.value = {
     tag: item.tag,
     label: item.label ?? item.tag,
@@ -265,18 +268,18 @@ async function saveTag() {
       icon: form.value.icon?.trim() || null,
     };
 
-    if (isEditing.value) {
-      const updated = await update(tagValue, payload);
+    if (isEditing.value && editingTagId.value !== null) {
+      const updated = await update(editingTagId.value, payload);
       if (tags.value) {
         tags.value = tags.value.map((item: Tag) =>
-          item.tag === updated.tag ? updated : item,
+          item.id === updated.id ? updated : item,
         );
       }
     } else {
       const created = await create(payload);
       if (tags.value) {
         tags.value = [
-          ...tags.value.filter((item) => item.tag !== created.tag),
+          ...tags.value.filter((item) => item.id !== created.id),
           created,
         ];
       }
@@ -284,6 +287,7 @@ async function saveTag() {
 
     dialog.value = false;
     form.value = { tag: "", label: "", description: "", icon: undefined };
+    editingTagId.value = null;
   } catch (error) {
     console.error("Failed to save tag:", error);
     useSnackbar().showError("Tag kon niet worden opgeslagen");
@@ -298,10 +302,10 @@ async function deleteTag() {
   saving.value = true;
 
   try {
-    await remove(selectedTagToDelete.value.tag);
+    await remove(selectedTagToDelete.value.id);
     if (tags.value) {
       tags.value = tags.value.filter(
-        (item: Tag) => item.tag !== selectedTagToDelete.value?.tag,
+        (item: Tag) => item.id !== selectedTagToDelete.value?.id,
       );
     }
     deleteDialog.value = false;
