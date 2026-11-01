@@ -1,13 +1,14 @@
 import Color from "color";
 
+const WHITE_MIN_CONTRAST = 3;
+
 // Calculate contrast color based on WCAG relative luminance
 export function getContrastColor(hexColor: string): string {
   const color = Color(hexColor);
 
-  // Calculate WCAG contrast ratios with white and black
-  const contrastWithWhite = color.contrast(Color("#ffffff"));
-  const contrastWithBlack = color.contrast(Color("#000000"));
-
-  // Return the color with highest contrast
-  return contrastWithWhite > contrastWithBlack ? "#ffffff" : "#000000";
+  // Pure max-ratio picks black on mid-tones, which looks poor. Prefer white
+  // as long as it meets the WCAG 3:1 minimum for large text/graphics.
+  return color.contrast(Color("#ffffff")) >= WHITE_MIN_CONTRAST
+    ? "#ffffff"
+    : "#000000";
 }

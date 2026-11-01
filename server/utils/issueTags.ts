@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Tag } from "~~/shared/types/Tag";
+import { normalizeSlug } from "~~/shared/utils/slug";
 
 const MAX_TAG_LENGTH = 30;
 const MAX_TAGS_PER_ISSUE = 10;
@@ -7,22 +8,8 @@ const MAX_TAGS_PER_ISSUE = 10;
 export function normalizeTag(tag: unknown): string | null {
   if (typeof tag !== "string") return null;
 
-  const normalized = tag
-    .trim()
-    .toLowerCase()
-    // Splits diacritische tekens in base letters + accenten, zodat í -> i.
-    .normalize("NFD")
-    // Verwijder diacritische tekens (accents) na de normalisatie.
-    .replace(/[\u0300-\u036f]/g, "")
-    // Vervang groepen van niet-alfanumerieke tekens door een enkele streep.
-    .replace(/[^a-z0-9]+/g, "-")
-    // Verwijder streepjes aan het begin of einde van de tag.
-    .replace(/^-+|-+$/g, "")
-    // Verminder meerdere streepjes achter elkaar tot één.
-    .replace(/-{2,}/g, "-")
-    // Beperk de tag tot de maximale lengte.
+  const normalized = normalizeSlug(tag)
     .slice(0, MAX_TAG_LENGTH)
-    // Verwijder eventueel een streepje aan het einde na truncatie.
     .replace(/-+$/g, "");
 
   return normalized || null;
@@ -113,11 +100,12 @@ export function getTagMetadata(
   const placeholders = normalizedTags.map(() => "?").join(", ");
   const rows = db
     .prepare(
-      `SELECT tag, label, description, icon
+      `SELECT id, tag, label, description, icon
        FROM tags
        WHERE tag IN (${placeholders})`,
     )
     .all(...normalizedTags) as Array<{
+    id: number;
     tag: string;
     label: string | null;
     description: string | null;
@@ -127,6 +115,7 @@ export function getTagMetadata(
   const metadata = new Map<string, Tag>();
   for (const row of rows) {
     metadata.set(row.tag, {
+      id: row.id,
       tag: row.tag,
       label: row.label ?? row.tag,
       description: row.description,
@@ -136,7 +125,14 @@ export function getTagMetadata(
 
   for (const tag of normalizedTags) {
     if (!metadata.has(tag)) {
-      metadata.set(tag, { tag, label: tag, description: null, icon: null });
+      // Provide fallback for tags not in database (should be created first with ensureTagMetadata)
+      metadata.set(tag, {
+        id: -1,
+        tag,
+        label: tag,
+        description: null,
+        icon: null,
+      });
     }
   }
 
@@ -156,10 +152,11 @@ export function getTagsForIssueIds(
   const placeholders = ids.map(() => "?").join(", ");
   const rows = db
     .prepare(
-      `SELECT issue_id, tag
-       FROM issue_tags
-       WHERE issue_id IN (${placeholders})
-       ORDER BY tag ASC`,
+      `SELECT it.issue_id, t.tag
+       FROM issue_tags it
+       JOIN tags t ON it.tag_id = t.id
+       WHERE it.issue_id IN (${placeholders})
+       ORDER BY t.tag ASC`,
     )
     .all(...ids) as { issue_id: number; tag: string }[];
 
@@ -190,7 +187,8 @@ export function replaceTagsForIssue(
   db.prepare("DELETE FROM issue_tags WHERE issue_id = ?").run(numericIssueId);
 
   const insertTag = db.prepare(
-    "INSERT OR IGNORE INTO issue_tags (issue_id, tag) VALUES (?, ?)",
+    `INSERT OR IGNORE INTO issue_tags (issue_id, tag_id)
+     SELECT ?, id FROM tags WHERE tag = ?`,
   );
   for (const tag of normalizedTags) {
     insertTag.run(numericIssueId, tag);

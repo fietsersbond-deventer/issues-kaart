@@ -85,7 +85,7 @@ export default defineEventHandler(async (event) => {
   const searchConditions = searchTerms.map(
     () =>
       `(i.title LIKE ? ESCAPE '\\' COLLATE NOCASE OR i.plain_text LIKE ? ESCAPE '\\' COLLATE NOCASE OR l.name LIKE ? ESCAPE '\\' COLLATE NOCASE OR EXISTS (
-        SELECT 1 FROM issue_tags it JOIN tags t ON t.tag = it.tag
+        SELECT 1 FROM issue_tags it JOIN tags t ON t.id = it.tag_id
         WHERE it.issue_id = i.id AND (
           t.description LIKE ? ESCAPE '\\' COLLATE NOCASE
           OR t.label LIKE ? ESCAPE '\\' COLLATE NOCASE
@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
     .get(...likeParams) as { total: number };
 
   const offset = (page - 1) * itemsPerPage;
-  const sqlStatement = `SELECT i.id, i.title, i.description, i.plain_text, i.legend_id, i.created_at,
+  const sqlStatement = `SELECT i.id, i.slug, i.title, i.description, i.plain_text, i.legend_id, i.created_at,
       l.name AS legend_name
      FROM issues i
      LEFT JOIN legend l ON l.id = i.legend_id

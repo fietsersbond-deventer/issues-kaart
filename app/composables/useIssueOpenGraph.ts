@@ -14,7 +14,7 @@ export function useIssueOpenGraph(issue: Issue) {
       ? issue.description.replace(/<[^>]*>/g, "").substring(0, 200)
       : "Bekijk dit onderwerp op de kaart";
 
-    const url = `${baseUrl}/kaart/${issue.id}`;
+    const url = `${baseUrl}/kaart/${issue.slug || issue.id}`;
     const imageUrl = issue.imageUrl;
     const fullImageUrl = imageUrl ? `${baseUrl}${imageUrl}` : null;
 

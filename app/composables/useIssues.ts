@@ -16,7 +16,7 @@ export const useIssues = defineStore("issues", () => {
   const { categories } = storeToRefs(useCategories());
 
   const fetchOptions = {
-    query: { fields: "id,title,legend_id,geometry,imageUrl,tags" },
+    query: { fields: "id,slug,title,legend_id,geometry,imageUrl,tags" },
   };
   const {
     data,
@@ -142,6 +142,15 @@ export const useIssues = defineStore("issues", () => {
       }
     },
     { deep: true },
+  );
+
+  // Refresh issues when tags change (tags are removed/updated)
+  const tagsApi = useTagsApi();
+  watch(
+    () => tagsApi.tags.value,
+    () => {
+      refreshIssues();
+    },
   );
 
   function refresh() {

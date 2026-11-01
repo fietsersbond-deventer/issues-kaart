@@ -3,13 +3,7 @@
   <div>
     <v-card class="mb-4">
       <v-card-title v-if="!isPrinting" class="d-flex align-center" style="gap: 16px">
-        <v-text-field
-          v-model="state.search"
-          label="Zoek"
-          dense
-          hide-details
-          clearable
-        />
+        <v-text-field v-model="state.search" label="Zoek" dense hide-details clearable />
       </v-card-title>
       <v-card-text>
         <v-data-table-server
@@ -28,63 +22,72 @@
           @click:row="gotoIssue"
         >
           <template #item.imageUrl="{ item }">
-            <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail">
+            <NuxtLink :to="issueURL(item)">
+              <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail" />
+            </NuxtLink>
           </template>
 
           <template #item.legend="{ item }">
-            <div class="legend-grid">
-              <category-chip v-if="item.legend" :legend="item.legend" />
-              <Tag v-for="tag in item.tags" :key="tag" :tag="getTag(tag)" />
-            </div>
+            <NuxtLink :to="issueURL(item)">
+              <div class="legend-grid">
+                <category-chip v-if="item.legend" :legend="item.legend" />
+                <Tag v-for="tag in item.tags" :key="tag" :tag="getTag(tag)" />
+              </div>
+            </NuxtLink>
           </template>
 
           <!-- emphasizeFilter escapes all result text before adding mark tags. -->
           <!-- eslint-disable vue/no-v-html -->
           <template #item.title="{ item }">
-            <template v-if="item.snippets?.length">
-              <b v-html="emphasizeFilter(item.title)" />
-              <div v-for="snippet in item.snippets" :key="snippet" v-html="emphasizeFilter(snippet)" />
-            </template>
-            <template v-else>
-              <span v-html="emphasizeFilter(item.title)" />
-            </template>
+            <NuxtLink :to="issueURL(item)">
+              <template v-if="item.snippets?.length">
+                <b v-html="emphasizeFilter(item.title)" />
+                <div
+                  v-for="snippet in item.snippets"
+                  :key="snippet"
+                  v-html="emphasizeFilter(snippet)"
+                />
+              </template>
+              <template v-else>
+                <span v-html="emphasizeFilter(item.title)" />
+              </template>
+            </NuxtLink>
           </template>
 
           <!-- eslint-enable vue/no-v-html -->
           <template #item.actions="{ item }">
             <div>
-                <v-btn
-                  :to="`/kaart/${item.id}`"
-                  icon
-                  variant="text"
-                  size="small"
-                  color="primary"
-                  @click.stop
-                >
-                  <v-icon>mdi-arrow-right</v-icon>
-                  <v-tooltip activator="parent" location="top">
-                    Bekijk issue in de kaart
-                  </v-tooltip>
-                </v-btn>
+              <v-btn
+                :to="`/kaart/${item.slug || item.id}`"
+                icon
+                variant="text"
+                size="small"
+                color="primary"
+                @click.stop
+              >
+                <v-icon>mdi-arrow-right</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Bekijk issue in de kaart
+                </v-tooltip>
+              </v-btn>
             </div>
           </template></v-data-table-server
         >
       </v-card-text>
     </v-card>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery, refDebounced } from '@vueuse/core'
-import CategoryChip from '~/components/CategoryChip.vue';
-import { parseSearchTerms } from '~/utils/parseSearchTerms';
-import type { Legend } from '~~/shared/types/Legend';
+import { useMediaQuery, refDebounced } from "@vueuse/core";
+import CategoryChip from "~/components/CategoryChip.vue";
+import { parseSearchTerms } from "~/utils/parseSearchTerms";
+import type { Legend } from "~~/shared/types/Legend";
 
 useTitle("Onderwerpen");
 
-const isPrinting = useMediaQuery('print')
-const {getTag} = useTagsApi()
+const isPrinting = useMediaQuery("print");
+const { getTag } = useTagsApi();
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -99,13 +102,14 @@ const state = useState("issues-state", () => ({
 
 type SearchIssue = {
   id: number;
+  slug: string;
   title: string;
   legend_id: number;
   created_at: string;
   imageUrl: string | null;
   snippets: string[];
   legend?: Legend;
-  tags: string[]
+  tags: string[];
 };
 
 type SearchResponse = {
@@ -137,14 +141,19 @@ const query = computed(() => ({
   search: debouncedSearch.value,
 }));
 const filters = computed(() =>
-  parseSearchTerms(query.value.search)
-    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  parseSearchTerms(query.value.search).map((term) =>
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  )
 );
 const { emphasizeFilter } = useFilter(filters);
-const { data: searchResponse, pending, refresh: refreshResults } = await useFetch<SearchResponse>(
-  "/api/issues/search",
-  { query, dedupe: "cancel" }
-);
+const {
+  data: searchResponse,
+  pending,
+  refresh: refreshResults,
+} = await useFetch<SearchResponse>("/api/issues/search", {
+  query,
+  dedupe: "cancel",
+});
 
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
@@ -170,19 +179,21 @@ const issues = computed(() =>
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
+function issueURL(item: SearchIssue) {
+  return `/kaart/${item.slug || item.id}`;
+}
+
 function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
-  navigateTo(`/kaart/${item.id}`)
+  navigateTo(`/kaart/${item.slug || item.id}`);
 }
 
 const headers = computed(() => {
   return [
-    { title: "id", value: "id", sortable: true, width: "5%" },
     { title: "", value: "imageUrl", sortable: false },
     { title: "", value: "title", sortable: true },
     { title: "", value: "legend", sortable: false },
   ];
 });
-
 </script>
 
 <style>
@@ -218,5 +229,4 @@ const headers = computed(() => {
   gap: 6px;
   padding: 4px 0;
 }
-
 </style>

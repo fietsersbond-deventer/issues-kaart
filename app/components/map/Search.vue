@@ -35,13 +35,7 @@
       @blur="onBlur"
     >
       <template #prepend-inner>
-        <v-btn
-          v-if="mobile"
-          icon
-          size="x-small"
-          variant="text"
-          @click="closeSearch"
-        >
+        <v-btn v-if="mobile" icon size="x-small" variant="text" @click="closeSearch">
           <v-icon size="18">mdi-arrow-left</v-icon>
         </v-btn>
       </template>
@@ -55,9 +49,9 @@
         />
       </template>
       <template #item="{ props, item }">
-        <v-list-item v-bind="props" :title="item.raw.displayName">
+        <v-list-item v-bind="props" :title="item.displayName">
           <template #subtitle>
-            <span class="text-caption">{{ item.raw.type }}</span>
+            <span class="text-caption">{{ item.type }}</span>
           </template>
         </v-list-item>
       </template>
@@ -96,7 +90,7 @@ function toggleSearch() {
     "Toggle search - before:",
     isExpanded.value,
     "mobile:",
-    mobile.value
+    mobile.value,
   );
   isExpanded.value = !isExpanded.value;
   console.log("Toggle search - after:", isExpanded.value);

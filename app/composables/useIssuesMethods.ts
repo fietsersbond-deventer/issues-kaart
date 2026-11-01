@@ -41,6 +41,14 @@ export function useIssuesMethods() {
     return issue;
   }
 
+  function getUniqueSlug(slug: string, issueId?: number) {
+    return $fetch<{ slug: string }>("/api/issues/slug", {
+      method: "POST",
+      body: { slug, issueId },
+      headers: headers.value,
+    });
+  }
+
   async function remove(id: number) {
     const result = await $fetch<{ id: number }>(`/api/issues/${id}`, {
       method: "DELETE",
@@ -57,6 +65,7 @@ export function useIssuesMethods() {
     get,
     create,
     update,
+    getUniqueSlug,
     remove,
     getImageUrl,
   };

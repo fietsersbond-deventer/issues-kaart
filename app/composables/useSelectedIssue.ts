@@ -1,4 +1,9 @@
-import { isExistingIssue, type Issue, type NewIssue, type ExistingIssue } from "~~/shared/types/Issue";
+import {
+  isExistingIssue,
+  type Issue,
+  type NewIssue,
+  type ExistingIssue,
+} from "~~/shared/types/Issue";
 
 export const useSelectedIssue = defineStore("selectedIssue", () => {
   const route = useRoute();
@@ -62,7 +67,9 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         issue.value = updatedIssue;
       }
     } else if (parsed.type === "issue-deleted") {
-      const deletedId = (parsed.payload as WebSocketMessage<"issue-deleted">["payload"]).id;
+      const deletedId = (
+        parsed.payload as WebSocketMessage<"issue-deleted">["payload"]
+      ).id;
       // If the issue we're viewing was deleted, navigate away
       if (deletedId === selectedId.value) {
         navigateTo({ path: "/kaart", query: route.query });
@@ -94,22 +101,47 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         isEditing.value = true;
         return;
       }
-      const id = +(newId ?? 0) || null;
-      selectedId.value = id;
+      const identifier = typeof newId === "string" ? newId : "";
+      const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
+      selectedId.value =
+        numericId !== null && Number.isSafeInteger(numericId) && numericId > 0
+          ? numericId
+          : null;
       isEditing.value = false;
 
       // Fetch full issue data when selecting an issue
-      if (id !== null) {
+      if (identifier) {
         issue.value = null;
         try {
-          const loadedIssue = await $fetch<Issue>(`/api/issues/${id}`);
-          if (current) issue.value = enrichIssueWithLegend(loadedIssue);
+          const loadedIssue = await $fetch<Issue>(
+            `/api/issues/${encodeURIComponent(identifier)}`,
+          );
+          if (current) {
+            selectedId.value = loadedIssue.id;
+            issue.value = enrichIssueWithLegend(loadedIssue);
+
+            // Redirect numeric IDs to slugs
+            if (
+              numericId !== null &&
+              loadedIssue.slug &&
+              loadedIssue.slug !== identifier
+            ) {
+              navigateTo(
+                {
+                  path: `/kaart/${loadedIssue.slug}`,
+                  query: route.query,
+                },
+                { replace: true },
+              );
+            }
+          }
         } catch (error) {
           if (!current) return;
           const status = (error as { statusCode?: number }).statusCode;
-          loadError.value = status === 404
-            ? "Onderwerp niet gevonden"
-            : "Onderwerp kon niet worden geladen";
+          loadError.value =
+            status === 404
+              ? "Onderwerp niet gevonden"
+              : "Onderwerp kon niet worden geladen";
         }
       }
     },

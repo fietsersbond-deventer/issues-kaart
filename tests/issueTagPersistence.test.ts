@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { ensureTagMetadata, getTagMetadata, getTagsForIssueId, getTagsForIssueIds, normalizeTags, replaceTagsForIssue, setTagDescription } from "../server/utils/issueTags";
+import { normalizeSlug, slugify } from "../shared/utils/slug";
 import { migratedDatabase, seed } from "./helpers/server";
 let db: DatabaseSync;
 beforeEach(async () => { db = await migratedDatabase(); seed(db); db.exec("INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'x', '{}', 1)"); });
@@ -8,6 +9,8 @@ afterEach(() => db.close());
 it("normalizes, limits and deduplicates tags; ignores non-array input", () => {
     expect(normalizeTags(null)).toEqual([]);
     expect(normalizeTags(["Café", " cafe ", null, "!!!", "Bike"])).toEqual(["cafe", "bike"]);
+    expect(normalizeSlug(" L'été & Æther ")).toBe("l-ete-aether");
+    expect(normalizeTags([" L'été & Æther "])).toEqual([slugify(" L'été & Æther ")]);
     expect(normalizeTags(Array.from({ length: 20 }, (_, i) => `tag-${i}`))).toHaveLength(10);
 });
 it("ensures metadata without overwriting labels and supplies fallback metadata for unknown tags", () => {
@@ -15,14 +18,17 @@ it("ensures metadata without overwriting labels and supplies fallback metadata f
     ensureTagMetadata(db, ["bike"]);
     db.exec("UPDATE tags SET label = 'Bicycles' WHERE tag = 'bike'");
     ensureTagMetadata(db, ["bike"]);
-    expect([...getTagMetadata(db, ["bike", "new"]).values()]).toEqual([{ tag: "bike", label: "Bicycles", description: null, icon: null }, { tag: "new", label: "new", description: null, icon: null }]);
+    const metadata = [...getTagMetadata(db, ["bike", "new"]).values()];
+    expect(metadata).toHaveLength(2);
+    expect(metadata[0]).toMatchObject({ tag: "bike", label: "Bicycles", description: null, icon: null });
+    expect(metadata[1]).toMatchObject({ tag: "new", label: "new", description: null, icon: null });
     expect(getTagMetadata(db, []).size).toBe(0);
 });
 it("changes descriptions preserving existing label/icon, creates missing metadata and rejects empty tags", () => {
     ensureTagMetadata(db, ["bike"]);
     db.exec("UPDATE tags SET label = NULL, icon = 'mdi-bike' WHERE tag = 'bike'");
     expect(setTagDescription(db, "bike", " Description ")).toBe("bike");
-    expect(getTagMetadata(db, ["bike"]).get("bike")).toEqual({ tag: "bike", label: "bike", icon: "mdi-bike", description: "Description" });
+    expect(getTagMetadata(db, ["bike"]).get("bike")).toMatchObject({ tag: "bike", label: "bike", icon: "mdi-bike", description: "Description" });
     expect(setTagDescription(db, "new", null)).toBe("new");
     expect(setTagDescription(db, "!!!", null)).toBeNull();
 });

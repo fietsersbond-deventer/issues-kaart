@@ -6,9 +6,10 @@
       positioning="bottom-center"
     >
       <div class="tooltip">
-        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" >
+        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
         <span class="tooltip-title">{{ tooltipContent }}</span>
-        <Tag v-for="tag in tags" :key="tag.tag" :tag="tag" class="mt-2" />
+        <Tag v-for="tag in selectedTags" :key="tag.tag" :tag="tag" class="mt-2" />
+        <Tag v-if="overflowTagsCount > 0" :tag="overflowTag" class="mt-2" />
       </div>
     </ol-overlay>
   </div>
@@ -57,8 +58,33 @@ function slugsToTags(slugs: string[]) {
   }
 }
 
-let pointerListener: ((evt: MapBrowserEvent) => void) | null =
-  null;
+const tagsCount = computed(() => tags.value.length);
+
+// selecteer 2 of 3 tags
+// 3 als er maar 3 zijn, om te voorkomen dat er een tag +1 komt te staan,
+// waar net zo goed de tag zelf zou kunnen staan
+const selectedTags = computed(() => {
+  const maxTags = tagsCount.value === 3 ? 3 : 2;
+  return tags.value.slice(0, maxTags);
+});
+
+// count the number of tags that have not been selected
+const overflowTagsCount = computed(() => {
+  return Math.max(tags.value.length - selectedTags.value.length, 0);
+});
+
+const overflowTag = computed(() => {
+  const tag: Tag = {
+    id: -1,
+    tag: "",
+    label: `+ ${overflowTagsCount.value}`,
+    description: null,
+    icon: null,
+  };
+  return tag;
+});
+
+let pointerListener: ((evt: MapBrowserEvent) => void) | null = null;
 
 onMounted(() => {
   if (!map) return;
@@ -110,25 +136,22 @@ onUnmounted(() => {
   background-color: white;
   padding: 0.5rem;
   border-radius: 0.375rem; /* rounded */
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
   border: 1px solid #d1d5db; /* gray-300 */
   white-space: normal;
-  max-width: 12em;
+  max-width: 15em;
 }
 
 .tooltip-img {
-  max-width: 100px;
-  max-height: 100px;
+  max-width: 100%;
+  max-height: 200px;
   display: block;
   margin: 0 auto 0.5rem auto;
-  text-align: center;
 }
 
 .tooltip-title {
   display: block;
-  max-width: 10em;
+  max-width: 15em;
   word-break: break-word;
   margin: 0 auto;
 }

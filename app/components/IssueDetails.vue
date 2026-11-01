@@ -18,7 +18,11 @@
     </div>
 
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
-      <CategoryChip v-if="issue.legend" :legend="issue.legend" />
+      <CategoryChip
+        v-if="issue.legend"
+        :legend="issue.legend"
+        :style="'margin-left: 12px;'"
+      />
 
       <Tag
         v-for="tag in issue.tags"
