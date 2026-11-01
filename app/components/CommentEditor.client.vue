@@ -127,7 +127,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: "",
-  placeholder: "Schrijf een reactie...",
+  placeholder: "Schrijf een opmerking...",
   submitText: "Plaatsen",
   cancelText: "Annuleren",
   showCancel: false,

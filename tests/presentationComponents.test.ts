@@ -231,7 +231,7 @@ it("manages issue comments lifecycle, permissions, edits, deletions and live Web
     expect(wrapper.text()).toContain("[deleted comment]");
 
     // Edit own comment
-    const editBtn = wrapper.find('button[aria-label="Reactie bewerken"]');
+    const editBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
     expect(editBtn.exists()).toBe(true);
     await editBtn.trigger("click");
     expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
@@ -239,14 +239,14 @@ it("manages issue comments lifecycle, permissions, edits, deletions and live Web
     await wrapper.find(".comment-editor-stub .submit-btn").trigger("click");
     await flushPromises();
     expect(update).toHaveBeenCalledWith(1, "<p>Updated text</p>");
-    expect(showSuccess).toHaveBeenCalledWith("Reactie gewijzigd");
+    expect(showSuccess).toHaveBeenCalledWith("Opmerking gewijzigd");
 
     // Delete comment
-    const deleteBtn = wrapper.find('button[aria-label="Reactie verwijderen"]');
+    const deleteBtn = wrapper.find('button[aria-label="Opmerking verwijderen"]');
     await deleteBtn.trigger("click");
     await flushPromises();
     expect(remove).toHaveBeenCalledWith(1);
-    expect(showSuccess).toHaveBeenCalledWith("Reactie verwijderd");
+    expect(showSuccess).toHaveBeenCalledWith("Opmerking verwijderd");
 
     // Create new comment
     const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
@@ -254,7 +254,7 @@ it("manages issue comments lifecycle, permissions, edits, deletions and live Web
     newEditor.vm.$emit("submit", "<p>Brand new</p>");
     await flushPromises();
     expect(create).toHaveBeenCalledWith(10, "<p>Brand new</p>");
-    expect(showSuccess).toHaveBeenCalledWith("Reactie geplaatst");
+    expect(showSuccess).toHaveBeenCalledWith("Opmerking geplaatst");
 
     // WebSocket message handling
     expect(wsSubscriber).toBeTruthy();
@@ -287,7 +287,7 @@ it("validates CommentEditor submission constraints and inserts Street View embed
     vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
 
     const wrapper = keep(mount(CommentEditor, {
-        props: { modelValue: "", placeholder: "Schrijf een reactie..." },
+        props: { modelValue: "", placeholder: "Schrijf een opmerking..." },
         global: {
             stubs: {
                 ...stubs,

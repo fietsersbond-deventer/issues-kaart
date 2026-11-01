@@ -1,8 +1,8 @@
 <template>
-  <section class="issue-comments" aria-label="Reacties">
+  <section class="issue-comments" aria-label="Opmerkingen">
     <div class="d-flex align-center justify-space-between mb-4">
       <h2 class="text-h6 font-weight-bold">
-        Reacties ({{ activeCommentCount }})
+        Opmerkingen ({{ activeCommentCount }})
       </h2>
     </div>
 
@@ -20,7 +20,7 @@
         v-if="comments.length === 0"
         class="text-medium-emphasis text-body-2 mb-4"
       >
-        Er zijn nog geen reacties geplaatst.
+        Er zijn nog geen opmerkingen geplaatst.
       </div>
 
       <div
@@ -58,7 +58,7 @@
               icon="mdi-pencil"
               size="x-small"
               variant="text"
-              aria-label="Reactie bewerken"
+              aria-label="Opmerking bewerken"
               :disabled="editingCommentId !== null"
               @click="startEdit(comment)"
             />
@@ -67,7 +67,7 @@
               size="x-small"
               variant="text"
               color="error"
-              aria-label="Reactie verwijderen"
+              aria-label="Opmerking verwijderen"
               @click="onDelete(comment.id)"
             />
           </div>
@@ -107,11 +107,11 @@
     <!-- New Comment Section -->
     <div class="new-comment-section mt-6">
       <h3 class="text-subtitle-1 font-weight-bold mb-2">
-        Plaats een reactie
+        Plaats een opmerking
       </h3>
       <CommentEditor
         v-model="newCommentBody"
-        placeholder="Schrijf een reactie..."
+        placeholder="Schrijf een opmerking..."
         submit-text="Plaatsen"
         :loading="isSubmitting"
         @submit="onCreateComment"
@@ -224,7 +224,7 @@ async function loadComments() {
     comments.value = list;
   } catch (err) {
     console.error("Failed to load comments:", err);
-    fetchError.value = "Kon reacties niet laden.";
+    fetchError.value = "Kon opmerkingen niet laden.";
   } finally {
     isLoading.value = false;
   }
@@ -244,10 +244,10 @@ async function onCreateComment() {
       comments.value.push(created);
     }
     newCommentBody.value = "";
-    showSuccess("Reactie geplaatst");
+    showSuccess("Opmerking geplaatst");
   } catch (err) {
     console.error("Failed to create comment:", err);
-    showError("Kon reactie niet plaatsen");
+    showError("Kon opmerking niet plaatsen");
   } finally {
     isSubmitting.value = false;
   }
@@ -274,17 +274,17 @@ async function onSaveEdit(commentId: number) {
       comments.value[index] = updated;
     }
     cancelEdit();
-    showSuccess("Reactie gewijzigd");
+    showSuccess("Opmerking gewijzigd");
   } catch (err) {
     console.error("Failed to update comment:", err);
-    showError("Kon reactie niet wijzigen");
+    showError("Kon opmerking niet wijzigen");
   } finally {
     isUpdating.value = false;
   }
 }
 
 async function onDelete(commentId: number) {
-  if (!confirm("Weet je zeker dat je deze reactie wilt verwijderen?")) {
+  if (!confirm("Weet je zeker dat je deze opmerking wilt verwijderen?")) {
     return;
   }
 
@@ -303,10 +303,10 @@ async function onDelete(commentId: number) {
         comments.value.splice(index, 1);
       }
     }
-    showSuccess("Reactie verwijderd");
+    showSuccess("Opmerking verwijderd");
   } catch (err) {
     console.error("Failed to delete comment:", err);
-    showError("Kon reactie niet verwijderen");
+    showError("Kon opmerking niet verwijderen");
   }
 }
 
