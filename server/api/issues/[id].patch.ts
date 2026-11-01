@@ -8,6 +8,7 @@ import {
   replaceTagsForIssue,
 } from "~~/server/utils/issueTags";
 import { createUniqueIssueSlug, getIssueIdFromIdentifier } from "~~/server/utils/issueSlugs";
+import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -171,6 +172,10 @@ export default defineEventHandler(async (event) => {
     });
   }
   const currentTags = normalizedTags ?? getTagsForIssueId(db, String(issueId));
+  const imageUrl = getIssueImageUrl(
+    issueId,
+    typeof row.description === "string" ? row.description : null,
+  );
 
   // Get user info for notification
   const user = event.context.user;
@@ -180,9 +185,10 @@ export default defineEventHandler(async (event) => {
   // Emit with user info
   eventEmitter.emit("issue:modified", {
     ...row,
+    imageUrl,
     tags: currentTags,
     modifiedBy,
     modifiedByUserId,
   });
-  return { ...row, tags: currentTags };
+  return { ...row, imageUrl, tags: currentTags };
 });

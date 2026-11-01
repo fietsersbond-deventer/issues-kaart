@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computed, defineComponent, nextTick, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, defineComponent, h, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { mount } from "@vue/test-utils";
+import { renderToString } from "vue/server-renderer";
 vi.stubGlobal("defineStore", defineStore);
 const { useSelectedIssue } = await import("../app/composables/useSelectedIssue");
 
@@ -37,6 +38,37 @@ beforeEach(async () => {
 afterEach(() => { store.$dispose(); wrapper.unmount(); vi.unstubAllGlobals(); });
 
 describe("geselecteerd onderwerp", () => {
+  it("waits for issue details before completing server rendering", async () => {
+    setActivePinia(createPinia());
+    let resolveIssue: (value: typeof loadedIssue & { slug: string; imageUrl: string }) => void;
+    vi.mocked(globalThis.$fetch).mockReturnValueOnce(new Promise((resolve) => {
+      resolveIssue = resolve;
+    }));
+    let completed = false;
+    let metadata: () => { meta?: Array<{ property?: string; name?: string; content: string }> };
+    vi.stubGlobal("useHead", (callback: typeof metadata) => { metadata = callback; });
+    vi.stubGlobal("useRequestURL", () => new URL("https://example.test/kaart/ssr-preview"));
+    vi.stubGlobal("useRuntimeConfig", () => ({ public: { organization: { name: "Test Organization" } } }));
+    const { useIssueOpenGraph } = await import("../app/composables/useIssueOpenGraph");
+    const rendering = renderToString(h(defineComponent({
+      setup() {
+        const selected = useSelectedIssue();
+        useIssueOpenGraph(computed(() => selected.issue && "id" in selected.issue ? selected.issue : null));
+        return () => selected.issue?.title ?? "Loading";
+      },
+    }))).then((html) => {
+      completed = true;
+      return html;
+    });
+    await nextTick();
+    expect(completed).toBe(false);
+    resolveIssue!({ ...loadedIssue, title: "SSR issue title", slug: "ssr-preview", imageUrl: "/api/issues/1/image?v=ssr-version" });
+    expect(await rendering).toContain("SSR issue title");
+    expect(completed).toBe(true);
+    expect(metadata!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image?v=ssr-version" });
+    expect(metadata!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/1/og-image?v=ssr-version" });
+  });
+
   it("maakt een leeg concept bij het openen van een nieuw onderwerp", async () => {
     route.params.id = "new";
     await nextTick();

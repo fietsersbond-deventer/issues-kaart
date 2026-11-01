@@ -31,9 +31,59 @@ opnieuw valideren met de al geactiveerde toolchain:
 bash scripts/validate-agent.sh
 ```
 
+Voor de lokale productiebuild: `pnpm build` en daarna `pnpm start`.
+Het startcommando draait de gebouwde server vanuit de projectmap en leest de
+lokale `.env` als die bestaat. Reeds ingestelde omgevingsvariabelen gaan voor.
+Zo blijven relatieve databasepaden en de migratiemappen gelijk aan development;
+rechtstreeks starten vanuit `.output` verandert die paden. Gebruik voor een
+deployment bij voorkeur een absoluut `NUXT_DB_PATH`.
+
+De sitemap is bereikbaar op `/sitemap.xml`. De sitemapmodule bepaalt het
+domein uit het binnenkomende verzoek; een extra omgevingsvariabele is niet nodig.
+Zorg achter een reverse proxy voor de juiste publieke host en het HTTPS-protocol
+in de doorgestuurde headers.
+Alleen de homepage, kaart, lijst en opgeslagen onderwerp-slugs worden opgenomen.
+De bron `/api/sitemap/urls` leest SQLite tijdens requests. In productie
+wordt de sitemap maximaal 60 seconden gecachet; een nieuwe build is niet nodig.
+Beheer, login, wachtwoordherstel en nieuwe concepten worden niet opgenomen.
+`/robots.txt` verwijst naar de sitemap op hetzelfde domein.
+
+Socialmediapreviews gebruiken `/api/issues/<id>/og-image`: Sharp verkleint de eerste
+opgeslagen afbeelding proportioneel tot maximaal 1200 × 630 en levert JPEG van
+maximaal 1.000.000 bytes. Er wordt niets bijgesneden of vergroot.
+De originele afbeelding en omschrijving blijven ongewijzigd.
+Transparantie wordt wit; EXIF-oriëntatie wordt toegepast. Een inhoudsafhankelijke
+ETag maakt HTTP-cachevalidatie mogelijk.
+Ontbrekende afbeeldingen geven 404; ongeldige of niet-verwerkbare afbeeldingen
+geven een expliciete fout. Bronafbeeldingen zijn begrensd op 40 miljoen pixels.
+
+De image- en og-image-routes worden via `routeRules` één uur server-side
+gecachet, zonder stale-while-revalidate. Cachehits vermijden databasewerk en
+beeldverwerking. De API geeft afbeeldings-URL's met `?v=<SHA-256-hash>` terug,
+ook bij opslaan en in WebSocket-updates. Open Graph neemt dezelfde versie over.
+Een gewijzigde afbeelding krijgt direct een nieuwe URL en omzeilt daarmee zowel
+de browsercache als de servercache. Alleen tekst wijzigen behoudt de URL.
+Een verwijderde afbeelding verdwijnt uit de actuele gegevens; oude URL's kunnen
+nog maximaal één uur beschikbaar blijven. Er is geen directe cache-invalidatie. Het gewone
+image-endpoint geeft eveneens één uur browsercache mee in plaats van één jaar.
+Nitro overschrijft ook voor og-image de cacheheader met `max-age=3600`.
+De plugin `server/plugins/image-cache.ts` herstelt de Buffers die Nitro 2 als JSON
+opslaat, zodat cachehits echte afbeeldingsbytes blijven leveren.
+
 De HTTP-controle start tijdelijk de productiebuild op 127.0.0.1:3000, controleert
-homepage, loginpagina, issues-API en adminlogin en stopt zijn eigen server.
+homepage, loginpagina, lijst, issues-API en adminlogin en stopt zijn eigen server.
+Twee opeenvolgende ingelogde SSR-verzoeken naar de lijst controleren of de
+geroteerde access- en refresh-tokens via cookies behouden blijven.
 Poort 3000 moet vrij zijn. De login maakt een refresh-token in de lokale DB.
+De auth-configuratie gebruikt `refreshOnlyToken: false`, omdat de backend bij
+iedere refresh ook het refresh-token vervangt.
+De WebSocket-composables delen hun verbinding via VueUse `createSharedComposable`
+in de browser. Tijdens SSR blijft de status per verzoek gescheiden en wordt
+geen WebSocket-verbinding geopend. De URL gebruikt de host van `useRequestURL`,
+niet de huidige paginaroute of `window`.
+De HTTP-controle stuurt ook een Chrome-user-agent en viewport-client-hints naar
+de lijst en kaart. De directe H3-dependency blijft op versie 1, passend bij
+Nitro 2; H3 2 is niet compatibel met de response-headerhelpers voor deze SSR-flow.
 E2E gebruikt een eigen tijdelijke database, SMTP-opvanger en poort 3100; zie
 [browsertests](e2e.md). Chromium-installatie vereist netwerktoegang en kan op
 Linux rootrechten nodig hebben voor systeemlibraries. Rapporten staan in

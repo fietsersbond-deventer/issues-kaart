@@ -99,6 +99,10 @@ maar vereenvoudigde UI-adapters. Ze vervangen geen browsertests voor lay-out,
 widgets of de volledige inlogstroom via HTTP. CI-instellingen en
 branchbeveiliging moeten apart worden gecontroleerd.
 
+`selectedIssue` test ook echte Vue-serverrendering met vertraagd geladen
+onderwerpgegevens. De store wacht via `onServerPrefetch` op die gegevens,
+zodat de Open Graph- en Twitter-metadata al in de SSR-response beschikbaar is.
+
 ## Linting en formatteren
 
 Het lintbeleid, de configuratie en de commando's staan in

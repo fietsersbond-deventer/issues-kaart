@@ -1,4 +1,4 @@
-import { useWebSocket } from "@vueuse/core";
+import { createSharedComposable, useWebSocket } from "@vueuse/core";
 import type { AnyWebSocketMessage } from "~~/shared/types/WebSocketMessages";
 
 /**
@@ -30,45 +30,41 @@ const createWebSocketEventBus = () => {
  * Shared WebSocket connection for all issue stores
  * Singleton pattern to ensure only one connection and one message processor
  */
-export const useSharedIssuesWebSocket = (() => {
+export const useSharedIssuesWebSocket = createSharedComposable(() => {
   let wsInstance: ReturnType<typeof useWebSocket> | null = null;
   let eventBus: ReturnType<typeof createWebSocketEventBus> | null = null;
+  const requestUrl = useRequestURL();
+  const protocol = requestUrl.protocol === "https:" ? "wss" : "ws";
+  const websocketUrl = `${protocol}://${requestUrl.host}/ts/notify`;
 
-  return () => {
-    if (!wsInstance) {
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const websocketUrl = `${protocol}://${window.location.host}/ts/notify`;
+  eventBus = createWebSocketEventBus();
 
-      eventBus = createWebSocketEventBus();
+  wsInstance = useWebSocket(websocketUrl, {
+    autoReconnect: true,
+    onConnected() {
+      console.debug("WebSocket connected to", websocketUrl);
+    },
+    onDisconnected() {
+      console.debug("WebSocket disconnected");
+    },
+    onError(error) {
+      console.error("WebSocket error:", error);
+    },
+  });
 
-      wsInstance = useWebSocket(websocketUrl, {
-        autoReconnect: true,
-        onConnected() {
-          console.debug("WebSocket connected to", websocketUrl);
-        },
-        onDisconnected() {
-          console.debug("WebSocket disconnected");
-        },
-        onError(error) {
-          console.error("WebSocket error:", error);
-        },
-      });
-
-      // Watch the WebSocket data and publish to event bus (only once per message)
-      watch(
-        () => wsInstance!.data.value,
-        (data) => {
-          if (data) {
-            eventBus!.publish(data as string);
-          }
-        },
-      );
-    }
-    return {
-      subscribe: eventBus!.subscribe,
-      status: wsInstance.status,
-      close: wsInstance.close,
-      open: wsInstance.open,
-    };
+  // Watch the WebSocket data and publish to event bus (only once per message)
+  watch(
+    () => wsInstance!.data.value,
+    (data) => {
+      if (data) {
+        eventBus!.publish(data as string);
+      }
+    },
+  );
+  return {
+    subscribe: eventBus!.subscribe,
+    status: wsInstance.status,
+    close: wsInstance.close,
+    open: wsInstance.open,
   };
-})();
+});

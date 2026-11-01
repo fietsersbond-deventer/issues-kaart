@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DatabaseSync } from "node:sqlite";
 import { migratedDatabase, routeHarness, seed } from "./helpers/server";
 import { getEmitter } from "../server/utils/getEmitter";
+import { createHash } from "node:crypto";
+const imageVersion = createHash("sha256").update("data:image/png;base64,aGVsbG8=").digest("hex");
 let db: DatabaseSync;
 vi.mock("../server/utils/db", () => ({ getDb: () => db }));
 let h: ReturnType<typeof routeHarness>;
@@ -44,6 +46,71 @@ async function create(title = "Safe cycle route") {
     return result;
 }
 describe("issue persistence contracts with the migrated schema", () => {
+    it.each(["", "?tag=veilig&search=fiets%20route"])("stuurt numerieke kaart-URL's naar de slug met behoud van queryparameters: %s", async (query) => {
+        const issue = await create();
+        const redirect = vi.fn();
+        vi.stubGlobal("sendRedirect", redirect);
+        vi.stubGlobal("getRequestURL", () => new URL(`https://example.test/kaart/00${issue.id}${query}`));
+        const middleware = (await import("../server/middleware/redirect-numeric-issue-ids")).default;
+        middleware(h.event);
+        expect(redirect).toHaveBeenCalledExactlyOnceWith(h.event, `/kaart/${issue.slug}${query}`, 302);
+    });
+
+    it("laat niet-numerieke routes, onbekende IDs en onderwerpen zonder slug ongemoeid", async () => {
+        const issue = await create();
+        const redirect = vi.fn();
+        vi.stubGlobal("sendRedirect", redirect);
+        let url = new URL("https://example.test/");
+        vi.stubGlobal("getRequestURL", () => url);
+        const middleware = (await import("../server/middleware/redirect-numeric-issue-ids")).default;
+        for (const path of ["/", "/lijst", `/kaart/${issue.slug}`, `/api/issues/${issue.id}`, "/kaart/999", `/kaart/${issue.id}/extra`]) {
+            url = new URL(path, "https://example.test");
+            middleware(h.event);
+            expect(redirect).not.toHaveBeenCalled();
+        }
+        db.prepare("UPDATE issues SET slug = '' WHERE id = ?").run(issue.id!);
+        url = new URL(`/kaart/${issue.id}`, "https://example.test");
+        middleware(h.event);
+        expect(redirect).not.toHaveBeenCalled();
+    });
+
+    it("maakt zonder tags een onderwerp met aangepaste slug en kan de slug terugzetten naar de titel", async () => {
+        h.input.body = { title: "Titel als slug", slug: " Eigen slug ", description: "<p>Beschrijving</p>", legend_id: 1, geometry };
+        const created = await routes.create(h.event);
+        expect(created).toMatchObject({ slug: "eigen-slug", tags: [], imageUrl: null });
+        expect(db.prepare("SELECT * FROM issue_tags WHERE issue_id = ?").all(created.id!)).toEqual([]);
+        h.input.params.id = String(created.id);
+        h.input.body = { slug: "   " };
+        expect((await routes.update(h.event)).slug).toBe("titel-als-slug");
+        expect((await routes.get(h.event)).slug).toBe("titel-als-slug");
+    });
+
+    it.each([
+        { username: "admin@example.test", expectedName: "admin@example.test" },
+        { username: "", expectedName: "Onbekend" },
+    ])("gebruikt $expectedName in meldingen wanneer de weergavenaam ontbreekt", async ({ username, expectedName }) => {
+        h.event.context.user = { ...h.event.context.user!, name: "", username };
+        const created = await create();
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({
+            id: created.id, createdBy: expectedName, createdByUserId: 1,
+        }));
+        h.input.body = { title: "Gewijzigde titel" };
+        await routes.update(h.event);
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({
+            id: created.id, modifiedBy: expectedName, modifiedByUserId: 1,
+        }));
+    });
+
+    it.each(["create", "update"] as const)("weigert een niet-tekstuele slug bij %s zonder gegevens te wijzigen", async (action) => {
+        const created = await create();
+        emitted.mockClear();
+        h.input.body = { title: "Niet opslaan", slug: 123, description: "<p>Nieuw</p>", legend_id: 1, geometry };
+        await expect(routes[action](h.event)).rejects.toMatchObject({ statusCode: 400 });
+        expect(db.prepare("SELECT COUNT(*) AS count FROM issues").get()).toEqual({ count: 1 });
+        expect((await routes.get(h.event)).title).toBe(created.title);
+        expect(emitted).not.toHaveBeenCalled();
+    });
+
     it("creates sanitized content, searchable plain text and normalized deduplicated tags", async () => {
         const issue = await create();
         expect(issue.slug).toBe("safe-cycle-route");
@@ -52,9 +119,37 @@ describe("issue persistence contracts with the migrated schema", () => {
         expect(db.prepare("SELECT plain_text FROM issues WHERE id = ?").get(issue.id!)).toEqual({ plain_text: "Safe crossing" });
         expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ id: issue.id, createdBy: "Test Admin", tags: ["cafe", "bike"] }));
         const loaded = await routes.get(h.event);
-        expect(loaded).toMatchObject({ geometry, tags: ["bike", "cafe"], imageUrl: `/api/issues/${issue.id}/image` });
+        expect(loaded).toMatchObject({ geometry, tags: ["bike", "cafe"], imageUrl: `/api/issues/${issue.id}/image?v=${imageVersion}` });
         h.input.params.id = `00${issue.id}`;
         expect(await routes.get(h.event)).toMatchObject({ id: issue.id, slug: issue.slug });
+    });
+    it("houdt afbeeldingsversies gelijk in ophalen, opslaan, lijsten, zoeken en WebSocket-updates", async () => {
+        const created = await create();
+        const originalUrl = `/api/issues/${created.id}/image?v=${imageVersion}`;
+        expect(created.imageUrl).toBe(originalUrl);
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ imageUrl: originalUrl }));
+        h.input.body = { description: '<p>Andere tekst</p><img src="data:image/png;base64,aGVsbG8=">' };
+        expect((await routes.update(h.event)).imageUrl).toBe(originalUrl);
+
+        const source = "data:image/png;base64,bmV3";
+        const newUrl = `/api/issues/${created.id}/image?v=${createHash("sha256").update(source).digest("hex")}`;
+        h.input.body = { description: `<p>Andere afbeelding</p><img src="${source}">` };
+        expect((await routes.update(h.event)).imageUrl).toBe(newUrl);
+        expect(newUrl).not.toBe(originalUrl);
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ imageUrl: newUrl }));
+        expect((await routes.get(h.event)).imageUrl).toBe(newUrl);
+        expect(await routes.list(h.event)).toEqual([expect.objectContaining({ imageUrl: newUrl })]);
+        h.input.query = { fields: "imageUrl" };
+        expect(await routes.list(h.event)).toEqual([{ id: created.id, imageUrl: newUrl }]);
+        h.input.query = {};
+        expect((await routes.search(h.event)).items).toEqual([expect.objectContaining({ imageUrl: newUrl })]);
+
+        h.input.body = { description: "<p>Afbeelding verwijderd</p>" };
+        expect((await routes.update(h.event)).imageUrl).toBeNull();
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ imageUrl: null }));
+        expect((await routes.get(h.event)).imageUrl).toBeNull();
+        expect(await routes.list(h.event)).toEqual([expect.objectContaining({ imageUrl: null })]);
+        expect((await routes.search(h.event)).items).toEqual([expect.objectContaining({ imageUrl: null })]);
     });
     it("creates unique title slugs, permits custom slugs, and resolves both slugs and numeric IDs", async () => {
         const first = await create("De Brink op slot");
@@ -161,7 +256,7 @@ describe("issue persistence contracts with the migrated schema", () => {
         h.input.query = { fields: "id,title" };
         expect(await routes.list(h.event)).toEqual([{ id: 1, title: "Safe cycle route" }]);
         h.input.query = { fields: "imageUrl,tags", tag: "Café" };
-        expect(await routes.list(h.event)).toEqual([{ id: 1, imageUrl: "/api/issues/1/image", tags: ["bike", "cafe"] }]);
+        expect(await routes.list(h.event)).toEqual([{ id: 1, imageUrl: `/api/issues/1/image?v=${imageVersion}`, tags: ["bike", "cafe"] }]);
         h.input.query = { tag: "absent" };
         expect(await routes.list(h.event)).toEqual([]);
         h.input.query = { fields: "password_hash,SQL" };
@@ -177,7 +272,7 @@ describe("issue persistence contracts with the migrated schema", () => {
         h.input.query = { search: '"safe crossing"', orderBy: "id", order: "DESC", itemsPerPage: "1", page: "2" };
         const result = await routes.search(h.event);
         expect(result.total).toBe(2);
-        expect(result.items).toEqual([expect.objectContaining({ id: 1, slug: "safe-cycle-route", tags: ["bike", "cafe"], snippets: expect.any(Array), imageUrl: "/api/issues/1/image" })]);
+        expect(result.items).toEqual([expect.objectContaining({ id: 1, slug: "safe-cycle-route", tags: ["bike", "cafe"], snippets: expect.any(Array), imageUrl: `/api/issues/1/image?v=${imageVersion}` })]);
         for (const term of ["routes", "cafe"]) {
             h.input.query = { search: term };
             expect((await routes.search(h.event)).total).toBe(2);

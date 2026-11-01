@@ -13,7 +13,7 @@ import Legend from "../app/components/map/Legend.vue";
 import Summary from "../app/components/map/MapFilterSummary.vue";
 import Reset from "../app/components/map/ResetExtentControl.vue";
 import SidePanel from "../app/components/map/SidePanel.vue";
-import LayerPreview from "../app/components/map/LayerPreview.vue";
+import LayerPreview from "../app/components/map/LayerPreview.client.vue";
 import Marker from "../app/components/map/MapMarker.vue";
 import Polyline from "../app/components/map/MapPolyline.vue";
 import Polygon from "../app/components/map/MapPolygon.vue";

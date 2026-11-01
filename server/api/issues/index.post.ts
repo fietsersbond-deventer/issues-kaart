@@ -6,6 +6,7 @@ import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
 import { replaceTagsForIssue } from "~~/server/utils/issueTags";
 import { createUniqueIssueSlug } from "~~/server/utils/issueSlugs";
+import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -105,6 +106,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const imageUrl = getIssueImageUrl(Number(result.lastInsertRowid), sanitizedDescription);
+
   // Get user info for notification
   const user = event.context.user;
   const createdBy = user?.name || user?.username || "Onbekend";
@@ -113,9 +116,10 @@ export default defineEventHandler(async (event) => {
   // Emit with user info
   eventEmitter.emit("issue:created", {
     ...row,
+    imageUrl,
     tags: normalizedTags,
     createdBy,
     createdByUserId,
   });
-  return { ...row, tags: normalizedTags };
+  return { ...row, imageUrl, tags: normalizedTags };
 });

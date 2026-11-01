@@ -1,7 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { extractImageUrl } from "../server/utils/extractImageUrl";
+import { createHash } from "node:crypto";
+import { extractImageUrl, getIssueImageUrl } from "../server/utils/extractImageUrl";
 
 describe("extractImageUrl", () => {
+  it("versioneert alleen de eerste afbeelding en niet de omringende tekst", () => {
+    const source = "data:image/png;base64,first";
+    const version = createHash("sha256").update(source).digest("hex");
+    const expected = `/api/issues/7/image?v=${version}`;
+    expect(getIssueImageUrl(7, `<img src="${source}">`)).toBe(expected);
+    expect(getIssueImageUrl(7, `<p>Nieuwe tekst</p><img alt="nieuw" src='${source}'><img src="data:image/png;base64,second">`)).toBe(expected);
+    expect(getIssueImageUrl(7, '<img src="data:image/png;base64,changed">')).not.toBe(expected);
+    expect(getIssueImageUrl(8, `<img src="${source}">`)).toBe(`/api/issues/8/image?v=${version}`);
+  });
+
+  it.each([null, undefined, "", "<p>Geen afbeelding</p>"])("geeft geen versie-URL zonder afbeelding: %s", (description) => {
+    expect(getIssueImageUrl(7, description)).toBeNull();
+  });
+
   it("should extract image URL from HTML with double quotes", () => {
     const html =
       '<p>Some text</p><img src="data:image/png;base64,iVBORw0KGgo=" alt="test"><p>More text</p>';

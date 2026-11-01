@@ -19,6 +19,7 @@ beforeEach(() => {
     socket = { data: ref<string | null>(null), status: ref("CLOSED"), send: vi.fn(), open: vi.fn(), close: vi.fn() };
     transport.mockReset().mockReturnValue(socket);
     vi.stubGlobal("useAuth", () => ({ token: ref("Bearer test-token") }));
+    vi.stubGlobal("useRequestURL", () => new URL("https://example.test/lijst"));
     vi.spyOn(console, "error").mockImplementation(() => { });
 });
 afterEach(() => { scope.stop(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
@@ -26,12 +27,13 @@ describe("shared WebSocket clients", () => {
     it("shares one notify transport and delivers each message once to subscribed consumers", async () => {
         const { useSharedIssuesWebSocket } = await import("../app/composables/useSharedIssuesWebSocket");
         const first = scope.run(useSharedIssuesWebSocket)!;
-        const second = useSharedIssuesWebSocket();
+        const second = scope.run(useSharedIssuesWebSocket)!;
         const a = vi.fn(), b = vi.fn();
         const unsubscribe = first.subscribe(a);
         second.subscribe(b);
         expect(transport).toHaveBeenCalledTimes(1);
         expect(transport.mock.calls[0]![0]).toContain("/ts/notify");
+        expect(transport.mock.calls[0]![0]).toBe("wss://example.test/ts/notify");
         const payload = { type: "issue-deleted", payload: { id: 1 } };
         socket.data.value = JSON.stringify(payload);
         await nextTick();
@@ -53,9 +55,10 @@ describe("shared WebSocket clients", () => {
     it("normalizes auth tokens, tracks peer IDs, sends typed messages and reference-counts closes", async () => {
         const { useSharedAuthWebSocket } = await import("../app/composables/useSharedAuthWebSocket");
         const first = scope.run(useSharedAuthWebSocket)!;
-        const second = useSharedAuthWebSocket();
+        const second = scope.run(useSharedAuthWebSocket)!;
         expect(transport).toHaveBeenCalledTimes(1);
         expect(transport.mock.calls[0]![0]).toContain("/ts/auth?token=test-token");
+        expect(transport.mock.calls[0]![0]).toBe("wss://example.test/ts/auth?token=test-token");
         const listener = vi.fn(), stop = first.subscribe(listener);
         socket.data.value = JSON.stringify({ type: "peer-connected", payload: "peer-1" });
         await nextTick();
@@ -77,5 +80,38 @@ describe("shared WebSocket clients", () => {
         socket.data.value = JSON.stringify({ type: "error", payload: { message: "unauthorized" } });
         await nextTick();
         expect(socket.close).toHaveBeenCalledTimes(2);
+    });
+    it("builds the auth connection without accessing window and keeps subscribers isolated after disposal", async () => {
+        const { useSharedAuthWebSocket } = await import("../app/composables/useSharedAuthWebSocket");
+        vi.stubGlobal("window", undefined);
+        const first = scope.run(useSharedAuthWebSocket)!;
+        const listener = vi.fn();
+        first.subscribe(listener);
+        expect(first.status.value).toBe("CLOSED");
+        expect(first.peerId.value).toBeNull();
+        scope.stop();
+        scope = effectScope();
+        const second = scope.run(useSharedAuthWebSocket)!;
+        expect(transport).toHaveBeenCalledTimes(2);
+        socket.data.value = JSON.stringify({ type: "peer-connected", payload: "new-peer" });
+        await nextTick();
+        expect(listener).not.toHaveBeenCalled();
+        expect(second.peerId.value).toBe("new-peer");
+    });
+    it("keeps the shared auth transport active when its first consumer is disposed", async () => {
+        const { useSharedAuthWebSocket } = await import("../app/composables/useSharedAuthWebSocket");
+        const first = scope.run(useSharedAuthWebSocket)!;
+        const firstScope = scope;
+        scope = effectScope();
+        const second = scope.run(useSharedAuthWebSocket)!;
+        const listener = vi.fn();
+        second.subscribe(listener);
+        first.close();
+        firstScope.stop();
+        socket.data.value = JSON.stringify({ type: "peer-connected", payload: "shared-peer" });
+        await nextTick();
+        expect(listener).toHaveBeenCalledTimes(1);
+        expect(second.peerId.value).toBe("shared-peer");
+        expect(socket.close).not.toHaveBeenCalled();
     });
 });

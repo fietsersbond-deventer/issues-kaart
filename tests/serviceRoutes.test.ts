@@ -1,6 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { migratedDatabase, routeHarness, seed } from "./helpers/server";
+import sharp from "sharp";
+import { randomBytes } from "node:crypto";
 const streetview = vi.hoisted(() => ({ resolveShareLink: vi.fn(), parseStreetViewUrl: vi.fn(), buildStreetViewThumbnailUrl: vi.fn(), fetchThumbnailAsDataUrl: vi.fn(), buildEmbedPbUrl: vi.fn() }));
 vi.mock("../server/utils/streetView", () => streetview);
 let db: DatabaseSync;
@@ -10,6 +12,27 @@ const fetch = vi.fn();
 const config = { matomo: { url: "https://analytics.example.test/", authToken: "test-only", trackerUrl: "", scriptUrl: "" } };
 beforeEach(async () => { h = routeHarness(); db = await migratedDatabase(); seed(db); vi.stubGlobal("useRuntimeConfig", () => config); vi.stubGlobal("$fetch", fetch); fetch.mockReset(); config.matomo = { url: "https://analytics.example.test/", authToken: "test-only", trackerUrl: "", scriptUrl: "" }; vi.spyOn(console, "error").mockImplementation(() => { }); });
 afterEach(() => { db.close(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+it("lists current public issue slugs for the sitemap without drafts or empty identifiers", async () => {
+    const handler = (await import("../server/api/sitemap/urls.get")).default;
+    expect(handler(h.event)).toEqual([]);
+    const insert = db.prepare("INSERT INTO issues (title, slug, description, geometry, legend_id) VALUES (?, ?, '', '{}', 1)");
+    insert.run("First", "first");
+    insert.run("Special", "route & crossing");
+    insert.run("Draft", "new");
+    insert.run("Empty", "");
+    expect(handler(h.event)).toEqual([
+        { loc: "/kaart/first" },
+        { loc: "/kaart/route%20%26%20crossing" },
+    ]);
+    db.prepare("DELETE FROM issues WHERE slug = ?").run("first");
+    expect(handler(h.event)).toEqual([{ loc: "/kaart/route%20%26%20crossing" }]);
+});
+it("advertises the configured sitemap URL in robots.txt", async () => {
+    vi.stubGlobal("getSiteConfig", () => ({ url: "https://example.test/" }));
+    const handler = (await import("../server/routes/robots.txt.get")).default;
+    expect(handler(h.event)).toBe("User-agent: *\nAllow: /\nSitemap: https://example.test/sitemap.xml\n");
+    expect(h.responseHeaders.get("Content-Type")).toBe("text/plain; charset=utf-8");
+});
 it("serves decoded data images with cache headers and reports missing or invalid images", async () => {
     const image = (await import("../server/api/issues/[id]/image.get")).default;
     await expect(image(h.event)).rejects.toMatchObject({ statusCode: 400 });
@@ -22,7 +45,49 @@ it("serves decoded data images with cache headers and reports missing or invalid
     db.prepare("UPDATE issues SET description = ? WHERE id = 1").run('<img src="data:image/png;base64,aGVsbG8=">');
     expect(await image(h.event)).toEqual(Buffer.from("hello"));
     expect(h.responseHeaders.get("Content-Type")).toBe("image/png");
-    expect(h.responseHeaders.get("Cache-Control")).toContain("max-age=");
+    expect(h.responseHeaders.get("Cache-Control")).toBe("public, max-age=3600");
+});
+it("creates bounded JPEG social previews, preserves originals and revalidates changed images", async () => {
+    const handler = (await import("../server/api/issues/[id]/og-image.get")).default;
+    const status = vi.fn();
+    vi.stubGlobal("setResponseStatus", status);
+    await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 400 });
+    h.input.params.id = "1";
+    await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 404 });
+    db.exec("INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'no image', '{}', 1)");
+    await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 404 });
+    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run('<img src="data:image/png;bad">');
+    await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 500 });
+    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run('<img src="data:image/png;base64,aGVsbG8=">');
+    await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 500 });
+    expect(console.error).toHaveBeenCalled();
+    const source = await sharp(randomBytes(2400 * 1260 * 3), {
+        raw: { width: 2400, height: 1260, channels: 3 },
+    }).png().toBuffer();
+    const description = `<p>Original</p><img src="data:image/png;base64,${source.toString("base64")}">`;
+    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(description);
+    const preview = await handler(h.event);
+    expect(Buffer.isBuffer(preview)).toBe(true);
+    expect(preview!.length).toBeLessThanOrEqual(1_000_000);
+    expect(await sharp(preview).metadata()).toMatchObject({ width: 1200, height: 630, format: "jpeg" });
+    expect(h.responseHeaders.get("Content-Type")).toBe("image/jpeg");
+    expect(h.responseHeaders.get("Content-Length")).toBe(preview!.length);
+    expect(h.responseHeaders.get("Cache-Control")).toContain("must-revalidate");
+    expect(db.prepare("SELECT description FROM issues WHERE id = 1").get()!.description).toBe(description);
+    const etag = h.responseHeaders.get("ETag")!;
+    h.input.headers["if-none-match"] = `W/${etag}`;
+    expect(await handler(h.event)).toBeUndefined();
+    expect(status).toHaveBeenCalledWith(h.event, 304);
+    const replacement = await sharp({ create: { width: 200, height: 400, channels: 4, background: "#ff0000" } }).png().toBuffer();
+    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(`<img src="data:image/png;base64,${replacement.toString("base64")}">`);
+    const updated = await handler(h.event);
+    expect(h.responseHeaders.get("ETag")).not.toBe(etag);
+    expect(await sharp(updated).metadata()).toMatchObject({ width: 200, height: 400, format: "jpeg" });
+    const portrait = await sharp({ create: { width: 800, height: 1600, channels: 3, background: "#00ff00" } }).png().toBuffer();
+    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(`<img src="data:image/png;base64,${portrait.toString("base64")}">`);
+    const resized = await handler(h.event);
+    expect(await sharp(resized).metadata()).toMatchObject({ width: 315, height: 630, format: "jpeg" });
+    expect(resized!.length).toBeLessThanOrEqual(1_000_000);
 });
 it("requires Street View authentication, returns a prepared preview and translates provider errors", async () => {
     const parse = (await import("../server/api/streetview/parse.post")).default;

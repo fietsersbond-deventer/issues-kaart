@@ -1,6 +1,6 @@
 // import type { Issue } from "../../database/schema";
 import { getDb } from "~~/server/utils/db";
-import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueId } from "~~/server/utils/issueTags";
 import { getIssueIdFromIdentifier } from "~~/server/utils/issueSlugs";
 
@@ -50,8 +50,7 @@ export default defineEventHandler(async (event) => {
   // Check if there's an image in the description
   const description =
     typeof row.description === "string" ? row.description : null;
-  const hasImage = extractImageUrl(description) !== null;
-  const imageUrl = hasImage ? `/api/issues/${row.id}/image` : null;
+  const imageUrl = getIssueImageUrl(row.id, description);
   const tags = getTagsForIssueId(db, row.id);
 
   return {

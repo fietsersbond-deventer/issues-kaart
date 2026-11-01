@@ -1,8 +1,6 @@
 <template>
-  <ClientOnly>
-    <LayoutMobile v-if="mobile" />
-    <LayoutDesktop v-else />
-  </ClientOnly>
+  <LayoutDesktop v-if="!mobile" />
+  <LayoutMobile v-else />
 </template>
 
 <script setup lang="ts">

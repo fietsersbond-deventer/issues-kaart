@@ -61,7 +61,7 @@ const { showSuccess, showError } = useSnackbar();
 
 async function copyUrl() {
   try {
-    if (navigator?.clipboard?.writeText) {
+    if (navigator?.clipboard?.writeText && window) {
       await navigator.clipboard.writeText(window.location.href);
       showSuccess("URL gekopieerd!");
     } else {

@@ -1,5 +1,5 @@
 import { getDb } from "~~/server/utils/db";
-import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueIds } from "~~/server/utils/issueTags";
 import { getMatches } from "~~/app/utils/getMatch";
 import { parseSearchTerms } from "~~/app/utils/parseSearchTerms";
@@ -143,9 +143,7 @@ export default defineEventHandler(async (event) => {
 
     // Add imageUrl if requested (returns URL path, not actual data)
     if (typeof description === "string") {
-      // Check if issue has an image in description
-      const hasImage = extractImageUrl(description) !== null;
-      result.imageUrl = hasImage ? `/api/issues/${issue.id}/image` : null;
+      result.imageUrl = getIssueImageUrl(issue.id as number, description);
     }
 
     return result;
