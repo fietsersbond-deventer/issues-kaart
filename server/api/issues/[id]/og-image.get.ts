@@ -27,8 +27,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: "Ongeldig afbeeldingsformaat" });
   }
 
-  // De versie omvat de bron en de uitvoerinstellingen. Hergebruik is alleen
-  // toegestaan na controle, zodat wijzigingen op dezelfde URL zichtbaar worden.
+  // De versie omvat de bron en de uitvoerinstellingen. Binnen de servercacheduur
+  // blijft de eerder gemaakte afbeelding met deze ETag beschikbaar.
   const etag = `"${createHash("sha256").update("og-jpeg-inside-1200x630-v2:").update(dataUrl).digest("hex")}"`;
   setResponseHeader(event, "ETag", etag);
   setResponseHeader(event, "Cache-Control", "public, max-age=0, must-revalidate");

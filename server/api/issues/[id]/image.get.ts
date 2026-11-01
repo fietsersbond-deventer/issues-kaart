@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
 
   // Set appropriate headers
   setResponseHeader(event, "Content-Type", mimeType);
-  setResponseHeader(event, "Cache-Control", "public, max-age=31536000"); // Cache for 1 year
+  setResponseHeader(event, "Cache-Control", "public, max-age=3600");
 
   return imageBuffer;
 });

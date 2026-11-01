@@ -45,7 +45,7 @@ it("serves decoded data images with cache headers and reports missing or invalid
     db.prepare("UPDATE issues SET description = ? WHERE id = 1").run('<img src="data:image/png;base64,aGVsbG8=">');
     expect(await image(h.event)).toEqual(Buffer.from("hello"));
     expect(h.responseHeaders.get("Content-Type")).toBe("image/png");
-    expect(h.responseHeaders.get("Cache-Control")).toContain("max-age=");
+    expect(h.responseHeaders.get("Cache-Control")).toBe("public, max-age=3600");
 });
 it("creates bounded JPEG social previews, preserves originals and revalidates changed images", async () => {
     const handler = (await import("../server/api/issues/[id]/og-image.get")).default;

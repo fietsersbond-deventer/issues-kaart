@@ -53,9 +53,18 @@ opgeslagen afbeelding proportioneel tot maximaal 1200 × 630 en levert JPEG van
 maximaal 1.000.000 bytes. Er wordt niets bijgesneden of vergroot.
 De originele afbeelding en omschrijving blijven ongewijzigd.
 Transparantie wordt wit; EXIF-oriëntatie wordt toegepast. Een inhoudsafhankelijke
-ETag en verplichte cachevalidatie voorkomen verouderde HTTP-cacheversies.
+ETag maakt HTTP-cachevalidatie mogelijk.
 Ontbrekende afbeeldingen geven 404; ongeldige of niet-verwerkbare afbeeldingen
 geven een expliciete fout. Bronafbeeldingen zijn begrensd op 40 miljoen pixels.
+
+De image- en og-image-routes worden via `routeRules` één uur server-side
+gecachet, zonder stale-while-revalidate. Cachehits vermijden databasewerk en
+beeldverwerking. Wijzigingen en verwijderingen kunnen daardoor maximaal één uur
+later zichtbaar worden; er is geen directe cache-invalidatie. Het gewone
+image-endpoint geeft eveneens één uur browsercache mee in plaats van één jaar.
+Nitro overschrijft ook voor og-image de cacheheader met `max-age=3600`.
+De plugin `server/plugins/image-cache.ts` herstelt de Buffers die Nitro 2 als JSON
+opslaat, zodat cachehits echte afbeeldingsbytes blijven leveren.
 
 De HTTP-controle start tijdelijk de productiebuild op 127.0.0.1:3000, controleert
 homepage, loginpagina, lijst, issues-API en adminlogin en stopt zijn eigen server.
