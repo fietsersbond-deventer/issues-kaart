@@ -94,16 +94,25 @@ export const useSelectedIssue = defineStore("selectedIssue", () => {
         isEditing.value = true;
         return;
       }
-      const id = +(newId ?? 0) || null;
-      selectedId.value = id;
+      const identifier = typeof newId === "string" ? newId : "";
+      const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
+      selectedId.value =
+        numericId !== null && Number.isSafeInteger(numericId) && numericId > 0
+          ? numericId
+          : null;
       isEditing.value = false;
 
       // Fetch full issue data when selecting an issue
-      if (id !== null) {
+      if (identifier) {
         issue.value = null;
         try {
-          const loadedIssue = await $fetch<Issue>(`/api/issues/${id}`);
-          if (current) issue.value = enrichIssueWithLegend(loadedIssue);
+          const loadedIssue = await $fetch<Issue>(
+            `/api/issues/${encodeURIComponent(identifier)}`,
+          );
+          if (current) {
+            selectedId.value = loadedIssue.id;
+            issue.value = enrichIssueWithLegend(loadedIssue);
+          }
         } catch (error) {
           if (!current) return;
           const status = (error as { statusCode?: number }).statusCode;

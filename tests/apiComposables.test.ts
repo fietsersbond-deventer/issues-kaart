@@ -31,6 +31,15 @@ describe("API composable contracts", () => {
         expect(fetch).toHaveBeenLastCalledWith("/api/issues", { method: "POST", body: draft, headers: auth });
         await methods.update(1, { id: 1, ...draft } as Parameters<typeof methods.update>[1]);
         expect(fetch).toHaveBeenLastCalledWith("/api/issues/1", expect.objectContaining({ method: "PATCH" }));
+        fetch.mockResolvedValueOnce({ slug: "de-brink-op-slot-2" });
+        await expect(methods.getUniqueSlug("de brink op slot", 1)).resolves.toEqual({
+            slug: "de-brink-op-slot-2",
+        });
+        expect(fetch).toHaveBeenLastCalledWith("/api/issues/slug", {
+            method: "POST",
+            body: { slug: "de brink op slot", issueId: 1 },
+            headers: auth,
+        });
         expect(await methods.remove(1)).toEqual({ id: 1 });
         expect(methods.getImageUrl(4)).toBe("/api/issues/4/image");
         token.value = null;

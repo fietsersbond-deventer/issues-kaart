@@ -54,7 +54,7 @@
           <template #item.actions="{ item }">
             <div>
                 <v-btn
-                  :to="`/kaart/${item.id}`"
+                  :to="`/kaart/${item.slug || item.id}`"
                   icon
                   variant="text"
                   size="small"
@@ -99,6 +99,7 @@ const state = useState("issues-state", () => ({
 
 type SearchIssue = {
   id: number;
+  slug: string;
   title: string;
   legend_id: number;
   created_at: string;
@@ -171,7 +172,7 @@ const issues = computed(() =>
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
 function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
-  navigateTo(`/kaart/${item.id}`)
+  navigateTo(`/kaart/${item.slug || item.id}`)
 }
 
 const headers = computed(() => {

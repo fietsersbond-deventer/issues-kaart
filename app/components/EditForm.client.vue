@@ -9,22 +9,11 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
-        <v-btn
-          v-if="'id' in issue"
-          color="error"
-          variant="flat"
-          @click="onDelete"
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -37,7 +26,40 @@
                 label="Titel"
                 :rules="[(v: string) => !!v || 'Titel is verplicht']"
                 required
+                hide-details="auto"
+                @blur="generateSlugOnBlur"
               />
+              <div class="issue-url-editor">
+                <div class="issue-url-control">
+                  <span class="issue-url-prefix">{{ requestURL.origin }}/kaart/</span>
+                  <input
+                    v-model.trim="issue.slug"
+                    aria-label="URL-deel"
+                    autocomplete="off"
+                    spellcheck="false"
+                    @input="onSlugInput"
+                    @blur="checkSlugOnBlur"
+                  >
+                </div>
+                <div
+                  v-if="isGeneratingSlug"
+                  class="issue-url-status"
+                  role="status"
+                >
+                  Wachten tot de titel compleet is; de URL wordt over 2 seconden
+                  of bij verlaten van het titelveld gegenereerd.
+                </div>
+                <div
+                  v-else-if="isCheckingSlug"
+                  class="issue-url-status"
+                  role="status"
+                >
+                  URL controleren…
+                </div>
+                <div v-if="slugError" class="issue-url-error" role="alert">
+                  {{ slugError }}
+                </div>
+              </div>
             </v-col>
 
             <v-col cols="12">
@@ -65,10 +87,7 @@
                     Street View toevoegen
                   </v-btn>
                 </div>
-                <div
-                  v-if="!issue.description"
-                  class="text-error text-caption mt-1"
-                >
+                <div v-if="!issue.description" class="text-error text-caption mt-1">
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -99,8 +118,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen
-                bovenin de kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
+                kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -109,16 +128,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
@@ -136,9 +149,8 @@
       <v-card-title>Street View toevoegen</v-card-title>
       <v-card-text>
         <p class="text-body-2 mb-2">
-          Plak hier een Street View link (gebruik de Deel-knop in Google Maps
-          terwijl je in Street View staat). Gewone kaartlocaties worden niet
-          ondersteund.
+          Plak hier een Street View link (gebruik de Deel-knop in Google Maps terwijl je
+          in Street View staat). Gewone kaartlocaties worden niet ondersteund.
         </p>
         <v-text-field
           v-model.trim="streetViewUrl"
@@ -153,7 +165,7 @@
             :src="parsedPreview.previewDataUrl"
             alt="Street View voorvertoning"
             class="streetview-dialog-preview"
-          >
+          />
         </div>
       </v-card-text>
       <v-card-actions>
@@ -180,7 +192,11 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
-import { isExistingIssue, type Issue, type NewIssue } from "~~/shared/types/Issue";
+import {
+  isExistingIssue,
+  type Issue,
+  type NewIssue,
+} from "~~/shared/types/Issue";
 import { imageCompressor } from "quill-image-compress";
 import {
   ensureStreetViewEmbedBlotRegistered,
@@ -196,6 +212,18 @@ void ensureStreetViewEmbedBlotRegistered();
 const valid = ref(true);
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue | NewIssue>({ required: true });
+const route = useRoute();
+const requestURL = useRequestURL();
+const {
+  isGenerating: isGeneratingSlug,
+  isChecking: isCheckingSlug,
+  error: slugError,
+  isValid: isSlugValid,
+  onInput: onSlugInput,
+  generateOnBlur: generateSlugOnBlur,
+  checkOnBlur: checkSlugOnBlur,
+} = useIssueSlug(issue);
+const { update, create, remove } = useIssuesMethods();
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
@@ -216,7 +244,9 @@ const geometryRules = [
 
 // Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
 const canSubmit = computed(() => {
-  return valid.value && isModified.value && isConnected.value;
+  return (
+    valid.value && isModified.value && isConnected.value && isSlugValid.value
+  );
 });
 
 const modules = [
@@ -357,7 +387,6 @@ async function insertStreetView() {
   showStreetViewDialog.value = false;
 }
 
-const { update, create, remove } = useIssuesMethods();
 const { categories } = storeToRefs(useCategories());
 const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
@@ -376,20 +405,30 @@ const authHeaders = computed(() => {
 
 async function onSubmit() {
   // Prevent submission if connection is lost
-  if (!isConnected.value) {
+  if (!isConnected.value || !isSlugValid.value) {
     return;
   }
 
   if (issue.value && valid.value) {
     const username = user.value?.name || "anonymous";
     if (isExistingIssue(issue.value)) {
-      await update(issue.value.id, issue.value);
+      const updatedIssue = await update(issue.value.id, issue.value);
       // Track issue modification in Matomo
       trackEvent(
         "Issue",
         "Modified",
         `Issue #${issue.value.id} by ${username}: ${issue.value.title}`,
       );
+      if (updatedIssue.slug !== issue.value.slug) {
+        issue.value.slug = updatedIssue.slug;
+      }
+      if (updatedIssue.slug !== route.params.id) {
+        showDialog.value = false;
+        return navigateTo({
+          path: `/kaart/${updatedIssue.slug}`,
+          query: route.query,
+        });
+      }
     } else {
       const result = await create(issue.value);
       if (isExistingIssue(result)) {
@@ -400,7 +439,7 @@ async function onSubmit() {
           `Issue #${result.id} by ${username}: ${result.title}`,
         );
         showDialog.value = false;
-        return navigateTo(`/kaart/${result.id}`);
+        return navigateTo(`/kaart/${result.slug}`);
       }
     }
   }
@@ -456,6 +495,55 @@ async function onDelete() {
 
 .quill-editor {
   height: 250px;
+}
+
+.issue-url-control {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  font-size: 0.875rem;
+}
+
+.issue-url-editor {
+  margin-top: 6px;
+}
+
+.issue-url-prefix {
+  flex: 0 0 auto;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  white-space: nowrap;
+}
+
+.issue-url-control input {
+  flex: 1;
+  min-width: 0;
+  margin-left: 2px;
+  padding: 2px 4px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.24);
+  border-radius: 3px;
+  color: rgb(var(--v-theme-on-surface));
+  background: transparent;
+  font: inherit;
+}
+
+.issue-url-control input:focus {
+  border-color: rgb(var(--v-theme-primary));
+  outline: 1px solid rgb(var(--v-theme-primary));
+}
+
+.issue-url-status,
+.issue-url-error {
+  min-height: 20px;
+  padding-top: 4px;
+  font-size: 0.75rem;
+}
+
+.issue-url-status {
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.issue-url-error {
+  color: rgb(var(--v-theme-error));
 }
 
 /* Force Quill editor to fit within container */

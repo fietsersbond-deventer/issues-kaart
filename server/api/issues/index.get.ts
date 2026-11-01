@@ -4,6 +4,7 @@ import { getTagsForIssueIds, normalizeTag } from "~~/server/utils/issueTags";
 
 type IssueRow = {
   id?: number;
+  slug?: string;
   title?: string;
   description?: string;
   legend_id?: number;
@@ -31,6 +32,7 @@ export default defineEventHandler(async (event) => {
   // Define available fields and their SQL expressions
   const availableFields = {
     id: "i.id",
+    slug: "i.slug",
     title: "i.title",
     description: "i.description",
     legend_id: "i.legend_id",
@@ -78,7 +80,7 @@ export default defineEventHandler(async (event) => {
     includeGeometry = validFields.includes("geometry");
   } else {
     // Return all fields if none specified
-    selectFields = `i.id, i.title, i.description, i.legend_id, i.geometry, i.created_at`;
+    selectFields = `i.id, i.slug, i.title, i.description, i.legend_id, i.geometry, i.created_at`;
     includeImageUrl = true; // Include imageUrl processing for full data
     includeTags = true;
   }

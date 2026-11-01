@@ -2,6 +2,7 @@
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueId } from "~~/server/utils/issueTags";
+import { getIssueIdFromIdentifier } from "~~/server/utils/issueSlugs";
 
 type IssueRow = {
   id: number;
@@ -10,6 +11,7 @@ type IssueRow = {
   legend_id: number;
   geometry: string;
   created_at: string;
+  slug: string;
 };
 
 export default defineEventHandler(async (event) => {
@@ -23,14 +25,21 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
+  const issueId = getIssueIdFromIdentifier(db, id);
+  if (issueId === null) {
+    throw createError({
+      statusCode: 404,
+      message: `Issue with ID or slug ${id} not found`,
+    });
+  }
   const row = db
     .prepare(
-      `SELECT i.id, i.title, i.description, i.legend_id, 
+      `SELECT i.id, i.slug, i.title, i.description, i.legend_id,
      i.geometry, i.created_at 
      FROM issues i 
      WHERE i.id = ?`,
     )
-    .get(id) as IssueRow | undefined;
+    .get(issueId) as IssueRow | undefined;
   if (!row) {
     throw createError({
       statusCode: 404,

@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { ensureTagMetadata, getTagMetadata, getTagsForIssueId, getTagsForIssueIds, normalizeTags, replaceTagsForIssue, setTagDescription } from "../server/utils/issueTags";
+import { normalizeSlug, slugify } from "../shared/utils/slug";
 import { migratedDatabase, seed } from "./helpers/server";
 let db: DatabaseSync;
 beforeEach(async () => { db = await migratedDatabase(); seed(db); db.exec("INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'x', '{}', 1)"); });
@@ -8,6 +9,8 @@ afterEach(() => db.close());
 it("normalizes, limits and deduplicates tags; ignores non-array input", () => {
     expect(normalizeTags(null)).toEqual([]);
     expect(normalizeTags(["Café", " cafe ", null, "!!!", "Bike"])).toEqual(["cafe", "bike"]);
+    expect(normalizeSlug(" L'été & Æther ")).toBe("l-ete-aether");
+    expect(normalizeTags([" L'été & Æther "])).toEqual([slugify(" L'été & Æther ")]);
     expect(normalizeTags(Array.from({ length: 20 }, (_, i) => `tag-${i}`))).toHaveLength(10);
 });
 it("ensures metadata without overwriting labels and supplies fallback metadata for unknown tags", () => {

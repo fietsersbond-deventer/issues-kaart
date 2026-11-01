@@ -16,7 +16,7 @@ export const useIssues = defineStore("issues", () => {
   const { categories } = storeToRefs(useCategories());
 
   const fetchOptions = {
-    query: { fields: "id,title,legend_id,geometry,imageUrl,tags" },
+    query: { fields: "id,slug,title,legend_id,geometry,imageUrl,tags" },
   };
   const {
     data,
