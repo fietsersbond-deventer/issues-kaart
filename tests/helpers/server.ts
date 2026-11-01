@@ -10,23 +10,14 @@ import { getPlainText } from "../../server/utils/getPlainText";
 export async function migratedDatabase() {
     const db = new DatabaseSync(":memory:");
     for (const file of readdirSync(resolve("server/database/migrations")).sort()) {
-        if (file.endsWith(".sql"))
+        if (file.endsWith(".sql")) {
             db.exec(readFileSync(resolve("server/database/migrations", file), "utf8"));
+        } else if (file.endsWith(".js")) {
+            // Dynamic import of JS migrations (Vite-compatible)
+            const migration = await import(`../../server/database/migrations/${file}`);
+            migration.default(db);
+        }
     }
-    
-    // Import JS migrations explicitly (Vite requires static imports)
-    const addTexts = await import("../../server/database/migrations/0012_add_texts.js");
-    addTexts.default(db);
-    
-    const populatePlainText = await import("../../server/database/migrations/0014_populate_plain_text.js");
-    populatePlainText.default(db);
-    
-    const addIssueSlugs = await import("../../server/database/migrations/0016_add_issue_slugs.js");
-    addIssueSlugs.default(db);
-    
-    const refactorTags = await import("../../server/database/migrations/0017_refactor_tags_use_id.js");
-    refactorTags.default(db);
-    
     return db;
 }
 export const admin = { id: 1, username: "admin@example.test", name: "Test Admin", role: "admin" };
