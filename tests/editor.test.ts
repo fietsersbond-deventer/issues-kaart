@@ -66,10 +66,10 @@ describe("issue editor persistence boundaries", () => {
             slug: slug === "occupied-2" ? "occupied-3" : slug,
         }));
 
-        const slugInput = wrapper.findAll("input")[1]!;
+        const slugInput = wrapper.find('input[aria-label="URL-deel"]');
         await slugInput.setValue("occupied-2");
         expect(getUniqueSlug).not.toHaveBeenCalled();
-        wrapper.findAllComponents(Field)[1]!.vm.$emit("blur");
+        await slugInput.trigger("blur");
         await flushPromises();
 
         expect(slugInput.element.value).toBe("occupied-3");
@@ -79,11 +79,13 @@ describe("issue editor persistence boundaries", () => {
         vi.useFakeTimers();
         const wrapper = editor({ title: "", description: "text", tags: [] });
         const titleInput = wrapper.findAll("input")[0]!;
-        const slugInput = wrapper.findAll("input")[1]!;
+        const slugInput = wrapper.find('input[aria-label="URL-deel"]');
 
         await titleInput.setValue("De Brink op slot");
         expect(slugInput.element.value).toBe("");
         expect(wrapper.text()).toContain("Wachten tot de titel compleet is");
+        expect(wrapper.find(".issue-url-prefix").text())
+            .toBe("https://issues.example.test/kaart/");
         expect(getUniqueSlug).not.toHaveBeenCalled();
 
         await vi.advanceTimersByTimeAsync(1999);
@@ -92,8 +94,9 @@ describe("issue editor persistence boundaries", () => {
         await flushPromises();
 
         expect(slugInput.element.value).toBe("de-brink-op-slot");
-        expect(wrapper.findAllComponents(Field)[1]!.props("hint"))
-            .toBe("https://issues.example.test/kaart/de-brink-op-slot");
+        expect(
+            `${wrapper.find(".issue-url-prefix").text()}${slugInput.element.value}`,
+        ).toBe("https://issues.example.test/kaart/de-brink-op-slot");
         expect(getUniqueSlug).toHaveBeenCalledWith("de-brink-op-slot", undefined);
         vi.useRealTimers();
     });
@@ -161,7 +164,7 @@ describe("issue editor persistence boundaries", () => {
         await flushPromises();
         await wrapper.get("form").trigger("submit");
         expect(create).not.toHaveBeenCalled();
-        const geometry = wrapper.findAllComponents(Field)[2]!;
+        const geometry = wrapper.findAllComponents(Field)[1]!;
         expect(geometry.props("rules")[0]("")).toContain("Voeg een locatie");
     });
     it("fetches a Street View preview with auth, inserts it in the draft and handles parse failures", async () => {
