@@ -33,6 +33,7 @@
     "format:check": "prettier --check eslint.config.mjs tsconfig.eslint.json tests/eslintConfig.test.ts app/composables/useMapResize.ts server/api/profile.post.ts"
   },
   "dependencies": {
+    "@nuxtjs/sitemap": "^8.6.2",
     "@iconify/vue": "5.0.4",
     "@mdi/font": "^7.4.47",
     "@nuxt/eslint": "^1.17.0",
@@ -67,6 +68,7 @@
     "proj4": "^2.22.0",
     "quill-image-compress": "^2.0.3",
     "sanitize-html": "^2.18.1",
+    "sharp": "^0.35.5",
     "vue3-openlayers": "^12.2.2",
     "vuetify-nuxt-module": "0.19.5"
   },

@@ -69,7 +69,15 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "nuxt-nodemailer",
     "@nuxt/icon",
+    "@nuxtjs/sitemap",
   ],
+  sitemap: {
+    excludeAppSources: true,
+    urls: ["/", "/kaart", "/lijst"],
+    sources: ["/api/sitemap/urls"],
+    exclude: ["/admin/**", "/login", "/reset-password/**", "/kaart/new"],
+    cacheMaxAgeSeconds: 60,
+  },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
     provider: {

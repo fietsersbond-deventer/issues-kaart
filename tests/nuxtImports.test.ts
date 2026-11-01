@@ -65,6 +65,12 @@ describe("Nuxt-auto-imports", () => {
           refreshOnlyToken: false,
         },
       });
+      expect(config.sitemap).toMatchObject({
+        excludeAppSources: true,
+        urls: ["/", "/kaart", "/lijst"],
+        sources: ["/api/sitemap/urls"],
+        exclude: ["/admin/**", "/login", "/reset-password/**", "/kaart/new"],
+      });
     } finally {
       vi.unstubAllGlobals();
     }

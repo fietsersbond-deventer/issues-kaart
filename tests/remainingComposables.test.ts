@@ -52,7 +52,8 @@ it("generates issue metadata, adds images when present and supplies empty-conten
     vi.stubGlobal("useRuntimeConfig", () => ({ public: { organization: { name: "Test Organization" } } }));
     const { useIssueOpenGraph } = await import("../app/composables/useIssueOpenGraph");
     useIssueOpenGraph({ id: 1, title: "Issue", description: "<p>Hello</p>", imageUrl: "/api/issues/1/image" } as Issue);
-    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/image" });
+    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image" });
+    expect(render!().meta.some((entry) => entry.property === "og:image:width" || entry.property === "og:image:height")).toBe(false);
     expect(render!().meta).toContainEqual({ name: "description", content: "Hello" });
     useIssueOpenGraph({ id: 2, title: "", description: "", imageUrl: null } as Issue);
     expect(render!().title).toBe("Onderwerp");
@@ -69,10 +70,10 @@ it("updates social previews when an issue loads, changes or is cleared", async (
     useIssueOpenGraph(issue);
     expect(render!()).toEqual({});
     issue.value = { id: 1, slug: "first", title: "First", description: "", imageUrl: "/api/issues/1/image" } as Issue;
-    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/image" });
+    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image" });
     issue.value = { ...issue.value, id: 2, slug: "second", imageUrl: "/api/issues/2/image" };
     expect(render!().meta).toContainEqual({ property: "og:url", content: "https://example.test/kaart/second" });
-    expect(render!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/2/image" });
+    expect(render!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/2/og-image" });
     issue.value = null;
     expect(render!()).toEqual({});
 });

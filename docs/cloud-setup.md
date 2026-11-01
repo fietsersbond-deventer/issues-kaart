@@ -38,6 +38,25 @@ Zo blijven relatieve databasepaden en de migratiemappen gelijk aan development;
 rechtstreeks starten vanuit `.output` verandert die paden. Gebruik voor een
 deployment bij voorkeur een absoluut `NUXT_DB_PATH`.
 
+De sitemap is bereikbaar op `/sitemap.xml`. De sitemapmodule bepaalt het
+domein uit het binnenkomende verzoek; een extra omgevingsvariabele is niet nodig.
+Zorg achter een reverse proxy voor de juiste publieke host en het HTTPS-protocol
+in de doorgestuurde headers.
+Alleen de homepage, kaart, lijst en opgeslagen onderwerp-slugs worden opgenomen.
+De bron `/api/sitemap/urls` leest SQLite tijdens requests. In productie
+wordt de sitemap maximaal 60 seconden gecachet; een nieuwe build is niet nodig.
+Beheer, login, wachtwoordherstel en nieuwe concepten worden niet opgenomen.
+`/robots.txt` verwijst naar de sitemap op hetzelfde domein.
+
+Socialmediapreviews gebruiken `/api/issues/<id>/og-image`: Sharp verkleint de eerste
+opgeslagen afbeelding proportioneel tot maximaal 1200 × 630 en levert JPEG van
+maximaal 1.000.000 bytes. Er wordt niets bijgesneden of vergroot.
+De originele afbeelding en omschrijving blijven ongewijzigd.
+Transparantie wordt wit; EXIF-oriëntatie wordt toegepast. Een inhoudsafhankelijke
+ETag en verplichte cachevalidatie voorkomen verouderde HTTP-cacheversies.
+Ontbrekende afbeeldingen geven 404; ongeldige of niet-verwerkbare afbeeldingen
+geven een expliciete fout. Bronafbeeldingen zijn begrensd op 40 miljoen pixels.
+
 De HTTP-controle start tijdelijk de productiebuild op 127.0.0.1:3000, controleert
 homepage, loginpagina, lijst, issues-API en adminlogin en stopt zijn eigen server.
 Twee opeenvolgende ingelogde SSR-verzoeken naar de lijst controleren of de
