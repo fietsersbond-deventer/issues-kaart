@@ -80,5 +80,6 @@ export const useTagsApi = () => {
     create,
     update,
     remove,
+    refreshTags,
   };
 };

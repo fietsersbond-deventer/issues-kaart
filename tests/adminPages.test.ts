@@ -30,7 +30,7 @@ beforeEach(() => {
     vi.stubGlobal("useRoles", () => ({ isAdmin: ref(true) }));
     vi.stubGlobal("requiredRule", (x: string) => !!x);
     vi.stubGlobal("storeToRefs", (x: unknown) => x);
-    vi.stubGlobal("useTagsApi", () => ({ tags: rows, create, update, remove }));
+    vi.stubGlobal("useTagsApi", () => ({ tags: rows, create, update, remove, refreshTags: vi.fn() }));
     vi.stubGlobal("useCategories", () => ({ categories, create, update, remove, getUsage: async () => ({}) }));
     vi.stubGlobal("useUsersApi", () => ({ users, create, update, remove }));
     vi.stubGlobal("useRuntimeConfig", () => ({ public: { appUrl: "https://example.test" } }));

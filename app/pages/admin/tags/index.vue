@@ -4,11 +4,7 @@
       <v-card-title class="d-flex align-center">
         <span>Tags</span>
         <v-spacer />
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-plus"
-          @click="openCreateDialog"
-        >
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">
           Nieuwe tag
         </v-btn>
       </v-card-title>
@@ -24,11 +20,7 @@
         >
           <template #[`item.tag`]="{ item }">
             <div class="d-flex align-center ga-2">
-              <AppIcon
-                :icon="item.icon || 'mdi-tag-outline'"
-                size="18"
-                color="grey"
-              />
+              <AppIcon :icon="item.icon || 'mdi-tag-outline'" size="18" color="grey" />
               <span>{{ item.tag }}</span>
             </div>
           </template>
@@ -137,12 +129,7 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            color="primary"
-            :loading="saving"
-            :disabled="!valid"
-            @click="saveTag"
-          >
+          <v-btn color="primary" :loading="saving" :disabled="!valid" @click="saveTag">
             Opslaan
           </v-btn>
           <v-btn variant="text" @click="dialog = false">Annuleren</v-btn>
@@ -154,14 +141,11 @@
       <v-card>
         <v-card-title>Tag verwijderen</v-card-title>
         <v-card-text>
-          Weet je zeker dat je de tag "{{ selectedTagToDelete?.tag }}" wilt
-          verwijderen?
+          Weet je zeker dat je de tag "{{ selectedTagToDelete?.tag }}" wilt verwijderen?
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="error" :loading="saving" @click="deleteTag">
-            Verwijderen
-          </v-btn>
+          <v-btn color="error" :loading="saving" @click="deleteTag"> Verwijderen </v-btn>
           <v-btn @click="deleteDialog = false">Annuleren</v-btn>
         </v-card-actions>
       </v-card>
@@ -193,7 +177,7 @@ const headers = [
   { title: "Acties", value: "actions", sortable: false },
 ];
 
-const { tags, create, update, remove } = useTagsApi();
+const { tags, create, update, remove, refreshTags } = useTagsApi();
 
 const dialog = ref(false);
 const deleteDialog = ref(false);
@@ -251,7 +235,7 @@ watch(
   () => form.value.label,
   (label) => {
     form.value.tag = normalizeTagValue(label);
-  },
+  }
 );
 
 async function saveTag() {
@@ -272,16 +256,13 @@ async function saveTag() {
       const updated = await update(editingTagId.value, payload);
       if (tags.value) {
         tags.value = tags.value.map((item: Tag) =>
-          item.id === updated.id ? updated : item,
+          item.id === updated.id ? updated : item
         );
       }
     } else {
       const created = await create(payload);
       if (tags.value) {
-        tags.value = [
-          ...tags.value.filter((item) => item.id !== created.id),
-          created,
-        ];
+        tags.value = [...tags.value.filter((item) => item.id !== created.id), created];
       }
     }
 
@@ -305,7 +286,7 @@ async function deleteTag() {
     await remove(selectedTagToDelete.value.id);
     if (tags.value) {
       tags.value = tags.value.filter(
-        (item: Tag) => item.id !== selectedTagToDelete.value?.id,
+        (item: Tag) => item.id !== selectedTagToDelete.value?.id
       );
     }
     deleteDialog.value = false;
@@ -315,6 +296,7 @@ async function deleteTag() {
     useSnackbar().showError("Tag kon niet worden verwijderd");
   } finally {
     saving.value = false;
+    await refreshTags();
   }
 }
 </script>

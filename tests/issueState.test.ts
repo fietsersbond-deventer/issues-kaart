@@ -32,6 +32,7 @@ beforeEach(() => {
     vi.stubGlobal("useIssuesMethods", () => ({ create: vi.fn() }));
     vi.stubGlobal("isNewIssue", isNewIssue);
     vi.stubGlobal("useSharedIssuesWebSocket", () => ({ status: socketStatus, subscribe: (fn: typeof receive) => { receive = fn; return unsubscribe; } }));
+    vi.stubGlobal("useTagsApi", () => ({ tags: { value: [] } }));
 });
 afterEach(() => { stores.splice(0).forEach((s) => s.$dispose()); wrappers.splice(0).forEach((w) => w.unmount()); vi.useRealTimers(); vi.unstubAllGlobals(); });
 const geometry = { type: "Point", coordinates: [6, 52] };
