@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 import { mount } from "@vue/test-utils";
-import LayerPreview from "../app/components/map/LayerPreview.vue";
+import LayerPreview from "../app/components/map/LayerPreview.client.vue";
 import LayerSwitcher from "../app/components/map/LayerSwitcher.vue";
 
 afterEach(() => vi.unstubAllGlobals());
