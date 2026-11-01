@@ -86,6 +86,7 @@ beforeEach(() => {
     }),
   }));
   vi.stubGlobal("useVDisplay", () => ({ mobile }));
+  vi.stubGlobal("onServerPrefetch", vi.fn());
   vi.stubGlobal("useTitle", vi.fn());
   vi.stubGlobal("useIssueOpenGraph", vi.fn());
   vi.stubGlobal("definePageMeta", vi.fn());

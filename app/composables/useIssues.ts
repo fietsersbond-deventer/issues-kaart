@@ -18,6 +18,8 @@ export const useIssues = defineStore("issues", () => {
   const fetchOptions = {
     query: { fields: "id,slug,title,legend_id,geometry,imageUrl,tags" },
   };
+  // Store creation can happen from several components. Keep the initial request
+  // explicit so the kaart page can await it during SSR before Pinia is serialized.
   const {
     data,
     refresh: refreshIssues,
@@ -135,6 +137,8 @@ export const useIssues = defineStore("issues", () => {
       // Keep the editor's local preview when replacing the persisted snapshot.
       if (isEditing.value) updateIssue(issue.value);
     },
+    // Nuxt serializes Pinia immediately after server prefetch. Copy fetched
+    // rows in the same tick so the payload cannot contain an empty issue store.
     { immediate: true, flush: "sync" },
   );
 
@@ -159,6 +163,8 @@ export const useIssues = defineStore("issues", () => {
   );
 
   async function load() {
+    // refresh() resolves after useFetch updates data and the synchronous watcher
+    // has copied that result into the serializable Pinia state.
     await refreshIssues();
   }
 

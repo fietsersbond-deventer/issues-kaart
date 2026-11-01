@@ -34,6 +34,8 @@ export function useMapViewState() {
 export function useMapView(mapRef?: Ref<{ map?: Map } | null>) {
   const { center, zoom, rotation } = useMapViewState();
 
+  // The map plugin provides this in descendant components. In IssueMap the
+  // template ref is the fallback because the OpenLayers map is exposed later.
   const injectedMap = inject<Map | null>("map", null);
   let trackedMap: Map | null = null;
 
@@ -78,6 +80,8 @@ export function useMapView(mapRef?: Ref<{ map?: Map } | null>) {
         if (!map || trackedMap === map) return;
         setupMapViewTracking(map);
       },
+      // OpenLayers fills the nested `map` property as part of rendering. A
+      // post-flush watcher sees that late value without warning during setup.
       { immediate: true, flush: "post" },
     );
   }
