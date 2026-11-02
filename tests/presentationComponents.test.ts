@@ -13,6 +13,7 @@ import OnlineUsers from "../app/components/OnlineUsers.vue";
 import MobileCollapsible from "../app/components/MobileCollapsible.vue";
 import Intro from "../app/components/Intro.vue";
 import IssueDetails from "../app/components/IssueDetails.vue";
+import ShareButton from "../app/components/ShareButton.vue";
 import ImageViewer from "../app/components/ImageViewer.vue";
 import TextEditor from "../app/components/TextEditorDialog.client.vue";
 import { getContrastColor } from "../app/utils/getContrastColor";
@@ -24,6 +25,7 @@ const Tooltip = defineComponent({ props: ["text"], template: '<span :data-toolti
 const Icon = defineComponent({ props: ["name", "icon", "color", "size"], template: '<i :data-icon="name || icon"><slot /></i>' });
 const stubs = { ...uiStubs, VChip: Slot, VTooltip: Tooltip, VIcon: Icon, Icon, AppIcon, VAvatar: Slot };
 const showError = vi.fn(), showSuccess = vi.fn();
+const browserNavigator = window.navigator;
 const mobile = ref(false), auth = ref("authenticated");
 const wrappers: Array<{
     unmount(): void;
@@ -31,6 +33,7 @@ const wrappers: Array<{
 const legend = { id: 1, name: "Routes", description: "Safe routes", color: "#123456", created_at: "2026-01-01" };
 
 beforeEach(() => {
+    showError.mockClear(); showSuccess.mockClear();
   vueGlobals(); auth.value = "authenticated"; mobile.value = false;
   vi.stubGlobal("useVDisplay", () => ({ mobile }));
   vi.stubGlobal("getContrastColor", getContrastColor);
@@ -39,6 +42,8 @@ beforeEach(() => {
   vi.stubGlobal("useSnackbar", () => ({ showError, showSuccess }));
 });
 afterEach(() => {
+    Reflect.deleteProperty(browserNavigator, "share");
+    Reflect.deleteProperty(browserNavigator, "canShare");
   wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); vi.restoreAllMocks();
 });
 
@@ -139,6 +144,55 @@ it("renders issue details while the category is unavailable and shows it when lo
     expect(wrapper.findComponent(CategoryChip).exists()).toBe(false);
     await wrapper.setProps({ issue: { ...issue, legend } });
     expect(wrapper.findComponent(CategoryChip).text()).toContain("Routes");
+});
+it("shares the current URL and title through the native share dialog", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(browserNavigator, "share", { configurable: true, value: share });
+    Object.defineProperty(browserNavigator, "canShare", { configurable: true, value: vi.fn().mockReturnValue(true) });
+    const wrapper = keep(mount(ShareButton, { props: { title: "Crossing" }, global: { stubs } }));
+    await flushPromises();
+    expect(wrapper.get("button").attributes("aria-label")).toBe("Deel dit onderwerp");
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    expect(share).toHaveBeenCalledWith({ title: "Crossing", url: window.location.href });
+    expect(showError).not.toHaveBeenCalled();
+    expect(showSuccess).not.toHaveBeenCalled();
+});
+it("copies the URL when native sharing is unavailable", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const wrapper = keep(mount(ShareButton, { props: { url: "https://example.test/onderwerp" }, global: { stubs } }));
+    await flushPromises();
+    expect(wrapper.get("button").attributes("aria-label")).toBe("Deel dit onderwerp");
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    expect(writeText).toHaveBeenCalledWith("https://example.test/onderwerp");
+    expect(showSuccess).toHaveBeenCalledWith("URL gekopieerd!");
+});
+it("ignores cancelled shares and reports other sharing errors", async () => {
+    const share = vi.fn().mockRejectedValueOnce(new DOMException("Cancelled", "AbortError")).mockRejectedValueOnce(new Error("Denied"));
+    Object.defineProperty(browserNavigator, "share", { configurable: true, value: share });
+    Object.defineProperty(browserNavigator, "canShare", { configurable: true, value: vi.fn().mockReturnValue(true) });
+    const wrapper = keep(mount(ShareButton, { global: { stubs } }));
+    await flushPromises();
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    expect(showError).not.toHaveBeenCalled();
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    expect(showError).toHaveBeenCalledWith("URL kon niet worden gedeeld.");
+});
+it("reports unavailable and rejected clipboard access", async () => {
+    vi.stubGlobal("navigator", {});
+    const wrapper = keep(mount(ShareButton, { global: { stubs } }));
+    await flushPromises();
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    expect(showError).toHaveBeenCalledWith("Browser ondersteunt geen clipboard, kan URL niet kopiëren.");
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockRejectedValue(new Error("Denied")) } });
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+    expect(showError).toHaveBeenCalledWith("URL kon niet worden gekopieerd.");
 });
 it("saves text entries, keeps failed edits open and cancels without saving", async () => {
     const updateText = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
