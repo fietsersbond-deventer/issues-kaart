@@ -27,6 +27,11 @@ const stubs = {
   ...uiStubs,
   VIcon: true,
   VAutocomplete: Autocomplete,
+  VImg: defineComponent({
+    name: "VImg",
+    props: ["src"],
+    template: '<img :src="src">',
+  }),
   VListItem: defineComponent({
     props: ["title"],
     template: '<div>{{ title }}<slot name="subtitle" /></div>',
@@ -210,6 +215,7 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     order: "desc",
   });
   expect(wrapper.findAll("img")).toHaveLength(1);
+  expect(wrapper.get("img").attributes("src")).toBe("/api/issues/1/image");
   receiveList?.({ type: "issue-created" });
   expect(refreshList).toHaveBeenCalledTimes(1);
   socketStatus.value = "CLOSED";
