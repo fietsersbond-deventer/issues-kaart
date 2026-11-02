@@ -72,11 +72,7 @@ async function shareUrl() {
     }
 
     await navigator.clipboard.writeText(url);
-    if (shareError) {
-      showPersistent(`${shareError}. URL gekopieerd!`, "warning");
-    } else {
-      showSuccess("URL gekopieerd!");
-    }
+    showSuccess("URL gekopieerd!");
   } catch {
     if (shareError) {
       showPersistent(

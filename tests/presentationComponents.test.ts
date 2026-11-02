@@ -375,10 +375,12 @@ it("ignores cancelled shares and reports other sharing errors", async () => {
   );
 });
 it("copies the new issue URL when a subsequent native share fails and allows sharing again", async () => {
+  // Firefox for Android can reject every subsequent share: https://bugzilla.mozilla.org/show_bug.cgi?id=2063832
   const failure = new DOMException("Share already active", "InvalidStateError");
   const share = vi
     .fn()
     .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(failure)
     .mockRejectedValueOnce(failure)
     .mockResolvedValueOnce(undefined);
   const writeText = vi.fn().mockResolvedValue(undefined);
@@ -416,16 +418,51 @@ it("copies the new issue URL when a subsequent native share fails and allows sha
   expect(writeText).toHaveBeenCalledExactlyOnceWith(
     "https://example.test/second",
   );
-  expect(showPersistent).toHaveBeenCalledWith(
-    "Delen mislukt: InvalidStateError: Share already active. URL gekopieerd!",
-    "warning",
-  );
+  expect(showSuccess).toHaveBeenCalledExactlyOnceWith("URL gekopieerd!");
+  expect(showPersistent).not.toHaveBeenCalled();
   expect(showError).not.toHaveBeenCalled();
   expect(warning).toHaveBeenCalledWith("Native sharing failed:", failure);
+  await wrapper.setProps({
+    title: "Third",
+    url: "https://example.test/third",
+  });
   await wrapper.get("button").trigger("click");
   await flushPromises();
   expect(share).toHaveBeenCalledTimes(3);
-  expect(writeText).toHaveBeenCalledTimes(1);
+  expect(writeText).toHaveBeenNthCalledWith(2, "https://example.test/third");
+  expect(showSuccess).toHaveBeenCalledTimes(2);
+  expect(showPersistent).not.toHaveBeenCalled();
+  await wrapper.get("button").trigger("click");
+  await flushPromises();
+  expect(share).toHaveBeenCalledTimes(4);
+  expect(writeText).toHaveBeenCalledTimes(2);
+});
+it("reports when copying also fails after a native sharing error", async () => {
+  const failure = new DOMException("Share already active", "InvalidStateError");
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  Object.defineProperty(browserNavigator, "share", {
+    configurable: true,
+    value: vi.fn().mockRejectedValue(failure),
+  });
+  Object.defineProperty(browserNavigator, "canShare", {
+    configurable: true,
+    value: () => true,
+  });
+  const writeText = vi.fn().mockRejectedValue(new Error("Denied"));
+  vi.stubGlobal("navigator", {
+    canShare: () => true,
+    clipboard: { writeText },
+  });
+  const wrapper = keep(mount(ShareButton, { global: { stubs } }));
+  await flushPromises();
+  await wrapper.get("button").trigger("click");
+  await flushPromises();
+  expect(writeText).toHaveBeenCalledExactlyOnceWith(window.location.href);
+  expect(showSuccess).not.toHaveBeenCalled();
+  expect(showPersistent).toHaveBeenCalledWith(
+    "Delen mislukt: InvalidStateError: Share already active. URL kon ook niet worden gekopieerd.",
+    "error",
+  );
 });
 it("reports unavailable and rejected clipboard access", async () => {
   vi.stubGlobal("navigator", {});
