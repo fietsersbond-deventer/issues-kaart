@@ -23,7 +23,22 @@
         >
           <template #item.imageUrl="{ item }">
             <NuxtLink :to="issueURL(item)">
-              <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail" />
+              <v-img
+                v-if="item.imageUrl"
+                :src="item.imageUrl"
+                class="thumbnail"
+                :height="100"
+                width="fit-content"
+              >
+                <template #placeholder>
+                  <div class="d-flex align-center justify-center fill-height">
+                    <v-progress-circular
+                      color="grey-lighten-4"
+                      indeterminate
+                    ></v-progress-circular>
+                  </div>
+                </template>
+              </v-img>
             </NuxtLink>
           </template>
 
@@ -117,6 +132,14 @@ type SearchResponse = {
   total: number;
 };
 
+const headers = computed(() => {
+  return [
+    { title: "", value: "imageUrl", sortable: false, width: "10%" },
+    { title: "", value: "title", sortable: true, width: "60%" },
+    { title: "", value: "legend", sortable: false },
+  ];
+});
+
 // Reset pagination when search changes
 watch(
   () => state.value.search,
@@ -186,14 +209,6 @@ function issueURL(item: SearchIssue) {
 function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
   navigateTo(`/kaart/${item.slug || item.id}`);
 }
-
-const headers = computed(() => {
-  return [
-    { title: "", value: "imageUrl", sortable: false },
-    { title: "", value: "title", sortable: true },
-    { title: "", value: "legend", sortable: false },
-  ];
-});
 </script>
 
 <style>
@@ -216,8 +231,6 @@ const headers = computed(() => {
 }
 
 .thumbnail {
-  max-width: 100px;
-  max-height: 100px;
   display: block;
   margin: 0.5rem auto 0.5rem auto;
   text-align: center;
