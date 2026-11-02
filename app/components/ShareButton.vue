@@ -20,39 +20,72 @@ const props = defineProps<{
 }>();
 
 const { isSupported, share } = useShare();
-const { showSuccess, showError } = useSnackbar();
+const { showSuccess, showError, showPersistent } = useSnackbar();
 
 async function shareUrl() {
   const url = props.url ?? window.location.href;
+  const data = { title: props.title, url };
+  let shareError = "";
+
+  if (isSupported.value && navigator.canShare(data)) {
+    try {
+      await share(data);
+      return;
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "name" in error &&
+        error.name === "AbortError"
+      ) {
+        return;
+      }
+
+      console.warn("Native sharing failed:", error);
+      const name =
+        typeof error === "object" && error !== null && "name" in error
+          ? String(error.name)
+          : "Error";
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String(error.message)
+          : String(error);
+      shareError = `Delen mislukt: ${name}: ${message}`;
+    }
+  }
 
   try {
-    if (isSupported.value) {
-      await share({ title: props.title, url });
-      return;
-    }
-
     if (!navigator.clipboard?.writeText) {
-      showError("Browser ondersteunt geen clipboard, kan URL niet kopiëren.");
+      if (shareError) {
+        showPersistent(
+          `${shareError}. URL kopiëren is niet beschikbaar.`,
+          "error",
+        );
+        return;
+      }
+      showError(
+        isSupported.value
+          ? "URL kon niet worden gedeeld."
+          : "Browser ondersteunt geen clipboard, kan URL niet kopiëren.",
+      );
       return;
     }
 
     await navigator.clipboard.writeText(url);
-    showSuccess("URL gekopieerd!");
-  } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "name" in error &&
-      error.name === "AbortError"
-    ) {
-      return;
+    if (shareError) {
+      showPersistent(`${shareError}. URL gekopieerd!`, "warning");
+    } else {
+      showSuccess("URL gekopieerd!");
     }
-
-    showError(
-      isSupported.value
-        ? "URL kon niet worden gedeeld."
-        : "URL kon niet worden gekopieerd.",
-    );
+  } catch {
+    if (shareError) {
+      showPersistent(
+        `${shareError}. URL kon ook niet worden gekopieerd.`,
+        "error",
+      );
+    } else {
+      showError("URL kon niet worden gekopieerd.");
+    }
   }
 }
 </script>

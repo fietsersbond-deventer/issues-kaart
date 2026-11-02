@@ -40,7 +40,8 @@ const stubs = {
   VAvatar: Slot,
 };
 const showError = vi.fn(),
-  showSuccess = vi.fn();
+  showSuccess = vi.fn(),
+  showPersistent = vi.fn();
 const browserNavigator = window.navigator;
 const mobile = ref(false),
   auth = ref("authenticated");
@@ -58,6 +59,7 @@ const legend = {
 beforeEach(() => {
   showError.mockClear();
   showSuccess.mockClear();
+  showPersistent.mockClear();
   vueGlobals();
   auth.value = "authenticated";
   mobile.value = false;
@@ -65,7 +67,11 @@ beforeEach(() => {
   vi.stubGlobal("getContrastColor", getContrastColor);
   vi.stubGlobal("useAuth", () => ({ status: auth }));
   vi.stubGlobal("storeToRefs", (value: unknown) => value);
-  vi.stubGlobal("useSnackbar", () => ({ showError, showSuccess }));
+  vi.stubGlobal("useSnackbar", () => ({
+    showError,
+    showSuccess,
+    showPersistent,
+  }));
 });
 afterEach(() => {
   Reflect.deleteProperty(browserNavigator, "share");
@@ -338,6 +344,7 @@ it("copies the URL when native sharing is unavailable", async () => {
   expect(showSuccess).toHaveBeenCalledWith("URL gekopieerd!");
 });
 it("ignores cancelled shares and reports other sharing errors", async () => {
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
   const share = vi
     .fn()
     .mockRejectedValueOnce(new DOMException("Cancelled", "AbortError"))
@@ -355,9 +362,70 @@ it("ignores cancelled shares and reports other sharing errors", async () => {
   await wrapper.get("button").trigger("click");
   await flushPromises();
   expect(showError).not.toHaveBeenCalled();
+  expect(showPersistent).not.toHaveBeenCalled();
   await wrapper.get("button").trigger("click");
   await flushPromises();
-  expect(showError).toHaveBeenCalledWith("URL kon niet worden gedeeld.");
+  expect(showPersistent).toHaveBeenCalledWith(
+    "Delen mislukt: Error: Denied. URL kopiëren is niet beschikbaar.",
+    "error",
+  );
+  expect(warning).toHaveBeenCalledWith(
+    "Native sharing failed:",
+    expect.any(Error),
+  );
+});
+it("copies the new issue URL when a subsequent native share fails and allows sharing again", async () => {
+  const failure = new DOMException("Share already active", "InvalidStateError");
+  const share = vi
+    .fn()
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(failure)
+    .mockResolvedValueOnce(undefined);
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+  Object.defineProperty(browserNavigator, "share", {
+    configurable: true,
+    value: share,
+  });
+  Object.defineProperty(browserNavigator, "canShare", {
+    configurable: true,
+    value: vi.fn().mockReturnValue(true),
+  });
+  vi.stubGlobal("navigator", {
+    canShare: () => true,
+    clipboard: { writeText },
+  });
+  const wrapper = keep(
+    mount(ShareButton, {
+      props: { title: "First", url: "https://example.test/first" },
+      global: { stubs },
+    }),
+  );
+  await wrapper.get("button").trigger("click");
+  await flushPromises();
+  await wrapper.setProps({
+    title: "Second",
+    url: "https://example.test/second",
+  });
+  await wrapper.get("button").trigger("click");
+  await flushPromises();
+  expect(share).toHaveBeenNthCalledWith(2, {
+    title: "Second",
+    url: "https://example.test/second",
+  });
+  expect(writeText).toHaveBeenCalledExactlyOnceWith(
+    "https://example.test/second",
+  );
+  expect(showPersistent).toHaveBeenCalledWith(
+    "Delen mislukt: InvalidStateError: Share already active. URL gekopieerd!",
+    "warning",
+  );
+  expect(showError).not.toHaveBeenCalled();
+  expect(warning).toHaveBeenCalledWith("Native sharing failed:", failure);
+  await wrapper.get("button").trigger("click");
+  await flushPromises();
+  expect(share).toHaveBeenCalledTimes(3);
+  expect(writeText).toHaveBeenCalledTimes(1);
 });
 it("reports unavailable and rejected clipboard access", async () => {
   vi.stubGlobal("navigator", {});
