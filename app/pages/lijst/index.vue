@@ -134,9 +134,9 @@ type SearchResponse = {
 
 const headers = computed(() => {
   return [
-    { title: "", value: "imageUrl", sortable: false, width: "10%" },
-    { title: "", value: "title", sortable: true, width: "60%" },
-    { title: "", value: "legend", sortable: false },
+    { title: "", value: "imageUrl", sortable: false, width: 150 },
+    { title: "", value: "title", sortable: true },
+    { title: "", value: "legend", sortable: false, width: "30%" },
   ];
 });
 
