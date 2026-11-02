@@ -51,7 +51,7 @@ async function shareUrl() {
     showError(
       isSupported.value
         ? "URL kon niet worden gedeeld."
-        : "URL kon niet worden gekopieerd."
+        : "URL kon niet worden gekopieerd.",
     );
   }
 }

@@ -104,7 +104,7 @@ watch(
       activateStreetViewEmbeds(descriptionRef.value);
     }
   },
-  { flush: "post" },
+  { flush: "post" }
 );
 </script>
 <style>
