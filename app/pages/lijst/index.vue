@@ -2,8 +2,18 @@
 <template>
   <div>
     <v-card class="mb-4">
-      <v-card-title v-if="!isPrinting" class="d-flex align-center" style="gap: 16px">
-        <v-text-field v-model="state.search" label="Zoek" dense hide-details clearable />
+      <v-card-title
+        v-if="!isPrinting"
+        class="d-flex align-center"
+        style="gap: 16px"
+      >
+        <v-text-field
+          v-model="state.search"
+          label="Zoek"
+          dense
+          hide-details
+          clearable
+        />
       </v-card-title>
       <v-card-text>
         <v-data-table-server
@@ -134,9 +144,9 @@ type SearchResponse = {
 
 const headers = computed(() => {
   return [
-    { title: "", value: "imageUrl", sortable: false, width: 150 },
+    { title: "", value: "imageUrl", sortable: false, minWidth: 150 },
     { title: "", value: "title", sortable: true },
-    { title: "", value: "legend", sortable: false, width: "30%" },
+    { title: "", value: "legend", sortable: false, width: "20em" },
   ];
 });
 
@@ -147,13 +157,13 @@ watch(
     if (newSearch !== oldSearch) {
       state.value.page = 1;
     }
-  }
+  },
 );
 
 // Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
 const debouncedSearch = refDebounced(
   computed(() => state.value.search ?? ""),
-  300
+  300,
 );
 
 const query = computed(() => ({
@@ -165,8 +175,8 @@ const query = computed(() => ({
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search).map((term) =>
-    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  )
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  ),
 );
 const { emphasizeFilter } = useFilter(filters);
 const {
@@ -181,7 +191,9 @@ const {
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
 const unsubscribe = ws.subscribe((message) => {
-  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
+  if (
+    ["issue-created", "issue-modified", "issue-deleted"].includes(message.type)
+  ) {
     refreshResults();
   }
 });
@@ -198,7 +210,7 @@ const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
-  }))
+  })),
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
@@ -237,8 +249,9 @@ function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
 }
 
 .legend-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, max-content));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   padding: 4px 0;
 }
