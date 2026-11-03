@@ -107,12 +107,12 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    // Dezelfde parameternaam als de API voorkomt overlappende Nuxt-paginaroutes.
+    // bewaar images een week lang in cache
     "/api/issues/:id/image": {
-      cache: { maxAge: 3600, swr: false },
+      cache: { maxAge: 604800 },
     },
     "/api/issues/:id/og-image": {
-      cache: { maxAge: 3600, swr: false },
+      cache: { maxAge: 604800 },
     },
   },
   nitro: {
