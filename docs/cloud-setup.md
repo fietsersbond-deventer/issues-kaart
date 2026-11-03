@@ -84,6 +84,12 @@ niet de huidige paginaroute of `window`.
 De HTTP-controle stuurt ook een Chrome-user-agent en viewport-client-hints naar
 de lijst en kaart. De directe H3-dependency blijft op versie 1, passend bij
 Nitro 2; H3 2 is niet compatibel met de response-headerhelpers voor deze SSR-flow.
+Zonder viewport-client-hints (zoals in Firefox) gebruikt Vuetify bij SSR de
+sessiecookie `viewport-width`. De browser bewaart daarin na het laden en bij
+resizen de werkelijke vensterbreedte. Bij een eerste bezoek zonder cookie wordt
+mobiel/desktop geschat via browserheaders. Een smal desktopvenster kan bij dat
+eerste bezoek daarom nog omschakelen na hydration. Beide kaartlayouts blijven
+afzonderlijke componenten; de serverbreedte wordt ook aan de client doorgegeven.
 E2E gebruikt een eigen tijdelijke database, SMTP-opvanger en poort 3100; zie
 [browsertests](e2e.md). Chromium-installatie vereist netwerktoegang en kan op
 Linux rootrechten nodig hebben voor systeemlibraries. Rapporten staan in
