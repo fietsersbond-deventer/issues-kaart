@@ -106,16 +106,23 @@ export default defineNuxtConfig({
       enableOnWindowFocus: false,
     },
   },
-//  routeRules: {
+  routeRules: {
     // Dezelfde parameternaam als de API voorkomt overlappende Nuxt-paginaroutes.
-//    "/api/issues/:id/image": {
-//      cache: { maxAge: 3600, swr: false },
-//    },
-//    "/api/issues/:id/og-image": {
-//      cache: { maxAge: 3600, swr: false },
-//    },
-//  },
+    "/api/issues/:id/image": {
+      cache: { maxAge: 3600, swr: false },
+    },
+    "/api/issues/:id/og-image": {
+      cache: { maxAge: 3600, swr: false },
+    },
+  },
   nitro: {
+    // Responsecache op schijf in plaats van in het geheugen.
+    storage: {
+      cache: { driver: "fs", base: "./.data/cache" },
+    },
+    devStorage: {
+      cache: { driver: "fs", base: "./.data/cache" },
+    },
     experimental: {
       openAPI: true,
       websocket: true,
