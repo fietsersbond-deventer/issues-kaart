@@ -31,7 +31,7 @@ export function useIssueOpenGraph(source: MaybeRefOrGetter<Issue | null>) {
 
     const url = `${baseUrl}/kaart/${issue.slug || issue.id}`;
     const imageUrl = issue.imageUrl
-      ? issue.imageUrl.replace(/\/image(?=\?|$)/, "/og-image")
+      ? `${issue.imageUrl}${issue.imageUrl.includes("?") ? "&" : "?"}width=1200&height=630&maxBytes=1000000`
       : null;
     const fullImageUrl = imageUrl ? `${baseUrl}${imageUrl}` : null;
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import { extractImageUrl, getIssueImageUrl } from "../server/utils/extractImageUrl";
+import { thumbnailUrl } from "../app/utils/thumbnailUrl";
 
 describe("extractImageUrl", () => {
   it("versioneert alleen de eerste afbeelding en niet de omringende tekst", () => {
@@ -76,5 +77,12 @@ describe("extractImageUrl", () => {
     const html = '<IMG SRC="data:image/png;base64,test" ALT="test">';
     const result = extractImageUrl(html);
     expect(result).toBe("data:image/png;base64,test");
+  });
+});
+
+describe("thumbnailUrl", () => {
+  it("voegt grootteparameters toe aan een URL met of zonder query", () => {
+    expect(thumbnailUrl("/api/issues/1/image")).toBe("/api/issues/1/image?width=300&height=300");
+    expect(thumbnailUrl("/api/issues/1/image?v=abc", 100)).toBe("/api/issues/1/image?v=abc&width=100&height=100");
   });
 });

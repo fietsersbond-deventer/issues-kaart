@@ -1,6 +1,6 @@
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("beforeResponse", (event, response) => {
-    if (!/^\/api\/issues\/[^/]+\/(?:image|og-image)$/.test(event.path.split("?")[0]!)) {
+    if (!/^\/api\/issues\/[^/]+\/image$/.test(event.path.split("?")[0]!)) {
       return;
     }
 

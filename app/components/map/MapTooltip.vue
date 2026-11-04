@@ -20,6 +20,7 @@ import type { Feature } from "ol";
 import type MapBrowserEvent from "ol/MapBrowserEvent";
 import type { LineString, Point, Polygon } from "ol/geom";
 import type OlMap from "ol/Map";
+import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
 const { isDrawing } = defineProps<{
   isDrawing: boolean;
@@ -105,7 +106,7 @@ onMounted(() => {
       const properties = feature.getProperties();
 
       tooltipContent.value = properties.title || "Geen titel";
-      tooltipImage.value = properties.imageUrl || null;
+      tooltipImage.value = properties.imageUrl ? thumbnailUrl(properties.imageUrl) : null;
       slugsToTags(properties.tags);
 
       const target = map.getTargetElement();

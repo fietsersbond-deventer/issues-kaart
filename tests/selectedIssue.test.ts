@@ -90,8 +90,9 @@ describe("geselecteerd onderwerp", () => {
     resolveIssue!({ ...loadedIssue, title: "SSR issue title", slug: "ssr-preview", imageUrl: "/api/issues/1/image?v=ssr-version" });
     expect(await rendering).toContain("SSR issue title");
     expect(completed).toBe(true);
-    expect(metadata!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image?v=ssr-version" });
-    expect(metadata!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/1/og-image?v=ssr-version" });
+    const ogUrl = "https://example.test/api/issues/1/image?v=ssr-version&width=1200&height=630&maxBytes=1000000";
+    expect(metadata!().meta).toContainEqual({ property: "og:image", content: ogUrl });
+    expect(metadata!().meta).toContainEqual({ name: "twitter:image", content: ogUrl });
   });
 
   it("maakt een leeg concept bij het openen van een nieuw onderwerp", async () => {

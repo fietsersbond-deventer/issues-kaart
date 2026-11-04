@@ -48,7 +48,8 @@ it("serves decoded data images with cache headers and reports missing or invalid
     expect(h.responseHeaders.get("Cache-Control")).toBe("public, max-age=3600");
 });
 it("creates bounded JPEG social previews, preserves originals and revalidates changed images", async () => {
-    const handler = (await import("../server/api/issues/[id]/og-image.get")).default;
+    const handler = (await import("../server/api/issues/[id]/image.get")).default;
+    h.input.query = { width: "1200", height: "630", maxBytes: "1000000" };
     const status = vi.fn();
     vi.stubGlobal("setResponseStatus", status);
     await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 400 });
@@ -88,6 +89,21 @@ it("creates bounded JPEG social previews, preserves originals and revalidates ch
     const resized = await handler(h.event);
     expect(await sharp(resized).metadata()).toMatchObject({ width: 315, height: 630, format: "jpeg" });
     expect(resized!.length).toBeLessThanOrEqual(1_000_000);
+    h.input.query = { width: "300", height: "300" };
+    const thumbnail = await handler(h.event);
+    expect(await sharp(thumbnail).metadata()).toMatchObject({ width: 150, height: 300, format: "jpeg" });
+    const thumbnailEtag = h.responseHeaders.get("ETag");
+    expect(thumbnailEtag).toMatch(/^"[0-9a-f]{64}"$/);
+    h.input.query = { maxBytes: "5000" };
+    const small = await handler(h.event);
+    expect(h.responseHeaders.get("ETag")).not.toBe(thumbnailEtag);
+    expect(small!.length).toBeLessThanOrEqual(5000);
+    expect(await sharp(small).metadata()).toMatchObject({ width: 800, height: 1600 });
+    h.input.query = { width: "abc", height: "-5" };
+    h.input.headers = {};
+    const original = await handler(h.event);
+    expect(h.responseHeaders.get("Content-Type")).toBe("image/png");
+    expect(original).toEqual(portrait);
 });
 it("requires Street View authentication, returns a prepared preview and translates provider errors", async () => {
     const parse = (await import("../server/api/streetview/parse.post")).default;

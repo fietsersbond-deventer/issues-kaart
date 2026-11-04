@@ -52,7 +52,7 @@ it("generates issue metadata, adds images when present and supplies empty-conten
     vi.stubGlobal("useRuntimeConfig", () => ({ public: { organization: { name: "Test Organization" } } }));
     const { useIssueOpenGraph } = await import("../app/composables/useIssueOpenGraph");
     useIssueOpenGraph({ id: 1, title: "Issue", description: "<p>Hello</p>", imageUrl: "/api/issues/1/image" } as Issue);
-    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image" });
+    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/image?width=1200&height=630&maxBytes=1000000" });
     expect(render!().meta.some((entry) => entry.property === "og:image:width" || entry.property === "og:image:height")).toBe(false);
     expect(render!().meta).toContainEqual({ name: "description", content: "Hello" });
     useIssueOpenGraph({ id: 2, title: "", description: "", imageUrl: null } as Issue);
@@ -70,13 +70,14 @@ it("updates social previews when an issue loads, changes or is cleared", async (
     useIssueOpenGraph(issue);
     expect(render!()).toEqual({});
     issue.value = { id: 1, slug: "first", title: "First", description: "", imageUrl: "/api/issues/1/image?v=first" } as Issue;
-    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image?v=first" });
+    const size = "width=1200&height=630&maxBytes=1000000";
+    expect(render!().meta).toContainEqual({ property: "og:image", content: `https://example.test/api/issues/1/image?v=first&${size}` });
     issue.value = { ...issue.value, imageUrl: "/api/issues/1/image?v=changed" };
-    expect(render!().meta).toContainEqual({ property: "og:image", content: "https://example.test/api/issues/1/og-image?v=changed" });
-    expect(render!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/1/og-image?v=changed" });
+    expect(render!().meta).toContainEqual({ property: "og:image", content: `https://example.test/api/issues/1/image?v=changed&${size}` });
+    expect(render!().meta).toContainEqual({ name: "twitter:image", content: `https://example.test/api/issues/1/image?v=changed&${size}` });
     issue.value = { ...issue.value, id: 2, slug: "second", imageUrl: "/api/issues/2/image" };
     expect(render!().meta).toContainEqual({ property: "og:url", content: "https://example.test/kaart/second" });
-    expect(render!().meta).toContainEqual({ name: "twitter:image", content: "https://example.test/api/issues/2/og-image" });
+    expect(render!().meta).toContainEqual({ name: "twitter:image", content: `https://example.test/api/issues/2/image?${size}` });
     issue.value = null;
     expect(render!()).toEqual({});
 });

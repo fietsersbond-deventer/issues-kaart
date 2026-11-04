@@ -35,7 +35,7 @@
             <NuxtLink :to="issueURL(item)">
               <v-img
                 v-if="item.imageUrl"
-                :src="item.imageUrl"
+                :src="thumbnailUrl(item.imageUrl)"
                 class="thumbnail"
                 :height="100"
                 width="fit-content"
@@ -107,6 +107,7 @@
 import { useMediaQuery, refDebounced } from "@vueuse/core";
 import CategoryChip from "~/components/CategoryChip.vue";
 import { parseSearchTerms } from "~/utils/parseSearchTerms";
+import { thumbnailUrl } from "~/utils/thumbnailUrl";
 import type { Legend } from "~~/shared/types/Legend";
 
 useTitle("Onderwerpen");

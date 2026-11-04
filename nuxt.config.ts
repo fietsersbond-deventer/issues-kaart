@@ -111,9 +111,6 @@ export default defineNuxtConfig({
     "/api/issues/:id/image": {
       cache: { maxAge: 604800 },
     },
-    "/api/issues/:id/og-image": {
-      cache: { maxAge: 604800 },
-    },
   },
   nitro: {
     // Responsecache op schijf in plaats van in het geheugen.
