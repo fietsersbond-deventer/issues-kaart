@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { getDb } from "~~/server/utils/db";
 import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { imageCacheKey } from "~~/server/utils/imageCacheKey";
 
 const minDimension = 16;
 const maxDimension = 4000;
@@ -21,7 +22,7 @@ function parseLimit(value: unknown, min: number, max: number): number | undefine
  * en/of `maxBytes` wordt een kleinere JPEG gemaakt (thumbnail, og-image), die
  * per parametercombinatie in de Nitro-cache terechtkomt.
  */
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
 
   if (!id) {
@@ -112,4 +113,4 @@ export default defineEventHandler(async (event) => {
     }
   }
   throw createError({ statusCode: 500, message: "Afbeelding overschrijdt de maximale bestandsgrootte" });
-});
+}, { maxAge: 604800, getKey: imageCacheKey });

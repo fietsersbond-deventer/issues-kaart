@@ -33,6 +33,23 @@ it("advertises the configured sitemap URL in robots.txt", async () => {
     expect(handler(h.event)).toBe("User-agent: *\nAllow: /\nSitemap: https://example.test/sitemap.xml\n");
     expect(h.responseHeaders.get("Content-Type")).toBe("text/plain; charset=utf-8");
 });
+it("scopes the image cache key to the site and the requested size", async () => {
+    const { imageCacheKey } = await import("../server/utils/imageCacheKey");
+    const headers: Record<string, string> = { host: "a.example.test" };
+    vi.stubGlobal("getRequestHost", (_event: unknown, opts?: { xForwardedHost?: boolean }) =>
+        (opts?.xForwardedHost && headers["x-forwarded-host"]) || headers.host);
+    const key = (path: string) => imageCacheKey({ path } as never);
+    const siteA = key("/api/issues/2/image?v=1");
+    expect(siteA).toBe(key("/api/issues/2/image?v=1"));
+    expect(key("/api/issues/2/image?v=1&width=300")).not.toBe(siteA);
+    headers.host = "b.example.test";
+    expect(key("/api/issues/2/image?v=1")).not.toBe(siteA);
+    headers.host = "A.example.test";
+    expect(key("/api/issues/2/image?v=1")).toBe(siteA);
+    headers["x-forwarded-host"] = "c.example.test";
+    expect(key("/api/issues/2/image?v=1")).not.toBe(siteA);
+    expect(key("/api/issues/2/image?v=1")).toMatch(/^image_c_example_test_[0-9a-f]{8}_[0-9a-f]{16}$/);
+});
 it("serves decoded data images with cache headers and reports missing or invalid images", async () => {
     const image = (await import("../server/api/issues/[id]/image.get")).default;
     await expect(image(h.event)).rejects.toMatchObject({ statusCode: 400 });

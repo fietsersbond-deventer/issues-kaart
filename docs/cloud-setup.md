@@ -60,8 +60,11 @@ ETag maakt HTTP-cachevalidatie mogelijk.
 Ontbrekende afbeeldingen geven 404; ongeldige of niet-verwerkbare afbeeldingen
 geven een expliciete fout. Bronafbeeldingen zijn begrensd op 40 miljoen pixels.
 
-De image-route wordt via `routeRules` één uur server-side
-gecachet, zonder stale-while-revalidate. Cachehits vermijden databasewerk en
+De image-route wordt via `defineCachedEventHandler` server-side gecachet
+(`maxAge` 604800 s). De cachesleutel bevat de hostname van het request, leesbaar met `_` voor leestekens
+en aangevuld met een korte hash
+(`X-Forwarded-Host` of `Host`, zie `server/utils/imageCacheKey.ts`), zodat sites met een gedeelde cache
+elkaars afbeeldingen niet overschrijven. Cachehits vermijden databasewerk en
 beeldverwerking. De API geeft afbeeldings-URL's met `?v=<SHA-256-hash>` terug,
 ook bij opslaan en in WebSocket-updates. Open Graph neemt dezelfde versie over.
 Een gewijzigde afbeelding krijgt direct een nieuwe URL en omzeilt daarmee zowel

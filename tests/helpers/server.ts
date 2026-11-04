@@ -33,6 +33,7 @@ export function routeHarness() {
     const event = { context: { user: admin as typeof admin | null } } as unknown as H3Event;
     const responseHeaders = new Map<string, string>();
     vi.stubGlobal("defineEventHandler", (handler: unknown) => handler);
+    vi.stubGlobal("defineCachedEventHandler", (handler: unknown) => handler);
     vi.stubGlobal("readBody", async () => input.body);
     vi.stubGlobal("getRouterParam", (_event: H3Event, name: string) => input.params[name]);
     vi.stubGlobal("getQuery", () => input.query);

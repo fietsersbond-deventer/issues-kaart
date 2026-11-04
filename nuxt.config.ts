@@ -106,12 +106,6 @@ export default defineNuxtConfig({
       enableOnWindowFocus: false,
     },
   },
-  routeRules: {
-    // bewaar images een week lang in cache
-    "/api/issues/:id/image": {
-      cache: { maxAge: 604800 },
-    },
-  },
   nitro: {
     // Responsecache op schijf in plaats van in het geheugen.
     storage: {
