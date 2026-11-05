@@ -112,6 +112,7 @@ import type { Legend } from "~~/shared/types/Legend";
 
 useTitle("Onderwerpen");
 
+const { trackEvent } = useMatomoTracking();
 const isPrinting = useMediaQuery("print");
 const { getTag } = useTagsApi();
 
@@ -187,6 +188,10 @@ const {
 } = await useFetch<SearchResponse>("/api/issues/search", {
   query,
   dedupe: "cancel",
+});
+
+watch(query, () => {
+  trackEvent("Zoeken", debouncedSearch.value);
 });
 
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
