@@ -112,7 +112,7 @@ import type { Legend } from "~~/shared/types/Legend";
 
 useTitle("Onderwerpen");
 
-const { trackEvent } = useMatomoTracking();
+const { trackSiteSearch } = useMatomoTracking();
 const isPrinting = useMediaQuery("print");
 const { getTag } = useTagsApi();
 
@@ -190,8 +190,12 @@ const {
   dedupe: "cancel",
 });
 
-watch(query, () => {
-  trackEvent("Zoeken", debouncedSearch.value);
+watch([debouncedSearch], () => {
+  nextTick(() => {
+    if (debouncedSearch.value) {
+      trackSiteSearch(debouncedSearch.value, totalItems.value);
+    }
+  });
 });
 
 // Search results come from a separate endpoint, so invalidate them on persisted changes.

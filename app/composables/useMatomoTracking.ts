@@ -9,7 +9,7 @@ export function useMatomoTracking() {
     category: string,
     action: string,
     name?: string,
-    value?: number
+    value?: number,
   ) => {
     if (typeof window === "undefined") {
       return; // Skip on server
@@ -24,7 +24,21 @@ export function useMatomoTracking() {
     window._paq.push(["trackEvent", category, action, name, value]);
   };
 
+  const trackSiteSearch = (keyword: string, resultCount: number) => {
+    if (typeof window === "undefined") {
+      return; // Skip on server
+    }
+
+    if (!window._paq) {
+      console.debug("Matomo not initialized");
+      return;
+    }
+
+    window._paq.push(["trackSiteSearch", keyword, false, resultCount]);
+  };
+
   return {
     trackEvent,
+    trackSiteSearch,
   };
 }
