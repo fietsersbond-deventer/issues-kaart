@@ -216,7 +216,9 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     order: "desc",
   });
   expect(wrapper.findAll("img")).toHaveLength(1);
-  expect(wrapper.get("img").attributes("src")).toBe("/api/issues/1/image?width=300&height=300");
+  expect(wrapper.get("img").attributes("src")).toBe(
+    "/api/issues/1/image?width=300&height=300",
+  );
   receiveList?.({ type: "issue-created" });
   expect(refreshList).toHaveBeenCalledTimes(1);
   socketStatus.value = "CLOSED";
