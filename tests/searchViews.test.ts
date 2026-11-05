@@ -152,6 +152,7 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   }));
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
   vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackEvent: vi.fn() }));
   const Table = defineComponent({
     name: "ServerTableBoundary",
     props: [

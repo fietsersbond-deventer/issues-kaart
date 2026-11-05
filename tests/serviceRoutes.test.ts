@@ -177,5 +177,6 @@ it("forwards analytics with configured credentials and proxy-aware IP, and repor
     await proxy(h.event);
     expect(fetch).toHaveBeenLastCalledWith(config.matomo.trackerUrl, expect.objectContaining({ body: expect.stringContaining("cip=9.9.9.9") }));
     fetch.mockRejectedValueOnce(new Error("offline"));
-    await expect(proxy(h.event)).rejects.toMatchObject({ statusCode: 500 });
+    await expect(proxy(h.event)).resolves.toBeUndefined();
+    expect(console.error).toHaveBeenCalled();
 });
