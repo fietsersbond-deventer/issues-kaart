@@ -64,6 +64,7 @@ it("broadcasts one notification per connected peer and never sends to closed pee
     expect(b.send).toHaveBeenCalledTimes(4);
     notify.close(cast(b));
 });
+
 it("broadcasts comment events to authenticated peers and never leaks to unauthenticated or closed peers", async () => {
     const authPeer1 = peer("auth-1", "valid");
     const authPeer2 = peer("auth-2", "valid");

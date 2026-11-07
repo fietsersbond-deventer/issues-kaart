@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import { computed, defineComponent, ref } from "vue";
 import { vueGlobals } from "./helpers/vue";
@@ -17,13 +17,18 @@ import ImageViewer from "../app/components/ImageViewer.vue";
 import TextEditor from "../app/components/TextEditorDialog.client.vue";
 import IssueComments from "../app/components/IssueComments.client.vue";
 import CommentEditor from "../app/components/CommentEditor.client.vue";
+import StreetViewDialog from "../app/components/StreetViewDialog.vue";
 import { getContrastColor } from "../app/utils/getContrastColor";
 import { useStreetViewEmbeds } from "../app/composables/useStreetViewEmbeds";
+import { isQuillContentEmpty } from "../app/utils/quillConfig";
 import type { Issue } from "../shared/types/Issue";
 
-vi.mock("@vueup/vue-quill", () => ({ QuillEditor: { name: "QuillEditor", template: "<div />" } }));
+vi.mock("@vueup/vue-quill", () => ({
+    QuillEditor: { name: "QuillEditor", template: "<div />" },
+    loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
+}));
 vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
-vi.mock("../app/utils/streetViewEmbedBlot", () => ({ ensureStreetViewEmbedBlotRegistered: vi.fn().mockResolvedValue(undefined) }));
+
 const Tooltip = defineComponent({ props: ["text"], template: '<span :data-tooltip="text"><slot name="activator" :props="{}" /><slot /></span>' });
 const Icon = defineComponent({ props: ["name", "icon", "color", "size"], template: '<i :data-icon="name || icon"><slot /></i>' });
 const stubs = { ...uiStubs, VChip: Slot, VTooltip: Tooltip, VIcon: Icon, Icon, AppIcon, VAvatar: Slot };
@@ -49,6 +54,7 @@ afterEach(() => {
 function keep<T extends {
     unmount(): void;
 }>(wrapper: T): T { wrappers.push(wrapper); return wrapper; }
+
 it("renders legacy and Iconify icons and category/tag labels with their fallback icons", async () => {
     const icon = keep(mount(AppIcon, { props: { icon: "mdi-bike" }, global: { stubs } }));
     expect(icon.get("i").attributes("data-icon")).toBe("mdi-bike");
@@ -68,6 +74,7 @@ it("renders legacy and Iconify icons and category/tag labels with their fallback
     await indicator.setProps({ legend: { ...legend, icon: "mdi-bike" } });
     expect(indicator.findComponent(AppIcon).exists()).toBe(true);
 });
+
 it("displays avatar initials, online duration and overflow names", async () => {
     const users = ref(Array.from({ length: 7 }, (_, i) => ({ peerId: String(i), userId: i, username: `user${i}`, name: `Person ${i}`, connectedAt: Date.now() - 86400000 })));
     const store = { displayedOnlineUsers: users, displayedUserCount: computed(() => users.value.length), getUserDisplayName: (user: {
@@ -92,6 +99,7 @@ it("displays avatar initials, online duration and overflow names", async () => {
     await flushPromises();
     expect(online.findAllComponents({ name: "UserAvatar" })).toHaveLength(1);
 });
+
 it("switches mobile content to desktop and closes the mobile panel", async () => {
     mobile.value = true;
     const wrapper = keep(mount(MobileCollapsible, { props: { title: "Legend", modelValue: true }, slots: { default: "Content" }, global: { stubs: { VExpansionPanels: Slot, VExpansionPanel: Slot, VExpansionPanelTitle: Slot, VExpansionPanelText: Slot } } }));
@@ -101,6 +109,7 @@ it("switches mobile content to desktop and closes the mobile panel", async () =>
     expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
     expect(wrapper.text()).toBe("Content");
 });
+
 it("opens the intro editor only for authenticated users and renders configured rich text", async () => {
     vi.stubGlobal("useTitle", vi.fn());
     vi.stubGlobal("useTexts", () => ({ getText: () => ({ key: "intro.content", text: "<h1>Welcome</h1>", text_type: "rich" }) }));
@@ -113,6 +122,7 @@ it("opens the intro editor only for authenticated users and renders configured r
     expect(wrapper.find('button[aria-label="Introductie bewerken"]').exists()).toBe(false);
     expect(wrapper.get("h1").text()).toBe("Welcome");
 });
+
 it("routes relative description links locally and preserves external/hash links", async () => {
     const navigate = vi.fn(), toggleTag = vi.fn();
     vi.stubGlobal("navigateTo", navigate);
@@ -132,6 +142,7 @@ it("routes relative description links locally and preserves external/hash links"
     await wrapper.setProps({ issue: { ...issue, description: "<p>Updated</p>" } });
     expect(wrapper.text()).toContain("Updated");
 });
+
 it("renders issue details while the category is unavailable and shows it when loaded", async () => {
     vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
     vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
@@ -144,6 +155,7 @@ it("renders issue details while the category is unavailable and shows it when lo
     await wrapper.setProps({ issue: { ...issue, legend } });
     expect(wrapper.findComponent(CategoryChip).text()).toContain("Routes");
 });
+
 it("saves text entries, keeps failed edits open and cancels without saving", async () => {
     const updateText = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(undefined);
     vi.stubGlobal("useTexts", () => ({ updateText }));
@@ -160,6 +172,7 @@ it("saves text entries, keeps failed edits open and cancels without saving", asy
     await wrapper.findAll("button")[0]!.trigger("click");
     expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
 });
+
 it("opens desktop image previews and prevents mobile lightboxes", async () => {
     vi.stubGlobal("Image", class {
         width = 1000;
@@ -176,6 +189,7 @@ it("opens desktop image previews and prevents mobile lightboxes", async () => {
     await second.get("img").trigger("click");
     expect(second.findAll("img")).toHaveLength(1);
 });
+
 it("renders comments only for authenticated users on IssueDetails and excludes them when logged out", async () => {
     vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
     vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
@@ -192,6 +206,7 @@ it("renders comments only for authenticated users on IssueDetails and excludes t
     await flushPromises();
     expect(wrapper.find(".issue-comments-stub").exists()).toBe(false);
 });
+
 it("manages issue comments lifecycle, permissions, edits, deletions and live WebSocket updates", async () => {
     const list = vi.fn().mockResolvedValue([
         { id: 1, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>First comment</p>", created_at: "2026-01-01T10:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
@@ -280,6 +295,7 @@ it("manages issue comments lifecycle, permissions, edits, deletions and live Web
     await flushPromises();
     expect(wrapper.find(".comment-deleted").exists()).toBe(true);
 });
+
 it("validates CommentEditor submission constraints and inserts Street View embeds", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("$fetch", fetchMock);
@@ -332,4 +348,74 @@ it("validates CommentEditor submission constraints and inserts Street View embed
     const insertBtn = wrapper.findAll("button").find((b) => b.text() === "Invoegen")!;
     await insertBtn.trigger("click");
     await flushPromises();
+});
+
+it("identifies empty Quill HTML content correctly", () => {
+    expect(isQuillContentEmpty("")).toBe(true);
+    expect(isQuillContentEmpty("<p><br></p>")).toBe(true);
+    expect(isQuillContentEmpty("<p>   </p>")).toBe(true);
+    expect(isQuillContentEmpty('<p><img src="foo.png"></p>')).toBe(false);
+    expect(isQuillContentEmpty('<div class="streetview-embed"></div>')).toBe(false);
+    expect(isQuillContentEmpty("<p>Hello world</p>")).toBe(false);
+});
+
+describe("StreetViewDialog", () => {
+    function mountDialog(props = { modelValue: true }) {
+        return keep(mount(StreetViewDialog, { props, global: { stubs } }));
+    }
+
+    it("emits false on update:modelValue when cancelled", async () => {
+        const wrapper = mountDialog();
+        const cancelBtn = wrapper.findAll("button").find((b) => b.text() === "Annuleren")!;
+
+        await cancelBtn.trigger("click");
+
+        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
+    });
+
+    it("displays error message when Street View parsing fails", async () => {
+        const fetchMock = vi.fn().mockRejectedValueOnce({ data: { message: "Invalid URL" } });
+        vi.stubGlobal("$fetch", fetchMock);
+        vi.stubGlobal("useAuth", () => ({ token: ref("Bearer auth-token") }));
+
+        const wrapper = mountDialog();
+        await wrapper.find("input").setValue("https://maps.app.goo.gl/fail");
+
+        const getBtn = wrapper.findAll("button").find((b) => b.text() === "Ophalen")!;
+        await getBtn.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.text()).toContain("Invalid URL");
+    });
+
+    it("fetches preview and emits insert event with parsed embed payload", async () => {
+        const preview = {
+            lat: 52.3,
+            lng: 4.9,
+            heading: 180,
+            pitch: 0,
+            fov: 90,
+            panoId: "pano999",
+            previewDataUrl: "data:image/png;base64,abc",
+            embedSrc: "https://maps.google.com/embed",
+        };
+        const fetchMock = vi.fn().mockResolvedValueOnce(preview);
+        vi.stubGlobal("$fetch", fetchMock);
+        vi.stubGlobal("useAuth", () => ({ token: ref("Bearer auth-token") }));
+
+        const wrapper = mountDialog();
+        await wrapper.find("input").setValue("https://maps.app.goo.gl/success");
+
+        const getBtn = wrapper.findAll("button").find((b) => b.text() === "Ophalen")!;
+        await getBtn.trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find("img.streetview-dialog-preview").attributes("src")).toBe("data:image/png;base64,abc");
+
+        const insertBtn = wrapper.findAll("button").find((b) => b.text() === "Invoegen")!;
+        await insertBtn.trigger("click");
+
+        expect(wrapper.emitted("insert")?.at(-1)).toEqual([preview]);
+        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
+    });
 });

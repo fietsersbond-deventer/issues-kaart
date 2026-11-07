@@ -6,15 +6,20 @@ import { vueGlobals } from "./helpers/vue";
 import { Field, Form, uiStubs } from "./helpers/ui";
 import type { Issue, NewIssue } from "../shared/types/Issue";
 import EditForm from "../app/components/EditForm.client.vue";
-vi.mock("@vueup/vue-quill", () => ({ QuillEditor: { name: "QuillEditor", template: "<div />" } }));
+
+vi.mock("@vueup/vue-quill", () => ({
+    QuillEditor: { name: "QuillEditor", template: "<div />" },
+    loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
+}));
 vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
-vi.mock("../app/utils/streetViewEmbedBlot", () => ({ ensureStreetViewEmbedBlotRegistered: vi.fn().mockResolvedValue(undefined) }));
+
 const update = vi.fn(), create = vi.fn(), remove = vi.fn(), navigate = vi.fn(), trackEvent = vi.fn(), fetch = vi.fn();
 const editing = ref(true), connected = ref(true);
 const wrappers: Array<{
     unmount(): void;
 }> = [];
 const draft = (): NewIssue => ({ title: "Draft", description: "text", tags: [], legend_id: 1, geometry: { type: "Point", coordinates: [6, 52] } });
+
 beforeEach(() => {
     vueGlobals();
     vi.clearAllMocks();
@@ -31,13 +36,17 @@ beforeEach(() => {
     vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
     vi.stubGlobal("$fetch", fetch);
 });
+
 afterEach(() => { wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); });
+
 function editor(issue: Issue | NewIssue = draft()) {
     const wrapper = mount(EditForm, { props: { modelValue: issue, dialog: true }, global: { stubs: { ...uiStubs, CategorySelect: true, TagSelect: true, QuillEditor: defineComponent({ methods: { getQuill: () => null }, template: "<div />" }) } } });
     wrappers.push(wrapper);
     return wrapper;
 }
+
 const button = (wrapper: ReturnType<typeof editor>, text: string) => wrapper.findAll("button").find((b) => b.text() === text)!;
+
 describe("issue editor persistence boundaries", () => {
     it("creates drafts, navigates to the saved identity and reports analytics only after success", async () => {
         const wrapper = editor();
