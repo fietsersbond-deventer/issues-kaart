@@ -82,7 +82,7 @@
         <template #item.actions="{ item }">
           <div class="issue-actions">
             <v-btn
-              v-if="item.editAvailability.status === 'disconnected'"
+              v-if="!item.isConnected"
               icon
               variant="text"
               color="error"
@@ -96,22 +96,22 @@
               </v-tooltip>
             </v-btn>
             <v-btn
-              v-else-if="item.editAvailability.status === 'locked'"
+              v-else-if="item.isLockedByOther"
               icon
               variant="text"
               color="warning"
               size="small"
-              :aria-label="`${item.title} bewerkt door ${item.editAvailability.lockedBy}`"
+              :aria-label="`${item.title} bewerkt door ${item.isLockedByOther}`"
               @click.stop
             >
               <v-icon>mdi-lock-outline</v-icon>
               <v-tooltip activator="parent" location="top">
                 Dit issue wordt momenteel bewerkt door
-                {{ item.editAvailability.lockedBy }}
+                {{ item.isLockedByOther }}
               </v-tooltip>
             </v-btn>
             <span
-              v-if="item.editAvailability.status !== 'available'"
+              v-if="!item.canEdit"
               aria-hidden="true"
             />
             <template v-else>
@@ -149,15 +149,11 @@
 <script setup lang="ts">
 import { useMediaQuery } from "@vueuse/core";
 import CategoryChip from "~/components/CategoryChip.vue";
+import type { IssueEditAvailability } from "~/composables/useIssueLocks";
 import type { IssueSearchItem } from "~/types/IssueSearch";
 import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
-type IssueSearchRow = IssueSearchItem & {
-  editAvailability:
-    | { status: "disconnected" }
-    | { status: "locked"; lockedBy: string }
-    | { status: "available" };
-};
+type IssueSearchRow = IssueSearchItem & IssueEditAvailability;
 type SortItem = { key: string; order: "asc" | "desc" };
 
 defineProps<{

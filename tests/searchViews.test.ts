@@ -6,7 +6,12 @@ import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import Search from "../app/components/map/Search.vue";
 import List from "../app/pages/lijst/index.vue";
+import IssueSearchTable from "../app/components/IssueSearchTable.vue";
+import IssueEditDialog from "../app/components/IssueEditDialog.vue";
+import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
+import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import { useFilter } from "../app/composables/useFilter";
+import { parseSearchTerms } from "../app/utils/parseSearchTerms";
 import { transformBboxToOpenLayers } from "../app/utils/getIssuesBbox";
 const perform = vi.hoisted(() => vi.fn());
 vi.mock("vuetify", () => ({ useDisplay: () => ({ mobile }) }));
@@ -155,12 +160,15 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     getTag: (tag: string) => ({ tag, label: tag }),
   }));
   vi.stubGlobal("useAuth", () => ({ status: ref("authenticated") }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
   vi.stubGlobal("useIssueLocks", () => ({
     getEditAvailability: (id: number) => {
-      if (!isConnected.value) return { status: "disconnected" };
-      return id === 1
-        ? { status: "locked", lockedBy: "Test User" }
-        : { status: "available" };
+      const isLockedByOther = id === 1 ? "Test User" : false;
+      return {
+        isConnected: isConnected.value,
+        isLockedByOther,
+        canEdit: isConnected.value && !isLockedByOther,
+      };
     },
   }));
   vi.stubGlobal(
@@ -229,6 +237,7 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     }),
     {
       global: {
+        components: { IssueSearchTable, IssueEditDialog, IssueDeleteDialog, IssueInfoDialog },
         stubs: {
           ...stubs,
           VDataTableServer: Table,
@@ -295,6 +304,8 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   const offlineButton = wrapper.get('button[aria-label="Parking: verbinding verbroken"]');
   expect(offlineButton.attributes("disabled")).toBeDefined();
   expect(offlineButton.text()).toContain("mdi-wifi-off");
+  expect(wrapper.find('button[aria-label="Safe crossing: verbinding verbroken"]').exists()).toBe(true);
+  expect(wrapper.find('button[aria-label="Safe crossing bewerkt door Test User"]').exists()).toBe(false);
   expect(wrapper.find('button[aria-label="Parking bewerken"]').exists()).toBe(false);
   expect(wrapper.find('button[aria-label="Parking verwijderen"]').exists()).toBe(false);
   expect(wrapper.find('button[aria-label="Informatie over Parking"]').exists()).toBe(true);
@@ -304,6 +315,7 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   expect(removeIssue).not.toHaveBeenCalled();
   isConnected.value = true;
   await flushPromises();
+  expect(wrapper.find('button[aria-label="Safe crossing bewerkt door Test User"]').exists()).toBe(true);
   expect(wrapper.find('button[aria-label="Parking bewerken"]').exists()).toBe(true);
   expect(confirmButton.attributes("disabled")).toBeUndefined();
   table.vm.$emit("click:row", new Event("click"), {

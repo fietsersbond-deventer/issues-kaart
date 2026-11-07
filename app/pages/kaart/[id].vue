@@ -4,7 +4,7 @@
       <Toolbar>
         <template v-if="!isEditing">
           <v-btn
-            v-if="editAvailability.status === 'disconnected'"
+            v-if="!isConnected"
             variant="text"
             color="error"
             disabled
@@ -16,15 +16,15 @@
           </v-btn>
 
           <v-btn
-            v-else-if="editAvailability.status === 'locked'"
-            :aria-label="`Bewerkt door ${editAvailability.lockedBy}`"
+            v-else-if="isLockedByOther"
+            :aria-label="`Bewerkt door ${isLockedByOther}`"
             variant="text"
             color="warning"
           >
             <v-icon>mdi-lock-outline</v-icon>
             <v-tooltip activator="parent" location="top">
               Dit issue wordt momenteel bewerkt door
-              {{ editAvailability.lockedBy }}
+              {{ isLockedByOther }}
             </v-tooltip>
           </v-btn>
 
@@ -94,6 +94,7 @@
 
 <script setup lang="ts">
 import IssueEditDialog from "~/components/IssueEditDialog.vue";
+import { useIssueEditAvailability } from "~/composables/useIssueEditAvailability";
 import { isExistingIssue } from "~~/shared/types/Issue";
 
 const route = useRoute("kaart-id");
@@ -102,17 +103,14 @@ const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue, loadError } = storeToRefs(useSelectedIssue());
-const issueLocks = useIssueLocks();
-const editAvailability = computed(() =>
-  issueLocks.getEditAvailability(
-    isExistingIssue(issue.value) ? issue.value.id : null,
-  ),
+const { isConnected, isLockedByOther, canEdit } = useIssueEditAvailability(
+  computed(() => (isExistingIssue(issue.value) ? issue.value.id : null)),
 );
 
 // Safe toggle function that checks connection
 function safeToggleEditing() {
   // Prevent starting edit mode when connection is unsafe
-  if (!isEditing.value && editAvailability.value.status !== "available") {
+  if (!isEditing.value && !canEdit.value) {
     return;
   }
   toggleEditing();

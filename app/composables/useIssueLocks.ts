@@ -3,6 +3,12 @@ import { defineStore } from "pinia";
 import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
 import { useConnectionStatus } from "./useConnectionStatus";
 
+export type IssueEditAvailability = {
+  isConnected: boolean;
+  isLockedByOther: string | false;
+  canEdit: boolean;
+};
+
 export const useIssueLocks = defineStore("issueLocks", () => {
   const { selectedId } = storeToRefs(useSelectedIssue());
 
@@ -120,17 +126,15 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     return false;
   }
 
-  function getEditAvailability(issueId: number | null | undefined) {
-    if (!isConnected.value) {
-      return { status: "disconnected" as const };
-    }
-
-    const lockedBy = issueId == null ? false : isLocked(issueId);
-    if (lockedBy) {
-      return { status: "locked" as const, lockedBy };
-    }
-
-    return { status: "available" as const };
+  function getEditAvailability(
+    issueId: number | null | undefined,
+  ): IssueEditAvailability {
+    const isLockedByOther = issueId == null ? false : isLocked(issueId);
+    return {
+      isConnected: isConnected.value,
+      isLockedByOther,
+      canEdit: isConnected.value && !isLockedByOther,
+    };
   }
 
   const locks = computed(() => {

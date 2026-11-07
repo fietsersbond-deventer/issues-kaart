@@ -29,7 +29,7 @@
       :loading="deleting"
       :disabled="
         !issueToDelete ||
-        issueLocks.getEditAvailability(issueToDelete.id).status !== 'available'
+        !issueLocks.getEditAvailability(issueToDelete.id).canEdit
       "
       @confirm="deleteIssue"
     />
@@ -45,11 +45,6 @@
 
 <script setup lang="ts">
 import { refDebounced } from "@vueuse/core";
-import IssueDeleteDialog from "~/components/IssueDeleteDialog.vue";
-import IssueEditDialog from "~/components/IssueEditDialog.vue";
-import IssueInfoDialog from "~/components/IssueInfoDialog.vue";
-import IssueSearchTable from "~/components/IssueSearchTable.vue";
-import { parseSearchTerms } from "~/utils/parseSearchTerms";
 import type { Issue } from "~~/shared/types/Issue";
 import type { IssueSearchItem } from "~/types/IssueSearch";
 
@@ -80,9 +75,7 @@ const editDialog = ref(false);
 const loadingEdit = ref(false);
 const issueToEdit = ref<Issue | null>(null);
 const activeEditLockId = ref<number | null>(null);
-useIssueEditLock(
-  computed(() => (editDialog.value ? activeEditLockId.value : null)),
-);
+useIssueEditLock(computed(() => (editDialog.value ? activeEditLockId.value : null)));
 const deleteDialog = ref(false);
 const deleting = ref(false);
 const issueToDelete = ref<IssueSearchItem | null>(null);
@@ -93,7 +86,7 @@ const updatedByName = ref<string | null>(null);
 const updatedAt = ref<string | null>(null);
 
 async function openEditDialog(item: IssueSearchItem) {
-  if (issueLocks.getEditAvailability(item.id).status !== "available") return;
+  if (!issueLocks.getEditAvailability(item.id).canEdit) return;
 
   activeEditLockId.value = item.id;
   issueToEdit.value = null;
@@ -124,7 +117,7 @@ function handleEditSaved() {
 }
 
 function confirmDelete(item: IssueSearchItem) {
-  if (issueLocks.getEditAvailability(item.id).status !== "available") return;
+  if (!issueLocks.getEditAvailability(item.id).canEdit) return;
   issueToDelete.value = item;
   deleteDialog.value = true;
 }
@@ -132,8 +125,7 @@ function confirmDelete(item: IssueSearchItem) {
 async function deleteIssue() {
   if (
     !issueToDelete.value ||
-    issueLocks.getEditAvailability(issueToDelete.value.id).status !==
-      "available"
+    !issueLocks.getEditAvailability(issueToDelete.value.id).canEdit
   )
     return;
 
@@ -179,13 +171,13 @@ watch(
     if (newSearch !== oldSearch) {
       state.value.page = 1;
     }
-  },
+  }
 );
 
 // Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
 const debouncedSearch = refDebounced(
   computed(() => state.value.search ?? ""),
-  300,
+  300
 );
 
 const query = computed(() => ({
@@ -197,8 +189,8 @@ const query = computed(() => ({
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search).map((term) =>
-    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-  ),
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  )
 );
 const { emphasizeFilter } = useFilter(filters);
 const {
@@ -221,9 +213,7 @@ watch([debouncedSearch], () => {
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
 const unsubscribe = ws.subscribe((message) => {
-  if (
-    ["issue-created", "issue-modified", "issue-deleted"].includes(message.type)
-  ) {
+  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
     refreshResults();
   }
 });
@@ -239,9 +229,9 @@ const { categories } = storeToRefs(useCategories());
 const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
-    editAvailability: issueLocks.getEditAvailability(issue.id),
+    ...issueLocks.getEditAvailability(issue.id),
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
-  })),
+  }))
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 

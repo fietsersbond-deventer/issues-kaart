@@ -119,12 +119,25 @@ describe("presence, connection warnings and editing lock stores", () => {
         expect(store.isLocked(3)).toBe(false);
         expect(store.isLocked(99)).toBe(false);
         expect(store.locks).toEqual({ 2: "Other" });
-        expect(store.getEditAvailability(2)).toEqual({ status: "locked", lockedBy: "Other" });
-        expect(store.getEditAvailability(3)).toEqual({ status: "available" });
-        expect(store.getEditAvailability(null)).toEqual({ status: "available" });
+        vi.stubGlobal("useIssueLocks", () => store);
+        const { useIssueEditAvailability } = await import("../app/composables/useIssueEditAvailability");
+        const issueId = ref<number | null>(2);
+        const availability = useIssueEditAvailability(issueId);
+        expect(availability.isConnected.value).toBe(true);
+        expect(availability.isLockedByOther.value).toBe("Other");
+        expect(availability.canEdit.value).toBe(false);
+        issueId.value = 3;
+        expect(availability.isLockedByOther.value).toBe(false);
+        expect(availability.canEdit.value).toBe(true);
+        issueId.value = 2;
+        expect(store.getEditAvailability(2)).toEqual({ isConnected: true, isLockedByOther: "Other", canEdit: false });
+        expect(store.getEditAvailability(3)).toEqual({ isConnected: true, isLockedByOther: false, canEdit: true });
+        expect(store.getEditAvailability(null)).toEqual({ isConnected: true, isLockedByOther: false, canEdit: true });
         socket.status.value = "CLOSED";
-        expect(store.getEditAvailability(2)).toEqual({ status: "disconnected" });
-        expect(store.getEditAvailability(null)).toEqual({ status: "disconnected" });
+        expect(availability.isConnected.value).toBe(false);
+        expect(availability.canEdit.value).toBe(false);
+        expect(store.getEditAvailability(2)).toEqual({ isConnected: false, isLockedByOther: "Other", canEdit: false });
+        expect(store.getEditAvailability(null)).toEqual({ isConnected: false, isLockedByOther: false, canEdit: false });
         await nextTick();
         expect(store.locks).toEqual({});
         socket.status.value = "OPEN";
@@ -155,7 +168,7 @@ describe("presence, connection warnings and editing lock stores", () => {
         message("editing-status", {
             4: { peer: "other", username: "fallback", displayName: "", lockedAt: 1 },
         });
-        expect(store.getEditAvailability(4)).toEqual({ status: "locked", lockedBy: "fallback" });
+        expect(store.getEditAvailability(4)).toEqual({ isConnected: true, isLockedByOther: "fallback", canEdit: false });
         status.value = "unauthenticated";
         await nextTick();
         expect(socket.sendMessage).toHaveBeenLastCalledWith("clearMyLocks", {});
