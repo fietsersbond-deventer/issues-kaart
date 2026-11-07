@@ -225,6 +225,11 @@ const {
   checkOnBlur: checkSlugOnBlur,
 } = useIssueSlug(issue);
 const { update, create, remove } = useIssuesMethods();
+useIssueEditLock(
+  computed(() =>
+    issue.value && "id" in issue.value ? issue.value.id : null,
+  ),
+);
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {

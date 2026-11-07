@@ -23,6 +23,7 @@ beforeEach(() => {
     editing.value = true;
     connected.value = true;
     vi.stubGlobal("useIssuesMethods", () => ({ update, create, getUniqueSlug, remove }));
+    vi.stubGlobal("useIssueEditLock", vi.fn());
     vi.stubGlobal("useIssueSlug", useIssueSlug);
     vi.stubGlobal("storeToRefs", (value: unknown) => value);
     vi.stubGlobal("useCategories", () => ({ categories: ref([]) }));

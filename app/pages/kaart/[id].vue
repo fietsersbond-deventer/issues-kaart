@@ -3,17 +3,17 @@
     <v-toolbar v-if="status === 'authenticated'">
       <Toolbar>
         <template v-if="!isEditing">
-          <v-btn v-if="!isConnected" variant="text" color="error" disabled>
+          <v-btn v-if="editAvailability.status === 'disconnected'" variant="text" color="error" disabled>
             <v-icon>mdi-wifi-off</v-icon>
             <v-tooltip activator="parent" location="top">
               Verbinding verbroken - bewerken is niet mogelijk
             </v-tooltip>
           </v-btn>
 
-          <v-btn v-else-if="!!isLockedByOther" :aria-label="`Bewerkt door ${isLockedByOther}`" variant="text" color="warning">
+          <v-btn v-else-if="editAvailability.status === 'locked'" :aria-label="`Bewerkt door ${editAvailability.lockedBy}`" variant="text" color="warning">
             <v-icon>mdi-lock-outline</v-icon>
             <v-tooltip activator="parent" location="top">
-              Dit issue wordt momenteel bewerkt door {{ isLockedByOther }}
+              Dit issue wordt momenteel bewerkt door {{ editAvailability.lockedBy }}
             </v-tooltip>
           </v-btn>
 
@@ -21,7 +21,6 @@
             v-else
             icon="mdi-pencil"
             variant="text"
-            :disabled="!isConnected"
             aria-label="Bewerken"
             @click="safeToggleEditing()"
           />
@@ -95,13 +94,15 @@ const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue, loadError } = storeToRefs(useSelectedIssue());
-const { isLockedByOther } = storeToRefs(useIssueLocks());
-const { isConnected } = useConnectionStatus();
+const issueLocks = useIssueLocks();
+const editAvailability = computed(() =>
+  issueLocks.getEditAvailability(isExistingIssue(issue.value) ? issue.value.id : null),
+);
 
 // Safe toggle function that checks connection
 function safeToggleEditing() {
   // Prevent starting edit mode when connection is unsafe
-  if (!isEditing.value && !isConnected.value) {
+  if (!isEditing.value && editAvailability.value.status !== "available") {
     return;
   }
   toggleEditing();

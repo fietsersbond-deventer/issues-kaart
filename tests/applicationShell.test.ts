@@ -107,7 +107,10 @@ beforeEach(() => {
     },
   }));
   vi.stubGlobal("useConnectionStatus", () => ({ isConnected: connected }));
-  vi.stubGlobal("useIssueLocks", () => ({ isLockedByOther: ref(false) }));
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () =>
+      connected.value ? { status: "available" } : { status: "disconnected" },
+  }));
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
   vi.stubGlobal("useSelectedIssue", () => ({
     issue: ref({

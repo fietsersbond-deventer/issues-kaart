@@ -71,23 +71,54 @@
 
           <!-- eslint-enable vue/no-v-html -->
           <template #item.actions="{ item }">
-            <div class="d-flex ga-1">
+            <div class="issue-actions">
               <v-btn
-                icon="mdi-pencil"
-                variant="text"
-                color="primary"
-                size="small"
-                :aria-label="`${item.title} bewerken`"
-                @click.stop="openEditDialog(item)"
-              />
-              <v-btn
-                icon="mdi-delete"
+                v-if="item.editAvailability.status === 'disconnected'"
+                icon
                 variant="text"
                 color="error"
                 size="small"
-                :aria-label="`${item.title} verwijderen`"
-                @click.stop="confirmDelete(item)"
-              />
+                disabled
+                :aria-label="`${item.title}: verbinding verbroken`"
+              >
+                <v-icon>mdi-wifi-off</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Verbinding verbroken - bewerken en verwijderen is niet mogelijk
+                </v-tooltip>
+              </v-btn>
+              <v-btn
+                v-else-if="item.editAvailability.status === 'locked'"
+                icon
+                variant="text"
+                color="warning"
+                size="small"
+                :aria-label="`${item.title} bewerkt door ${item.editAvailability.lockedBy}`"
+                @click.stop
+              >
+                <v-icon>mdi-lock-outline</v-icon>
+                <v-tooltip activator="parent" location="top">
+                  Dit issue wordt momenteel bewerkt door {{ item.editAvailability.lockedBy }}
+                </v-tooltip>
+              </v-btn>
+              <span v-if="item.editAvailability.status !== 'available'" aria-hidden="true" />
+              <template v-else>
+                <v-btn
+                  icon="mdi-pencil"
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  :aria-label="`${item.title} bewerken`"
+                  @click.stop="openEditDialog(item)"
+                />
+                <v-btn
+                  icon="mdi-delete"
+                  variant="text"
+                  color="error"
+                  size="small"
+                  :aria-label="`${item.title} verwijderen`"
+                  @click.stop="confirmDelete(item)"
+                />
+              </template>
               <v-btn
                 icon="mdi-information-outline"
                 variant="text"
@@ -127,7 +158,12 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="error" :loading="deleting" @click="deleteIssue">
+          <v-btn
+            color="error"
+            :loading="deleting"
+            :disabled="!issueToDelete || issueLocks.getEditAvailability(issueToDelete.id).status !== 'available'"
+            @click="deleteIssue"
+          >
             Verwijderen
           </v-btn>
           <v-btn :disabled="deleting" @click="deleteDialog = false">
@@ -170,6 +206,7 @@ const { trackSiteSearch } = useMatomoTracking();
 const isPrinting = useMediaQuery("print");
 const { status } = useAuth();
 const { getTag } = useTagsApi();
+const issueLocks = useIssueLocks();
 const {
   get: getIssue,
   getUpdatedBy,
@@ -220,6 +257,10 @@ const headers = computed(() => {
 const editDialog = ref(false);
 const loadingEdit = ref(false);
 const issueToEdit = ref<Issue | null>(null);
+const activeEditLockId = ref<number | null>(null);
+useIssueEditLock(
+  computed(() => (editDialog.value ? activeEditLockId.value : null)),
+);
 const deleteDialog = ref(false);
 const deleting = ref(false);
 const issueToDelete = ref<SearchIssue | null>(null);
@@ -230,19 +271,30 @@ const updatedByName = ref<string | null>(null);
 const updatedAt = ref<string | null>(null);
 
 async function openEditDialog(item: SearchIssue) {
+  if (issueLocks.getEditAvailability(item.id).status !== "available") return;
+
+  activeEditLockId.value = item.id;
   issueToEdit.value = null;
   editDialog.value = true;
   loadingEdit.value = true;
   try {
-    issueToEdit.value = await getIssue(item.id);
+    const issue = await getIssue(item.id);
+    if (activeEditLockId.value === item.id) {
+      issueToEdit.value = issue;
+    }
   } catch (error) {
     console.error("Failed to load issue for editing:", error);
     editDialog.value = false;
+    activeEditLockId.value = null;
     showError("Issue kon niet worden geladen om te bewerken");
   } finally {
     loadingEdit.value = false;
   }
 }
+
+watch(editDialog, (isOpen) => {
+  if (!isOpen) activeEditLockId.value = null;
+});
 
 function handleEditSaved() {
   editDialog.value = false;
@@ -250,12 +302,16 @@ function handleEditSaved() {
 }
 
 function confirmDelete(item: SearchIssue) {
+  if (issueLocks.getEditAvailability(item.id).status !== "available") return;
   issueToDelete.value = item;
   deleteDialog.value = true;
 }
 
 async function deleteIssue() {
-  if (!issueToDelete.value) return;
+  if (
+    !issueToDelete.value ||
+    issueLocks.getEditAvailability(issueToDelete.value.id).status !== "available"
+  ) return;
 
   deleting.value = true;
   try {
@@ -369,6 +425,7 @@ const { categories } = storeToRefs(useCategories());
 const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
+    editAvailability: issueLocks.getEditAvailability(issue.id),
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
   }))
 );
@@ -414,5 +471,12 @@ function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
   align-items: center;
   gap: 6px;
   padding: 4px 0;
+}
+
+.issue-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  align-items: center;
+  gap: 4px;
 }
 </style>
