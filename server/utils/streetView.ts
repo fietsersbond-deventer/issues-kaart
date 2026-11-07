@@ -144,7 +144,7 @@ export function parseStreetViewUrl(url: string): StreetViewParams {
 
   // TypeScript weet niet dat deze capture-groepen altijd gevuld zijn omdat de
   // regex hierboven al succesvol gematcht heeft - vandaar de cast.
-  const [, lat, lng, zoomOrAlt, fov, heading, tilt] = match as unknown as [
+  const [, lat, lng, _zoomOrAlt, fov, heading, tilt] = match as unknown as [
     string,
     string,
     string,
