@@ -1,120 +1,59 @@
-<!-- eslint-disable vue/valid-v-slot -->
 <template>
   <div>
-    <v-card class="mb-4">
-      <v-card-title
-        v-if="!isPrinting"
-        class="d-flex align-center"
-        style="gap: 16px"
-      >
-        <v-text-field
-          v-model="state.search"
-          label="Zoek"
-          dense
-          hide-details
-          clearable
-        />
-      </v-card-title>
-      <v-card-text>
-        <v-data-table-server
-          v-model:page="state.page"
-          v-model:sort-by="state.sortBy"
-          v-model:items-per-page="state.itemsPerPage"
-          :headers="headers"
-          :items="issues"
-          :items-length="totalItems"
-          item-value="id"
-          class="elevation-1"
-          density="compact"
-          :loading="pending"
-          :items-per-page-options="[5, 10, 25, 50]"
-          show-current-page
-          @click:row="gotoIssue"
-        >
-          <template #item.imageUrl="{ item }">
-            <NuxtLink :to="issueURL(item)">
-              <v-img
-                v-if="item.imageUrl"
-                :src="thumbnailUrl(item.imageUrl)"
-                class="thumbnail"
-                :height="100"
-                width="fit-content"
-              >
-                <template #placeholder>
-                  <div class="d-flex align-center justify-center fill-height">
-                    <v-progress-circular
-                      color="grey-lighten-4"
-                      indeterminate
-                    ></v-progress-circular>
-                  </div>
-                </template>
-              </v-img>
-            </NuxtLink>
-          </template>
+    <IssueSearchTable
+      v-model:page="state.page"
+      v-model:sort-by="state.sortBy"
+      v-model:items-per-page="state.itemsPerPage"
+      v-model:search="state.search"
+      :items="issues"
+      :total-items="totalItems"
+      :pending="pending"
+      :emphasize-filter="emphasizeFilter"
+      @row-click="gotoIssue"
+      @edit="openEditDialog"
+      @delete="confirmDelete"
+      @info="showIssueInfo"
+    />
 
-          <template #item.legend="{ item }">
-            <NuxtLink :to="issueURL(item)">
-              <div class="legend-grid">
-                <category-chip v-if="item.legend" :legend="item.legend" />
-                <Tag v-for="tag in item.tags" :key="tag" :tag="getTag(tag)" />
-              </div>
-            </NuxtLink>
-          </template>
+    <IssueEditDialog
+      v-model:dialog="editDialog"
+      v-model:issue="issueToEdit"
+      :loading="loadingEdit"
+      @save="handleEditSaved"
+      @cancel="editDialog = false"
+    />
 
-          <!-- emphasizeFilter escapes all result text before adding mark tags. -->
-          <!-- eslint-disable vue/no-v-html -->
-          <template #item.title="{ item }">
-            <NuxtLink :to="issueURL(item)">
-              <template v-if="item.snippets?.length">
-                <b v-html="emphasizeFilter(item.title)" />
-                <div
-                  v-for="snippet in item.snippets"
-                  :key="snippet"
-                  v-html="emphasizeFilter(snippet)"
-                />
-              </template>
-              <template v-else>
-                <span v-html="emphasizeFilter(item.title)" />
-              </template>
-            </NuxtLink>
-          </template>
+    <IssueDeleteDialog
+      v-model="deleteDialog"
+      :title="issueToDelete?.title ?? ''"
+      :loading="deleting"
+      :disabled="
+        !issueToDelete ||
+        !issueLocks.getEditAvailability(issueToDelete.id).canEdit
+      "
+      @confirm="deleteIssue"
+    />
 
-          <!-- eslint-enable vue/no-v-html -->
-          <template #item.actions="{ item }">
-            <div>
-              <v-btn
-                :to="`/kaart/${item.slug || item.id}`"
-                icon
-                variant="text"
-                size="small"
-                color="primary"
-                @click.stop
-              >
-                <v-icon>mdi-arrow-right</v-icon>
-                <v-tooltip activator="parent" location="top">
-                  Bekijk issue in de kaart
-                </v-tooltip>
-              </v-btn>
-            </div>
-          </template></v-data-table-server
-        >
-      </v-card-text>
-    </v-card>
+    <IssueInfoDialog
+      v-model="infoDialog"
+      :loading="loadingInfo"
+      :updated-by-name="updatedByName"
+      :updated-at="updatedAt"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery, refDebounced } from "@vueuse/core";
-import CategoryChip from "~/components/CategoryChip.vue";
-import { parseSearchTerms } from "~/utils/parseSearchTerms";
-import { thumbnailUrl } from "~/utils/thumbnailUrl";
-import type { Legend } from "~~/shared/types/Legend";
+import { refDebounced } from "@vueuse/core";
+import type { Issue } from "~~/shared/types/Issue";
+import type { IssueSearchItem } from "~/types/IssueSearch";
 
 useTitle("Onderwerpen");
 
 const { trackSiteSearch } = useMatomoTracking();
-const isPrinting = useMediaQuery("print");
-const { getTag } = useTagsApi();
+const issueLocks = useIssueLocks();
+const { get: getIssue, getUpdatedBy, remove: removeIssue } = useIssuesMethods();
+const { showError } = useSnackbar();
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -127,30 +66,110 @@ const state = useState("issues-state", () => ({
   }[],
 }));
 
-type SearchIssue = {
-  id: number;
-  slug: string;
-  title: string;
-  legend_id: number;
-  created_at: string;
-  imageUrl: string | null;
-  snippets: string[];
-  legend?: Legend;
-  tags: string[];
-};
-
 type SearchResponse = {
-  items: SearchIssue[];
+  items: IssueSearchItem[];
   total: number;
 };
 
-const headers = computed(() => {
-  return [
-    { title: "", value: "imageUrl", sortable: false, minWidth: 150 },
-    { title: "", value: "title", sortable: true },
-    { title: "", value: "legend", sortable: false, width: "20em" },
-  ];
+const editDialog = ref(false);
+const loadingEdit = ref(false);
+const issueToEdit = ref<Issue | null>(null);
+const activeEditLockId = ref<number | null>(null);
+useIssueEditLock(computed(() => (editDialog.value ? activeEditLockId.value : null)));
+const deleteDialog = ref(false);
+const deleting = ref(false);
+const issueToDelete = ref<IssueSearchItem | null>(null);
+const infoDialog = ref(false);
+const issueForInfo = ref<IssueSearchItem | null>(null);
+const loadingInfo = ref(false);
+const updatedByName = ref<string | null>(null);
+const updatedAt = ref<string | null>(null);
+
+async function openEditDialog(item: IssueSearchItem) {
+  if (!issueLocks.getEditAvailability(item.id).canEdit) return;
+
+  activeEditLockId.value = item.id;
+  issueToEdit.value = null;
+  editDialog.value = true;
+  loadingEdit.value = true;
+  try {
+    const issue = await getIssue(item.id);
+    if (activeEditLockId.value === item.id) {
+      // Verify lock is still available after getIssue() completes
+      if (!issueLocks.getEditAvailability(item.id).canEdit) {
+        editDialog.value = false;
+        activeEditLockId.value = null;
+        showError("Onderwerp wordt door iemand anders bewerkt");
+        return;
+      }
+      issueToEdit.value = issue;
+    }
+  } catch (error) {
+    console.error("Failed to load issue for editing:", error);
+    editDialog.value = false;
+    activeEditLockId.value = null;
+    showError("Issue kon niet worden geladen om te bewerken");
+  } finally {
+    loadingEdit.value = false;
+  }
+}
+
+watch(editDialog, (isOpen) => {
+  if (!isOpen) activeEditLockId.value = null;
 });
+
+function handleEditSaved() {
+  editDialog.value = false;
+  refreshResults();
+}
+
+function confirmDelete(item: IssueSearchItem) {
+  if (!issueLocks.getEditAvailability(item.id).canEdit) return;
+  issueToDelete.value = item;
+  deleteDialog.value = true;
+}
+
+async function deleteIssue() {
+  if (
+    !issueToDelete.value ||
+    !issueLocks.getEditAvailability(issueToDelete.value.id).canEdit
+  )
+    return;
+
+  deleting.value = true;
+  try {
+    await removeIssue(issueToDelete.value.id);
+    deleteDialog.value = false;
+    issueToDelete.value = null;
+    await refreshResults();
+  } catch (error) {
+    console.error("Failed to delete issue:", error);
+    showError("Issue kon niet worden verwijderd");
+  } finally {
+    deleting.value = false;
+  }
+}
+
+async function showIssueInfo(item: IssueSearchItem) {
+  issueForInfo.value = item;
+  updatedByName.value = null;
+  updatedAt.value = null;
+  infoDialog.value = true;
+  loadingInfo.value = true;
+  try {
+    const result = await getUpdatedBy(item.id);
+    if (issueForInfo.value?.id === item.id) {
+      updatedByName.value = result.updated_by_name;
+      updatedAt.value = result.updated_at;
+    }
+  } catch (error) {
+    console.error("Failed to load issue update information:", error);
+    infoDialog.value = false;
+    showError("Informatie over het issue kon niet worden geladen");
+  } finally {
+    loadingInfo.value = false;
+  }
+}
 
 // Reset pagination when search changes
 watch(
@@ -159,13 +178,13 @@ watch(
     if (newSearch !== oldSearch) {
       state.value.page = 1;
     }
-  },
+  }
 );
 
 // Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
 const debouncedSearch = refDebounced(
   computed(() => state.value.search ?? ""),
-  300,
+  300
 );
 
 const query = computed(() => ({
@@ -177,8 +196,8 @@ const query = computed(() => ({
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search).map((term) =>
-    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-  ),
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  )
 );
 const { emphasizeFilter } = useFilter(filters);
 const {
@@ -201,9 +220,7 @@ watch([debouncedSearch], () => {
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
 const unsubscribe = ws.subscribe((message) => {
-  if (
-    ["issue-created", "issue-modified", "issue-deleted"].includes(message.type)
-  ) {
+  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
     refreshResults();
   }
 });
@@ -219,16 +236,13 @@ const { categories } = storeToRefs(useCategories());
 const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
+    ...issueLocks.getEditAvailability(issue.id),
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
-  })),
+  }))
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
-function issueURL(item: SearchIssue) {
-  return `/kaart/${item.slug || item.id}`;
-}
-
-function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
+function gotoIssue(_event: Event, item: IssueSearchItem) {
   navigateTo(`/kaart/${item.slug || item.id}`);
 }
 </script>
@@ -238,31 +252,5 @@ function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-}
-
-/* Make locked rows completely unclickable */
-.locked-row {
-  pointer-events: none !important;
-  opacity: 0.6;
-  user-select: none;
-}
-
-/* Re-enable pointer events only for allowed interactive elements */
-.locked-row .lock-icon-container {
-  pointer-events: auto !important;
-}
-
-.thumbnail {
-  display: block;
-  margin: 0.5rem auto 0.5rem auto;
-  text-align: center;
-}
-
-.legend-grid {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 0;
 }
 </style>

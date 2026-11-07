@@ -9,6 +9,7 @@ import Desktop from "../app/components/layout/Desktop.vue";
 import Mobile from "../app/components/layout/Mobile.vue";
 import MapPage from "../app/pages/kaart.vue";
 import IssuePage from "../app/pages/kaart/[id].vue";
+import { useIssueEditAvailability } from "../app/composables/useIssueEditAvailability";
 import Admin from "../app/pages/admin.vue";
 import Login from "../app/pages/login.vue";
 import Welcome from "../app/pages/kaart/index.vue";
@@ -67,6 +68,7 @@ const status = ref("authenticated"),
   mobile = ref(false),
   editing = ref(false),
   connected = ref(true),
+  lockedBy = ref<string | false>(false),
   menu = ref(false);
 const signOut = vi.fn();
 const wrappers: Array<{
@@ -80,6 +82,7 @@ beforeEach(() => {
   mobile.value = false;
   editing.value = false;
   connected.value = true;
+  lockedBy.value = false;
   vi.stubGlobal("useAuth", () => ({ status, signOut }));
   vi.stubGlobal("useTexts", () => ({
     getText: (key: string) => ({
@@ -107,7 +110,15 @@ beforeEach(() => {
     },
   }));
   vi.stubGlobal("useConnectionStatus", () => ({ isConnected: connected }));
-  vi.stubGlobal("useIssueLocks", () => ({ isLockedByOther: ref(false) }));
+  vi.stubGlobal("useIssueEditAvailability", useIssueEditAvailability);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () =>
+      ({
+        isConnected: connected.value,
+        isLockedByOther: lockedBy.value,
+        canEdit: connected.value && !lockedBy.value,
+      }),
+  }));
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
   vi.stubGlobal("useSelectedIssue", () => ({
     issue: ref({
@@ -303,12 +314,24 @@ it("enters/exits issue editing and clears editing state when navigating away", a
   expect(wrapper.find("issue-details-stub").exists()).toBe(true);
   await wrapper.get('button[aria-label="Bewerken"]').trigger("click");
   expect(editing.value).toBe(true);
+  connected.value = false;
+  await flushPromises();
   await wrapper.get('button[aria-label="Bewerken annuleren"]').trigger("click");
   expect(editing.value).toBe(false);
+  connected.value = true;
+  lockedBy.value = "Andere gebruiker";
+  await flushPromises();
+  expect(wrapper.find('button[aria-label="Bewerken"]').exists()).toBe(false);
+  expect(wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists()).toBe(true);
   connected.value = false;
   await flushPromises();
   expect(wrapper.find('button[aria-label="Bewerken"]').exists()).toBe(false);
+  expect(wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists()).toBe(false);
+  expect(wrapper.text()).toContain("Verbinding verbroken - bewerken is niet mogelijk");
   connected.value = true;
+  await flushPromises();
+  expect(wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists()).toBe(true);
+  lockedBy.value = false;
   await flushPromises();
   await wrapper.get('button[aria-label="Bewerken"]').trigger("click");
   expect(editing.value).toBe(true);

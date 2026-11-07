@@ -9,11 +9,22 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!canSubmit"
+          variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
-        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
+        <v-btn
+          v-if="'id' in issue"
+          color="error"
+          variant="flat"
+          @click="onDelete"
+        >
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -31,7 +42,9 @@
               />
               <div class="issue-url-editor">
                 <div class="issue-url-control">
-                  <span class="issue-url-prefix">{{ requestURL.origin }}/kaart/</span>
+                  <span class="issue-url-prefix"
+                    >{{ requestURL.origin }}/kaart/</span
+                  >
                   <input
                     v-model.trim="issue.slug"
                     aria-label="URL-deel"
@@ -39,7 +52,7 @@
                     spellcheck="false"
                     @input="onSlugInput"
                     @blur="checkSlugOnBlur"
-                  >
+                  />
                 </div>
                 <div
                   v-if="isGeneratingSlug"
@@ -87,7 +100,10 @@
                     Street View toevoegen
                   </v-btn>
                 </div>
-                <div v-if="!issue.description" class="text-error text-caption mt-1">
+                <div
+                  v-if="!issue.description"
+                  class="text-error text-caption mt-1"
+                >
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -118,8 +134,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
-                kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen
+                bovenin de kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -128,10 +144,16 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
+        <v-btn
+          type="submit"
+          color="primary"
+          :disabled="!canSubmit"
+          variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn color="secondary" variant="flat" @click="onCancel"
+          >Annuleren</v-btn
+        >
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
@@ -144,13 +166,21 @@
     </v-card>
   </v-form>
 
+  <IssueDeleteDialog
+    v-model="showDeleteDialog"
+    :title="isExistingIssue(issue) ? issue.title : ''"
+    :loading="deleting"
+    @confirm="confirmDelete"
+  />
+
   <v-dialog v-model="showStreetViewDialog" max-width="600">
     <v-card>
       <v-card-title>Street View toevoegen</v-card-title>
       <v-card-text>
         <p class="text-body-2 mb-2">
-          Plak hier een Street View link (gebruik de Deel-knop in Google Maps terwijl je
-          in Street View staat). Gewone kaartlocaties worden niet ondersteund.
+          Plak hier een Street View link (gebruik de Deel-knop in Google Maps
+          terwijl je in Street View staat). Gewone kaartlocaties worden niet
+          ondersteund.
         </p>
         <v-text-field
           v-model.trim="streetViewUrl"
@@ -192,6 +222,7 @@
 <script setup lang="ts">
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
+import IssueDeleteDialog from "~/components/IssueDeleteDialog.vue";
 import {
   isExistingIssue,
   type Issue,
@@ -210,6 +241,7 @@ import {
 void ensureStreetViewEmbedBlotRegistered();
 
 const valid = ref(true);
+const props = defineProps<{ navigateOnSlugChange?: boolean }>();
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue | NewIssue>({ required: true });
 const route = useRoute();
@@ -224,6 +256,14 @@ const {
   checkOnBlur: checkSlugOnBlur,
 } = useIssueSlug(issue);
 const { update, create, remove } = useIssuesMethods();
+const showDeleteDialog = ref(false);
+const deleting = ref(false);
+useIssueEditLock(
+  computed(() => (issue.value && "id" in issue.value ? issue.value.id : null)),
+);
+const { canEdit: canEditByLock } = useIssueEditAvailability(
+  computed(() => (issue.value && "id" in issue.value ? issue.value.id : null)),
+);
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
@@ -242,10 +282,14 @@ const geometryRules = [
     "Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de kaart.",
 ];
 
-// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
+// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active AND lock is still held
 const canSubmit = computed(() => {
   return (
-    valid.value && isModified.value && isConnected.value && isSlugValid.value
+    valid.value &&
+    isModified.value &&
+    isConnected.value &&
+    isSlugValid.value &&
+    canEditByLock.value
   );
 });
 
@@ -405,8 +449,8 @@ const authHeaders = computed(() => {
 });
 
 async function onSubmit() {
-  // Prevent submission if connection is lost
-  if (!isConnected.value || !isSlugValid.value) {
+  // Prevent submission if connection is lost or lock is lost
+  if (!isConnected.value || !isSlugValid.value || !canEditByLock.value) {
     return;
   }
 
@@ -424,7 +468,10 @@ async function onSubmit() {
       if (updatedIssue.slug !== issue.value.slug) {
         issue.value.slug = updatedIssue.slug;
       }
-      if (updatedIssue.slug !== route.params.id) {
+      if (
+        props.navigateOnSlugChange !== false &&
+        updatedIssue.slug !== route.params.id
+      ) {
         showDialog.value = false;
         return navigateTo({
           path: `/kaart/${updatedIssue.slug}`,
@@ -457,21 +504,28 @@ function onCancel() {
 }
 
 async function onDelete() {
-  if (isExistingIssue(issue.value)) {
-    if (
-      confirm(`Weet je zeker dat je '${issue.value.title}' wilt verwijderen?`)
-    ) {
-      const name = user.value?.name || "anonymous";
-      await remove(issue.value.id);
-      // Track issue deletion in Matomo
-      trackEvent(
-        "Issue",
-        "Deleted",
-        `Issue #${issue.value.id} by ${name}: ${issue.value.title}`,
-      );
-      showDialog.value = false;
-      return navigateTo("/kaart");
-    }
+  if (isExistingIssue(issue.value)) showDeleteDialog.value = true;
+}
+
+async function confirmDelete() {
+  if (!isExistingIssue(issue.value)) return;
+
+  deleting.value = true;
+  try {
+    const issueId = issue.value.id;
+    const issueTitle = issue.value.title;
+    const name = user.value?.name || "anonymous";
+    await remove(issueId);
+    trackEvent(
+      "Issue",
+      "Deleted",
+      `Issue #${issueId} by ${name}: ${issueTitle}`,
+    );
+    showDeleteDialog.value = false;
+    showDialog.value = false;
+    return navigateTo("/kaart");
+  } finally {
+    deleting.value = false;
   }
 }
 </script>

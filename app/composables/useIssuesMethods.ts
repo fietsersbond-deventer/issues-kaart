@@ -23,6 +23,16 @@ export function useIssuesMethods() {
     });
   }
 
+  function getUpdatedBy(id: number | string) {
+    return $fetch<{ updated_by_name: string | null; updated_at: string | null }>(
+      `/api/issues/${id}/updated-by`,
+      {
+        method: "GET",
+        headers: headers.value,
+      },
+    );
+  }
+
   async function create(body: NewIssue) {
     const issue = await $fetch<Issue>("/api/issues", {
       method: "POST",
@@ -63,6 +73,7 @@ export function useIssuesMethods() {
 
   return {
     get,
+    getUpdatedBy,
     create,
     update,
     getUniqueSlug,
