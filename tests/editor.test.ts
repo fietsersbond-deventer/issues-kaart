@@ -47,6 +47,18 @@ beforeEach(() => {
     remove,
   }));
   vi.stubGlobal("useIssueEditLock", vi.fn());
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: (_issueId: number | null | undefined) => ({
+      isConnected: connected.value,
+      isLockedByOther: false,
+      canEdit: connected.value,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditAvailability", (_issueId: unknown) => ({
+    isConnected: computed(() => connected.value),
+    isLockedByOther: computed(() => false),
+    canEdit: computed(() => connected.value),
+  }));
   vi.stubGlobal("useIssueSlug", useIssueSlug);
   vi.stubGlobal("storeToRefs", (value: unknown) => value);
   vi.stubGlobal("useCategories", () => ({ categories: ref([]) }));
