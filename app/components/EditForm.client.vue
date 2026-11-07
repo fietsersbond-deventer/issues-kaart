@@ -261,6 +261,9 @@ const deleting = ref(false);
 useIssueEditLock(
   computed(() => (issue.value && "id" in issue.value ? issue.value.id : null)),
 );
+const { canEdit: canEditByLock } = useIssueEditAvailability(
+  computed(() => (issue.value && "id" in issue.value ? issue.value.id : null)),
+);
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
@@ -279,10 +282,14 @@ const geometryRules = [
     "Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de kaart.",
 ];
 
-// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
+// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active AND lock is still held
 const canSubmit = computed(() => {
   return (
-    valid.value && isModified.value && isConnected.value && isSlugValid.value
+    valid.value &&
+    isModified.value &&
+    isConnected.value &&
+    isSlugValid.value &&
+    canEditByLock.value
   );
 });
 
@@ -442,8 +449,8 @@ const authHeaders = computed(() => {
 });
 
 async function onSubmit() {
-  // Prevent submission if connection is lost
-  if (!isConnected.value || !isSlugValid.value) {
+  // Prevent submission if connection is lost or lock is lost
+  if (!isConnected.value || !isSlugValid.value || !canEditByLock.value) {
     return;
   }
 

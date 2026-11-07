@@ -95,6 +95,13 @@ async function openEditDialog(item: IssueSearchItem) {
   try {
     const issue = await getIssue(item.id);
     if (activeEditLockId.value === item.id) {
+      // Verify lock is still available after getIssue() completes
+      if (!issueLocks.getEditAvailability(item.id).canEdit) {
+        editDialog.value = false;
+        activeEditLockId.value = null;
+        showError("Onderwerp wordt door iemand anders bewerkt");
+        return;
+      }
       issueToEdit.value = issue;
     }
   } catch (error) {

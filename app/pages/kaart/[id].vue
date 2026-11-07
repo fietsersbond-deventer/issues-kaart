@@ -75,6 +75,7 @@
       <IssueEditDialog
         v-model:issue="issue"
         v-model:dialog="showEditDialog"
+        :navigate-on-slug-change="true"
         :fullscreen="$vuetify.display.mobile"
         @save="showEditDialog = false"
         @cancel="showEditDialog = false"
