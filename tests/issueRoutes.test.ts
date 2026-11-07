@@ -15,6 +15,7 @@ let routes: {
     checkSlug: typeof import("../server/api/issues/slug.post").default;
     list: typeof import("../server/api/issues/index.get").default;
     search: typeof import("../server/api/issues/search.get").default;
+    updatedBy: typeof import("../server/api/issues/[id]/updated-by.get").default;
     geojson: typeof import("../server/api/issues/geojson.get").default;
 };
 const geometry = { type: "Point", coordinates: [6.1, 52.2] };
@@ -31,6 +32,7 @@ beforeEach(async () => {
         checkSlug: (await import("../server/api/issues/slug.post")).default,
         list: (await import("../server/api/issues/index.get")).default,
         search: (await import("../server/api/issues/search.get")).default,
+        updatedBy: (await import("../server/api/issues/[id]/updated-by.get")).default,
         geojson: (await import("../server/api/issues/geojson.get")).default,
     };
     getEmitter().on("issue:created", emitted);
@@ -117,6 +119,12 @@ describe("issue persistence contracts with the migrated schema", () => {
         expect(issue.tags).toEqual(["cafe", "bike"]);
         expect(issue.description).not.toContain("script");
         expect(db.prepare("SELECT plain_text FROM issues WHERE id = ?").get(issue.id!)).toEqual({ plain_text: "Safe crossing" });
+        expect(db.prepare("SELECT updated_by_user_id FROM issues WHERE id = ?").get(issue.id!)).toEqual({ updated_by_user_id: 1 });
+        expect((await routes.search(h.event)).items[0]).not.toHaveProperty("updated_by_name");
+        expect(await routes.updatedBy(h.event)).toMatchObject({
+            updated_by_name: "Test Admin",
+            updated_at: expect.any(String),
+        });
         expect(emitted).toHaveBeenCalledWith(expect.objectContaining({ id: issue.id, createdBy: "Test Admin", tags: ["cafe", "bike"] }));
         const loaded = await routes.get(h.event);
         expect(loaded).toMatchObject({ geometry, tags: ["bike", "cafe"], imageUrl: `/api/issues/${issue.id}/image?v=${imageVersion}` });
@@ -188,12 +196,24 @@ describe("issue persistence contracts with the migrated schema", () => {
     });
     it("updates all persisted fields and plain text, and broadcasts only committed data", async () => {
         await create();
+        h.event.context.user = { ...h.event.context.user!, id: 2, name: "Test User" };
         h.input.body = { title: "Updated", description: "<p>New text</p>", geometry: { type: "LineString", coordinates: [[6, 52], [7, 53]] }, legend_id: 2, tags: ["new"] };
         const updated = await routes.update(h.event);
         expect(updated).toMatchObject({ title: "Updated", legend_id: 2, tags: ["new"] });
         expect((await routes.get(h.event)).imageUrl).toBeNull();
         expect(db.prepare("SELECT plain_text FROM issues").get()).toEqual({ plain_text: "New text" });
-        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ modifiedByUserId: 1, title: "Updated" }));
+        expect(db.prepare("SELECT updated_by_user_id FROM issues").get()).toEqual({ updated_by_user_id: 2 });
+        h.input.query = {};
+        expect(await routes.updatedBy(h.event)).toMatchObject({
+            updated_by_name: "Test User",
+            updated_at: expect.any(String),
+        });
+        expect(emitted).toHaveBeenLastCalledWith(expect.objectContaining({ modifiedByUserId: 2, title: "Updated" }));
+    });
+    it("requires authentication for issue update information", async () => {
+        await create();
+        h.event.context.user = null;
+        await expect(routes.updatedBy(h.event)).rejects.toMatchObject({ statusCode: 401 });
     });
     it("supports tags-only updates and preserves tags when changing only title", async () => {
         await create();

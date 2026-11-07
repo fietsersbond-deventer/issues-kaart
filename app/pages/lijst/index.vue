@@ -2,18 +2,8 @@
 <template>
   <div>
     <v-card class="mb-4">
-      <v-card-title
-        v-if="!isPrinting"
-        class="d-flex align-center"
-        style="gap: 16px"
-      >
-        <v-text-field
-          v-model="state.search"
-          label="Zoek"
-          dense
-          hide-details
-          clearable
-        />
+      <v-card-title v-if="!isPrinting" class="d-flex align-center" style="gap: 16px">
+        <v-text-field v-model="state.search" label="Zoek" dense hide-details clearable />
       </v-card-title>
       <v-card-text>
         <v-data-table-server
@@ -81,25 +71,88 @@
 
           <!-- eslint-enable vue/no-v-html -->
           <template #item.actions="{ item }">
-            <div>
+            <div class="d-flex ga-1">
               <v-btn
-                :to="`/kaart/${item.slug || item.id}`"
-                icon
+                icon="mdi-pencil"
+                variant="text"
+                color="primary"
+                size="small"
+                :aria-label="`${item.title} bewerken`"
+                @click.stop="openEditDialog(item)"
+              />
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                size="small"
+                :aria-label="`${item.title} verwijderen`"
+                @click.stop="confirmDelete(item)"
+              />
+              <v-btn
+                icon="mdi-information-outline"
                 variant="text"
                 size="small"
-                color="primary"
-                @click.stop
-              >
-                <v-icon>mdi-arrow-right</v-icon>
-                <v-tooltip activator="parent" location="top">
-                  Bekijk issue in de kaart
-                </v-tooltip>
-              </v-btn>
+                :aria-label="`Informatie over ${item.title}`"
+                @click.stop="showIssueInfo(item)"
+              />
             </div>
-          </template></v-data-table-server
-        >
+          </template>
+        </v-data-table-server>
       </v-card-text>
     </v-card>
+
+    <v-dialog v-model="editDialog" max-width="800px" scrollable>
+      <v-card v-if="issueToEdit" :loading="loadingEdit">
+        <EditForm
+          :key="issueToEdit.id"
+          v-model="issueToEdit"
+          v-model:dialog="editDialog"
+          :navigate-on-slug-change="false"
+          @save="handleEditSaved"
+          @cancel="editDialog = false"
+        />
+      </v-card>
+      <v-card v-else-if="loadingEdit">
+        <v-card-text class="d-flex justify-center pa-8">
+          <v-progress-circular indeterminate />
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteDialog" max-width="420px">
+      <v-card>
+        <v-card-title>Issue verwijderen</v-card-title>
+        <v-card-text>
+          Weet je zeker dat je "{{ issueToDelete?.title }}" wilt verwijderen?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="error" :loading="deleting" @click="deleteIssue">
+            Verwijderen
+          </v-btn>
+          <v-btn :disabled="deleting" @click="deleteDialog = false">
+            Annuleren
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="infoDialog" max-width="420px">
+      <v-card>
+        <v-card-title>Laatst aangepast</v-card-title>
+        <v-card-text>
+          <v-progress-circular v-if="loadingInfo" indeterminate size="20" />
+          <div v-else>{{ updatedByName || "Niet geregistreerd" }}</div>
+          <div v-if="!loadingInfo" class="text-medium-emphasis">
+            {{ formatUpdatedAt(updatedAt) }}
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="infoDialog = false">Sluiten</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -108,13 +161,21 @@ import { useMediaQuery, refDebounced } from "@vueuse/core";
 import CategoryChip from "~/components/CategoryChip.vue";
 import { parseSearchTerms } from "~/utils/parseSearchTerms";
 import { thumbnailUrl } from "~/utils/thumbnailUrl";
+import type { Issue } from "~~/shared/types/Issue";
 import type { Legend } from "~~/shared/types/Legend";
 
 useTitle("Onderwerpen");
 
 const { trackSiteSearch } = useMatomoTracking();
 const isPrinting = useMediaQuery("print");
+const { status } = useAuth();
 const { getTag } = useTagsApi();
+const {
+  get: getIssue,
+  getUpdatedBy,
+  remove: removeIssue,
+} = useIssuesMethods();
+const { showError } = useSnackbar();
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -145,12 +206,103 @@ type SearchResponse = {
 };
 
 const headers = computed(() => {
-  return [
+  const columns = [
     { title: "", value: "imageUrl", sortable: false, minWidth: 150 },
     { title: "", value: "title", sortable: true },
     { title: "", value: "legend", sortable: false, width: "20em" },
   ];
+  if (status.value === "authenticated") {
+    columns.push({ title: "Acties", value: "actions", sortable: false, width: "140px" });
+  }
+  return columns;
 });
+
+const editDialog = ref(false);
+const loadingEdit = ref(false);
+const issueToEdit = ref<Issue | null>(null);
+const deleteDialog = ref(false);
+const deleting = ref(false);
+const issueToDelete = ref<SearchIssue | null>(null);
+const infoDialog = ref(false);
+const issueForInfo = ref<SearchIssue | null>(null);
+const loadingInfo = ref(false);
+const updatedByName = ref<string | null>(null);
+const updatedAt = ref<string | null>(null);
+
+async function openEditDialog(item: SearchIssue) {
+  issueToEdit.value = null;
+  editDialog.value = true;
+  loadingEdit.value = true;
+  try {
+    issueToEdit.value = await getIssue(item.id);
+  } catch (error) {
+    console.error("Failed to load issue for editing:", error);
+    editDialog.value = false;
+    showError("Issue kon niet worden geladen om te bewerken");
+  } finally {
+    loadingEdit.value = false;
+  }
+}
+
+function handleEditSaved() {
+  editDialog.value = false;
+  refreshResults();
+}
+
+function confirmDelete(item: SearchIssue) {
+  issueToDelete.value = item;
+  deleteDialog.value = true;
+}
+
+async function deleteIssue() {
+  if (!issueToDelete.value) return;
+
+  deleting.value = true;
+  try {
+    await removeIssue(issueToDelete.value.id);
+    deleteDialog.value = false;
+    issueToDelete.value = null;
+    await refreshResults();
+  } catch (error) {
+    console.error("Failed to delete issue:", error);
+    showError("Issue kon niet worden verwijderd");
+  } finally {
+    deleting.value = false;
+  }
+}
+
+async function showIssueInfo(item: SearchIssue) {
+  issueForInfo.value = item;
+  updatedByName.value = null;
+  updatedAt.value = null;
+  infoDialog.value = true;
+  loadingInfo.value = true;
+  try {
+    const result = await getUpdatedBy(item.id);
+    if (issueForInfo.value?.id === item.id) {
+      updatedByName.value = result.updated_by_name;
+      updatedAt.value = result.updated_at;
+    }
+  } catch (error) {
+    console.error("Failed to load issue update information:", error);
+    infoDialog.value = false;
+    showError("Informatie over het issue kon niet worden geladen");
+  } finally {
+    loadingInfo.value = false;
+  }
+}
+
+function formatUpdatedAt(value: string | null) {
+  if (!value) return "Datum niet geregistreerd";
+
+  const timestamp = new Date(`${value.replace(" ", "T")}Z`);
+  if (Number.isNaN(timestamp.getTime())) return "Datum niet geregistreerd";
+
+  return new Intl.DateTimeFormat("nl-NL", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(timestamp);
+}
 
 // Reset pagination when search changes
 watch(
@@ -159,13 +311,13 @@ watch(
     if (newSearch !== oldSearch) {
       state.value.page = 1;
     }
-  },
+  }
 );
 
 // Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
 const debouncedSearch = refDebounced(
   computed(() => state.value.search ?? ""),
-  300,
+  300
 );
 
 const query = computed(() => ({
@@ -177,8 +329,8 @@ const query = computed(() => ({
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search).map((term) =>
-    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-  ),
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  )
 );
 const { emphasizeFilter } = useFilter(filters);
 const {
@@ -201,9 +353,7 @@ watch([debouncedSearch], () => {
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
 const unsubscribe = ws.subscribe((message) => {
-  if (
-    ["issue-created", "issue-modified", "issue-deleted"].includes(message.type)
-  ) {
+  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
     refreshResults();
   }
 });
@@ -220,7 +370,7 @@ const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
-  })),
+  }))
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 

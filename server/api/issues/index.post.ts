@@ -68,8 +68,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
+  const updatedByUserId = event.context.user?.id ?? null;
   const insertStmt = db.prepare(
-    "INSERT INTO issues (title, slug, description, plain_text, legend_id, geometry) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO issues (title, slug, description, plain_text, legend_id, geometry, updated_by_user_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
   );
   let result;
   let normalizedTags: string[];
@@ -83,6 +84,7 @@ export default defineEventHandler(async (event) => {
       getPlainText(sanitizedDescription),
       legend_id,
       JSON.stringify(geometry),
+      updatedByUserId,
     );
     normalizedTags = replaceTagsForIssue(
       db,

@@ -110,6 +110,10 @@ export default defineEventHandler(async (event) => {
     values.push(JSON.stringify(updates.geometry));
   }
 
+  updateFields.push("updated_by_user_id = ?");
+  values.push(event.context.user?.id ?? null);
+  updateFields.push("updated_at = CURRENT_TIMESTAMP");
+
   // Add the ID as the last parameter
   values.push(issueId);
 
@@ -155,7 +159,10 @@ export default defineEventHandler(async (event) => {
     throw error;
   }
 
-  if (result.changes === 0) {
+  if (
+    result.changes === 0 &&
+    !db.prepare("SELECT id FROM issues WHERE id = ?").get(issueId)
+  ) {
     throw createError({
       statusCode: 404,
       message: `Issue with ID ${issueId} not found or not updated`,

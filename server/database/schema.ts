@@ -36,6 +36,8 @@ export type Issue = {
   legend_id: number | null;
   geometry: string; // GeoJSON stored as string
   created_at: Date;
+  updated_by_user_id: number | null;
+  updated_at: string | null;
 };
 
 export type TextType = "plain" | "rich" | "url";

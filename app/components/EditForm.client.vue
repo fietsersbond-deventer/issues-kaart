@@ -210,6 +210,7 @@ import {
 void ensureStreetViewEmbedBlotRegistered();
 
 const valid = ref(true);
+const props = defineProps<{ navigateOnSlugChange?: boolean }>();
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue | NewIssue>({ required: true });
 const route = useRoute();
@@ -424,7 +425,10 @@ async function onSubmit() {
       if (updatedIssue.slug !== issue.value.slug) {
         issue.value.slug = updatedIssue.slug;
       }
-      if (updatedIssue.slug !== route.params.id) {
+      if (
+        props.navigateOnSlugChange !== false &&
+        updatedIssue.slug !== route.params.id
+      ) {
         showDialog.value = false;
         return navigateTo({
           path: `/kaart/${updatedIssue.slug}`,
