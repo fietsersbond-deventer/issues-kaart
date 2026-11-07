@@ -3,17 +3,28 @@
     <v-toolbar v-if="status === 'authenticated'">
       <Toolbar>
         <template v-if="!isEditing">
-          <v-btn v-if="editAvailability.status === 'disconnected'" variant="text" color="error" disabled>
+          <v-btn
+            v-if="editAvailability.status === 'disconnected'"
+            variant="text"
+            color="error"
+            disabled
+          >
             <v-icon>mdi-wifi-off</v-icon>
             <v-tooltip activator="parent" location="top">
               Verbinding verbroken - bewerken is niet mogelijk
             </v-tooltip>
           </v-btn>
 
-          <v-btn v-else-if="editAvailability.status === 'locked'" :aria-label="`Bewerkt door ${editAvailability.lockedBy}`" variant="text" color="warning">
+          <v-btn
+            v-else-if="editAvailability.status === 'locked'"
+            :aria-label="`Bewerkt door ${editAvailability.lockedBy}`"
+            variant="text"
+            color="warning"
+          >
             <v-icon>mdi-lock-outline</v-icon>
             <v-tooltip activator="parent" location="top">
-              Dit issue wordt momenteel bewerkt door {{ editAvailability.lockedBy }}
+              Dit issue wordt momenteel bewerkt door
+              {{ editAvailability.lockedBy }}
             </v-tooltip>
           </v-btn>
 
@@ -42,7 +53,9 @@
       </Toolbar>
     </v-toolbar>
 
-    <v-alert v-if="loadError" type="error" class="ma-4">{{ loadError }}</v-alert>
+    <v-alert v-if="loadError" type="error" class="ma-4">{{
+      loadError
+    }}</v-alert>
     <div v-if="issue" class="pa-4">
       <template v-if="isExistingIssue(issue)">
         <EditForm
@@ -68,24 +81,19 @@
         </div>
       </template>
 
-      <v-dialog
-        v-model="showEditDialog"
-        max-width="800px"
-        scrollable
+      <IssueEditDialog
+        v-model:issue="issue"
+        v-model:dialog="showEditDialog"
         :fullscreen="$vuetify.display.mobile"
-      >
-        <EditForm
-          v-model="issue"
-          v-model:dialog="showEditDialog"
-          @save="showEditDialog = false"
-          @cancel="showEditDialog = false"
-        />
-      </v-dialog>
+        @save="showEditDialog = false"
+        @cancel="showEditDialog = false"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import IssueEditDialog from "~/components/IssueEditDialog.vue";
 import { isExistingIssue } from "~~/shared/types/Issue";
 
 const route = useRoute("kaart-id");
@@ -96,7 +104,9 @@ const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue, loadError } = storeToRefs(useSelectedIssue());
 const issueLocks = useIssueLocks();
 const editAvailability = computed(() =>
-  issueLocks.getEditAvailability(isExistingIssue(issue.value) ? issue.value.id : null),
+  issueLocks.getEditAvailability(
+    isExistingIssue(issue.value) ? issue.value.id : null,
+  ),
 );
 
 // Safe toggle function that checks connection
@@ -113,9 +123,9 @@ useTitle(title);
 // Registreer de metadata tijdens setup, niet pas in een watcher na het laden.
 // Alleen opgeslagen onderwerpen hebben een deelbare URL en afbeelding; concepten niet.
 // De computed-bron volgt ook vervangingen door navigatie of WebSocket-berichten.
-useIssueOpenGraph(computed(() =>
-  isExistingIssue(issue.value) ? issue.value : null,
-));
+useIssueOpenGraph(
+  computed(() => (isExistingIssue(issue.value) ? issue.value : null)),
+);
 
 if (!id || typeof id !== "string") {
   navigateTo("/kaart");
