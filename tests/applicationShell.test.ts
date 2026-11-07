@@ -9,6 +9,7 @@ import Desktop from "../app/components/layout/Desktop.vue";
 import Mobile from "../app/components/layout/Mobile.vue";
 import MapPage from "../app/pages/kaart.vue";
 import IssuePage from "../app/pages/kaart/[id].vue";
+import { useIssueEditAvailability } from "../app/composables/useIssueEditAvailability";
 import Admin from "../app/pages/admin.vue";
 import Login from "../app/pages/login.vue";
 import Welcome from "../app/pages/kaart/index.vue";
@@ -109,6 +110,7 @@ beforeEach(() => {
     },
   }));
   vi.stubGlobal("useConnectionStatus", () => ({ isConnected: connected }));
+  vi.stubGlobal("useIssueEditAvailability", useIssueEditAvailability);
   vi.stubGlobal("useIssueLocks", () => ({
     getEditAvailability: () =>
       ({
