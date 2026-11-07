@@ -1,2 +1,2 @@
 ALTER TABLE issues
-ADD COLUMN updated_by_user_id INTEGER REFERENCES users(id);
+ADD COLUMN updated_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
