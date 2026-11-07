@@ -43,8 +43,9 @@ const BROWSER_USER_AGENT =
 // getal betekent dat dit een Street View-positie is (i.p.v. "z" voor een
 // gewoon kaart-zoomniveau). De vijf haakjes-groepen leveren op:
 // lat, lng, fov ("y"), heading ("h") en tilt ("t").
+// Voor gebieden onder NAP kan het derde getal negatief zijn (bijv. -1a).
 const STREETVIEW_URL_PATTERN =
-  /@(-?\d+\.?\d*),(-?\d+\.?\d*),\d+\.?\d*a,(\d+\.?\d*)y,(-?\d+\.?\d*)h,(-?\d+\.?\d*)t/;
+  /@(-?\d+\.?\d*),(-?\d+\.?\d*),(-?\d+\.?\d*)a,(\d+\.?\d*)y,(-?\d+\.?\d*)h,(-?\d+\.?\d*)t/;
 // Herkent een gewone (niet-Street View) kaartlocatie, bijv. "...,15z" - gebruikt
 // om een duidelijkere foutmelding te geven dan "kon geen Street View data vinden".
 const MAP_ZOOM_URL_PATTERN = /@(-?\d+\.?\d*),(-?\d+\.?\d*),\d+\.?\d*z/;
@@ -143,7 +144,8 @@ export function parseStreetViewUrl(url: string): StreetViewParams {
 
   // TypeScript weet niet dat deze capture-groepen altijd gevuld zijn omdat de
   // regex hierboven al succesvol gematcht heeft - vandaar de cast.
-  const [, lat, lng, fov, heading, tilt] = match as unknown as [
+  const [, lat, lng, zoomOrAlt, fov, heading, tilt] = match as unknown as [
+    string,
     string,
     string,
     string,
