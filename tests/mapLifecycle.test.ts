@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { nextTick, ref, shallowRef, effectScope } from "vue";
-import { View } from "ol";
+import { Feature, View } from "ol";
+import { Point } from "ol/geom";
 import TileLayer from "ol/layer/Tile";
 import { fromLonLat } from "ol/proj";
 import { vueGlobals, withSetup } from "./helpers/vue";
@@ -157,6 +158,14 @@ it("focuses selected issues after loading, uses filters for overview and never m
       ),
     )!;
     expect(fit).toHaveBeenCalledTimes(1);
+    padding.value = [100, 50, 50, 250];
+    focus.focusCluster([new Feature(new Point([0, 0])), new Feature(new Point([0, 0]))]);
+    expect(fit).toHaveBeenLastCalledWith([0, 0, 0, 0], expect.objectContaining({
+      padding: [100, 50, 50, 250],
+      size: [800, 600],
+      maxZoom: 18,
+      duration: 1000,
+    }));
     loaded.value = true;
     await nextTick();
     await vi.advanceTimersByTimeAsync(150);

@@ -4,7 +4,7 @@ import { Feature } from "ol";
 import { Point, LineString, Polygon } from "ol/geom";
 import type { Circle, Icon, Style } from "ol/style";
 import type { NewIssue } from "../shared/types/Issue";
-import { getIssueMapStyle } from "../app/utils/issueMapStyle";
+import { getClusterMapStyle, getIssueMapStyle } from "../app/utils/issueMapStyle";
 
 const point = new Feature(new Point([0, 0]));
 const line = new Feature(
@@ -50,6 +50,15 @@ function styles(
 const imageData = "data:image/png;base64,aGVsbG8=";
 
 describe("getIssueMapStyle", () => {
+  it("toont een cluster in de categoriekleur met een contrasterend aantal", () => {
+    const result = getClusterMapStyle(12, "#123456");
+    const circle = result.getImage() as Circle;
+    expect(circle.getFill()!.getColor()).toBe("#123456");
+    expect(circle.getStroke()!.getColor()).toBe("white");
+    expect(result.getText()!.getText()).toBe("12");
+    expect(result.getText()!.getFill()!.getColor()).toBe("#ffffff");
+    expect(getClusterMapStyle(2, "#ffffff").getText()!.getFill()!.getColor()).toBe("#000000");
+  });
   it("geeft geen stijl terug zonder onderwerp", () => {
     expect(getIssueMapStyle(point, undefined, false, 14)).toBeUndefined();
   });

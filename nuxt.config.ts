@@ -55,6 +55,7 @@ export default defineNuxtConfig({
         centerLon: "",
         initialZoom: "",
         searchBbox: "",
+        clusteringEnabled: true,
       },
       matomo: {
         siteId: "",

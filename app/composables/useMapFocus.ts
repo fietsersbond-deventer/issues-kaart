@@ -1,8 +1,10 @@
-import type { Map as OLMap } from "ol";
+import type { Feature, Map as OLMap } from "ol";
+import type { Point } from "ol/geom";
 import type { Ref } from "vue";
 import { easeOut } from "ol/easing";
 import { useDebounceFn } from "@vueuse/core";
 import { fromLonLat } from "ol/proj";
+import { boundingExtent } from "ol/extent";
 import type { BBox } from "geojson";
 import {
   focusKey,
@@ -191,5 +193,21 @@ export function useMapFocus(
     return refitSoon();
   }
 
-  return { refit };
+  function focusCluster(features: Feature<Point>[]) {
+    const view = mapRef.value?.map?.getView();
+    if (!view || isEditing.value || !features.length) return;
+    // Fit the member points using the same panel-aware padding as issue focus.
+    // maxZoom also makes coincident points separate when clustering stops at 18.
+    const extent = boundingExtent(features.map(feature => feature.getGeometry()!.getCoordinates()));
+    view.cancelAnimations();
+    view.fit(extent, {
+      padding: padding.value,
+      size: mapSize.value,
+      maxZoom: 18,
+      duration: defaultDuration,
+      easing: easeOut,
+    });
+  }
+
+  return { refit, focusCluster };
 }
