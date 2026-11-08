@@ -24,6 +24,7 @@ let selectedId: ReturnType<typeof ref<number | null>>;
 let issue: ReturnType<typeof ref>;
 let mapIssues: ReturnType<typeof ref>;
 const navigate = vi.fn();
+const focusCluster = vi.fn();
 
 function mountMap(geometry: Point | LineString | Polygon = new Point([6, 52])) {
   const feature = new Feature({ id: 1, geometry });
@@ -46,7 +47,7 @@ function mountMap(geometry: Point | LineString | Polygon = new Point([6, 52])) {
           setup(_, { expose }) { expose({ isDrawing: drawing }); }, template: "<div />",
         }),
         MapBaseLayers: true, MapControlContainer: true, MapResetExtentControl: true, MapFilterSummary: true,
-        SizeCalculator: true, MapLegend: true, MapLayerSwitcher: true, MapAreas: true, MapTooltip: true,
+        SizeCalculator: true, MapLegend: true, MapLayerSwitcher: true, MapAreas: true, MapTooltips: true,
       },
     },
   });
@@ -79,17 +80,30 @@ beforeEach(() => {
   vi.stubGlobal("useSelectedIssues", () => ({ selectedIssues: mapIssues }));
   vi.stubGlobal("useRoute", () => ({ query: { tag: "fiets" } }));
   vi.stubGlobal("useMapLayerPreference", () => ({ preferredLayer: ref("Licht"), watchLayerVisibility: vi.fn() }));
+  vi.stubGlobal("useRuntimeConfig", () => ({ public: { map: { clusteringEnabled: false } } }));
   vi.stubGlobal("useVDisplay", () => ({ mobile: ref(false) }));
   vi.stubGlobal("useIsEditing", () => ({ isEditing: editing }));
   vi.stubGlobal("useMapView", () => ({ zoom: ref(15), center: ref([0, 0]) }));
   vi.stubGlobal("useMapResize", () => ({ mapWidth: ref(800), mapHeight: ref(600) }));
-  vi.stubGlobal("useMapFocus", () => ({ refit: vi.fn() }));
+  vi.stubGlobal("useMapFocus", () => ({ refit: vi.fn(), focusCluster }));
   vi.stubGlobal("navigateTo", navigate);
 });
 
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); });
 
 describe("kaartselectie", () => {
+  it("selecteert een enkelvoudig cluster als onderwerp en zoomt bij meerdere punten", async () => {
+    const state = mountMap();
+    const first = new Feature({ id: 2, geometry: new Point([6, 52]) });
+    await state.clickMap(new Feature({ features: [first], geometry: new Point([6, 52]) }));
+    expect(navigate).toHaveBeenCalledWith({ path: "/kaart/2", query: { tag: "fiets" } });
+    expect(focusCluster).not.toHaveBeenCalled();
+    const second = new Feature({ id: 3, geometry: new Point([6, 52]) });
+    await state.clickMap(new Feature({ features: [first, second], geometry: new Point([6, 52]) }));
+    expect(focusCluster).toHaveBeenCalledWith([first, second]);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(state.select.getFeatures().getLength()).toBe(0);
+  });
   it("navigeert naar een ander onderwerp en behoudt de filters", async () => {
     const state = mountMap();
     await state.clickMap(new Feature({ id: 2, geometry: new Point([6, 52]) }));

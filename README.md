@@ -72,6 +72,15 @@ pnpm run dev
 
 De applicatie is nu beschikbaar op [http://localhost:3000](http://localhost:3000)
 
+### Clustering op de kaart
+
+Punten worden standaard per categorie geclusterd. Vanaf zoomniveau 18 en
+tijdens het bewerken staan ze afzonderlijk op de kaart; lijnen en vlakken
+blijven altijd zichtbaar. Schakel clustering uit met
+`runtimeConfig.public.map.clusteringEnabled` in `nuxt.config.ts` of met
+`NUXT_PUBLIC_MAP_CLUSTERING_ENABLED=false` in de runtimeomgeving. De
+OpenLayers-standaardafstanden zijn 20 en 0 pixels.
+
 ### Andere handige commando's
 
 ```bash

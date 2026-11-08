@@ -1,7 +1,25 @@
 import type { MapIssue, NewIssue } from "~~/shared/types/Issue";
 import type { Feature } from "ol";
-import { Style, Circle, Fill, Stroke, Icon } from "ol/style";
+import { Style, Circle, Fill, Stroke, Icon, Text } from "ol/style";
 import Color from "color";
+import { getContrastColor } from "./getContrastColor";
+
+export function getClusterMapStyle(count: number, color: string): Style {
+  // Use the category color and choose a readable text color for light/dark fills.
+  return new Style({
+    image: new Circle({
+      radius: 16,
+      fill: new Fill({ color }),
+      stroke: new Stroke({ color: "white", width: 2 }),
+    }),
+    text: new Text({
+      text: String(count),
+      font: "bold 12px sans-serif",
+      fill: new Fill({ color: getContrastColor(color) }),
+    }),
+    zIndex: 2,
+  });
+}
 
 /** Builds the current map style without owning reactive map state. */
 export function getIssueMapStyle(

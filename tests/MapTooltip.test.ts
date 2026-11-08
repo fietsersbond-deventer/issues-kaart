@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import MapTooltip from "../app/components/map/MapTooltip.vue";
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import MapTooltips from "../app/components/map/MapTooltips.vue";
 
 const Overlay = {
   props: ["position"],
@@ -10,7 +10,7 @@ const Overlay = {
 };
 const Tag = {
   props: ["tag"],
-  template: '<span data-test="tag">{{ tag.name }}</span>',
+  template: '<span data-test="tag">{{ tag.name || tag.label }}</span>',
 };
 
 let wrapper: VueWrapper;
@@ -28,7 +28,7 @@ const map = {
 };
 
 function mountTooltip(isDrawing = false, withMap = true) {
-  wrapper = mount(MapTooltip, {
+  wrapper = mount(MapTooltips, {
     props: { isDrawing },
     global: {
       provide: { map: withMap ? map : undefined },
@@ -70,6 +70,7 @@ beforeEach(() => {
   map.getCoordinateFromPixel.mockReturnValue([6, 52]);
   for (const [name, value] of Object.entries({
     ref,
+    shallowRef,
     inject,
     onMounted,
     onUnmounted,
@@ -88,12 +89,36 @@ afterEach(() => {
 });
 
 describe("MapTooltip bestaand gedrag", () => {
+  it("toont bij een cluster het aantal en bij één punt het onderwerp", async () => {
+    mountTooltip();
+    const single = {
+      getProperties: () => ({ title: "Fietsroute", imageUrl: "", tags: [], legend: { name: "Fietsroutes" } }),
+      get: (name: string) => name === "legend" ? { name: "Fietsroutes" } : name === "title" ? "Fietsroute" : undefined,
+    };
+    const other = { ...single, get: (name: string) => name === "title" ? "Parkeerplaats" : single.get(name) };
+    await hover({ features: [single, other] } as never);
+    expect(wrapper.text()).toContain("2 punten");
+    expect(wrapper.text()).toContain("Fietsroutes");
+    expect(wrapper.findAll("ul li").map(item => item.text())).toEqual(["Fietsroute", "Parkeerplaats"]);
+    expect(wrapper.findAll('[data-test="tag"]')).toHaveLength(0);
+    await hover({ features: [single] } as never);
+    expect(wrapper.text()).toContain("Fietsroute");
+  });
   it("toont inhoud zonder cursorwijziging wanneer het kaartdoel ontbreekt", async () => {
     mountTooltip();
     map.getTargetElement.mockReturnValue(undefined);
     await hover();
     expect(wrapper.text()).toContain("Route");
     expect(wrapper.find('[data-test="overlay"]').exists()).toBe(true);
+  });
+
+  it("toont maximaal drie tags, met een teller bij meer dan drie", async () => {
+    mountTooltip();
+    getTag.mockImplementation((slug: string) => ({ tag: slug, name: slug }));
+    await hover({ title: "Route", imageUrl: "", tags: ["a", "b", "c"] });
+    expect(wrapper.findAll('[data-test="tag"]').map(tag => tag.text())).toEqual(["a", "b", "c"]);
+    await hover({ title: "Route", imageUrl: "", tags: ["a", "b", "c", "d"] });
+    expect(wrapper.findAll('[data-test="tag"]').map(tag => tag.text())).toEqual(["a", "b", "+ 2"]);
   });
 
   it("registreert en verwijdert dezelfde muisbewegingslistener", () => {

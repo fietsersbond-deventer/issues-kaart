@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref, shallowRef, watch, toRaw } from "vue";
 import { Collection, Feature } from "ol";
 import { Point, LineString, Polygon } from "ol/geom";
-import type { SelectEvent } from "ol/interaction/Select";
 import type { ModifyEvent } from "ol/interaction/Modify";
 import VectorLayer from "ol/layer/Vector";
 import type { Issue, MapIssue, NewIssue } from "../shared/types/Issue";
@@ -23,9 +22,6 @@ function issue(id = 1): Issue {
     tags: [], legend_id: 1, imageUrl: null, created_at: new Date(),
     legend: { id: 1, name: "Categorie", color: "red", description: "", created_at: "2026-01-01" },
   };
-}
-function select(selected: Feature[]): SelectEvent {
-  return { selected } as SelectEvent;
 }
 function modify(features: Feature[]): ModifyEvent {
   return { features: new Collection(features) } as ModifyEvent;
@@ -52,7 +48,7 @@ describe("useMapIssueInteractions", () => {
   it("navigeert alleen naar het eerste geselecteerde onderwerp met de actuele query", () => {
     const interaction = useMapIssueInteractions(clicked);
     route.query = { tag: "nieuw", cat: "3" };
-    interaction.onFeatureSelect(select([new Feature({ id: 2 }), new Feature({ id: 3 })]));
+    interaction.onFeatureSelect(new Feature({ id: 2 }));
     expect(selectedId.value).toBe(2);
     expect(navigate).toHaveBeenCalledExactlyOnceWith({ path: "/kaart/2", query: route.query });
     expect(clicked).toHaveBeenCalledOnce();
@@ -62,7 +58,7 @@ describe("useMapIssueInteractions", () => {
   it("gebruikt de slug bij navigatie naar een onderwerp op de kaart", () => {
     selectedIssues.value = [{ ...issue(1), slug: "fietsstraat-veilig" }];
     const interaction = useMapIssueInteractions(clicked);
-    interaction.onFeatureSelect(select([new Feature({ id: 1 })]));
+    interaction.onFeatureSelect(new Feature({ id: 1 }));
     expect(navigate).toHaveBeenCalledExactlyOnceWith({
       path: "/kaart/fietsstraat-veilig",
       query: route.query,
@@ -74,11 +70,11 @@ describe("useMapIssueInteractions", () => {
     const interaction = useMapIssueInteractions(clicked);
     const feature = new Feature(new Point([0, 0]));
     feature.set("id", 1);
-    interaction.onFeatureSelect(select([feature]));
+    interaction.onFeatureSelect(feature);
     expect(interaction.selectedFeatures.value.getLength()).toBe(0);
     expect(navigate).not.toHaveBeenCalled();
     expect(clicked).not.toHaveBeenCalled();
-    interaction.onFeatureSelect(select([]));
+    interaction.onFeatureSelect(undefined);
     expect(interaction.selectedFeatures.value.getLength()).toBe(0);
   });
 
@@ -86,7 +82,7 @@ describe("useMapIssueInteractions", () => {
     selectedId.value = 1;
     const first = useMapIssueInteractions(clicked);
     const second = useMapIssueInteractions(clicked);
-    first.onFeatureSelect(select([new Feature({ id: 1 })]));
+    first.onFeatureSelect(new Feature({ id: 1 }));
     expect(first.selectedFeatures.value).not.toBe(second.selectedFeatures.value);
     expect(second.selectedFeatures.value.getLength()).toBe(0);
   });
