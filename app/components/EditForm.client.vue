@@ -9,22 +9,11 @@
     <v-card class="edit-form-card">
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
-        <v-btn
-          v-if="'id' in issue"
-          color="error"
-          variant="flat"
-          @click="onDelete"
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
+        <v-btn v-if="'id' in issue" color="error" variant="flat" @click="onDelete">
           Verwijderen
         </v-btn>
       </v-card-actions>
@@ -42,9 +31,7 @@
               />
               <div class="issue-url-editor">
                 <div class="issue-url-control">
-                  <span class="issue-url-prefix"
-                    >{{ requestURL.origin }}/kaart/</span
-                  >
+                  <span class="issue-url-prefix">{{ requestURL.origin }}/kaart/</span>
                   <input
                     v-model.trim="issue.slug"
                     aria-label="URL-deel"
@@ -54,19 +41,11 @@
                     @blur="checkSlugOnBlur"
                   />
                 </div>
-                <div
-                  v-if="isGeneratingSlug"
-                  class="issue-url-status"
-                  role="status"
-                >
-                  Wachten tot de titel compleet is; de URL wordt over 2 seconden
-                  of bij verlaten van het titelveld gegenereerd.
+                <div v-if="isGeneratingSlug" class="issue-url-status" role="status">
+                  Wachten tot de titel compleet is; de URL wordt over 2 seconden of bij
+                  verlaten van het titelveld gegenereerd.
                 </div>
-                <div
-                  v-else-if="isCheckingSlug"
-                  class="issue-url-status"
-                  role="status"
-                >
+                <div v-else-if="isCheckingSlug" class="issue-url-status" role="status">
                   URL controleren…
                 </div>
                 <div v-if="slugError" class="issue-url-error" role="alert">
@@ -100,10 +79,7 @@
                     Street View toevoegen
                   </v-btn>
                 </div>
-                <div
-                  v-if="!issue.description"
-                  class="text-error text-caption mt-1"
-                >
+                <div v-if="!issue.description" class="text-error text-caption mt-1">
                   Beschrijving is verplicht
                 </div>
               </div>
@@ -134,8 +110,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen
-                bovenin de kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
+                kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -144,16 +120,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn
-          type="submit"
-          color="primary"
-          :disabled="!canSubmit"
-          variant="flat"
+        <v-btn type="submit" color="primary" :disabled="!canSubmit" variant="flat"
           >Opslaan</v-btn
         >
-        <v-btn color="secondary" variant="flat" @click="onCancel"
-          >Annuleren</v-btn
-        >
+        <v-btn color="secondary" variant="flat" @click="onCancel">Annuleren</v-btn>
         <v-btn
           v-if="isExistingIssue(issue)"
           color="error"
@@ -178,9 +148,8 @@
       <v-card-title>Street View toevoegen</v-card-title>
       <v-card-text>
         <p class="text-body-2 mb-2">
-          Plak hier een Street View link (gebruik de Deel-knop in Google Maps
-          terwijl je in Street View staat). Gewone kaartlocaties worden niet
-          ondersteund.
+          Plak hier een Street View link (gebruik de Deel-knop in Google Maps terwijl je
+          in Street View staat). Gewone kaartlocaties worden niet ondersteund.
         </p>
         <v-text-field
           v-model.trim="streetViewUrl"
@@ -550,8 +519,8 @@ async function confirmDelete() {
   border-radius: 4px;
 }
 
-.quill-editor-container :deep(.ql-toolbar) {
-  position: sticky;
+.quill-editor-container .ql-toolbar.ql-snow {
+  position: sticky !important;
   top: 0;
   z-index: 1;
   background-color: rgb(var(--v-theme-surface));
