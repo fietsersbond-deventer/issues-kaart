@@ -13,9 +13,6 @@ vi.mock("@vueup/vue-quill", () => ({
     loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
 }));
 vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
-vi.mock("../app/utils/streetViewEmbedBlot", () => ({
-  ensureStreetViewEmbedBlotRegistered: vi.fn().mockResolvedValue(undefined),
-}));
 
 const update = vi.fn(),
   create = vi.fn(),
