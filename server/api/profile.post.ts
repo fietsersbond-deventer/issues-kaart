@@ -65,11 +65,12 @@ export default defineEventHandler(async (event) => {
     console.error("[Matomo Proxy] Error forwarding request:", error);
     // Log de volledige error voor debugging
     console.error(error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Failed to proxy Matomo request",
-      cause: error,
-    });
+
+    // throw createError({
+    //   statusCode: 500,
+    //   statusMessage: "Failed to proxy Matomo request",
+    //   cause: error,
+    // });
   }
 });
 

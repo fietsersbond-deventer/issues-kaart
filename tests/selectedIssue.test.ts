@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computed, defineComponent, nextTick, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, defineComponent, h, nextTick, onUnmounted, reactive, ref, watch } from "vue";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { mount } from "@vue/test-utils";
+import { renderToString } from "vue/server-renderer";
+import { resolveFocusTarget } from "../app/utils/mapFocusTarget";
 vi.stubGlobal("defineStore", defineStore);
 const { useSelectedIssue } = await import("../app/composables/useSelectedIssue");
 
@@ -37,6 +39,62 @@ beforeEach(async () => {
 afterEach(() => { store.$dispose(); wrapper.unmount(); vi.unstubAllGlobals(); });
 
 describe("geselecteerd onderwerp", () => {
+  it("wacht bij slugnavigatie op het aangeklikte onderwerp zonder eerst het kaartoverzicht te tonen", async () => {
+    let resolveIssue: (value: typeof loadedIssue) => void;
+    vi.mocked(globalThis.$fetch).mockReturnValueOnce(new Promise((resolve) => {
+      resolveIssue = resolve;
+    }));
+    store.selectedId = 2;
+    route.params.id = "ander-onderwerp";
+    await nextTick();
+    expect(store.selectedId).toBe(2);
+    expect(store.issue).toBeNull();
+    const target = () => resolveFocusTarget({
+      prefer: "issue",
+      areaBbox: [5, 51, 7, 53],
+      selectedId: store.selectedId,
+      issue: store.issue,
+      filterActive: false,
+      selectedIssues: [],
+    });
+    expect(target()).toBeUndefined();
+    resolveIssue!({ ...loadedIssue, id: 2 });
+    await nextTick();
+    expect(target()).toMatchObject({ type: "issue", id: 2 });
+  });
+
+  it("waits for issue details before completing server rendering", async () => {
+    setActivePinia(createPinia());
+    let resolveIssue: (value: typeof loadedIssue & { slug: string; imageUrl: string }) => void;
+    vi.mocked(globalThis.$fetch).mockReturnValueOnce(new Promise((resolve) => {
+      resolveIssue = resolve;
+    }));
+    let completed = false;
+    let metadata: () => { meta?: Array<{ property?: string; name?: string; content: string }> };
+    vi.stubGlobal("useHead", (callback: typeof metadata) => { metadata = callback; });
+    vi.stubGlobal("useRequestURL", () => new URL("https://example.test/kaart/ssr-preview"));
+    vi.stubGlobal("useRuntimeConfig", () => ({ public: { organization: { name: "Test Organization" } } }));
+    const { useIssueOpenGraph } = await import("../app/composables/useIssueOpenGraph");
+    const rendering = renderToString(h(defineComponent({
+      setup() {
+        const selected = useSelectedIssue();
+        useIssueOpenGraph(computed(() => selected.issue && "id" in selected.issue ? selected.issue : null));
+        return () => selected.issue?.title ?? "Loading";
+      },
+    }))).then((html) => {
+      completed = true;
+      return html;
+    });
+    await nextTick();
+    expect(completed).toBe(false);
+    resolveIssue!({ ...loadedIssue, title: "SSR issue title", slug: "ssr-preview", imageUrl: "/api/issues/1/image?v=ssr-version" });
+    expect(await rendering).toContain("SSR issue title");
+    expect(completed).toBe(true);
+    const ogUrl = "https://example.test/api/issues/1/image?v=ssr-version&width=1200&height=630&maxBytes=1000000";
+    expect(metadata!().meta).toContainEqual({ property: "og:image", content: ogUrl });
+    expect(metadata!().meta).toContainEqual({ name: "twitter:image", content: ogUrl });
+  });
+
   it("maakt een leeg concept bij het openen van een nieuw onderwerp", async () => {
     route.params.id = "new";
     await nextTick();
@@ -51,6 +109,15 @@ describe("geselecteerd onderwerp", () => {
     await nextTick();
     expect(store.selectedId).toBe(2);
     expect(store.issue?.id).toBe(2);
+  });
+
+  it("laadt een onderwerp via de slug en houdt het numerieke ID voor websocketupdates", async () => {
+    route.params.id = "de-brink-op-slot";
+    await nextTick();
+    await nextTick();
+    expect(globalThis.$fetch).toHaveBeenLastCalledWith("/api/issues/de-brink-op-slot");
+    expect(store.selectedId).toBe(1);
+    expect(store.issue?.id).toBe(1);
   });
 
   it("negeert berichten als er geen bestaand onderwerp is geselecteerd", () => {

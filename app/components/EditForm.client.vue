@@ -37,7 +37,42 @@
                 label="Titel"
                 :rules="[(v: string) => !!v || 'Titel is verplicht']"
                 required
+                hide-details="auto"
+                @blur="generateSlugOnBlur"
               />
+              <div class="issue-url-editor">
+                <div class="issue-url-control">
+                  <span class="issue-url-prefix"
+                    >{{ requestURL.origin }}/kaart/</span
+                  >
+                  <input
+                    v-model.trim="issue.slug"
+                    aria-label="URL-deel"
+                    autocomplete="off"
+                    spellcheck="false"
+                    @input="onSlugInput"
+                    @blur="checkSlugOnBlur"
+                  />
+                </div>
+                <div
+                  v-if="isGeneratingSlug"
+                  class="issue-url-status"
+                  role="status"
+                >
+                  Wachten tot de titel compleet is; de URL wordt over 2 seconden
+                  of bij verlaten van het titelveld gegenereerd.
+                </div>
+                <div
+                  v-else-if="isCheckingSlug"
+                  class="issue-url-status"
+                  role="status"
+                >
+                  URL controleren…
+                </div>
+                <div v-if="slugError" class="issue-url-error" role="alert">
+                  {{ slugError }}
+                </div>
+              </div>
             </v-col>
 
             <v-col cols="12">
@@ -131,6 +166,13 @@
     </v-card>
   </v-form>
 
+  <IssueDeleteDialog
+    v-model="showDeleteDialog"
+    :title="isExistingIssue(issue) ? issue.title : ''"
+    :loading="deleting"
+    @confirm="confirmDelete"
+  />
+
   <StreetViewDialog
     v-model="showStreetViewDialog"
     @insert="insertStreetView"
@@ -141,7 +183,12 @@
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import StreetViewDialog from "./StreetViewDialog.vue";
-import { isExistingIssue, type Issue, type NewIssue } from "~~/shared/types/Issue";
+import IssueDeleteDialog from "~/components/IssueDeleteDialog.vue";
+import {
+  isExistingIssue,
+  type Issue,
+  type NewIssue,
+} from "~~/shared/types/Issue";
 import { defaultQuillToolbar, defaultQuillModules } from "~/utils/quillConfig";
 import {
   ensureStreetViewEmbedBlotRegistered,
@@ -156,8 +203,28 @@ import {
 void ensureStreetViewEmbedBlotRegistered();
 
 const valid = ref(true);
+const props = defineProps<{ navigateOnSlugChange?: boolean }>();
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue | NewIssue>({ required: true });
+const route = useRoute();
+const requestURL = useRequestURL();
+const {
+  isGenerating: isGeneratingSlug,
+  isChecking: isCheckingSlug,
+  error: slugError,
+  isValid: isSlugValid,
+  onInput: onSlugInput,
+  generateOnBlur: generateSlugOnBlur,
+  checkOnBlur: checkSlugOnBlur,
+} = useIssueSlug(issue);
+const showDeleteDialog = ref(false);
+const deleting = ref(false);
+useIssueEditLock(
+  computed(() => (issue.value && "id" in issue.value ? issue.value.id : null)),
+);
+const { canEdit: canEditByLock } = useIssueEditAvailability(
+  computed(() => (issue.value && "id" in issue.value ? issue.value.id : null)),
+);
 
 const oldValue = { ...issue.value };
 const isModified = computed(() => {
@@ -176,9 +243,15 @@ const geometryRules = [
     "Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de kaart.",
 ];
 
-// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active
+// Only enable submit if form is valid (includes geometry validation) AND has modifications AND connection is active AND lock is still held
 const canSubmit = computed(() => {
-  return valid.value && isModified.value && isConnected.value;
+  return (
+    valid.value &&
+    isModified.value &&
+    isConnected.value &&
+    isSlugValid.value &&
+    canEditByLock.value
+  );
 });
 
 // Ref to the QuillEditor component instance, used to access the underlying Quill API
@@ -209,25 +282,41 @@ const { isEditing } = useIsEditing();
 const { isConnected } = useConnectionStatus();
 const { trackEvent } = useMatomoTracking();
 const { data: user } = useAuth();
+const { refreshTags } = useTagsApi();
 
 async function onSubmit() {
-  // Prevent submission if connection is lost
-  if (!isConnected.value) {
+  // Prevent submission if connection is lost or lock is lost
+  if (!isConnected.value || !isSlugValid.value || !canEditByLock.value) {
     return;
   }
 
   if (issue.value && valid.value) {
     const username = user.value?.name || "anonymous";
     if (isExistingIssue(issue.value)) {
-      await update(issue.value.id, issue.value);
+      const updatedIssue = await update(issue.value.id, issue.value);
+      await refreshTags();
       // Track issue modification in Matomo
       trackEvent(
         "Issue",
         "Modified",
         `Issue #${issue.value.id} by ${username}: ${issue.value.title}`,
       );
+      if (updatedIssue.slug !== issue.value.slug) {
+        issue.value.slug = updatedIssue.slug;
+      }
+      if (
+        props.navigateOnSlugChange !== false &&
+        updatedIssue.slug !== route.params.id
+      ) {
+        showDialog.value = false;
+        return navigateTo({
+          path: `/kaart/${updatedIssue.slug}`,
+          query: route.query,
+        });
+      }
     } else {
       const result = await create(issue.value);
+      await refreshTags();
       if (isExistingIssue(result)) {
         // Track issue creation in Matomo
         trackEvent(
@@ -236,7 +325,7 @@ async function onSubmit() {
           `Issue #${result.id} by ${username}: ${result.title}`,
         );
         showDialog.value = false;
-        return navigateTo(`/kaart/${result.id}`);
+        return navigateTo(`/kaart/${result.slug}`);
       }
     }
   }
@@ -251,21 +340,28 @@ function onCancel() {
 }
 
 async function onDelete() {
-  if (isExistingIssue(issue.value)) {
-    if (
-      confirm(`Weet je zeker dat je '${issue.value.title}' wilt verwijderen?`)
-    ) {
-      const name = user.value?.name || "anonymous";
-      await remove(issue.value.id);
-      // Track issue deletion in Matomo
-      trackEvent(
-        "Issue",
-        "Deleted",
-        `Issue #${issue.value.id} by ${name}: ${issue.value.title}`,
-      );
-      showDialog.value = false;
-      return navigateTo("/kaart");
-    }
+  if (isExistingIssue(issue.value)) showDeleteDialog.value = true;
+}
+
+async function confirmDelete() {
+  if (!isExistingIssue(issue.value)) return;
+
+  deleting.value = true;
+  try {
+    const issueId = issue.value.id;
+    const issueTitle = issue.value.title;
+    const name = user.value?.name || "anonymous";
+    await remove(issueId);
+    trackEvent(
+      "Issue",
+      "Deleted",
+      `Issue #${issueId} by ${name}: ${issueTitle}`,
+    );
+    showDeleteDialog.value = false;
+    showDialog.value = false;
+    return navigateTo("/kaart");
+  } finally {
+    deleting.value = false;
   }
 }
 </script>
@@ -292,6 +388,55 @@ async function onDelete() {
 
 .quill-editor {
   height: 250px;
+}
+
+.issue-url-control {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  font-size: 0.875rem;
+}
+
+.issue-url-editor {
+  margin-top: 6px;
+}
+
+.issue-url-prefix {
+  flex: 0 0 auto;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  white-space: nowrap;
+}
+
+.issue-url-control input {
+  flex: 1;
+  min-width: 0;
+  margin-left: 2px;
+  padding: 2px 4px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.24);
+  border-radius: 3px;
+  color: rgb(var(--v-theme-on-surface));
+  background: transparent;
+  font: inherit;
+}
+
+.issue-url-control input:focus {
+  border-color: rgb(var(--v-theme-primary));
+  outline: 1px solid rgb(var(--v-theme-primary));
+}
+
+.issue-url-status,
+.issue-url-error {
+  min-height: 20px;
+  padding-top: 4px;
+  font-size: 0.75rem;
+}
+
+.issue-url-status {
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.issue-url-error {
+  color: rgb(var(--v-theme-error));
 }
 
 /* Force Quill editor to fit within container */

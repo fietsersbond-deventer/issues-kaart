@@ -1,90 +1,59 @@
-<!-- eslint-disable vue/valid-v-slot -->
 <template>
   <div>
-    <v-card class="mb-4">
-      <v-card-title v-if="!isPrinting" class="d-flex align-center" style="gap: 16px">
-        <v-text-field
-          v-model="state.search"
-          label="Zoek"
-          dense
-          hide-details
-          clearable
-        />
-      </v-card-title>
-      <v-card-text>
-        <v-data-table-server
-          v-model:page="state.page"
-          v-model:sort-by="state.sortBy"
-          v-model:items-per-page="state.itemsPerPage"
-          :headers="headers"
-          :items="issues"
-          :items-length="totalItems"
-          item-value="id"
-          class="elevation-1"
-          density="compact"
-          :loading="pending"
-          :items-per-page-options="[5, 10, 25, 50]"
-          show-current-page
-          @click:row="gotoIssue"
-        >
-          <template #item.imageUrl="{ item }">
-            <img v-if="item.imageUrl" :src="item.imageUrl" class="thumbnail">
-          </template>
+    <IssueSearchTable
+      v-model:page="state.page"
+      v-model:sort-by="state.sortBy"
+      v-model:items-per-page="state.itemsPerPage"
+      v-model:search="state.search"
+      :items="issues"
+      :total-items="totalItems"
+      :pending="pending"
+      :emphasize-filter="emphasizeFilter"
+      @row-click="gotoIssue"
+      @edit="openEditDialog"
+      @delete="confirmDelete"
+      @info="showIssueInfo"
+    />
 
-          <template #item.legend="{ item }">
-            <div class="legend-grid">
-              <category-chip v-if="item.legend" :legend="item.legend" />
-              <Tag v-for="tag in item.tags" :key="tag" :tag="getTag(tag)" />
-            </div>
-          </template>
+    <IssueEditDialog
+      v-model:dialog="editDialog"
+      v-model:issue="issueToEdit"
+      :loading="loadingEdit"
+      @save="handleEditSaved"
+      @cancel="editDialog = false"
+    />
 
-          <!-- emphasizeFilter escapes all result text before adding mark tags. -->
-          <!-- eslint-disable vue/no-v-html -->
-          <template #item.title="{ item }">
-            <template v-if="item.snippets?.length">
-              <b v-html="emphasizeFilter(item.title)" />
-              <div v-for="snippet in item.snippets" :key="snippet" v-html="emphasizeFilter(snippet)" />
-            </template>
-            <template v-else>
-              <span v-html="emphasizeFilter(item.title)" />
-            </template>
-          </template>
+    <IssueDeleteDialog
+      v-model="deleteDialog"
+      :title="issueToDelete?.title ?? ''"
+      :loading="deleting"
+      :disabled="
+        !issueToDelete ||
+        !issueLocks.getEditAvailability(issueToDelete.id).canEdit
+      "
+      @confirm="deleteIssue"
+    />
 
-          <!-- eslint-enable vue/no-v-html -->
-          <template #item.actions="{ item }">
-            <div>
-                <v-btn
-                  :to="`/kaart/${item.id}`"
-                  icon
-                  variant="text"
-                  size="small"
-                  color="primary"
-                  @click.stop
-                >
-                  <v-icon>mdi-arrow-right</v-icon>
-                  <v-tooltip activator="parent" location="top">
-                    Bekijk issue in de kaart
-                  </v-tooltip>
-                </v-btn>
-            </div>
-          </template></v-data-table-server
-        >
-      </v-card-text>
-    </v-card>
-
+    <IssueInfoDialog
+      v-model="infoDialog"
+      :loading="loadingInfo"
+      :updated-by-name="updatedByName"
+      :updated-at="updatedAt"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery, refDebounced } from '@vueuse/core'
-import CategoryChip from '~/components/CategoryChip.vue';
-import { parseSearchTerms } from '~/utils/parseSearchTerms';
-import type { Legend } from '~~/shared/types/Legend';
+import { refDebounced } from "@vueuse/core";
+import type { Issue } from "~~/shared/types/Issue";
+import type { IssueSearchItem } from "~/types/IssueSearch";
 
 useTitle("Onderwerpen");
 
-const isPrinting = useMediaQuery('print')
-const {getTag} = useTagsApi()
+const { trackSiteSearch } = useMatomoTracking();
+const issueLocks = useIssueLocks();
+const { get: getIssue, getUpdatedBy, remove: removeIssue } = useIssuesMethods();
+const { showError } = useSnackbar();
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -97,21 +66,110 @@ const state = useState("issues-state", () => ({
   }[],
 }));
 
-type SearchIssue = {
-  id: number;
-  title: string;
-  legend_id: number;
-  created_at: string;
-  imageUrl: string | null;
-  snippets: string[];
-  legend?: Legend;
-  tags: string[]
-};
-
 type SearchResponse = {
-  items: SearchIssue[];
+  items: IssueSearchItem[];
   total: number;
 };
+
+const editDialog = ref(false);
+const loadingEdit = ref(false);
+const issueToEdit = ref<Issue | null>(null);
+const activeEditLockId = ref<number | null>(null);
+useIssueEditLock(computed(() => (editDialog.value ? activeEditLockId.value : null)));
+const deleteDialog = ref(false);
+const deleting = ref(false);
+const issueToDelete = ref<IssueSearchItem | null>(null);
+const infoDialog = ref(false);
+const issueForInfo = ref<IssueSearchItem | null>(null);
+const loadingInfo = ref(false);
+const updatedByName = ref<string | null>(null);
+const updatedAt = ref<string | null>(null);
+
+async function openEditDialog(item: IssueSearchItem) {
+  if (!issueLocks.getEditAvailability(item.id).canEdit) return;
+
+  activeEditLockId.value = item.id;
+  issueToEdit.value = null;
+  editDialog.value = true;
+  loadingEdit.value = true;
+  try {
+    const issue = await getIssue(item.id);
+    if (activeEditLockId.value === item.id) {
+      // Verify lock is still available after getIssue() completes
+      if (!issueLocks.getEditAvailability(item.id).canEdit) {
+        editDialog.value = false;
+        activeEditLockId.value = null;
+        showError("Onderwerp wordt door iemand anders bewerkt");
+        return;
+      }
+      issueToEdit.value = issue;
+    }
+  } catch (error) {
+    console.error("Failed to load issue for editing:", error);
+    editDialog.value = false;
+    activeEditLockId.value = null;
+    showError("Issue kon niet worden geladen om te bewerken");
+  } finally {
+    loadingEdit.value = false;
+  }
+}
+
+watch(editDialog, (isOpen) => {
+  if (!isOpen) activeEditLockId.value = null;
+});
+
+function handleEditSaved() {
+  editDialog.value = false;
+  refreshResults();
+}
+
+function confirmDelete(item: IssueSearchItem) {
+  if (!issueLocks.getEditAvailability(item.id).canEdit) return;
+  issueToDelete.value = item;
+  deleteDialog.value = true;
+}
+
+async function deleteIssue() {
+  if (
+    !issueToDelete.value ||
+    !issueLocks.getEditAvailability(issueToDelete.value.id).canEdit
+  )
+    return;
+
+  deleting.value = true;
+  try {
+    await removeIssue(issueToDelete.value.id);
+    deleteDialog.value = false;
+    issueToDelete.value = null;
+    await refreshResults();
+  } catch (error) {
+    console.error("Failed to delete issue:", error);
+    showError("Issue kon niet worden verwijderd");
+  } finally {
+    deleting.value = false;
+  }
+}
+
+async function showIssueInfo(item: IssueSearchItem) {
+  issueForInfo.value = item;
+  updatedByName.value = null;
+  updatedAt.value = null;
+  infoDialog.value = true;
+  loadingInfo.value = true;
+  try {
+    const result = await getUpdatedBy(item.id);
+    if (issueForInfo.value?.id === item.id) {
+      updatedByName.value = result.updated_by_name;
+      updatedAt.value = result.updated_at;
+    }
+  } catch (error) {
+    console.error("Failed to load issue update information:", error);
+    infoDialog.value = false;
+    showError("Informatie over het issue kon niet worden geladen");
+  } finally {
+    loadingInfo.value = false;
+  }
+}
 
 // Reset pagination when search changes
 watch(
@@ -137,14 +195,27 @@ const query = computed(() => ({
   search: debouncedSearch.value,
 }));
 const filters = computed(() =>
-  parseSearchTerms(query.value.search)
-    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  parseSearchTerms(query.value.search).map((term) =>
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  )
 );
 const { emphasizeFilter } = useFilter(filters);
-const { data: searchResponse, pending, refresh: refreshResults } = await useFetch<SearchResponse>(
-  "/api/issues/search",
-  { query, dedupe: "cancel" }
-);
+const {
+  data: searchResponse,
+  pending,
+  refresh: refreshResults,
+} = await useFetch<SearchResponse>("/api/issues/search", {
+  query,
+  dedupe: "cancel",
+});
+
+watch([debouncedSearch], () => {
+  nextTick(() => {
+    if (debouncedSearch.value) {
+      trackSiteSearch(debouncedSearch.value, totalItems.value);
+    }
+  });
+});
 
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
@@ -165,24 +236,15 @@ const { categories } = storeToRefs(useCategories());
 const issues = computed(() =>
   (searchResponse.value?.items ?? []).map((issue) => ({
     ...issue,
+    ...issueLocks.getEditAvailability(issue.id),
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
   }))
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
-function gotoIssue(_event: Event, { item }: { item: SearchIssue }) {
-  navigateTo(`/kaart/${item.id}`)
+function gotoIssue(_event: Event, item: IssueSearchItem) {
+  navigateTo(`/kaart/${item.slug || item.id}`);
 }
-
-const headers = computed(() => {
-  return [
-    { title: "id", value: "id", sortable: true, width: "5%" },
-    { title: "", value: "imageUrl", sortable: false },
-    { title: "", value: "title", sortable: true },
-    { title: "", value: "legend", sortable: false },
-  ];
-});
-
 </script>
 
 <style>
@@ -191,32 +253,4 @@ const headers = computed(() => {
   height: 16px;
   border-radius: 50%;
 }
-
-/* Make locked rows completely unclickable */
-.locked-row {
-  pointer-events: none !important;
-  opacity: 0.6;
-  user-select: none;
-}
-
-/* Re-enable pointer events only for allowed interactive elements */
-.locked-row .lock-icon-container {
-  pointer-events: auto !important;
-}
-
-.thumbnail {
-  max-width: 100px;
-  max-height: 100px;
-  display: block;
-  margin: 0.5rem auto 0.5rem auto;
-  text-align: center;
-}
-
-.legend-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, max-content));
-  gap: 6px;
-  padding: 4px 0;
-}
-
 </style>

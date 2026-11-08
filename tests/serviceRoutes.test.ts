@@ -1,83 +1,307 @@
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { migratedDatabase, routeHarness, seed } from "./helpers/server";
-const streetview = vi.hoisted(() => ({ resolveShareLink: vi.fn(), parseStreetViewUrl: vi.fn(), buildStreetViewThumbnailUrl: vi.fn(), fetchThumbnailAsDataUrl: vi.fn(), buildEmbedPbUrl: vi.fn() }));
+import sharp from "sharp";
+import { randomBytes } from "node:crypto";
+const streetview = vi.hoisted(() => ({
+  resolveShareLink: vi.fn(),
+  parseStreetViewUrl: vi.fn(),
+  buildStreetViewThumbnailUrl: vi.fn(),
+  fetchThumbnailAsDataUrl: vi.fn(),
+  buildEmbedPbUrl: vi.fn(),
+}));
 vi.mock("../server/utils/streetView", () => streetview);
 let db: DatabaseSync;
 vi.mock("../server/utils/db", () => ({ getDb: () => db }));
 let h: ReturnType<typeof routeHarness>;
 const fetch = vi.fn();
-const config = { matomo: { url: "https://analytics.example.test/", authToken: "test-only", trackerUrl: "", scriptUrl: "" } };
-beforeEach(async () => { h = routeHarness(); db = await migratedDatabase(); seed(db); vi.stubGlobal("useRuntimeConfig", () => config); vi.stubGlobal("$fetch", fetch); fetch.mockReset(); config.matomo = { url: "https://analytics.example.test/", authToken: "test-only", trackerUrl: "", scriptUrl: "" }; vi.spyOn(console, "error").mockImplementation(() => { }); });
-afterEach(() => { db.close(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+const config = {
+  matomo: {
+    url: "https://analytics.example.test/",
+    authToken: "test-only",
+    trackerUrl: "",
+    scriptUrl: "",
+  },
+};
+beforeEach(async () => {
+  h = routeHarness();
+  db = await migratedDatabase();
+  seed(db);
+  vi.stubGlobal("useRuntimeConfig", () => config);
+  vi.stubGlobal("$fetch", fetch);
+  fetch.mockReset();
+  config.matomo = {
+    url: "https://analytics.example.test/",
+    authToken: "test-only",
+    trackerUrl: "",
+    scriptUrl: "",
+  };
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+afterEach(() => {
+  db.close();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+it("lists current public issue slugs for the sitemap without drafts or empty identifiers", async () => {
+  const handler = (await import("../server/api/sitemap/urls.get")).default;
+  expect(handler(h.event)).toEqual([]);
+  const insert = db.prepare(
+    "INSERT INTO issues (title, slug, description, geometry, legend_id) VALUES (?, ?, '', '{}', 1)",
+  );
+  insert.run("First", "first");
+  insert.run("Special", "route & crossing");
+  insert.run("Draft", "new");
+  insert.run("Empty", "");
+  expect(handler(h.event)).toEqual([
+    { loc: "/kaart/first" },
+    { loc: "/kaart/route%20%26%20crossing" },
+  ]);
+  db.prepare("DELETE FROM issues WHERE slug = ?").run("first");
+  expect(handler(h.event)).toEqual([{ loc: "/kaart/route%20%26%20crossing" }]);
+});
+it("advertises the configured sitemap URL in robots.txt", async () => {
+  vi.stubGlobal("getSiteConfig", () => ({ url: "https://example.test/" }));
+  const handler = (await import("../server/routes/robots.txt.get")).default;
+  expect(handler(h.event)).toBe(
+    "User-agent: *\nAllow: /\nSitemap: https://example.test/sitemap.xml\n",
+  );
+  expect(h.responseHeaders.get("Content-Type")).toBe(
+    "text/plain; charset=utf-8",
+  );
+});
+it("scopes the image cache key to the site and the requested size", async () => {
+  const { imageCacheKey } = await import("../server/utils/imageCacheKey");
+  const headers: Record<string, string> = { host: "a.example.test" };
+  vi.stubGlobal(
+    "getRequestHost",
+    (_event: unknown, opts?: { xForwardedHost?: boolean }) =>
+      (opts?.xForwardedHost && headers["x-forwarded-host"]) || headers.host,
+  );
+  const key = (path: string) => imageCacheKey({ path } as never);
+  const siteA = key("/api/issues/2/image?v=1");
+  expect(siteA).toBe(key("/api/issues/2/image?v=1"));
+  expect(key("/api/issues/2/image?v=1&width=300")).not.toBe(siteA);
+  headers.host = "b.example.test";
+  expect(key("/api/issues/2/image?v=1")).not.toBe(siteA);
+  headers.host = "A.example.test";
+  expect(key("/api/issues/2/image?v=1")).toBe(siteA);
+  headers["x-forwarded-host"] = "c.example.test";
+  expect(key("/api/issues/2/image?v=1")).not.toBe(siteA);
+  expect(key("/api/issues/2/image?v=1")).toMatch(
+    /^image_c_example_test_[0-9a-f]{8}_[0-9a-f]{16}$/,
+  );
+});
 it("serves decoded data images with cache headers and reports missing or invalid images", async () => {
-    const image = (await import("../server/api/issues/[id]/image.get")).default;
-    await expect(image(h.event)).rejects.toMatchObject({ statusCode: 400 });
-    h.input.params.id = "1";
-    await expect(image(h.event)).rejects.toMatchObject({ statusCode: 404 });
-    db.exec("INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'no image', '{}', 1)");
-    await expect(image(h.event)).rejects.toMatchObject({ statusCode: 404 });
-    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run('<img src="data:image/png;bad">');
-    await expect(image(h.event)).rejects.toMatchObject({ statusCode: 500 });
-    db.prepare("UPDATE issues SET description = ? WHERE id = 1").run('<img src="data:image/png;base64,aGVsbG8=">');
-    expect(await image(h.event)).toEqual(Buffer.from("hello"));
-    expect(h.responseHeaders.get("Content-Type")).toBe("image/png");
-    expect(h.responseHeaders.get("Cache-Control")).toContain("max-age=");
+  const image = (await import("../server/api/issues/[id]/image.get")).default;
+  await expect(image(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  h.input.params.id = "1";
+  await expect(image(h.event)).rejects.toMatchObject({ statusCode: 404 });
+  db.exec(
+    "INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'no image', '{}', 1)",
+  );
+  await expect(image(h.event)).rejects.toMatchObject({ statusCode: 404 });
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(
+    '<img src="data:image/png;bad">',
+  );
+  await expect(image(h.event)).rejects.toMatchObject({ statusCode: 500 });
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(
+    '<img src="data:image/png;base64,aGVsbG8=">',
+  );
+  expect(await image(h.event)).toEqual(Buffer.from("hello"));
+  expect(h.responseHeaders.get("Content-Type")).toBe("image/png");
+  expect(h.responseHeaders.get("Cache-Control")).toBe("public, max-age=3600");
+});
+it("creates bounded JPEG social previews, preserves originals and revalidates changed images", async () => {
+  const handler = (await import("../server/api/issues/[id]/image.get")).default;
+  h.input.query = { width: "1200", height: "630", maxBytes: "1000000" };
+  const status = vi.fn();
+  vi.stubGlobal("setResponseStatus", status);
+  await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  h.input.params.id = "1";
+  await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 404 });
+  db.exec(
+    "INSERT INTO issues (id, title, description, geometry, legend_id) VALUES (1, 'x', 'no image', '{}', 1)",
+  );
+  await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 404 });
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(
+    '<img src="data:image/png;bad">',
+  );
+  await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 500 });
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(
+    '<img src="data:image/png;base64,aGVsbG8=">',
+  );
+  await expect(handler(h.event)).rejects.toMatchObject({ statusCode: 500 });
+  expect(console.error).toHaveBeenCalled();
+  const source = await sharp(randomBytes(2400 * 1260 * 3), {
+    raw: { width: 2400, height: 1260, channels: 3 },
+  })
+    .png()
+    .toBuffer();
+  const description = `<p>Original</p><img src="data:image/png;base64,${source.toString("base64")}">`;
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(description);
+  const preview = await handler(h.event);
+  expect(Buffer.isBuffer(preview)).toBe(true);
+  expect(preview!.length).toBeLessThanOrEqual(1_000_000);
+  expect(await sharp(preview).metadata()).toMatchObject({
+    width: 1200,
+    height: 630,
+    format: "jpeg",
+  });
+  expect(h.responseHeaders.get("Content-Type")).toBe("image/jpeg");
+  expect(h.responseHeaders.get("Content-Length")).toBe(preview!.length);
+  expect(h.responseHeaders.get("Cache-Control")).toContain("must-revalidate");
+  expect(
+    db.prepare("SELECT description FROM issues WHERE id = 1").get()!
+      .description,
+  ).toBe(description);
+  const etag = h.responseHeaders.get("ETag")!;
+  h.input.headers["if-none-match"] = `W/${etag}`;
+  expect(await handler(h.event)).toBeUndefined();
+  expect(status).toHaveBeenCalledWith(h.event, 304);
+  const replacement = await sharp({
+    create: { width: 200, height: 400, channels: 4, background: "#ff0000" },
+  })
+    .png()
+    .toBuffer();
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(
+    `<img src="data:image/png;base64,${replacement.toString("base64")}">`,
+  );
+  const updated = await handler(h.event);
+  expect(h.responseHeaders.get("ETag")).not.toBe(etag);
+  expect(await sharp(updated).metadata()).toMatchObject({
+    width: 200,
+    height: 400,
+    format: "jpeg",
+  });
+  const portrait = await sharp({
+    create: { width: 800, height: 1600, channels: 3, background: "#00ff00" },
+  })
+    .png()
+    .toBuffer();
+  db.prepare("UPDATE issues SET description = ? WHERE id = 1").run(
+    `<img src="data:image/png;base64,${portrait.toString("base64")}">`,
+  );
+  const resized = await handler(h.event);
+  expect(await sharp(resized).metadata()).toMatchObject({
+    width: 315,
+    height: 630,
+    format: "jpeg",
+  });
+  expect(resized!.length).toBeLessThanOrEqual(1_000_000);
+  h.input.query = { width: "300", height: "300" };
+  const thumbnail = await handler(h.event);
+  expect(await sharp(thumbnail).metadata()).toMatchObject({
+    width: 150,
+    height: 300,
+    format: "jpeg",
+  });
+  const thumbnailEtag = h.responseHeaders.get("ETag");
+  expect(thumbnailEtag).toMatch(/^"[0-9a-f]{64}"$/);
+  h.input.query = { maxBytes: "5000" };
+  const small = await handler(h.event);
+  expect(h.responseHeaders.get("ETag")).not.toBe(thumbnailEtag);
+  expect(small!.length).toBeLessThanOrEqual(5000);
+  expect(await sharp(small).metadata()).toMatchObject({
+    width: 800,
+    height: 1600,
+  });
+  h.input.query = { width: "abc", height: "-5" };
+  h.input.headers = {};
+  const original = await handler(h.event);
+  expect(h.responseHeaders.get("Content-Type")).toBe("image/png");
+  expect(original).toEqual(portrait);
 });
 it("requires Street View authentication, returns a prepared preview and translates provider errors", async () => {
-    const parse = (await import("../server/api/streetview/parse.post")).default;
-    h.event.context.user = null;
-    await expect(parse(h.event)).rejects.toMatchObject({ statusCode: 401 });
-    h.event.context.user = { id: 1 };
-    await expect(parse(h.event)).rejects.toMatchObject({ statusCode: 400 });
-    h.input.body = { url: "https://maps.app.goo.gl/test" };
-    streetview.resolveShareLink.mockResolvedValue("resolved");
-    streetview.parseStreetViewUrl.mockReturnValue({ lat: 52, lng: 6, heading: 0, pitch: 0, panoId: "pano" });
-    streetview.buildStreetViewThumbnailUrl.mockReturnValue("thumbnail");
-    streetview.fetchThumbnailAsDataUrl.mockResolvedValue("data:preview");
-    streetview.buildEmbedPbUrl.mockReturnValue("https://embed");
-    expect(await parse(h.event)).toMatchObject({ lat: 52, previewDataUrl: "data:preview", embedSrc: "https://embed" });
-    streetview.resolveShareLink.mockRejectedValueOnce(new Error("Forbidden host"));
-    await expect(parse(h.event)).rejects.toMatchObject({ statusCode: 400, message: "Forbidden host" });
-    streetview.resolveShareLink.mockRejectedValueOnce("bad");
-    await expect(parse(h.event)).rejects.toMatchObject({ statusCode: 400, message: "Kon de Street View link niet verwerken" });
+  const parse = (await import("../server/api/streetview/parse.post")).default;
+  h.event.context.user = null;
+  await expect(parse(h.event)).rejects.toMatchObject({ statusCode: 401 });
+  h.event.context.user = { id: 1 };
+  await expect(parse(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  h.input.body = { url: "https://maps.app.goo.gl/test" };
+  streetview.resolveShareLink.mockResolvedValue("resolved");
+  streetview.parseStreetViewUrl.mockReturnValue({
+    lat: 52,
+    lng: 6,
+    heading: 0,
+    pitch: 0,
+    panoId: "pano",
+  });
+  streetview.buildStreetViewThumbnailUrl.mockReturnValue("thumbnail");
+  streetview.fetchThumbnailAsDataUrl.mockResolvedValue("data:preview");
+  streetview.buildEmbedPbUrl.mockReturnValue("https://embed");
+  expect(await parse(h.event)).toMatchObject({
+    lat: 52,
+    previewDataUrl: "data:preview",
+    embedSrc: "https://embed",
+  });
+  streetview.resolveShareLink.mockRejectedValueOnce(
+    new Error("Forbidden host"),
+  );
+  await expect(parse(h.event)).rejects.toMatchObject({
+    statusCode: 400,
+    message: "Forbidden host",
+  });
+  streetview.resolveShareLink.mockRejectedValueOnce("bad");
+  await expect(parse(h.event)).rejects.toMatchObject({
+    statusCode: 400,
+    message: "Kon de Street View link niet verwerken",
+  });
 });
 it("proxies Matomo scripts only when configured, sets cache headers and handles upstream failure", async () => {
-    const script = (await import("../server/api/profile/script.get")).default;
-    config.matomo.url = "";
-    await expect(script(h.event)).rejects.toMatchObject({ statusCode: 400 });
-    config.matomo.url = "https://analytics.example.test/";
-    config.matomo.authToken = "";
-    await expect(script(h.event)).rejects.toMatchObject({ statusCode: 400 });
-    config.matomo.authToken = "test-only";
-    fetch.mockResolvedValueOnce("script body");
-    expect(await script(h.event)).toBe("script body");
-    expect(fetch).toHaveBeenCalledWith("https://analytics.example.test/matomo.js", { method: "GET", timeout: 10000 });
-    expect(h.responseHeaders.get("Content-Type")).toBe("application/javascript");
-    fetch.mockRejectedValueOnce(new Error("offline"));
-    await expect(script(h.event)).rejects.toMatchObject({ statusCode: 500 });
+  const script = (await import("../server/api/profile/script.get")).default;
+  config.matomo.url = "";
+  await expect(script(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  config.matomo.url = "https://analytics.example.test/";
+  config.matomo.authToken = "";
+  await expect(script(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  config.matomo.authToken = "test-only";
+  fetch.mockResolvedValueOnce("script body");
+  expect(await script(h.event)).toBe("script body");
+  expect(fetch).toHaveBeenCalledWith(
+    "https://analytics.example.test/matomo.js",
+    { method: "GET", timeout: 10000 },
+  );
+  expect(h.responseHeaders.get("Content-Type")).toBe("application/javascript");
+  fetch.mockRejectedValueOnce(new Error("offline"));
+  await expect(script(h.event)).rejects.toMatchObject({ statusCode: 500 });
 });
 it("forwards analytics with configured credentials and proxy-aware IP, and reports configuration/upstream errors", async () => {
-    const proxy = (await import("../server/api/profile.post")).default;
-    config.matomo.url = "";
-    await expect(proxy(h.event)).rejects.toMatchObject({ statusCode: 400 });
-    config.matomo.url = "https://analytics.example.test/";
-    config.matomo.authToken = "";
-    await expect(proxy(h.event)).rejects.toMatchObject({ statusCode: 400 });
-    config.matomo.authToken = "test-only";
-    h.event.node = { req: { headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" }, socket: { remoteAddress: "9.9.9.9" } } } as typeof h.event.node;
-    h.input.body = { action_name: "Map" };
-    fetch.mockResolvedValue("ok");
-    expect(await proxy(h.event)).toBe("ok");
-    expect(fetch).toHaveBeenLastCalledWith("https://analytics.example.test/matomo.php", expect.objectContaining({ body: expect.stringContaining("cip=1.2.3.4") }));
-    delete h.event.node.req.headers["x-forwarded-for"];
-    h.event.node.req.headers["x-real-ip"] = "2.2.2.2";
-    config.matomo.trackerUrl = "https://tracker.example.test/collect";
-    await proxy(h.event);
-    expect(fetch).toHaveBeenLastCalledWith(config.matomo.trackerUrl, expect.objectContaining({ body: expect.stringContaining("cip=2.2.2.2") }));
-    delete h.event.node.req.headers["x-real-ip"];
-    await proxy(h.event);
-    expect(fetch).toHaveBeenLastCalledWith(config.matomo.trackerUrl, expect.objectContaining({ body: expect.stringContaining("cip=9.9.9.9") }));
-    fetch.mockRejectedValueOnce(new Error("offline"));
-    await expect(proxy(h.event)).rejects.toMatchObject({ statusCode: 500 });
+  const proxy = (await import("../server/api/profile.post")).default;
+  config.matomo.url = "";
+  await expect(proxy(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  config.matomo.url = "https://analytics.example.test/";
+  config.matomo.authToken = "";
+  await expect(proxy(h.event)).rejects.toMatchObject({ statusCode: 400 });
+  config.matomo.authToken = "test-only";
+  h.event.node = {
+    req: {
+      headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
+      socket: { remoteAddress: "9.9.9.9" },
+    },
+  } as typeof h.event.node;
+  h.input.body = { action_name: "Map" };
+  fetch.mockResolvedValue("ok");
+  expect(await proxy(h.event)).toBe("ok");
+  expect(fetch).toHaveBeenLastCalledWith(
+    "https://analytics.example.test/matomo.php",
+    expect.objectContaining({ body: expect.stringContaining("cip=1.2.3.4") }),
+  );
+  delete h.event.node.req.headers["x-forwarded-for"];
+  h.event.node.req.headers["x-real-ip"] = "2.2.2.2";
+  config.matomo.trackerUrl = "https://tracker.example.test/collect";
+  await proxy(h.event);
+  expect(fetch).toHaveBeenLastCalledWith(
+    config.matomo.trackerUrl,
+    expect.objectContaining({ body: expect.stringContaining("cip=2.2.2.2") }),
+  );
+  delete h.event.node.req.headers["x-real-ip"];
+  await proxy(h.event);
+  expect(fetch).toHaveBeenLastCalledWith(
+    config.matomo.trackerUrl,
+    expect.objectContaining({ body: expect.stringContaining("cip=9.9.9.9") }),
+  );
+  fetch.mockRejectedValueOnce(new Error("offline"));
+  await expect(proxy(h.event)).resolves.toBeUndefined();
+  expect(console.error).toHaveBeenCalled();
 });

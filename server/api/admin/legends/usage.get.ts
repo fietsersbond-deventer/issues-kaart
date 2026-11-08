@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
       json_group_array(
         CASE 
           WHEN i.id IS NOT NULL 
-          THEN json_object('id', i.id, 'title', i.title)
+          THEN json_object('id', i.id, 'slug', COALESCE(i.slug, CAST(i.id AS TEXT)), 'title', i.title)
           ELSE NULL 
         END
       ) as used_by_issues
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
         number,
         {
           usage_count: number;
-          used_by_issues: Array<{ id: number; title: string }>;
+          used_by_issues: Array<{ id: number; slug: string; title: string }>;
         }
       >,
       {

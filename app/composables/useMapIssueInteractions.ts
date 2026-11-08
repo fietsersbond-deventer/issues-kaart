@@ -22,9 +22,9 @@ export function useMapIssueInteractions(
     && selectedIssue.value?.id === selectedId.value,
   ));
 
-  function navigateToIssue(issue: Pick<Issue, "id">) {
+  function navigateToIssue(issue: Pick<Issue, "id" | "slug">) {
     const { query } = route;
-    navigateTo({ path: `/kaart/${issue.id}`, query });
+    navigateTo({ path: `/kaart/${issue.slug || issue.id}`, query });
   }
 
   const selectedFeatures = useEditableMapFeatures(source, selectedId, modifyEnabled);
@@ -39,7 +39,11 @@ export function useMapIssueInteractions(
     if (typeof issueId !== "number" || !Number.isSafeInteger(issueId) || issueId <= 0
       || issueId === selectedId.value) return;
     selectedId.value = issueId;
-    navigateToIssue({ id: issueId });
+    const slug =
+      selectedIssues.value.find(
+        (candidate) => "id" in candidate && candidate.id === issueId,
+      )?.slug ?? "";
+    navigateToIssue({ id: issueId, slug });
     onFeatureClicked();
   }
 

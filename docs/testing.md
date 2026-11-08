@@ -82,6 +82,10 @@ Alle suites staan in `tests/`. Enkele startpunten:
 | Beheer en interface | `adminPages`, `categoryDialogs`, `applicationShell`, `presentationComponents` |
 | Migraties en imports | `migrations`, `importWorkflow`, `areasCommand` en KML-tests |
 
+`selectedIssue` controleert ook kaartfocus tijdens slugnavigatie: zolang de
+gegevens van het aangeklikte onderwerp laden, mag de kaart niet eerst naar
+het overzicht uitzoomen. Na het laden wordt alleen dat onderwerp gefocust.
+
 ## Isolatie en grenzen
 
 - Gebruik SQLite in het geheugen; migratie- en importtests gebruiken tijdelijke
@@ -98,6 +102,10 @@ Unit- en componenttests gebruiken echte Vue-status en OpenLayers-geometrie,
 maar vereenvoudigde UI-adapters. Ze vervangen geen browsertests voor lay-out,
 widgets of de volledige inlogstroom via HTTP. CI-instellingen en
 branchbeveiliging moeten apart worden gecontroleerd.
+
+`selectedIssue` test ook echte Vue-serverrendering met vertraagd geladen
+onderwerpgegevens. De store wacht via `onServerPrefetch` op die gegevens,
+zodat de Open Graph- en Twitter-metadata al in de SSR-response beschikbaar is.
 
 ## Linting en formatteren
 

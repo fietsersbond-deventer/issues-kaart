@@ -4,7 +4,7 @@ export type LegendUsage = Record<
   number,
   {
     usage_count: number;
-    used_by_issues: Array<{ id: number; title: string }>;
+    used_by_issues: Array<{ id: number; slug: string; title: string }>;
   }
 >;
 
@@ -25,7 +25,7 @@ export const useCategories = defineStore("categories", () => {
         string,
         {
           usage_count: number;
-          used_by_issues: Array<{ id: number; title: string }>;
+          used_by_issues: Array<{ id: number; slug: string; title: string }>;
         }
       >
     >("/api/admin/legends/usage", {

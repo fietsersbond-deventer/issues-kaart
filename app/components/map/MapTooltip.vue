@@ -8,12 +8,7 @@
       <div class="tooltip">
         <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
         <span class="tooltip-title">{{ tooltipContent }}</span>
-        <Tag
-          v-for="tag in selectedTags"
-          :key="tag.tag"
-          :tag="tag"
-          class="mt-2"
-        />
+        <Tag v-for="tag in selectedTags" :key="tag.tag" :tag="tag" class="mt-2" />
         <Tag v-if="overflowTagsCount > 0" :tag="overflowTag" class="mt-2" />
       </div>
     </ol-overlay>
@@ -25,6 +20,7 @@ import type { Feature } from "ol";
 import type MapBrowserEvent from "ol/MapBrowserEvent";
 import type { LineString, Point, Polygon } from "ol/geom";
 import type OlMap from "ol/Map";
+import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
 const { isDrawing } = defineProps<{
   isDrawing: boolean;
@@ -63,9 +59,14 @@ function slugsToTags(slugs: string[]) {
   }
 }
 
-// get the first 2 tags
+const tagsCount = computed(() => tags.value.length);
+
+// selecteer 2 of 3 tags
+// 3 als er maar 3 zijn, om te voorkomen dat er een tag +1 komt te staan,
+// waar net zo goed de tag zelf zou kunnen staan
 const selectedTags = computed(() => {
-  return tags.value.slice(0, 2);
+  const maxTags = tagsCount.value === 3 ? 3 : 2;
+  return tags.value.slice(0, maxTags);
 });
 
 // count the number of tags that have not been selected
@@ -75,6 +76,7 @@ const overflowTagsCount = computed(() => {
 
 const overflowTag = computed(() => {
   const tag: Tag = {
+    id: -1,
     tag: "",
     label: `+ ${overflowTagsCount.value}`,
     description: null,
@@ -104,7 +106,7 @@ onMounted(() => {
       const properties = feature.getProperties();
 
       tooltipContent.value = properties.title || "Geen titel";
-      tooltipImage.value = properties.imageUrl || null;
+      tooltipImage.value = properties.imageUrl ? thumbnailUrl(properties.imageUrl) : null;
       slugsToTags(properties.tags);
 
       const target = map.getTargetElement();
@@ -135,25 +137,22 @@ onUnmounted(() => {
   background-color: white;
   padding: 0.5rem;
   border-radius: 0.375rem; /* rounded */
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
   border: 1px solid #d1d5db; /* gray-300 */
   white-space: normal;
-  max-width: 12em;
+  max-width: 15em;
 }
 
 .tooltip-img {
-  max-width: 100px;
-  max-height: 100px;
+  max-width: 100%;
+  max-height: 200px;
   display: block;
   margin: 0 auto 0.5rem auto;
-  text-align: center;
 }
 
 .tooltip-title {
   display: block;
-  max-width: 10em;
+  max-width: 15em;
   word-break: break-word;
   margin: 0 auto;
 }

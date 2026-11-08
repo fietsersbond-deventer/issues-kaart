@@ -52,6 +52,11 @@ describe("authentication and password lifecycle", () => {
         expect(next.user).toEqual(admin);
         expect(next.refreshToken).not.toBe(original.refreshToken);
         await expect(refresh(h.event)).rejects.toMatchObject({ statusCode: 401 });
+        h.input.body = { refreshToken: next.refreshToken };
+        const latest = await refresh(h.event);
+        expect(latest.user).toEqual(admin);
+        expect(latest.refreshToken).not.toBe(next.refreshToken);
+        await expect(refresh(h.event)).rejects.toMatchObject({ statusCode: 401 });
     });
     it("rejects missing/invalid sessions and distinguishes expired access tokens", async () => {
         const session = (await import("../server/api/auth/session.get")).default;

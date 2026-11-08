@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { configureEnvironment, provisionAccount } from '../scripts/setup-agent.mjs';
+import { spawnSync } from 'node:child_process';
 
 const directories: string[] = [];
 function createCheckout() {
@@ -17,6 +18,35 @@ afterEach(() => {
 });
 
 describe('agent environment', () => {
+  it('starts the production server from the project root and loads its local environment', () => {
+    const root = createCheckout();
+    const { scripts, packageManager } = JSON.parse(readFileSync('package.json', 'utf8'));
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ packageManager, scripts: { start: scripts.start } }));
+    mkdirSync(join(root, '.output/server'), { recursive: true });
+    writeFileSync(join(root, '.env'), 'NUXT_DB_PATH=development.sqlite3\n');
+    writeFileSync(join(root, '.output/server/index.mjs'), `
+      import { writeFileSync } from 'node:fs';
+      writeFileSync('startup.json', JSON.stringify({
+        cwd: process.cwd(),
+        dbPath: process.env.NUXT_DB_PATH,
+      }));
+    `);
+    const environment = { ...process.env };
+    delete environment.NUXT_DB_PATH;
+    const result = spawnSync('pnpm', ['start'], { cwd: root, env: environment, encoding: 'utf8', timeout: 30_000 });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(readFileSync(join(root, 'startup.json'), 'utf8'))).toEqual({
+      cwd: root,
+      dbPath: 'development.sqlite3',
+    });
+    const inherited = spawnSync('pnpm', ['start'], {
+      cwd: root, env: { ...environment, NUXT_DB_PATH: '/external/runtime.sqlite3' },
+      encoding: 'utf8', timeout: 30_000,
+    });
+    expect(inherited.status, inherited.stderr).toBe(0);
+    expect(JSON.parse(readFileSync(join(root, 'startup.json'), 'utf8')).dbPath).toBe('/external/runtime.sqlite3');
+  });
+
   it('creates private local configuration and preserves it on repeated setup', () => {
     const root = createCheckout();
     const environment = configureEnvironment(root);

@@ -1,20 +1,8 @@
 <template>
   <article>
-    <div class="d-flex">
+    <div class="issue-details-heading d-flex align-start">
       <h1>{{ issue.title }}</h1>
-      <v-btn
-        variant="text"
-        aria-label="Kopieer URL van dit onderwerp"
-        class="mt-7"
-        @click="copyUrl"
-      >
-        <v-icon size="28">mdi-share-variant</v-icon>
-        <v-tooltip
-          activator="parent"
-          location="top"
-          text="Kopieer URL van dit onderwerp"
-        />
-      </v-btn>
+      <ShareButton :title="issue.title" class="mt-2" />
     </div>
 
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
@@ -64,21 +52,6 @@ const props = defineProps<{
 }>();
 
 const { getTag } = useTagsApi();
-const { showSuccess, showError } = useSnackbar();
-
-async function copyUrl() {
-  try {
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(window.location.href);
-      showSuccess("URL gekopieerd!");
-    } else {
-      showError("Browser ondersteunt geen clipboard, kan URL niet kopiëren.");
-    }
-  } catch (err) {
-    console.error("Failed to copy link:", err);
-    showError("URL kon niet worden gekopieerd.");
-  }
-}
 
 // if a link is relative, use navigateTo()
 function handleLocalLinks(event: MouseEvent) {
@@ -138,10 +111,16 @@ watch(
       activateStreetViewEmbeds(descriptionRef.value);
     }
   },
-  { flush: "post" },
+  { flush: "post" }
 );
 </script>
 <style>
+.issue-details-heading > h1 {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 /* Wrapper-element voor een streetview-embed: bevat afwisselend de statische
    voorvertoning + knop, of (na een klik) het live Google-iframe. */
 .streetview-embed {

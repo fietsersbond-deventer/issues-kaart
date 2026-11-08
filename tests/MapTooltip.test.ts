@@ -114,7 +114,7 @@ describe("MapTooltip bestaand gedrag", () => {
     mountTooltip();
     await hover();
     expect(wrapper.text()).toContain("Route");
-    expect(wrapper.get("img").attributes("src")).toBe("/photo.jpg");
+    expect(wrapper.get("img").attributes("src")).toBe("/photo.jpg?width=300&height=300");
     expect(
       wrapper.findAll('[data-test="tag"]').map(tag => tag.text()),
     ).toEqual(["Known tag"]);

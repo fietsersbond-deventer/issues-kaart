@@ -10,10 +10,11 @@ import { getPlainText } from "../../server/utils/getPlainText";
 export async function migratedDatabase() {
     const db = new DatabaseSync(":memory:");
     for (const file of readdirSync(resolve("server/database/migrations")).sort()) {
-        if (file.endsWith(".sql"))
+        if (file.endsWith(".sql")) {
             db.exec(readFileSync(resolve("server/database/migrations", file), "utf8"));
-        if (file.endsWith(".js")) {
-            const migration = await import(`../../server/database/migrations/${file.slice(0, -3)}.js`);
+        } else if (file.endsWith(".js")) {
+            // Dynamic import of JS migrations (Vite-compatible)
+            const migration = await import(`../../server/database/migrations/${file}`);
             migration.default(db);
         }
     }
@@ -32,6 +33,7 @@ export function routeHarness() {
     const event = { context: { user: admin as typeof admin | null } } as unknown as H3Event;
     const responseHeaders = new Map<string, string>();
     vi.stubGlobal("defineEventHandler", (handler: unknown) => handler);
+    vi.stubGlobal("defineCachedEventHandler", (handler: unknown) => handler);
     vi.stubGlobal("readBody", async () => input.body);
     vi.stubGlobal("getRouterParam", (_event: H3Event, name: string) => input.params[name]);
     vi.stubGlobal("getQuery", () => input.query);

@@ -10,10 +10,16 @@
             </v-tooltip>
           </v-btn>
 
-          <v-btn v-else-if="!!isLockedByOther" :aria-label="`Bewerkt door ${isLockedByOther}`" variant="text" color="warning">
+          <v-btn
+            v-else-if="isLockedByOther"
+            :aria-label="`Bewerkt door ${isLockedByOther}`"
+            variant="text"
+            color="warning"
+          >
             <v-icon>mdi-lock-outline</v-icon>
             <v-tooltip activator="parent" location="top">
-              Dit issue wordt momenteel bewerkt door {{ isLockedByOther }}
+              Dit issue wordt momenteel bewerkt door
+              {{ isLockedByOther }}
             </v-tooltip>
           </v-btn>
 
@@ -21,7 +27,6 @@
             v-else
             icon="mdi-pencil"
             variant="text"
-            :disabled="!isConnected"
             aria-label="Bewerken"
             @click="safeToggleEditing()"
           />
@@ -64,42 +69,38 @@
             @cancel="setEditing(false)"
           />
         </template>
-        <div v-else>
-          Klik op de edit knop om een nieuw onderwerp toe te voegen
-        </div>
+        <div v-else>Klik op de edit knop om een nieuw onderwerp toe te voegen</div>
       </template>
 
-      <v-dialog
-        v-model="showEditDialog"
-        max-width="800px"
-        scrollable
+      <IssueEditDialog
+        v-model:issue="issue"
+        v-model:dialog="showEditDialog"
+        :navigate-on-slug-change="true"
         :fullscreen="$vuetify.display.mobile"
-      >
-        <EditForm
-          v-model="issue"
-          v-model:dialog="showEditDialog"
-          @save="showEditDialog = false"
-          @cancel="showEditDialog = false"
-        />
-      </v-dialog>
+        @save="showEditDialog = false"
+        @cancel="showEditDialog = false"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { isExistingIssue } from "~~/shared/types/Issue";
+
 const route = useRoute("kaart-id");
 const { id } = route.params;
 const { status } = useAuth();
 const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue, loadError } = storeToRefs(useSelectedIssue());
-const { isLockedByOther } = storeToRefs(useIssueLocks());
-const { isConnected } = useConnectionStatus();
+const { isConnected, isLockedByOther, canEdit } = useIssueEditAvailability(
+  computed(() => (isExistingIssue(issue.value) ? issue.value.id : null))
+);
 
 // Safe toggle function that checks connection
 function safeToggleEditing() {
   // Prevent starting edit mode when connection is unsafe
-  if (!isEditing.value && !isConnected.value) {
+  if (!isEditing.value && !canEdit.value) {
     return;
   }
   toggleEditing();
@@ -107,6 +108,10 @@ function safeToggleEditing() {
 
 const title = computed(() => issue.value?.title ?? "");
 useTitle(title);
+// Registreer de metadata tijdens setup, niet pas in een watcher na het laden.
+// Alleen opgeslagen onderwerpen hebben een deelbare URL en afbeelding; concepten niet.
+// De computed-bron volgt ook vervangingen door navigatie of WebSocket-berichten.
+useIssueOpenGraph(computed(() => (isExistingIssue(issue.value) ? issue.value : null)));
 
 if (!id || typeof id !== "string") {
   navigateTo("/kaart");

@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { defineComponent, h, ref } from "vue";
+import { defineComponent, h, ref, watch } from "vue";
 import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import Search from "../app/components/map/Search.vue";
 import List from "../app/pages/lijst/index.vue";
+import IssueSearchTable from "../app/components/IssueSearchTable.vue";
+import IssueEditDialog from "../app/components/IssueEditDialog.vue";
+import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
+import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import { useFilter } from "../app/composables/useFilter";
+import { parseSearchTerms } from "../app/utils/parseSearchTerms";
 import { transformBboxToOpenLayers } from "../app/utils/getIssuesBbox";
 const perform = vi.hoisted(() => vi.fn());
 vi.mock("vuetify", () => ({ useDisplay: () => ({ mobile }) }));
@@ -25,8 +30,16 @@ const Autocomplete = defineComponent({
 });
 const stubs = {
   ...uiStubs,
-  VIcon: true,
+  VIcon: defineComponent({
+    props: ["icon"],
+    template: '<span class="test-icon">{{ icon }}<slot /></span>',
+  }),
   VAutocomplete: Autocomplete,
+  VImg: defineComponent({
+    name: "VImg",
+    props: ["src"],
+    template: '<img :src="src">',
+  }),
   VListItem: defineComponent({
     props: ["title"],
     template: '<div>{{ title }}<slot name="subtitle" /></div>',
@@ -123,6 +136,10 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     total: 2,
   });
   const refreshList = vi.fn();
+  const notifyEditing = vi.fn();
+  const removeIssue = vi.fn();
+  const activeLockIds = new Set<number>();
+  const isConnected = ref(true);
   const socketStatus = ref("OPEN");
   const unsubscribe = vi.fn();
   let receiveList: ((message: { type: string }) => void) | undefined;
@@ -142,11 +159,53 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   vi.stubGlobal("useTagsApi", () => ({
     getTag: (tag: string) => ({ tag, label: tag }),
   }));
+  vi.stubGlobal("useAuth", () => ({ status: ref("authenticated") }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: (id: number) => {
+      const isLockedByOther = id === 1 ? "Test User" : false;
+      return {
+        isConnected: isConnected.value,
+        isLockedByOther,
+        canEdit: isConnected.value && !isLockedByOther,
+      };
+    },
+  }));
+  vi.stubGlobal(
+    "useIssueEditLock",
+    (issueId: () => number | null) =>
+      watch(
+        issueId,
+        (id, oldId) => {
+          if (oldId !== null) {
+            activeLockIds.delete(oldId);
+            notifyEditing(oldId, false);
+          }
+          if (id !== null) {
+            activeLockIds.add(id);
+            notifyEditing(id, true);
+          }
+        },
+        { immediate: true },
+      ),
+  );
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn().mockResolvedValue({
+      id: 2,
+      slug: "parking",
+      title: "Parking",
+      description: "Description",
+    }),
+    getUpdatedBy: vi.fn(),
+    remove: removeIssue,
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError: vi.fn() }));
   vi.stubGlobal("useCategories", () => ({
     categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
   }));
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
   vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
   const Table = defineComponent({
     name: "ServerTableBoundary",
     props: [
@@ -178,11 +237,18 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     }),
     {
       global: {
+        components: { IssueSearchTable, IssueEditDialog, IssueDeleteDialog, IssueInfoDialog },
         stubs: {
           ...stubs,
           VDataTableServer: Table,
           CategoryChip: true,
           Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
         },
       },
     },
@@ -192,6 +258,66 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   expect(wrapper.text()).toContain("Safe crossing");
   const table = wrapper.getComponent(Table);
   expect(table.props("itemsLength")).toBe(2);
+  expect(
+    wrapper.find('button[aria-label="Safe crossing bewerkt door Test User"]')
+      .exists(),
+  ).toBe(true);
+  expect(
+    wrapper
+      .get('button[aria-label="Safe crossing bewerkt door Test User"]')
+      .text(),
+  ).toContain("mdi-lock-outline");
+  const lockedActions = wrapper
+    .get('button[aria-label="Safe crossing bewerkt door Test User"]')
+    .element.parentElement!;
+  const unlockedActions = wrapper
+    .get('button[aria-label="Parking bewerken"]')
+    .element.parentElement!;
+  expect(lockedActions.children).toHaveLength(3);
+  expect(lockedActions.children[1]?.getAttribute("aria-hidden")).toBe("true");
+  expect(lockedActions.children[2]?.getAttribute("aria-label")).toBe(
+    "Informatie over Safe crossing",
+  );
+  expect(unlockedActions.children[2]?.getAttribute("aria-label")).toBe(
+    "Informatie over Parking",
+  );
+  expect(wrapper.find('button[aria-label="Safe crossing bewerken"]').exists()).toBe(
+    false,
+  );
+  expect(wrapper.find('button[aria-label="Safe crossing verwijderen"]').exists()).toBe(
+    false,
+  );
+  expect(wrapper.find('button[aria-label="Parking bewerken"]').exists()).toBe(true);
+  expect(wrapper.find('button[aria-label="Parking verwijderen"]').exists()).toBe(
+    true,
+  );
+  await wrapper.get('button[aria-label="Parking bewerken"]').trigger("click");
+  expect(activeLockIds.has(2)).toBe(true);
+  await flushPromises();
+  await wrapper.get('button[aria-label="Close editor"]').trigger("click");
+  await flushPromises();
+  expect(activeLockIds.has(2)).toBe(false);
+  expect(notifyEditing).toHaveBeenLastCalledWith(2, false);
+  await wrapper.get('button[aria-label="Parking verwijderen"]').trigger("click");
+  isConnected.value = false;
+  await flushPromises();
+  const offlineButton = wrapper.get('button[aria-label="Parking: verbinding verbroken"]');
+  expect(offlineButton.attributes("disabled")).toBeDefined();
+  expect(offlineButton.text()).toContain("mdi-wifi-off");
+  expect(wrapper.find('button[aria-label="Safe crossing: verbinding verbroken"]').exists()).toBe(true);
+  expect(wrapper.find('button[aria-label="Safe crossing bewerkt door Test User"]').exists()).toBe(false);
+  expect(wrapper.find('button[aria-label="Parking bewerken"]').exists()).toBe(false);
+  expect(wrapper.find('button[aria-label="Parking verwijderen"]').exists()).toBe(false);
+  expect(wrapper.find('button[aria-label="Informatie over Parking"]').exists()).toBe(true);
+  const confirmButton = wrapper.findAll("button").find((button) => button.text() === "Verwijderen")!;
+  expect(confirmButton.attributes("disabled")).toBeDefined();
+  await confirmButton.trigger("click");
+  expect(removeIssue).not.toHaveBeenCalled();
+  isConnected.value = true;
+  await flushPromises();
+  expect(wrapper.find('button[aria-label="Safe crossing bewerkt door Test User"]').exists()).toBe(true);
+  expect(wrapper.find('button[aria-label="Parking bewerken"]').exists()).toBe(true);
+  expect(confirmButton.attributes("disabled")).toBeUndefined();
   table.vm.$emit("click:row", new Event("click"), {
     item: response.value.items[0],
   });
@@ -210,6 +336,9 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     order: "desc",
   });
   expect(wrapper.findAll("img")).toHaveLength(1);
+  expect(wrapper.get("img").attributes("src")).toBe(
+    "/api/issues/1/image?width=300&height=300",
+  );
   receiveList?.({ type: "issue-created" });
   expect(refreshList).toHaveBeenCalledTimes(1);
   socketStatus.value = "CLOSED";

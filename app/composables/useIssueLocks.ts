@@ -3,8 +3,13 @@ import { defineStore } from "pinia";
 import { useSharedAuthWebSocket } from "./useSharedAuthWebSocket";
 import { useConnectionStatus } from "./useConnectionStatus";
 
+export type IssueEditAvailability = {
+  isConnected: boolean;
+  isLockedByOther: string | false;
+  canEdit: boolean;
+};
+
 export const useIssueLocks = defineStore("issueLocks", () => {
-  const { isEditing } = useIsEditing();
   const { selectedId } = storeToRefs(useSelectedIssue());
 
   // Extract authentication status
@@ -20,22 +25,13 @@ export const useIssueLocks = defineStore("issueLocks", () => {
   // Watch authentication status and manage WebSocket connection
   watch(
     isAuthenticated,
-    (authenticated) => {
-      if (authenticated) {
-        // Don't manage connection here - let useOnlineUsers handle it
-        // Re-establish lock if user was editing when connection was lost
-        if (
-          isEditing.value &&
-          selectedId.value &&
-          authWs.status.value === "OPEN"
-        ) {
-          console.log("Lock herstellen voor issue:", selectedId.value);
-          notifyEditing(selectedId.value, true);
-        }
-      }
+    (authenticated, wasAuthenticated) => {
+      if (authWs.status.value !== "OPEN") return;
+      if (authenticated) syncOwnedLocks();
+      else if (wasAuthenticated) authWs.sendMessage("clearMyLocks", {});
       // Don't close connection here - let useOnlineUsers handle it
     },
-    { immediate: true },
+    { immediate: false },
   );
 
   const editingUsers = ref<
@@ -47,6 +43,17 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   // Use centrally stored peer ID from shared WebSocket
   const myPeerId = authWs.peerId;
+  const ownedLocks = ref<Record<string, number>>({});
+
+  function syncOwnedLocks() {
+    const issueIds = Object.keys(ownedLocks.value);
+    if (issueIds.length === 0) {
+      authWs.sendMessage("clearMyLocks", {});
+      return;
+    }
+
+    issueIds.forEach((issueId) => notifyEditing(Number(issueId), true));
+  }
 
   // Clear editing users when connection is lost (prevent stale lock indicators)
   watch(
@@ -56,37 +63,9 @@ export const useIssueLocks = defineStore("issueLocks", () => {
         editingUsers.value = {};
         console.debug("Lock status gewist vanwege verbindingsverlies");
       } else if (status === "OPEN" && prevStatus !== "OPEN") {
-        // WebSocket reconnected - send current editing state
-        console.debug("WebSocket reconnected, sending current editing state");
-
-        if (selectedId.value && isAuthenticated.value) {
-          // We know which issue we're on, send specific lock state
-          notifyEditing(selectedId.value, isEditing.value);
-        } else if (isAuthenticated.value) {
-          // No selected issue, but we might have had locks - clear any stale locks
-          // Server will derive user info from verified JWT token
-          authWs.sendMessage("clearMyLocks", {});
-        }
+        if (isAuthenticated.value) syncOwnedLocks();
       }
     },
-  );
-
-  watch(
-    selectedId,
-    (_newId, oldId) => {
-      if (oldId && isEditing.value) notifyEditing(oldId, false);
-    },
-    { immediate: true },
-  );
-
-  watch(
-    isEditing,
-    (newIsEditing, oldIsEditing) => {
-      if (oldIsEditing !== newIsEditing && selectedId.value) {
-        notifyEditing(selectedId.value, newIsEditing);
-      }
-    },
-    { immediate: true },
   );
 
   // Subscribe to WebSocket messages for lock status updates
@@ -115,6 +94,29 @@ export const useIssueLocks = defineStore("issueLocks", () => {
     }
   }
 
+  function acquireLock(issueId: number) {
+    const key = String(issueId);
+    const count = ownedLocks.value[key] ?? 0;
+    ownedLocks.value[key] = count + 1;
+    if (count === 0) notifyEditing(issueId, true);
+  }
+
+  function releaseLock(issueId: number) {
+    const key = String(issueId);
+    const count = ownedLocks.value[key];
+    if (count === undefined) return;
+
+    if (count > 1) {
+      ownedLocks.value[key] = count - 1;
+      return;
+    }
+
+    ownedLocks.value = Object.fromEntries(
+      Object.entries(ownedLocks.value).filter(([issueKey]) => issueKey !== key),
+    );
+    notifyEditing(issueId, false);
+  }
+
   function isLocked(issueId: number) {
     const editingUser = editingUsers.value[issueId];
     // Show as locked if someone else is editing (different peer ID)
@@ -122,6 +124,17 @@ export const useIssueLocks = defineStore("issueLocks", () => {
       return editingUser.displayName || editingUser.username;
     }
     return false;
+  }
+
+  function getEditAvailability(
+    issueId: number | null | undefined,
+  ): IssueEditAvailability {
+    const isLockedByOther = issueId == null ? false : isLocked(issueId);
+    return {
+      isConnected: isConnected.value,
+      isLockedByOther,
+      canEdit: isConnected.value && !isLockedByOther,
+    };
   }
 
   const locks = computed(() => {
@@ -153,9 +166,11 @@ export const useIssueLocks = defineStore("issueLocks", () => {
 
   return {
     editingUsers,
-    notifyEditing,
+    acquireLock,
+    releaseLock,
     isLockedByOther,
     isLocked,
+    getEditAvailability,
     locks,
     isConnected,
     isEditingUnsafe,

@@ -5,7 +5,7 @@ import { nl } from "vuetify/locale";
 export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
-  ssr: false,
+  ssr: true,
   app: {
     head: {
       link: [{ rel: "icon", type: "image/jpeg", href: "/fietsersbond.jpeg" }],
@@ -69,7 +69,15 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "nuxt-nodemailer",
     "@nuxt/icon",
+    "@nuxtjs/sitemap",
   ],
+  sitemap: {
+    excludeAppSources: true,
+    urls: ["/", "/kaart", "/lijst"],
+    sources: ["/api/sitemap/urls"],
+    exclude: ["/admin/**", "/login", "/reset-password/**", "/kaart/new"],
+    cacheMaxAgeSeconds: 60,
+  },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
     provider: {
@@ -90,6 +98,7 @@ export default defineNuxtConfig({
       },
       refresh: {
         isEnabled: true,
+        refreshOnlyToken: false,
         endpoint: { path: "/refresh", method: "post" },
       },
     },
@@ -98,6 +107,13 @@ export default defineNuxtConfig({
     },
   },
   nitro: {
+    // Responsecache op schijf in plaats van in het geheugen.
+    storage: {
+      cache: { driver: "fs", base: "./.data/cache" },
+    },
+    devStorage: {
+      cache: { driver: "fs", base: "./.data/cache" },
+    },
     experimental: {
       openAPI: true,
       websocket: true,
@@ -140,6 +156,10 @@ export default defineNuxtConfig({
   vuetify: {
     moduleOptions: {
       prefixComposables: true,
+      ssrClientHints: {
+        viewportSize: true,
+        reloadOnFirstRequest: true,
+      },
     },
     vuetifyOptions: {
       /* vuetify options */

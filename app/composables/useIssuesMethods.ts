@@ -23,6 +23,16 @@ export function useIssuesMethods() {
     });
   }
 
+  function getUpdatedBy(id: number | string) {
+    return $fetch<{ updated_by_name: string | null; updated_at: string | null }>(
+      `/api/issues/${id}/updated-by`,
+      {
+        method: "GET",
+        headers: headers.value,
+      },
+    );
+  }
+
   async function create(body: NewIssue) {
     const issue = await $fetch<Issue>("/api/issues", {
       method: "POST",
@@ -41,6 +51,14 @@ export function useIssuesMethods() {
     return issue;
   }
 
+  function getUniqueSlug(slug: string, issueId?: number) {
+    return $fetch<{ slug: string }>("/api/issues/slug", {
+      method: "POST",
+      body: { slug, issueId },
+      headers: headers.value,
+    });
+  }
+
   async function remove(id: number) {
     const result = await $fetch<{ id: number }>(`/api/issues/${id}`, {
       method: "DELETE",
@@ -55,8 +73,10 @@ export function useIssuesMethods() {
 
   return {
     get,
+    getUpdatedBy,
     create,
     update,
+    getUniqueSlug,
     remove,
     getImageUrl,
   };

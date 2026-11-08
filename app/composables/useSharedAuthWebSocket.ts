@@ -1,4 +1,4 @@
-import { useWebSocket } from "@vueuse/core";
+import { createSharedComposable, useWebSocket } from "@vueuse/core";
 import type {
   AnyWebSocketMessage,
   WebSocketEvents,
@@ -33,91 +33,90 @@ const createAuthWebSocketEventBus = () => {
  * Shared WebSocket connection for all authenticated user features (locks + presence)
  * Singleton pattern with reference counting to minimize overhead
  */
-export const useSharedAuthWebSocket = (() => {
+const useSharedAuthConnection = createSharedComposable(() => {
   let wsInstance: ReturnType<typeof useWebSocket> | null = null;
   let eventBus: ReturnType<typeof createAuthWebSocketEventBus> | null = null;
   let refCount = 0;
   const peerId = ref<string | null>(null);
+  const requestUrl = useRequestURL();
+  const protocol = requestUrl.protocol === "https:" ? "wss" : "ws";
+
+  const { token } = useAuth();
+
+  // Include JWT token as query parameter for authentication
+  // Strip "Bearer " prefix if present - JWT verification expects raw token
+  const cleanToken = token.value?.replace(/^Bearer\s+/i, "") || "";
+  const tokenParam = cleanToken
+    ? `?token=${encodeURIComponent(cleanToken)}`
+    : "";
+  const websocketUrl = `${protocol}://${requestUrl.host}/ts/auth${tokenParam}`;
+
+  eventBus = createAuthWebSocketEventBus();
+
+  wsInstance = useWebSocket(websocketUrl, {
+    immediate: false, // Don't connect immediately - controlled by auth state
+    autoReconnect: {
+      retries: -1, // Infinite retries
+      delay: 1000,
+      onFailed() {
+        console.error(
+          "Auth WebSocket verbinding herstellen mislukt na meerdere pogingen",
+        );
+      },
+    },
+    onConnected() {
+      console.debug("Auth WebSocket verbonden met", websocketUrl);
+      console.debug(
+        "WebSocket status na verbinding:",
+        wsInstance?.status.value,
+      );
+    },
+    onDisconnected() {
+      console.debug("Auth WebSocket verbinding verbroken");
+      console.debug(
+        "WebSocket status na verbreking:",
+        wsInstance?.status.value,
+      );
+      // Clear peer ID on disconnect
+      peerId.value = null;
+    },
+    onError(error) {
+      console.error("Auth WebSocket fout:", error);
+    },
+  });
+
+  // Watch the WebSocket data and publish to event bus (only once per message)
+  watch(
+    () => wsInstance!.data.value,
+    (data) => {
+      if (data) {
+        try {
+          const message = JSON.parse(data as string);
+
+          // Handle authentication errors
+          if (message.type === "error") {
+            console.error(
+              "Auth WebSocket fout:",
+              message.payload?.message || "Onbekende fout",
+            );
+            // Close the connection if there's an auth error
+            wsInstance?.close();
+            return;
+          }
+
+          // Store peer ID centrally when received
+          if (message.type === "peer-connected") {
+            peerId.value = message.payload as string;
+          }
+        } catch (error) {
+          console.error("Failed to parse message for peer ID:", error);
+        }
+        eventBus!.publish(data as string);
+      }
+    },
+  );
 
   return () => {
-    if (!wsInstance) {
-      const { token } = useAuth();
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-
-      // Include JWT token as query parameter for authentication
-      // Strip "Bearer " prefix if present - JWT verification expects raw token
-      const cleanToken = token.value?.replace(/^Bearer\s+/i, "") || "";
-      const tokenParam = cleanToken
-        ? `?token=${encodeURIComponent(cleanToken)}`
-        : "";
-      const websocketUrl = `${protocol}://${window.location.host}/ts/auth${tokenParam}`;
-
-      eventBus = createAuthWebSocketEventBus();
-
-      wsInstance = useWebSocket(websocketUrl, {
-        immediate: false, // Don't connect immediately - controlled by auth state
-        autoReconnect: {
-          retries: -1, // Infinite retries
-          delay: 1000,
-          onFailed() {
-            console.error(
-              "Auth WebSocket verbinding herstellen mislukt na meerdere pogingen",
-            );
-          },
-        },
-        onConnected() {
-          console.debug("Auth WebSocket verbonden met", websocketUrl);
-          console.debug(
-            "WebSocket status na verbinding:",
-            wsInstance?.status.value,
-          );
-        },
-        onDisconnected() {
-          console.debug("Auth WebSocket verbinding verbroken");
-          console.debug(
-            "WebSocket status na verbreking:",
-            wsInstance?.status.value,
-          );
-          // Clear peer ID on disconnect
-          peerId.value = null;
-        },
-        onError(error) {
-          console.error("Auth WebSocket fout:", error);
-        },
-      });
-
-      // Watch the WebSocket data and publish to event bus (only once per message)
-      watch(
-        () => wsInstance!.data.value,
-        (data) => {
-          if (data) {
-            try {
-              const message = JSON.parse(data as string);
-
-              // Handle authentication errors
-              if (message.type === "error") {
-                console.error(
-                  "Auth WebSocket fout:",
-                  message.payload?.message || "Onbekende fout",
-                );
-                // Close the connection if there's an auth error
-                wsInstance?.close();
-                return;
-              }
-
-              // Store peer ID centrally when received
-              if (message.type === "peer-connected") {
-                peerId.value = message.payload as string;
-              }
-            } catch (error) {
-              console.error("Failed to parse message for peer ID:", error);
-            }
-            eventBus!.publish(data as string);
-          }
-        },
-      );
-    }
-
     refCount++;
 
     // Type-safe send method
@@ -144,4 +143,8 @@ export const useSharedAuthWebSocket = (() => {
       sendMessage, // New type-safe send
     };
   };
-})();
+});
+
+export function useSharedAuthWebSocket() {
+  return useSharedAuthConnection()();
+}
