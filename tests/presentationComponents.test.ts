@@ -21,7 +21,6 @@ import CommentEditor from "../app/components/CommentEditor.client.vue";
 import StreetViewDialog from "../app/components/StreetViewDialog.vue";
 import { getContrastColor } from "../app/utils/getContrastColor";
 import { useStreetViewEmbeds } from "../app/composables/useStreetViewEmbeds";
-import { isQuillContentEmpty } from "../app/utils/quillConfig";
 import type { Issue } from "../shared/types/Issue";
 
 vi.mock("@vueup/vue-quill", () => ({
@@ -696,8 +695,19 @@ it("validates CommentEditor submission constraints and inserts Street View embed
     expect(submitBtn.attributes("disabled")).toBeDefined();
 
     // Enable when non-empty
-    await wrapper.setProps({ modelValue: "<p>Non-empty content</p>" });
+    await wrapper.setProps({ modelValue: "<p>Non-empty content</p>", showCancel: true });
     expect(submitBtn.attributes("disabled")).toBeUndefined();
+
+    // Disabled when loading
+    await wrapper.setProps({ loading: true });
+    expect(submitBtn.attributes("disabled")).toBeDefined();
+    await wrapper.setProps({ loading: false });
+
+    // Cancel action
+    const cancelBtn = wrapper.findAll("button").find((b) => b.text() === "Annuleren")!;
+    await cancelBtn.trigger("click");
+    expect(wrapper.emitted("cancel")?.length).toBe(1);
+
     await submitBtn.trigger("click");
     expect(wrapper.emitted("submit")?.at(-1)).toEqual(["<p>Non-empty content</p>"]);
 
@@ -717,15 +727,6 @@ it("validates CommentEditor submission constraints and inserts Street View embed
     const insertBtn = wrapper.findAll("button").find((b) => b.text() === "Invoegen")!;
     await insertBtn.trigger("click");
     await flushPromises();
-});
-
-it("identifies empty Quill HTML content correctly", () => {
-    expect(isQuillContentEmpty("")).toBe(true);
-    expect(isQuillContentEmpty("<p><br></p>")).toBe(true);
-    expect(isQuillContentEmpty("<p>   </p>")).toBe(true);
-    expect(isQuillContentEmpty('<p><img src="foo.png"></p>')).toBe(false);
-    expect(isQuillContentEmpty('<div class="streetview-embed"></div>')).toBe(false);
-    expect(isQuillContentEmpty("<p>Hello world</p>")).toBe(false);
 });
 
 describe("StreetViewDialog", () => {

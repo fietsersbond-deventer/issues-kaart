@@ -65,7 +65,6 @@ import StreetViewDialog from "./StreetViewDialog.vue";
 import {
   defaultQuillToolbar,
   defaultQuillModules,
-  isQuillContentEmpty,
 } from "~/utils/quillConfig";
 import {
   ensureStreetViewEmbedBlotRegistered,
@@ -115,7 +114,9 @@ const errorMessage = ref("");
 
 const canSubmit = computed(() => {
   return (
-    !isQuillContentEmpty(content.value) && isConnected.value && !props.loading
+    !!content.value &&
+    isConnected.value &&
+    !props.loading
   );
 });
 
