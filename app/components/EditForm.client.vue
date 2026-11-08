@@ -550,6 +550,13 @@ async function confirmDelete() {
   border-radius: 4px;
 }
 
+.quill-editor-container :deep(.ql-toolbar) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: rgb(var(--v-theme-surface));
+}
+
 .quill-editor {
   height: 250px;
 }
