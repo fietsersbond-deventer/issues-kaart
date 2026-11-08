@@ -5,27 +5,27 @@
   >
     <ol-source-vector ref="issueSource">
       <ol-feature
-        v-for="issue in markers"
-        :key="`marker-${issue.id}`"
-        :properties="getFeatureProperties(issue)"
+        v-for="marker in markers"
+        :key="`marker-${marker.issue.id}`"
+        :properties="marker.properties"
       >
-        <ol-geom-point :coordinates="toPointCoords(issue)" />
+        <ol-geom-point :coordinates="marker.coordinates" />
       </ol-feature>
 
       <ol-feature
-        v-for="issue in lines"
-        :key="`line-${issue.id}`"
-        :properties="getFeatureProperties(issue)"
+        v-for="line in lines"
+        :key="`line-${line.issue.id}`"
+        :properties="line.properties"
       >
-        <ol-geom-line-string :coordinates="toLineCoords(issue)" />
+        <ol-geom-line-string :coordinates="line.coordinates" />
       </ol-feature>
 
       <ol-feature
-        v-for="issue in polygons"
-        :key="`polygon-${issue.id}`"
-        :properties="getFeatureProperties(issue)"
+        v-for="polygon in polygons"
+        :key="`polygon-${polygon.issue.id}`"
+        :properties="polygon.properties"
       >
-        <ol-geom-polygon :coordinates="toPolygonCoords(issue)" />
+        <ol-geom-polygon :coordinates="polygon.coordinates" />
       </ol-feature>
 
       <!-- editor -->
@@ -46,11 +46,11 @@
     <ol-source-cluster>
       <ol-source-vector>
         <ol-feature
-          v-for="issue in group.issues"
-          :key="`cluster-marker-${issue.id}`"
-          :properties="getFeatureProperties(issue)"
+          v-for="marker in group.markers"
+          :key="`cluster-marker-${marker.issue.id}`"
+          :properties="marker.properties"
         >
-          <ol-geom-point :coordinates="toPointCoords(issue)" />
+          <ol-geom-point :coordinates="marker.coordinates" />
         </ol-feature>
       </ol-source-vector>
     </ol-source-cluster>
@@ -102,35 +102,50 @@ function clusterStyle(feature: Feature) {
   return props.featureStyle(feature);
 }
 
+// Cache the derived properties and projected coordinates until the issues
+// change. Creating new objects during each zoom update makes vue3-openlayers
+// update every feature and forces the cluster sources to recompute.
 const markers = computed(() => {
-  return props.issues.filter(
-    (issue) => issue.geometry?.type === "Point",
-  );
+  return props.issues
+    .filter((issue) => issue.geometry?.type === "Point")
+    .map((issue) => ({
+      issue,
+      properties: getFeatureProperties(issue),
+      coordinates: toPointCoords(issue),
+    }));
 });
 
 // A cluster source groups by distance only, so each category needs its own
 // source. Vue keeps these marker copies in step with the filtered issue data.
 const clusterGroups = computed(() => {
   if (!clustering.value) return [];
-  const groups = new Map<number | null, (MapIssue | NewIssue)[]>();
-  for (const issue of markers.value) {
-    const categoryId = issue.legend_id ?? null;
-    const issues = groups.get(categoryId) ?? [];
-    issues.push(issue);
-    groups.set(categoryId, issues);
+  const groups = new Map<number | null, typeof markers.value>();
+  for (const marker of markers.value) {
+    const categoryId = marker.issue.legend_id ?? null;
+    const entries = groups.get(categoryId) ?? [];
+    entries.push(marker);
+    groups.set(categoryId, entries);
   }
-  return Array.from(groups, ([categoryId, issues]) => ({ categoryId: categoryId ?? "none", issues }));
+  return Array.from(groups, ([categoryId, entries]) => ({ categoryId: categoryId ?? "none", markers: entries }));
 });
 
 const polygons = computed(() => {
-  return props.issues.filter(
-    (issue) => issue.geometry?.type === "Polygon",
-  );
+  return props.issues
+    .filter((issue) => issue.geometry?.type === "Polygon")
+    .map((issue) => ({
+      issue,
+      properties: getFeatureProperties(issue),
+      coordinates: toPolygonCoords(issue),
+    }));
 });
 
 const lines = computed(() => {
-  return props.issues.filter(
-    (issue) => issue.geometry?.type === "LineString",
-  );
+  return props.issues
+    .filter((issue) => issue.geometry?.type === "LineString")
+    .map((issue) => ({
+      issue,
+      properties: getFeatureProperties(issue),
+      coordinates: toLineCoords(issue),
+    }));
 });
 </script>

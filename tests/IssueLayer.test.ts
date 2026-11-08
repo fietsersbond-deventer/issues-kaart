@@ -7,7 +7,7 @@ import type VectorLayer from "ol/layer/Vector";
 import type VectorSource from "ol/source/Vector";
 import Cluster from "ol/source/Cluster";
 import { Point } from "ol/geom";
-import { get as getProjection } from "ol/proj";
+import { fromLonLat, get as getProjection } from "ol/proj";
 import type Modify from "ol/interaction/Modify";
 import { ModifyEvent } from "ol/interaction/Modify";
 import { Style } from "ol/style";
@@ -136,10 +136,28 @@ describe("IssueLayer met echte OpenLayers-componenten", () => {
     expect(clusterLayers[0]!.getStyleFunction()!(clusteredFeature, 1)).toBeInstanceOf(Style);
     expect(featureStyle).toHaveBeenCalledWith(clusteredFeature);
     const originalSource = original.getSource() as VectorSource;
+    const changeCluster = vi.fn();
+    const changeClusters = vi.fn();
+    clusterSources[0]!.on("change", changeClusters);
+    clusterSources[0]!.getSource()!.on("changefeature", changeCluster);
+    await wrapper.setProps({ zoom: 17.1 });
+    await settle();
+    expect(changeCluster.mock.calls.length).toBe(0);
+    expect(changeClusters).not.toHaveBeenCalled();
     const point = originalSource.getFeatures().find(feature => feature.get("id") === 1)!;
     const line = originalSource.getFeatures().find(feature => feature.getGeometry()?.getType() === "LineString")!;
     expect(original.getStyleFunction()!(point, 1)).toBeUndefined();
     expect(original.getStyleFunction()!(line, 1)).toBeInstanceOf(Style);
+
+    const changedPoint = issue(1, { type: "Point", coordinates: [6.01, 52] });
+    changedPoint.title = "Gewijzigd";
+    await wrapper.setProps({ issues: [changedPoint, ...points.slice(1)] });
+    await settle();
+    const updated = clusterSources[0]!.getSource()!.getFeatures().find(feature => feature.get("id") === 1)!;
+    expect(updated.get("title")).toBe("Gewijzigd");
+    expect(updated.getGeometry()!.getExtent()[0]).toBeCloseTo(fromLonLat([6.01, 52])[0]!, 5);
+    expect(changeClusters).toHaveBeenCalled();
+    expect(clusterSources[0]!.getFeatures()).toHaveLength(2);
 
     await wrapper.setProps({ issues: [points[0]!, points[2]!, points[3]!, points[4]!] });
     await settle();
@@ -166,4 +184,5 @@ describe("IssueLayer met echte OpenLayers-componenten", () => {
     expect(map.removeLayer).toHaveBeenCalledTimes(5);
     expect(original.getStyleFunction()!(point, 1)).toBeInstanceOf(Style);
   });
+
 });
