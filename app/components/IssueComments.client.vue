@@ -292,7 +292,7 @@ async function onDelete(commentId: number) {
         comments.value[index] = {
           ...comments.value[index]!,
           is_deleted: true,
-          body: "[deleted comment]",
+          body: "[opmerking verwijderd]",
           deleted_at: new Date().toISOString(),
         };
       } else {
@@ -338,7 +338,7 @@ function handleWebSocketMessage(message: AnyWebSocketMessage) {
           comments.value[index] = {
             ...comments.value[index]!,
             is_deleted: true,
-            body: "[deleted comment]",
+            body: "[opmerking verwijderd]",
             deleted_at: new Date().toISOString(),
           };
         } else {
