@@ -94,7 +94,7 @@ export default defineNuxtConfig({
       },
       endpoints: {
         signIn: { path: "/login", method: "post" },
-        signOut: { path: "/logout", method: "post" },
+        signOut: false,
         getSession: { path: "/session", method: "get" },
       },
       refresh: {
