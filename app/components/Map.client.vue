@@ -47,7 +47,7 @@
 
     <ol-attribution-control :collapsible="mobile" />
 
-    <MapTooltips :is-drawing />
+    <MapTooltips v-if="!mobile" :is-drawing />
 
     <!-- Selection stays last so the interaction order matches the original map.
          Areas handle their own clicks, so exclude them here. -->
