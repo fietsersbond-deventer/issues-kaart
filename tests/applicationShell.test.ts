@@ -112,12 +112,11 @@ beforeEach(() => {
   vi.stubGlobal("useConnectionStatus", () => ({ isConnected: connected }));
   vi.stubGlobal("useIssueEditAvailability", useIssueEditAvailability);
   vi.stubGlobal("useIssueLocks", () => ({
-    getEditAvailability: () =>
-      ({
-        isConnected: connected.value,
-        isLockedByOther: lockedBy.value,
-        canEdit: connected.value && !lockedBy.value,
-      }),
+    getEditAvailability: () => ({
+      isConnected: connected.value,
+      isLockedByOther: lockedBy.value,
+      canEdit: connected.value && !lockedBy.value,
+    }),
   }));
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
   vi.stubGlobal("useSelectedIssue", () => ({
@@ -209,6 +208,9 @@ it("toggles the mobile sheet accessibly and opens the map menu", async () => {
     startDragMouse: vi.fn(),
   }));
   const wrapper = keep(mount(Mobile, { global: { stubs } }));
+  expect(wrapper.get(".bottom-sheet").attributes("style")).toContain(
+    "height: calc(50% + 8px)",
+  );
   await wrapper.get(".drag-handle").trigger("keydown", { key: "Enter" });
   expect(setHeight).toHaveBeenLastCalledWith(75);
   await wrapper.get(".drag-handle").trigger("keydown", { key: " " });
@@ -239,13 +241,36 @@ it("uses viewport hints, then a width cookie, then browser headers for the initi
   const plugin = (await import("../app/plugins/viewport")).default;
   type ViewportHook = ModuleRuntimeHooks["vuetify:ssr-client-hints"];
   for (const scenario of [
-    { agent: "Mozilla/5.0 (X11; Linux x86_64; rv:159.0) Gecko/20100101 Firefox/159.0", cookie: null, hint: undefined, expected: 1280 },
-    { agent: "Mozilla/5.0 (Android 17; Mobile; rv:159.0) Gecko/159.0 Firefox/159.0", cookie: null, hint: undefined, expected: 390 },
-    { agent: "Mozilla/5.0 (Android 17; Tablet; rv:159.0) Gecko/159.0 Firefox/159.0", cookie: null, hint: undefined, expected: 1280 },
+    {
+      agent:
+        "Mozilla/5.0 (X11; Linux x86_64; rv:159.0) Gecko/20100101 Firefox/159.0",
+      cookie: null,
+      hint: undefined,
+      expected: 1280,
+    },
+    {
+      agent:
+        "Mozilla/5.0 (Android 17; Mobile; rv:159.0) Gecko/159.0 Firefox/159.0",
+      cookie: null,
+      hint: undefined,
+      expected: 390,
+    },
+    {
+      agent:
+        "Mozilla/5.0 (Android 17; Tablet; rv:159.0) Gecko/159.0 Firefox/159.0",
+      cookie: null,
+      hint: undefined,
+      expected: 1280,
+    },
     { agent: "Desktop", cookie: 480, hint: undefined, expected: 480 },
     { agent: "Mobile", cookie: 1440, hint: undefined, expected: 1440 },
     { agent: "Mobile", cookie: 480, hint: 1200, expected: 1200 },
-    ...[0, -1, "480", {}, null].map((cookie) => ({ agent: "Desktop", cookie, hint: undefined, expected: 1280 })),
+    ...[0, -1, "480", {}, null].map((cookie) => ({
+      agent: "Desktop",
+      cookie,
+      hint: undefined,
+      expected: 1280,
+    })),
   ]) {
     headers = { "user-agent": scenario.agent };
     width.value = scenario.cookie;
@@ -271,7 +296,9 @@ it("uses viewport hints, then a width cookie, then browser headers for the initi
       };
       applyViewport!(options);
       expect(options.ssrClientHints.viewportWidth).toBe(scenario.expected);
-      expect(options.vuetifyOptions.ssr).toMatchObject({ clientWidth: scenario.expected });
+      expect(options.vuetifyOptions.ssr).toMatchObject({
+        clientWidth: scenario.expected,
+      });
     } finally {
       scope.stop();
     }
@@ -322,15 +349,23 @@ it("enters/exits issue editing and clears editing state when navigating away", a
   lockedBy.value = "Andere gebruiker";
   await flushPromises();
   expect(wrapper.find('button[aria-label="Bewerken"]').exists()).toBe(false);
-  expect(wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists()).toBe(true);
+  expect(
+    wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists(),
+  ).toBe(true);
   connected.value = false;
   await flushPromises();
   expect(wrapper.find('button[aria-label="Bewerken"]').exists()).toBe(false);
-  expect(wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists()).toBe(false);
-  expect(wrapper.text()).toContain("Verbinding verbroken - bewerken is niet mogelijk");
+  expect(
+    wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists(),
+  ).toBe(false);
+  expect(wrapper.text()).toContain(
+    "Verbinding verbroken - bewerken is niet mogelijk",
+  );
   connected.value = true;
   await flushPromises();
-  expect(wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists()).toBe(true);
+  expect(
+    wrapper.find('button[aria-label="Bewerkt door Andere gebruiker"]').exists(),
+  ).toBe(true);
   lockedBy.value = false;
   await flushPromises();
   await wrapper.get('button[aria-label="Bewerken"]').trigger("click");
