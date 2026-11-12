@@ -67,3 +67,13 @@ export type IssueTagSchema = {
   tag_id: number;
   created_at: Date;
 };
+
+export type Comment = {
+  id: number;
+  issue_id: number;
+  author_id: number | null;
+  body: string;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+};

@@ -32,6 +32,11 @@
       />
       <!-- eslint-enable vue/no-v-html -->
     </ImageViewer>
+
+    <template v-if="isAuthenticated && issue.id">
+      <v-divider class="my-6" />
+      <IssueComments :issue-id="issue.id" />
+    </template>
   </article>
 </template>
 
@@ -39,6 +44,8 @@
 import type { Issue } from "~~/shared/types/Issue";
 
 const { toggleTag } = useTagFilters();
+const { status } = useAuth();
+const isAuthenticated = computed(() => status.value === "authenticated");
 
 const props = defineProps<{
   issue: Issue;

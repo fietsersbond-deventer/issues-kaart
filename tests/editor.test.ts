@@ -7,13 +7,13 @@ import { Field, Form, uiStubs } from "./helpers/ui";
 import type { Issue, NewIssue } from "../shared/types/Issue";
 import EditForm from "../app/components/EditForm.client.vue";
 import { useIssueSlug } from "../app/composables/useIssueSlug";
+
 vi.mock("@vueup/vue-quill", () => ({
-  QuillEditor: { name: "QuillEditor", template: "<div />" },
+    QuillEditor: { name: "QuillEditor", template: "<div />" },
+    loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
 }));
 vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
-vi.mock("../app/utils/streetViewEmbedBlot", () => ({
-  ensureStreetViewEmbedBlotRegistered: vi.fn().mockResolvedValue(undefined),
-}));
+
 const update = vi.fn(),
   create = vi.fn(),
   remove = vi.fn(),
@@ -34,6 +34,7 @@ const draft = (): NewIssue => ({
   legend_id: 1,
   geometry: { type: "Point", coordinates: [6, 52] },
 });
+
 beforeEach(() => {
   vueGlobals();
   vi.clearAllMocks();
@@ -79,11 +80,13 @@ beforeEach(() => {
   vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
   vi.stubGlobal("$fetch", fetch);
 });
+
 afterEach(() => {
   vi.useRealTimers();
   wrappers.splice(0).forEach((w) => w.unmount());
   vi.unstubAllGlobals();
 });
+
 function editor(issue: Issue | NewIssue = draft()) {
   const wrapper = mount(EditForm, {
     props: { modelValue: issue, dialog: true },
@@ -102,8 +105,10 @@ function editor(issue: Issue | NewIssue = draft()) {
   wrappers.push(wrapper);
   return wrapper;
 }
+
 const button = (wrapper: ReturnType<typeof editor>, text: string) =>
   wrapper.findAll("button").find((b) => b.text() === text)!;
+
 describe("issue editor persistence boundaries", () => {
   it("creates drafts, navigates to the saved identity and reports analytics only after success", async () => {
     vi.useFakeTimers();

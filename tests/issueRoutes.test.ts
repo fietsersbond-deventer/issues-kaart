@@ -18,6 +18,13 @@ let routes: {
     updatedBy: typeof import("../server/api/issues/[id]/updated-by.get").default;
     geojson: typeof import("../server/api/issues/geojson.get").default;
 };
+let commentRoutes: {
+    create: typeof import("../server/api/issues/[id]/comments/index.post").default;
+    list: typeof import("../server/api/issues/[id]/comments/index.get").default;
+    get: typeof import("../server/api/comments/[id].get").default;
+    update: typeof import("../server/api/comments/[id].patch").default;
+    remove: typeof import("../server/api/comments/[id].delete").default;
+};
 const geometry = { type: "Point", coordinates: [6.1, 52.2] };
 const emitted = vi.fn();
 beforeEach(async () => {
@@ -35,9 +42,19 @@ beforeEach(async () => {
         updatedBy: (await import("../server/api/issues/[id]/updated-by.get")).default,
         geojson: (await import("../server/api/issues/geojson.get")).default,
     };
+    commentRoutes = {
+        create: (await import("../server/api/issues/[id]/comments/index.post")).default,
+        list: (await import("../server/api/issues/[id]/comments/index.get")).default,
+        get: (await import("../server/api/comments/[id].get")).default,
+        update: (await import("../server/api/comments/[id].patch")).default,
+        remove: (await import("../server/api/comments/[id].delete")).default,
+    };
     getEmitter().on("issue:created", emitted);
     getEmitter().on("issue:modified", emitted);
     getEmitter().on("issue:deleted", emitted);
+    getEmitter().on("comment:created", emitted);
+    getEmitter().on("comment:modified", emitted);
+    getEmitter().on("comment:deleted", emitted);
     emitted.mockClear();
 });
 afterEach(() => { getEmitter().removeAllListeners(); db.close(); vi.unstubAllGlobals(); });
@@ -305,5 +322,268 @@ describe("issue persistence contracts with the migrated schema", () => {
     it.each([{ page: "0" }, { page: "10001" }, { page: "9007199254740993" }, { page: "1.5" }, { itemsPerPage: "101" }, { search: "x".repeat(201) }, { search: ["x"] }])("rejects invalid search options %j", async (query) => {
         h.input.query = query;
         await expect(routes.search(h.event)).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    describe("comment lifecycle, authorization and cascading contracts", () => {
+        it("creates sanitized comment and broadcasts comment:created event", async () => {
+            const issue = await create();
+            emitted.mockClear();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "<p>Important note</p><script>alert(1)</script>" };
+
+            const comment = await commentRoutes.create(h.event);
+            expect(comment).toMatchObject({
+                issue_id: issue.id,
+                author_id: 1,
+                author_name: "Test Admin",
+                body: "<p>Important note</p>",
+                is_deleted: false,
+                deleted_at: null,
+            });
+            expect(comment.body).not.toContain("script");
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: comment.id,
+                    createdBy: "Test Admin",
+                    createdByUserId: 1,
+                }),
+            );
+
+            // List comments for issue
+            const list = await commentRoutes.list(h.event);
+            expect(list).toEqual([
+                expect.objectContaining({
+                    id: comment.id,
+                    issue_id: issue.id,
+                    author_name: "Test Admin",
+                    body: "<p>Important note</p>",
+                }),
+            ]);
+        });
+
+        it("denies unauthenticated comment creation, retrieval, editing and deletion", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Valid comment" };
+            const comment = await commentRoutes.create(h.event);
+
+            h.event.context.user = null;
+            h.input.params.id = String(comment.id);
+            h.input.body = { body: "Modified" };
+
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 401 });
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({ statusCode: 401 });
+            await expect(commentRoutes.remove(h.event)).rejects.toMatchObject({ statusCode: 401 });
+
+            h.input.params.id = String(issue.id);
+            await expect(commentRoutes.create(h.event)).rejects.toMatchObject({ statusCode: 401 });
+            await expect(commentRoutes.list(h.event)).rejects.toMatchObject({ statusCode: 401 });
+        });
+
+        it("rejects empty comment creation and editing", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+
+            for (const invalid of [{}, { body: "" }, { body: "   " }, { body: "<script>bad()</script>" }]) {
+                h.input.body = invalid;
+                await expect(commentRoutes.create(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            }
+        });
+
+        it("supports soft deletion showing [deleted comment] and forbids editing deleted comments", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Original message" };
+            const comment = await commentRoutes.create(h.event);
+
+            emitted.mockClear();
+            h.input.params.id = String(comment.id);
+            const deleteResult = await commentRoutes.remove(h.event);
+            expect(deleteResult).toEqual({ id: comment.id, deleted: true, soft: true });
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: comment.id,
+                    issue_id: issue.id,
+                    deletedBy: "Test Admin",
+                    deletedByUserId: 1,
+                    soft: true,
+                }),
+            );
+
+            // Get single comment returns [deleted comment]
+            const fetched = await commentRoutes.get(h.event);
+            expect(fetched.is_deleted).toBe(true);
+            expect(fetched.deleted_at).toBeTruthy();
+            expect(fetched.body).toBe("[deleted comment]");
+
+            // Listing also returns [deleted comment]
+            h.input.params.id = String(issue.id);
+            const list = await commentRoutes.list(h.event);
+            expect(list[0]).toMatchObject({
+                id: comment.id,
+                body: "[deleted comment]",
+                is_deleted: true,
+            });
+
+            // Editing a deleted comment must fail
+            h.input.params.id = String(comment.id);
+            h.input.body = { body: "Trying to edit deleted comment" };
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({
+                statusCode: 400,
+                message: "Cannot edit a deleted comment",
+            });
+        });
+
+        it("enforces authorization for updating and deleting comments", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Author comment" };
+            const comment = await commentRoutes.create(h.event);
+
+            // Another regular user cannot edit or delete
+            h.event.context.user = { id: 99, username: "other", name: "Other User", role: "contributor" };
+            h.input.params.id = String(comment.id);
+            h.input.body = { body: "Hacked comment" };
+
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({ statusCode: 403 });
+            await expect(commentRoutes.remove(h.event)).rejects.toMatchObject({ statusCode: 403 });
+
+            // Admin can edit and delete
+            emitted.mockClear();
+            h.event.context.user = { id: 2, username: "admin2", name: "Admin Two", role: "admin" };
+            const updated = await commentRoutes.update(h.event);
+            expect(updated.body).toBe("Hacked comment");
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: comment.id,
+                    body: "Hacked comment",
+                    modifiedBy: "Admin Two",
+                    modifiedByUserId: 2,
+                }),
+            );
+        });
+
+        it("retains comment with null author when user is deleted", async () => {
+            const issue = await create();
+            // Create user 5
+            db.prepare("INSERT INTO users (id, username, password_hash, name) VALUES (5, 'tempuser', 'hash', 'Temp User')").run();
+
+            h.event.context.user = { id: 5, username: "tempuser", name: "Temp User", role: "contributor" };
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Comment by temp user" };
+            const comment = await commentRoutes.create(h.event);
+            expect(comment.author_id).toBe(5);
+            expect(comment.author_name).toBe("Temp User");
+
+            // Delete the user from the database
+            db.prepare("DELETE FROM users WHERE id = 5").run();
+
+            // Comment should still exist with author_id = null and author_name = null
+            h.input.params.id = String(comment.id);
+            const fetched = await commentRoutes.get(h.event);
+            expect(fetched.id).toBe(comment.id);
+            expect(fetched.author_id).toBeNull();
+            expect(fetched.author_name).toBeNull();
+            expect(fetched.body).toBe("Comment by temp user");
+        });
+
+        it("cascades comment deletion when issue is deleted", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Comment on issue" };
+            const comment = await commentRoutes.create(h.event);
+
+            expect(db.prepare("SELECT COUNT(*) AS count FROM comments WHERE issue_id = ?").get(issue.id)).toEqual({ count: 1 });
+
+            // Delete issue
+            h.input.params.id = String(issue.id);
+            await routes.remove(h.event);
+
+            // Comments should be automatically deleted by SQLite foreign key ON DELETE CASCADE
+            expect(db.prepare("SELECT COUNT(*) AS count FROM comments WHERE issue_id = ?").get(issue.id)).toEqual({ count: 0 });
+            h.input.params.id = String(comment.id);
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 404 });
+        });
+
+        it("supports hard deletion when requested by admin", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Hard delete target" };
+            const comment = await commentRoutes.create(h.event);
+
+            emitted.mockClear();
+            h.input.params.id = String(comment.id);
+            h.input.query = { hard: "true" };
+            const result = await commentRoutes.remove(h.event);
+            expect(result).toEqual({ id: comment.id, deleted: true, soft: false });
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: comment.id,
+                    issue_id: issue.id,
+                    soft: false,
+                }),
+            );
+            expect(db.prepare("SELECT COUNT(*) AS count FROM comments WHERE id = ?").get(comment.id)).toEqual({ count: 0 });
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 404 });
+        });
+
+        it("validates IDs and returns 400 for invalid IDs or 404 for non-existent entities", async () => {
+            h.input.params.id = "invalid-nan";
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.remove(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.list(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.create(h.event)).rejects.toMatchObject({ statusCode: 400 });
+
+            h.input.params.id = "999999";
+            h.input.body = { body: "Valid body" };
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.remove(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.list(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.create(h.event)).rejects.toMatchObject({ statusCode: 404 });
+        });
+
+        it("falls back to username for author and events when name is missing", async () => {
+            const issue = await create();
+            h.event.context.user = { id: 1, username: "admin@example.test", role: "admin" };
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Created by nameless" };
+            emitted.mockClear();
+
+            const comment = await commentRoutes.create(h.event);
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({ createdBy: "admin@example.test" }),
+            );
+
+            h.input.params.id = String(comment.id);
+            h.input.body = { body: "Updated by nameless" };
+            await commentRoutes.update(h.event);
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({ modifiedBy: "admin@example.test" }),
+            );
+
+            await commentRoutes.remove(h.event);
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({ deletedBy: "admin@example.test" }),
+            );
+        });
+
+        it("supports getCommentsForIssue with includeDeleted: false option", async () => {
+            const { getCommentsForIssue } = await import("../server/utils/comments");
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Comment 1" };
+            const comment1 = await commentRoutes.create(h.event);
+            h.input.body = { body: "Comment 2" };
+            const comment2 = await commentRoutes.create(h.event);
+
+            h.input.params.id = String(comment1.id);
+            await commentRoutes.remove(h.event);
+
+            const activeOnly = getCommentsForIssue(db, issue.id, { includeDeleted: false });
+            expect(activeOnly).toHaveLength(1);
+            expect(activeOnly[0].id).toBe(comment2.id);
+        });
     });
 });
