@@ -19,7 +19,7 @@
       </Map>
     </v-main>
 
-    <div class="bottom-sheet" :style="{ height: `${sheetHeight}%` }">
+    <div class="bottom-sheet" :style="{ height: `calc(${sheetHeight}% + 8px)` }">
       <div
         class="drag-handle"
         tabindex="0"

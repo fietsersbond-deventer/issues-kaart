@@ -1,7 +1,7 @@
 import type { Geometry } from "geojson";
 import { booleanValid } from "@turf/boolean-valid";
 import { sanitizeHtml } from "~~/server/utils/sanitizeHtml";
-import { getPlainText } from "~~/server/utils/getPlainText";
+import { getPlainText } from "~~/shared/utils/getPlainText";
 import { getEmitter } from "~~/server/utils/getEmitter";
 import { getDb } from "~~/server/utils/db";
 import { replaceTagsForIssue } from "~~/server/utils/issueTags";

@@ -37,6 +37,9 @@
       :feature-style="style"
       :modify-enabled="modifyEnabled"
       :selected-features="selectedFeatures"
+      :cluster-enabled="clusteringEnabled"
+      :zoom="zoom"
+      :editing="isEditing"
       @modifyend="onModifyEnd"
     />
 
@@ -44,7 +47,7 @@
 
     <ol-attribution-control :collapsible="mobile" />
 
-    <MapTooltip :is-drawing />
+    <MapTooltips v-if="!mobile" :is-drawing />
 
     <!-- Selection stays last so the interaction order matches the original map.
          Areas handle their own clicks, so exclude them here. -->
@@ -54,7 +57,7 @@
       :hit-tolerance="mobile ? 15 : 5"
       :layers="isNotAreaLayer"
       :style
-      @select="onFeatureSelect"
+      @select="handleFeatureSelect"
     />
   </ol-map>
 </template>
@@ -63,8 +66,10 @@
 import type { Feature } from "ol";
 import type IssueLayer from "./map/IssueLayer.vue";
 import type AddFeature from "./map/AddFeature.vue";
+import type { SelectEvent } from "ol/interaction/Select";
+import type { Point } from "ol/geom";
 import { click } from "ol/events/condition";
-import { getIssueMapStyle } from "../utils/issueMapStyle";
+import { getClusterMapStyle, getIssueMapStyle } from "../utils/issueMapStyle";
 // This component puts the map together and connects it to the page layout.
 // BaseLayers sets up the backgrounds; IssueLayer draws the issues and lets users
 // reshape them. Selection, navigation and geometry updates are handled by
@@ -81,6 +86,8 @@ const emit = defineEmits<{ "feature-clicked": [] }>();
 const issueLayer = useTemplateRef<InstanceType<typeof IssueLayer>>("issueLayer");
 const addFeature = useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
 const isDrawing = computed(() => addFeature.value?.isDrawing || false);
+const { isEditing } = useIsEditing();
+const { clusteringEnabled } = useRuntimeConfig().public.map;
 
 const {
   selectedId,
@@ -132,7 +139,21 @@ const mapSize = computed<[number, number]>(() => [
   mapHeight.value,
 ]);
 
-const { refit } = useMapFocus(mapRef, currentPadding, mapSize);
+const { refit, focusCluster } = useMapFocus(mapRef, currentPadding, mapSize);
+
+function handleFeatureSelect(event: SelectEvent) {
+  const feature = event.selected[0];
+  const members: Feature<Point>[] | undefined = feature?.get("features");
+  if (!members) {
+    onFeatureSelect(feature);
+    return;
+  }
+  // OpenLayers creates transient cluster wrappers, so remove them from Select's
+  // overlay before either navigating to the issue or fitting the cluster.
+  event.target.getFeatures().clear();
+  if (members.length > 1) focusCluster(members);
+  else onFeatureSelect(members[0]);
+}
 
 // On mobile, hide controls as the bottom sheet leaves less room for the map.
 const isMapVerySmall = computed(() => {
@@ -152,8 +173,15 @@ const isMapSmall = computed(() => {
 // Use the same styling for the issue layer and the selection overlay.
 // Read the current selection and zoom each time OpenLayers calls this function.
 function style(feature: Feature) {
-  const issue = selectedIssues.value.find((issue) => issue.id === feature.get("id"));
-  return getIssueMapStyle(feature, issue, issue?.id === selectedId.value, zoom.value);
+  const members: Feature[] | undefined = feature.get("features");
+  if (members && members.length > 1) {
+    const color: string = members[0]?.get("legend")?.color || "#2196F3";
+    return getClusterMapStyle(members.length, color);
+  }
+  // A one-feature cluster keeps its original icon and selection styling.
+  const original = members?.[0] ?? feature;
+  const issue = selectedIssues.value.find((issue) => issue.id === original.get("id"));
+  return getIssueMapStyle(original, issue, issue?.id === selectedId.value, zoom.value);
 }
 
 // Parents can request a refit or change the background through this ref.

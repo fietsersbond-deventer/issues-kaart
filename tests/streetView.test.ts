@@ -70,6 +70,19 @@ describe("parseStreetViewUrl", () => {
       "https://www.google.com/maps/@52.1,6.05,10a,75y,49h,90t/data=!3m1!1e1";
     expect(() => parseStreetViewUrl(url)).toThrow(/foto-id/);
   });
+
+  it("extracts params from a Street View URL with negative zoom (areas below NAP)", () => {
+    // Real example from NAP area (Amstelveen): https://maps.app.goo.gl/vFB6mGXeeYG2tm3K8
+    const napUrl =
+      "https://www.google.nl/maps/search/Kostverlorenhof,+Amstelveen/@52.3147909,4.8758622,-1a,75y,94.46h,90t/data=!3m7!1e1!3m5!1sFgSAKb5Onb9AooQcSxfELQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.clients6.google.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D0%26panoid%3DFgSAKb5Onb9AooQcSxfELQ%26yaw%3D94.45926452528373!7i16384!8i8192";
+    const result = parseStreetViewUrl(napUrl);
+    expect(result.lat).toBeCloseTo(52.3147909, 6);
+    expect(result.lng).toBeCloseTo(4.8758622, 6);
+    expect(result.heading).toBeCloseTo(94.46, 2);
+    expect(result.pitch).toBe(0);
+    expect(result.fov).toBe(75);
+    expect(result.panoId).toBe("FgSAKb5Onb9AooQcSxfELQ");
+  });
 });
 
 describe("buildStreetViewThumbnailUrl", () => {

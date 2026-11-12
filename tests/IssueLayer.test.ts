@@ -5,12 +5,14 @@ import { computed, nextTick, toRaw, useTemplateRef } from "vue";
 import { Collection, Feature } from "ol";
 import type VectorLayer from "ol/layer/Vector";
 import type VectorSource from "ol/source/Vector";
+import Cluster from "ol/source/Cluster";
 import { Point } from "ol/geom";
+import { fromLonLat, get as getProjection } from "ol/proj";
 import type Modify from "ol/interaction/Modify";
 import { ModifyEvent } from "ol/interaction/Modify";
 import { Style } from "ol/style";
 import { OlVectorLayer } from "vue3-openlayers/layers";
-import { OlSourceVector } from "vue3-openlayers/sources";
+import { OlSourceCluster, OlSourceVector } from "vue3-openlayers/sources";
 import { OlFeature } from "vue3-openlayers/map";
 import { OlGeomPoint, OlGeomLineString, OlGeomPolygon } from "vue3-openlayers/geometries";
 import { OlInteractionModify } from "vue3-openlayers/interactions";
@@ -45,7 +47,7 @@ function mountLayer(modifyEnabled = false) {
     global: {
       provide: { map },
       components: {
-        "ol-vector-layer": OlVectorLayer, "ol-source-vector": OlSourceVector, "ol-feature": OlFeature,
+        "ol-vector-layer": OlVectorLayer, "ol-source-vector": OlSourceVector, "ol-source-cluster": OlSourceCluster, "ol-feature": OlFeature,
         "ol-geom-point": OlGeomPoint, "ol-geom-line-string": OlGeomLineString, "ol-geom-polygon": OlGeomPolygon,
         "ol-interaction-modify": OlInteractionModify,
       },
@@ -96,4 +98,91 @@ describe("IssueLayer met echte OpenLayers-componenten", () => {
     await wrapper.setProps({ modifyEnabled: false });
     expect(map.removeInteraction).toHaveBeenCalledWith(interaction);
   });
+
+  it("clustert alleen punten per categorie en herstelt de gewone laag bij zoom of bewerken", async () => {
+    const points = [
+      issue(1, { type: "Point", coordinates: [6, 52] }),
+      issue(4, { type: "Point", coordinates: [6, 52] }),
+      { ...issue(5, { type: "Point", coordinates: [6, 52] }), legend_id: 2 },
+      issues[1]!,
+      issues[2]!,
+    ];
+    wrapper = mount(IssueLayer, {
+      props: { issues: points, selectedFeatures, featureStyle, modifyEnabled: false, clusterEnabled: true, zoom: 17, editing: false },
+      global: {
+        provide: { map },
+        components: {
+          "ol-vector-layer": OlVectorLayer, "ol-source-vector": OlSourceVector, "ol-source-cluster": OlSourceCluster, "ol-feature": OlFeature,
+          "ol-geom-point": OlGeomPoint, "ol-geom-line-string": OlGeomLineString, "ol-geom-polygon": OlGeomPolygon,
+          "ol-interaction-modify": OlInteractionModify,
+        },
+      },
+    });
+    await settle();
+    const layers = map.addLayer.mock.calls.map(([added]) => added);
+    const original = layers.find(added => !(added.getSource() instanceof Cluster))!;
+    const clusterLayers = layers.filter(added => added.getSource() instanceof Cluster);
+    expect(clusterLayers).toHaveLength(2);
+    const clusterSources = clusterLayers.map(added => added.getSource() as Cluster);
+    for (const cluster of clusterSources) {
+      expect(cluster.getDistance()).toBe(20);
+      expect(cluster.getMinDistance()).toBe(0);
+      cluster.loadFeatures([-1e8, -1e8, 1e8, 1e8], 1, getProjection("EPSG:3857")!);
+    }
+    expect(clusterSources.map(cluster => (cluster.getFeatures()[0]!.get("features") as Feature[]).length).sort())
+      .toEqual([1, 2]);
+    const clusteredFeature = clusterSources[0]!.getFeatures()[0]!;
+    featureStyle.mockClear();
+    expect(clusterLayers[0]!.getStyleFunction()!(clusteredFeature, 1)).toBeInstanceOf(Style);
+    expect(featureStyle).toHaveBeenCalledWith(clusteredFeature);
+    const originalSource = original.getSource() as VectorSource;
+    const changeCluster = vi.fn();
+    const changeClusters = vi.fn();
+    clusterSources[0]!.on("change", changeClusters);
+    clusterSources[0]!.getSource()!.on("changefeature", changeCluster);
+    await wrapper.setProps({ zoom: 17.1 });
+    await settle();
+    expect(changeCluster.mock.calls.length).toBe(0);
+    expect(changeClusters).not.toHaveBeenCalled();
+    const point = originalSource.getFeatures().find(feature => feature.get("id") === 1)!;
+    const line = originalSource.getFeatures().find(feature => feature.getGeometry()?.getType() === "LineString")!;
+    expect(original.getStyleFunction()!(point, 1)).toBeUndefined();
+    expect(original.getStyleFunction()!(line, 1)).toBeInstanceOf(Style);
+
+    const changedPoint = issue(1, { type: "Point", coordinates: [6.01, 52] });
+    changedPoint.title = "Gewijzigd";
+    await wrapper.setProps({ issues: [changedPoint, ...points.slice(1)] });
+    await settle();
+    const updated = clusterSources[0]!.getSource()!.getFeatures().find(feature => feature.get("id") === 1)!;
+    expect(updated.get("title")).toBe("Gewijzigd");
+    expect(updated.getGeometry()!.getExtent()[0]).toBeCloseTo(fromLonLat([6.01, 52])[0]!, 5);
+    expect(changeClusters).toHaveBeenCalled();
+    expect(clusterSources[0]!.getFeatures()).toHaveLength(2);
+
+    await wrapper.setProps({ issues: [points[0]!, points[2]!, points[3]!, points[4]!] });
+    await settle();
+    expect(clusterSources[0]!.getSource()!.getFeatures()).toHaveLength(1);
+    await wrapper.setProps({ issues: [points[0]!, points[3]!, points[4]!] });
+    await settle();
+    expect(clusterSources[1]!.getSource()).toBeNull();
+    expect(map.removeLayer).toHaveBeenCalledTimes(1);
+    await wrapper.setProps({ issues: points });
+    await settle();
+
+    await wrapper.setProps({ zoom: 18 });
+    await settle();
+    expect(map.removeLayer).toHaveBeenCalledTimes(3);
+    expect(original.getStyleFunction()!(point, 1)).toBeInstanceOf(Style);
+    await wrapper.setProps({ zoom: 17, editing: true });
+    await settle();
+    expect(original.getStyleFunction()!(point, 1)).toBeInstanceOf(Style);
+    await wrapper.setProps({ editing: false });
+    await settle();
+    expect(map.addLayer).toHaveBeenCalledTimes(6);
+    await wrapper.setProps({ clusterEnabled: false });
+    await settle();
+    expect(map.removeLayer).toHaveBeenCalledTimes(5);
+    expect(original.getStyleFunction()!(point, 1)).toBeInstanceOf(Style);
+  });
+
 });

@@ -1,6 +1,9 @@
+import type { LegendRow } from "~~/shared/types/LegendRow";
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
+import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionOptions";
+import { toLegendType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -22,7 +25,7 @@ export default defineEventHandler(async (event) => {
   );
   const result = insertStmt.run(
     name,
-    description || null,
+    description?.trim() ? sanitizeDescriptionHtml(description) : null,
     color,
     icon || null,
     icon_data_url || null
@@ -37,5 +40,5 @@ export default defineEventHandler(async (event) => {
       message: "Failed to fetch created legend item",
     });
   }
-  return row as unknown as Legend;
+  return toLegendType(row as unknown as LegendRow);
 });

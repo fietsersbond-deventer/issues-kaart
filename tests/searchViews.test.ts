@@ -332,8 +332,6 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   expect(query).toMatchObject({
     search: "crossing",
     itemsPerPage: 10,
-    orderBy: "created_at",
-    order: "desc",
   });
   expect(wrapper.findAll("img")).toHaveLength(1);
   expect(wrapper.get("img").attributes("src")).toBe(

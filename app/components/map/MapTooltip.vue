@@ -1,134 +1,41 @@
 <template>
-  <div>
-    <ol-overlay
-      v-if="tooltipContent && !isInteracting"
-      :position="tooltipPosition"
-      positioning="bottom-center"
-    >
-      <div class="tooltip">
-        <img v-if="tooltipImage" :src="tooltipImage" class="tooltip-img" />
-        <span class="tooltip-title">{{ tooltipContent }}</span>
-        <Tag v-for="tag in selectedTags" :key="tag.tag" :tag="tag" class="mt-2" />
-        <Tag v-if="overflowTagsCount > 0" :tag="overflowTag" class="mt-2" />
-      </div>
-    </ol-overlay>
+  <div class="tooltip">
+    <img v-if="image" :src="image" class="tooltip-img" />
+    <span class="tooltip-title">{{ title }}</span>
+    <Tag v-for="tag in visibleTags" :key="tag.tag" :tag="tag" class="mt-2" />
+    <Tag v-if="overflowCount > 0" :tag="overflowTag" class="mt-2" />
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import type { Feature } from "ol";
-import type MapBrowserEvent from "ol/MapBrowserEvent";
-import type { LineString, Point, Polygon } from "ol/geom";
-import type OlMap from "ol/Map";
+import type { Tag } from "~~/shared/types/Tag";
 import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
-const { isDrawing } = defineProps<{
-  isDrawing: boolean;
-}>();
-
-const map: OlMap | undefined = inject("map");
-
-const tooltipContent = ref<string | null>(null);
-const tooltipImage = ref<string | null>(null);
-const tooltipPosition = ref<number[]>([0, 0]);
-const tags = ref<Tag[]>([]);
-const { isEditing } = useIsEditing();
-const isInteracting = computed(() => isDrawing || isEditing.value);
-
-function clearTooltip() {
-  tooltipContent.value = null;
-  tooltipImage.value = null;
-  tags.value = [];
-  const target = map?.getTargetElement();
-  if (target) target.style.cursor = "";
-}
-
-watch(isInteracting, (active) => {
-  if (active) clearTooltip();
-});
-
+const props = defineProps<{ feature: Feature }>();
 const { getTag } = useTagsApi();
-
-function slugsToTags(slugs: string[]) {
-  tags.value = [];
-  for (const slug of slugs) {
+const properties = computed(() => props.feature.getProperties());
+const title = computed(() => properties.value.title || "Geen titel");
+const image = computed(() => properties.value.imageUrl ? thumbnailUrl(properties.value.imageUrl) : null);
+const tags = computed<Tag[]>(() => {
+  const result: Tag[] = [];
+  for (const slug of properties.value.tags) {
     const tag = getTag(slug);
-    if (tag) {
-      tags.value.push(tag);
-    }
+    if (tag) result.push(tag);
   }
-}
-
-const tagsCount = computed(() => tags.value.length);
-
-// selecteer 2 of 3 tags
-// 3 als er maar 3 zijn, om te voorkomen dat er een tag +1 komt te staan,
-// waar net zo goed de tag zelf zou kunnen staan
-const selectedTags = computed(() => {
-  const maxTags = tagsCount.value === 3 ? 3 : 2;
-  return tags.value.slice(0, maxTags);
+  return result;
 });
 
-// count the number of tags that have not been selected
-const overflowTagsCount = computed(() => {
-  return Math.max(tags.value.length - selectedTags.value.length, 0);
-});
-
-const overflowTag = computed(() => {
-  const tag: Tag = {
-    id: -1,
-    tag: "",
-    label: `+ ${overflowTagsCount.value}`,
-    description: null,
-    icon: null,
-  };
-  return tag;
-});
-
-let pointerListener: ((evt: MapBrowserEvent) => void) | null = null;
-
-onMounted(() => {
-  if (!map) return;
-  pointerListener = (evt: MapBrowserEvent) => {
-    // Don't show tooltip when drawing/editing
-    if (isInteracting.value) {
-      clearTooltip();
-      return;
-    }
-
-    const pixel = evt.pixel;
-    const features = map.getFeaturesAtPixel(pixel, {
-      hitTolerance: 3,
-      layerFilter: (layer) => layer.getClassName() !== "area-layer",
-    });
-    if (features && features.length > 0) {
-      const feature = features[0] as Feature<Point | LineString | Polygon>;
-      const properties = feature.getProperties();
-
-      tooltipContent.value = properties.title || "Geen titel";
-      tooltipImage.value = properties.imageUrl ? thumbnailUrl(properties.imageUrl) : null;
-      slugsToTags(properties.tags);
-
-      const target = map.getTargetElement();
-      if (target) target.style.cursor = "pointer";
-      // Always position above pointer
-      if (typeof pixel[0] === "number" && typeof pixel[1] === "number") {
-        const verticalOffset = 15;
-        const pointerPixel = [pixel[0], pixel[1] - verticalOffset];
-        tooltipPosition.value = map.getCoordinateFromPixel(pointerPixel);
-      }
-    } else {
-      clearTooltip();
-    }
-  };
-  map.on("pointermove", pointerListener);
-});
-
-onUnmounted(() => {
-  if (map && pointerListener) {
-    map.un("pointermove", pointerListener);
-  }
-});
+// Show all three tags instead of replacing the last one with "+ 1".
+const visibleTags = computed(() => tags.value.slice(0, tags.value.length === 3 ? 3 : 2));
+const overflowCount = computed(() => tags.value.length - visibleTags.value.length);
+const overflowTag = computed<Tag>(() => ({
+  id: -1,
+  tag: "",
+  label: `+ ${overflowCount.value}`,
+  description: null,
+  icon: null,
+}));
 </script>
 
 <style>
@@ -136,9 +43,9 @@ onUnmounted(() => {
   cursor: pointer;
   background-color: white;
   padding: 0.5rem;
-  border-radius: 0.375rem; /* rounded */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* shadow */
-  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid #d1d5db;
   white-space: normal;
   max-width: 15em;
 }

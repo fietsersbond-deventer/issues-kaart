@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Tag } from "~~/shared/types/Tag";
 import { normalizeSlug } from "~~/shared/utils/slug";
+import { toTagType } from "./typeConversions";
 
 const MAX_TAG_LENGTH = 30;
 const MAX_TAGS_PER_ISSUE = 10;
@@ -114,13 +115,7 @@ export function getTagMetadata(
 
   const metadata = new Map<string, Tag>();
   for (const row of rows) {
-    metadata.set(row.tag, {
-      id: row.id,
-      tag: row.tag,
-      label: row.label ?? row.tag,
-      description: row.description,
-      icon: row.icon,
-    });
+    metadata.set(row.tag, toTagType(row));
   }
 
   for (const tag of normalizedTags) {

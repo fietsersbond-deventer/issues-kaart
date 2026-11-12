@@ -134,8 +134,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen
-                bovenin de kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
+                kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -384,6 +384,13 @@ async function confirmDelete() {
   overflow-y: auto;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px;
+}
+
+.quill-editor-container .ql-toolbar.ql-snow {
+  position: sticky !important;
+  top: 0;
+  z-index: 1;
+  background-color: rgb(var(--v-theme-surface));
 }
 
 .quill-editor {
