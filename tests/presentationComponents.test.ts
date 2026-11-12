@@ -662,6 +662,86 @@ it("manages issue comments lifecycle, permissions, edits, deletions and live Web
     });
     await flushPromises();
     expect(wrapper.find(".comment-deleted").exists()).toBe(true);
+
+    // Cancel edit
+    const editAgainBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
+    await editAgainBtn.trigger("click");
+    expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
+    await wrapper.find(".comment-editor-stub .cancel-btn").trigger("click");
+    await flushPromises();
+
+    // Hard delete via websocket message removes item completely
+    wsSubscriber!({
+        type: "comment-deleted",
+        payload: { id: 4, issue_id: 10, deletedBy: "Charlie", deletedByUserId: 3, soft: false },
+    });
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("Live comment");
+});
+
+it("handles error states, deletion cancellation, and author initials in IssueComments", async () => {
+    const list = vi.fn().mockRejectedValueOnce(new Error("Network error")).mockResolvedValueOnce([
+        { id: 1, issue_id: 10, author_id: 1, author_name: "SingleName", body: "<p>Comment 1</p>", created_at: "2026-01-01T10:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
+        { id: 2, issue_id: 10, author_id: 2, author_name: null, body: "<p>Anonymous comment</p>", created_at: "2026-01-01T11:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
+    ]);
+    const create = vi.fn().mockRejectedValue(new Error("Create failed"));
+    const update = vi.fn().mockRejectedValue(new Error("Update failed"));
+    const remove = vi.fn().mockRejectedValue(new Error("Delete failed"));
+
+    vi.stubGlobal("useCommentsApi", () => ({ list, create, update, remove }));
+    vi.stubGlobal("useAuth", () => ({ status: ref("authenticated"), data: ref({ id: 1, name: "Admin", role: "admin" }), token: ref("Bearer token") }));
+    vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
+    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+    const confirmMock = vi.fn().mockReturnValue(false);
+    vi.stubGlobal("confirm", confirmMock);
+    vi.stubGlobal("useSharedAuthWebSocket", () => ({ subscribe: () => () => {} }));
+
+    const CommentEditorStub = defineComponent({
+        name: "CommentEditor",
+        props: ["modelValue", "submitText", "loading"],
+        emits: ["submit", "cancel", "update:modelValue"],
+        template: '<div class="comment-editor-stub"><button class="submit-btn" @click="$emit(\'submit\', modelValue)">{{ submitText }}</button></div>',
+    });
+
+    const wrapper = keep(mount(IssueComments, { props: { issueId: 10 }, global: { stubs: { ...stubs, ImageViewer: Slot, CommentEditor: CommentEditorStub } } }));
+    await flushPromises();
+    expect(wrapper.text()).toContain("Kon opmerkingen niet laden.");
+
+    // Reload comments
+    await wrapper.setProps({ issueId: 11 });
+    await flushPromises();
+    expect(wrapper.text()).toContain("SingleName");
+    expect(wrapper.text()).toContain("SI");
+    expect(wrapper.text()).toContain("?");
+
+    // Creation error handling
+    const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
+    newEditor.vm.$emit("update:modelValue", "<p>Failing comment</p>");
+    newEditor.vm.$emit("submit", "<p>Failing comment</p>");
+    await flushPromises();
+    expect(showError).toHaveBeenCalledWith("Kon opmerking niet plaatsen");
+
+    // Deletion cancelled by user confirm = false
+    const deleteBtn = wrapper.find('button[aria-label="Opmerking verwijderen"]');
+    await deleteBtn.trigger("click");
+    expect(remove).not.toHaveBeenCalled();
+
+    // Deletion error handling
+    confirmMock.mockReturnValue(true);
+    await deleteBtn.trigger("click");
+    await flushPromises();
+    expect(remove).toHaveBeenCalledWith(1);
+    expect(showError).toHaveBeenCalledWith("Kon opmerking niet verwijderen");
+
+    // Update error handling
+    const editBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
+    await editBtn.trigger("click");
+    const editEditor = wrapper.findComponent(CommentEditorStub);
+    editEditor.vm.$emit("update:modelValue", "<p>Failed edit</p>");
+    editEditor.vm.$emit("submit", "<p>Failed edit</p>");
+    await flushPromises();
+    expect(update).toHaveBeenCalledWith(1, "<p>Failed edit</p>");
+    expect(showError).toHaveBeenCalledWith("Kon opmerking niet wijzigen");
 });
 
 it("validates CommentEditor submission constraints and inserts Street View embeds", async () => {

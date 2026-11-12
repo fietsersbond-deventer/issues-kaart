@@ -504,5 +504,86 @@ describe("issue persistence contracts with the migrated schema", () => {
             h.input.params.id = String(comment.id);
             await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 404 });
         });
+
+        it("supports hard deletion when requested by admin", async () => {
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Hard delete target" };
+            const comment = await commentRoutes.create(h.event);
+
+            emitted.mockClear();
+            h.input.params.id = String(comment.id);
+            h.input.query = { hard: "true" };
+            const result = await commentRoutes.remove(h.event);
+            expect(result).toEqual({ id: comment.id, deleted: true, soft: false });
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: comment.id,
+                    issue_id: issue.id,
+                    soft: false,
+                }),
+            );
+            expect(db.prepare("SELECT COUNT(*) AS count FROM comments WHERE id = ?").get(comment.id)).toEqual({ count: 0 });
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 404 });
+        });
+
+        it("validates IDs and returns 400 for invalid IDs or 404 for non-existent entities", async () => {
+            h.input.params.id = "invalid-nan";
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.remove(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.list(h.event)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(commentRoutes.create(h.event)).rejects.toMatchObject({ statusCode: 400 });
+
+            h.input.params.id = "999999";
+            h.input.body = { body: "Valid body" };
+            await expect(commentRoutes.get(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.update(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.remove(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.list(h.event)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(commentRoutes.create(h.event)).rejects.toMatchObject({ statusCode: 404 });
+        });
+
+        it("falls back to username for author and events when name is missing", async () => {
+            const issue = await create();
+            h.event.context.user = { id: 1, username: "admin@example.test", role: "admin" };
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Created by nameless" };
+            emitted.mockClear();
+
+            const comment = await commentRoutes.create(h.event);
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({ createdBy: "admin@example.test" }),
+            );
+
+            h.input.params.id = String(comment.id);
+            h.input.body = { body: "Updated by nameless" };
+            await commentRoutes.update(h.event);
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({ modifiedBy: "admin@example.test" }),
+            );
+
+            await commentRoutes.remove(h.event);
+            expect(emitted).toHaveBeenCalledWith(
+                expect.objectContaining({ deletedBy: "admin@example.test" }),
+            );
+        });
+
+        it("supports getCommentsForIssue with includeDeleted: false option", async () => {
+            const { getCommentsForIssue } = await import("../server/utils/comments");
+            const issue = await create();
+            h.input.params.id = String(issue.id);
+            h.input.body = { body: "Comment 1" };
+            const comment1 = await commentRoutes.create(h.event);
+            h.input.body = { body: "Comment 2" };
+            const comment2 = await commentRoutes.create(h.event);
+
+            h.input.params.id = String(comment1.id);
+            await commentRoutes.remove(h.event);
+
+            const activeOnly = getCommentsForIssue(db, issue.id, { includeDeleted: false });
+            expect(activeOnly).toHaveLength(1);
+            expect(activeOnly[0].id).toBe(comment2.id);
+        });
     });
 });
