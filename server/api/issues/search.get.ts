@@ -57,20 +57,10 @@ export default defineEventHandler(async (event) => {
     legend_id: "i.legend_id",
     legend: "l.name",
     created_at: "i.created_at",
+    updated_at: "i.updated_at",
   };
-  const requestedOrderBy = getStringParam("orderBy", "created_at");
-  const orderBy = orderFields[requestedOrderBy];
-  if (!orderBy) {
-    throw createError({
-      statusCode: 400,
-      message: "Invalid orderBy parameter",
-    });
-  }
-
-  const requestedOrder = getStringParam("order", "asc").toLowerCase();
-  if (requestedOrder !== "asc" && requestedOrder !== "desc") {
-    throw createError({ statusCode: 400, message: "Invalid order parameter" });
-  }
+  const orderBy = `COALESCE(${orderFields.updated_at}, ${orderFields.created_at})`;
+  const requestedOrder = "desc";
 
   const page = parseBoundedInteger("page", 1, 10_000);
   const itemsPerPage = parseBoundedInteger("itemsPerPage", 10, 100);
@@ -111,7 +101,7 @@ export default defineEventHandler(async (event) => {
     .get(...likeParams) as { total: number };
 
   const offset = (page - 1) * itemsPerPage;
-  const sqlStatement = `SELECT i.id, i.slug, i.title, i.description, i.plain_text, i.legend_id, i.created_at,
+  const sqlStatement = `SELECT i.id, i.slug, i.title, i.description, i.plain_text, i.legend_id, i.created_at, i.updated_at,
       l.name AS legend_name
      FROM issues i
      LEFT JOIN legend l ON l.id = i.legend_id

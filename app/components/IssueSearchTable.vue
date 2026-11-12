@@ -17,7 +17,6 @@
     <v-card-text>
       <v-data-table-server
         v-model:page="page"
-        v-model:sort-by="sortBy"
         v-model:items-per-page="itemsPerPage"
         :headers="headers"
         :items="items"
@@ -110,10 +109,7 @@
                 {{ item.isLockedByOther }}
               </v-tooltip>
             </v-btn>
-            <span
-              v-if="!item.canEdit"
-              aria-hidden="true"
-            />
+            <span v-if="!item.canEdit" aria-hidden="true" />
             <template v-else>
               <v-btn
                 icon="mdi-pencil"
@@ -154,7 +150,6 @@ import type { IssueSearchItem } from "~/types/IssueSearch";
 import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
 type IssueSearchRow = IssueSearchItem & IssueEditAvailability;
-type SortItem = { key: string; order: "asc" | "desc" };
 
 defineProps<{
   items: IssueSearchRow[];
@@ -170,7 +165,6 @@ const emit = defineEmits<{
 }>();
 
 const page = defineModel<number>("page", { required: true });
-const sortBy = defineModel<SortItem[]>("sortBy", { required: true });
 const itemsPerPage = defineModel<number>("itemsPerPage", { required: true });
 const search = defineModel<string>("search", { required: true });
 const { status } = useAuth();
@@ -179,7 +173,7 @@ const isPrinting = useMediaQuery("print");
 const headers = computed(() => {
   const columns = [
     { title: "", value: "imageUrl", sortable: false, minWidth: 150 },
-    { title: "", value: "title", sortable: true },
+    { title: "", value: "title", sortable: false },
     { title: "", value: "legend", sortable: false, width: "20em" },
   ];
   if (status.value === "authenticated") {

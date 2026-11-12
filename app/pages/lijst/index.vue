@@ -2,7 +2,6 @@
   <div>
     <IssueSearchTable
       v-model:page="state.page"
-      v-model:sort-by="state.sortBy"
       v-model:items-per-page="state.itemsPerPage"
       v-model:search="state.search"
       :items="issues"
@@ -60,10 +59,6 @@ const state = useState("issues-state", () => ({
   search: "",
   page: 1,
   itemsPerPage: 10,
-  sortBy: [{ key: "created_at", order: "desc" }] as {
-    key: string;
-    order: "asc" | "desc";
-  }[],
 }));
 
 type SearchResponse = {
@@ -190,8 +185,6 @@ const debouncedSearch = refDebounced(
 const query = computed(() => ({
   page: state.value.page,
   itemsPerPage: state.value.itemsPerPage,
-  orderBy: state.value.sortBy[0]?.key ?? "created_at",
-  order: state.value.sortBy[0]?.order ?? "desc",
   search: debouncedSearch.value,
 }));
 const filters = computed(() =>

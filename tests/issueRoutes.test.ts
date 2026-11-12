@@ -289,7 +289,7 @@ describe("issue persistence contracts with the migrated schema", () => {
     it("searches title, plain text, category and tag metadata, with pagination and snippets", async () => {
         await create();
         await create("Parking");
-        h.input.query = { search: '"safe crossing"', orderBy: "id", order: "DESC", itemsPerPage: "1", page: "2" };
+        h.input.query = { search: '"safe crossing"', itemsPerPage: "1", page: "1" };
         const result = await routes.search(h.event);
         expect(result.total).toBe(2);
         expect(result.items).toEqual([expect.objectContaining({ id: 1, slug: "safe-cycle-route", tags: ["bike", "cafe"], snippets: expect.any(Array), imageUrl: `/api/issues/1/image?v=${imageVersion}` })]);
@@ -302,7 +302,7 @@ describe("issue persistence contracts with the migrated schema", () => {
         h.input.query = {};
         expect((await routes.search(h.event)).total).toBe(2);
     });
-    it.each([{ orderBy: "title; DROP TABLE issues" }, { order: "sideways" }, { page: "0" }, { page: "10001" }, { page: "9007199254740993" }, { page: "1.5" }, { itemsPerPage: "101" }, { search: "x".repeat(201) }, { search: ["x"] }])("rejects invalid search options %j", async (query) => {
+    it.each([{ page: "0" }, { page: "10001" }, { page: "9007199254740993" }, { page: "1.5" }, { itemsPerPage: "101" }, { search: "x".repeat(201) }, { search: ["x"] }])("rejects invalid search options %j", async (query) => {
         h.input.query = query;
         await expect(routes.search(h.event)).rejects.toMatchObject({ statusCode: 400 });
     });
