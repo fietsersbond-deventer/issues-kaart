@@ -1,7 +1,7 @@
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
-import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionHtml";
+import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionOptions";
 import { toLegendType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler(async (event) => {

@@ -1,5 +1,5 @@
 import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
-import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionHtml";
+import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionOptions";
 
 /**
  * Converts a database legend row to a Legend object with SanitizedHTML description.

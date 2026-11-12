@@ -15,7 +15,17 @@
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
-import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionHtml";
+import {
+  type SanitizeDescriptionOptions,
+  sanitizeDescriptionOptions,
+} from "~~/shared/utils/sanitizeDescriptionOptions";
+import sanitizeHtmlLib from "sanitize-html";
+
+interface Props {
+  sanitizeOptions?: Partial<SanitizeDescriptionOptions>;
+}
+
+const { sanitizeOptions: customOptions = {} } = defineProps<Props>();
 
 const modelValue = defineModel<SanitizedHTML>({ required: true });
 
@@ -30,13 +40,21 @@ watch(
 );
 
 function onBlur() {
-  const sanitized = sanitizeDescriptionHtml(localContent.value);
+  const options = sanitizeDescriptionOptions(customOptions);
+  const sanitized = sanitizeHtmlLib(
+    localContent.value,
+    options,
+  ) as SanitizedHTML;
   modelValue.value = sanitized;
 }
 
 // Expose method for parent to trigger sanitization
 function sanitize() {
-  const sanitized = sanitizeDescriptionHtml(localContent.value);
+  const options = sanitizeDescriptionOptions(customOptions);
+  const sanitized = sanitizeHtmlLib(
+    localContent.value,
+    options,
+  ) as SanitizedHTML;
   modelValue.value = sanitized;
 }
 

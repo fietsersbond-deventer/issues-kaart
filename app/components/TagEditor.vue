@@ -52,6 +52,7 @@
               <RichTextEditor
                 ref="richTextEditorRef"
                 v-model="form.description"
+                :sanitize-options="sanitizeOptions"
               />
             </v-col>
 
@@ -81,6 +82,7 @@
 <script setup lang="ts">
 import type { Tag } from "~~/shared/types/Tag";
 import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
+import { sanitizeDescriptionOptions } from "~~/shared/utils/sanitizeDescriptionOptions";
 import type RichTextEditor from "./RichTextEditor.vue";
 
 type TagForm = {
@@ -91,6 +93,8 @@ type TagForm = {
 };
 
 const { create, update } = useTagsApi();
+
+const sanitizeOptions = sanitizeDescriptionOptions();
 
 // Dialog state
 const isDialogOpen = defineModel("open", { type: Boolean, default: false });

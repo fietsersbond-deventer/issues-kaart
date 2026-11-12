@@ -21,7 +21,11 @@
               </v-col>
               <v-col cols="6">
                 <div class="text-subtitle-2 mb-2">Omschrijving</div>
-                <RichTextEditor ref="richTextEditorRef" v-model="editedItem.description" />
+                <RichTextEditor 
+                  ref="richTextEditorRef" 
+                  v-model="editedItem.description"
+                  :sanitize-options="sanitizeOptions"
+                />
               </v-col>
               <v-col cols="4">
                 <h4 class="mb-3">Kleur</h4>
@@ -86,6 +90,7 @@
 import type { Legend } from "~~/shared/types/Legend";
 import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
 import RichTextEditor from "~/components/RichTextEditor.vue";
+import { sanitizeDescriptionOptions } from "~~/shared/utils/sanitizeDescriptionOptions";
 import {
   createIconCanvasDataUrl,
   createFallbackIconDataUrl,
@@ -93,6 +98,7 @@ import {
 import { useSnackbar } from "~/composables/useSnackbar";
 
 const modelValue = defineModel<boolean>("modelValue");
+const sanitizeOptions = sanitizeDescriptionOptions();
 const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
 const colorSwatches = [
   "#FFD503",
