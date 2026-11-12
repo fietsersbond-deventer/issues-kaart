@@ -14,7 +14,11 @@
           <LegendIndicator :key="item.id" :legend="item" :size="24" />
         </td>
         <td>{{ item.name }}</td>
-        <td>{{ item.description }}</td>
+        <td>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div v-if="item.description" class="description-preview" v-html="item.description" />
+          <span v-else class="text-medium-emphasis">Geen omschrijving</span>
+        </td>
         <td>
           <v-btn icon variant="text" size="small" @click="emit('edit', item)">
             <v-icon>mdi-pencil</v-icon>
@@ -76,5 +80,25 @@ function getUsageText(item: Legend) {
 
 .disabled {
   opacity: 0.26;
+}
+
+.description-preview {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
+}
+
+.description-preview h2,
+.description-preview h3,
+.description-preview h4,
+.description-preview b,
+.description-preview i,
+.description-preview strong,
+.description-preview em {
+  display: inline;
 }
 </style>

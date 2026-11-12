@@ -11,7 +11,7 @@ import type { Legend } from "../server/database/schema";
 const canvas = vi.hoisted(() => ({ createIconCanvasDataUrl: vi.fn(), createFallbackIconDataUrl: vi.fn() }));
 vi.mock("../app/utils/iconCanvas", () => canvas);
 const Tooltip = defineComponent({ props: ["text"], template: '<span :data-tooltip="text"><slot name="activator" :props="{}" /><slot /></span>' });
-const stubs = { ...uiStubs, VTable: Slot, VTooltip: Tooltip, VIcon: Slot, VList: Slot, VListItem: Slot, VListItemTitle: Slot, VChip: Slot, VColorPicker: Field, IconSelector: Field, LegendIndicator: true };
+const stubs = { ...uiStubs, VTable: Slot, VTooltip: Tooltip, VIcon: Slot, VList: Slot, VListItem: Slot, VListItemTitle: Slot, VChip: Slot, VColorPicker: Field, IconSelector: Field, LegendIndicator: true, RichTextEditor: { template: '<input type="text" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />', props: ["modelValue"], emits: ["update:modelValue"], methods: { sanitize: () => {} } } };
 const legend = { id: 1, name: "Routes", description: "Safe routes", color: "#123456", icon: "mdi-bike" } as Legend;
 const usage = { 1: { usage_count: 1, used_by_issues: [{ id: 4, title: "Crossing" }] } };
 const wrappers: Array<{

@@ -1,5 +1,6 @@
+import type { LegendRow } from "~~/shared/types/LegendRow";
 import { getDb } from "~~/server/utils/db";
-import type { Legend } from "~~/server/database/schema";
+import { toLegendType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const db = getDb();
   const row = db
     .prepare(
-      "SELECT id, name, description, color, icon, icon_data_url, created_at FROM legend WHERE id = ?"
+      "SELECT id, name, description, color, icon, icon_data_url, created_at FROM legend WHERE id = ?",
     )
     .get(id);
 
@@ -25,5 +26,5 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return row as unknown as Legend;
+  return toLegendType(row as unknown as LegendRow);
 });
