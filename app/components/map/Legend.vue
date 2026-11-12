@@ -21,11 +21,11 @@
           {{ item.name }}
         </td>
         <td>
-          <v-tooltip
-            v-if="item.description"
-            :text="item.description"
-            location="top"
-          >
+          <v-tooltip v-if="item.description" location="top" max-width="40em">
+            <template #default>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <div v-html="item.description" class="tooltip-content" />
+            </template>
             <template #activator="{ props }">
               <v-icon
                 v-bind="props"
@@ -65,11 +65,11 @@
           />
         </td>
         <td>
-          <v-tooltip
-            v-if="tag.description"
-            :text="tag.description"
-            location="top"
-          >
+          <v-tooltip v-if="tag.description" location="top" max-width="40em">
+            <template #default>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <div v-html="tag.description" class="tooltip-content" />
+            </template>
             <template #activator="{ props }">
               <v-icon
                 v-bind="props"
@@ -225,6 +225,31 @@ const countIssues = computed(() => {
   height: 16px;
   border-radius: 2px;
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-content {
+  line-height: 1.5;
+}
+
+.tooltip-content h2,
+.tooltip-content h3,
+.tooltip-content h4 {
+  margin: 0.5em 0 0.25em 0;
+  font-size: inherit;
+}
+
+.tooltip-content p {
+  margin: 0.5em 0;
+}
+
+.tooltip-content ul,
+.tooltip-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.tooltip-content li {
+  margin: 0.25em 0;
 }
 
 .legend-icon-image {

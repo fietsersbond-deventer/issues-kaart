@@ -1,3 +1,5 @@
+import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
+
 export type User = {
   id: number;
   username: string;
@@ -18,7 +20,7 @@ export type RefreshToken = {
 export type Legend = {
   id: number;
   name: string;
-  description: string;
+  description: SanitizedHTML;
   color: string;
   created_at: Date;
   usage_count: number;
@@ -55,7 +57,7 @@ export type TagSchema = {
   id: number;
   tag: string;
   label: string | null;
-  description: string | null;
+  description: SanitizedHTML | null;
   icon: string | null;
   created_at: Date;
 };

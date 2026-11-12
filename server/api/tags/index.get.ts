@@ -1,5 +1,6 @@
 import { getDb } from "~~/server/utils/db";
 import { normalizeTag } from "~~/server/utils/issueTags";
+import { toTagType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler((event) => {
   const db = getDb();
@@ -23,11 +24,13 @@ export default defineEventHandler((event) => {
         )
         .all();
 
-  return rows.map((row) => ({
-    id: Number(row.id),
-    tag: String(row.tag),
-    label: row.label ?? String(row.tag),
-    description: row.description ?? null,
-    icon: row.icon ?? null,
-  }));
+  return (rows as any[]).map((row) =>
+    toTagType({
+      id: Number(row.id),
+      tag: String(row.tag),
+      label: row.label ?? String(row.tag),
+      description: row.description ?? null,
+      icon: row.icon ?? null,
+    })
+  );
 });

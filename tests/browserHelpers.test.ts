@@ -7,7 +7,7 @@ import { getAllMdiIcons, getIconsByTag, getTagOptions, getTransportIcons, search
 import { filterAvailableIcons, isMdiIconAvailable } from "../app/utils/validateMdiIcons";
 import { requiredRule } from "../app/utils/requiredRule";
 import { getMatch, getMatches } from "../app/utils/getMatch";
-import { getPlainText } from "../server/utils/getPlainText";
+import { getPlainText } from "~~/shared/utils/getPlainText";
 import { isExistingIssue, isNewIssue } from "../shared/types/Issue";
 import { createWebSocketMessage, isIssueMessage, isLockMessage, isMessageOfType, isOnlineUserMessage } from "../shared/types/WebSocketMessages";
 let scope: ReturnType<typeof effectScope>;

@@ -5,7 +5,7 @@ import type { H3Event } from "h3";
 import { createError } from "h3";
 import { vi } from "vitest";
 import { requireAdminSession, requireUserSession } from "../../server/utils/requireUserSession";
-import { getPlainText } from "../../server/utils/getPlainText";
+import { getPlainText } from "~~/shared/utils/getPlainText";
 /** A fresh real schema, without contributor data or external services. */
 export async function migratedDatabase() {
     const db = new DatabaseSync(":memory:");

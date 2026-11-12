@@ -36,7 +36,11 @@
             <v-col cols="12">
               <div class="text-subtitle-2 mb-2">Icoon</div>
               <div class="d-flex align-center ga-2">
-                <AppIcon :icon="form.icon || 'mdi-tag-outline'" size="24" color="grey" />
+                <AppIcon
+                  :icon="form.icon || 'mdi-tag-outline'"
+                  size="24"
+                  color="grey"
+                />
                 <span class="text-caption text-medium-emphasis">
                   {{ form.icon || "Geen icoon" }}
                 </span>
@@ -44,11 +48,10 @@
             </v-col>
 
             <v-col cols="12">
-              <v-textarea
+              <div class="text-subtitle-2 mb-2">Omschrijving</div>
+              <RichTextEditor
+                ref="richTextEditorRef"
                 v-model="form.description"
-                label="Omschrijving"
-                rows="3"
-                auto-grow
               />
             </v-col>
 
@@ -61,7 +64,12 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn color="primary" :loading="saving" :disabled="!valid" @click="handleSave">
+        <v-btn
+          color="primary"
+          :loading="saving"
+          :disabled="!valid"
+          @click="handleSave"
+        >
           Opslaan
         </v-btn>
         <v-btn variant="text" @click="handleCancel">Annuleren</v-btn>
@@ -72,11 +80,13 @@
 
 <script setup lang="ts">
 import type { Tag } from "~~/shared/types/Tag";
+import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
+import type RichTextEditor from "./RichTextEditor.vue";
 
 type TagForm = {
   tag: string;
   label: string;
-  description: string;
+  description: SanitizedHTML;
   icon?: string;
 };
 
@@ -89,11 +99,12 @@ const isDialogOpen = defineModel("open", { type: Boolean, default: false });
 const form = ref<TagForm>({
   tag: "",
   label: "",
-  description: "",
+  description: "" as SanitizedHTML,
   icon: undefined,
 });
 const valid = ref(false);
 const saving = ref(false);
+const richTextEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
 
 // Edit state
 const isEditing = ref(false);
@@ -104,14 +115,19 @@ watch(
   () => form.value.label,
   (label) => {
     form.value.tag = normalizeSlug(label);
-  }
+  },
 );
 
 // Public methods for parent component
 function openCreateDialog() {
   isEditing.value = false;
   editingTagId.value = null;
-  form.value = { tag: "", label: "", description: "", icon: undefined };
+  form.value = {
+    tag: "",
+    label: "",
+    description: "" as SanitizedHTML,
+    icon: undefined,
+  };
   isDialogOpen.value = true;
 }
 
@@ -121,7 +137,7 @@ function openEditDialog(tag: Tag) {
   form.value = {
     tag: tag.tag,
     label: tag.label ?? tag.tag,
-    description: tag.description ?? "",
+    description: tag.description ?? ("" as SanitizedHTML),
     icon: tag.icon ?? undefined,
   };
   isDialogOpen.value = true;
@@ -129,6 +145,11 @@ function openEditDialog(tag: Tag) {
 
 // Event handlers
 async function handleSave() {
+  // Sanitize the description before saving
+  if (richTextEditorRef.value) {
+    richTextEditorRef.value.sanitize();
+  }
+
   const tagValue = normalizeSlug(form.value.tag || "");
   if (!tagValue) return;
 
@@ -160,7 +181,12 @@ async function handleSave() {
 
 function handleCancel() {
   isDialogOpen.value = false;
-  form.value = { tag: "", label: "", description: "", icon: undefined };
+  form.value = {
+    tag: "",
+    label: "",
+    description: "" as SanitizedHTML,
+    icon: undefined,
+  };
   editingTagId.value = null;
   isEditing.value = false;
 }

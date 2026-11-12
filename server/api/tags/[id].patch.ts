@@ -1,6 +1,8 @@
 import { getDb } from "~~/server/utils/db";
 import { normalizeTag } from "~~/server/utils/issueTags";
 import { requireUserSession } from "~~/server/utils/requireUserSession";
+import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionHtml";
+import { toTagType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -40,7 +42,11 @@ export default defineEventHandler(async (event) => {
   const cleanDescription =
     body.description === undefined
       ? existingTag.description
-      : body.description?.trim() || null;
+      : body.description === null
+        ? null
+        : body.description.trim()
+          ? sanitizeDescriptionHtml(body.description.trim())
+          : null;
   const cleanIcon =
     body.icon === undefined ? existingTag.icon : body.icon?.trim() || null;
 
@@ -90,11 +96,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return {
+  return toTagType({
     id: row.id,
     tag: row.tag,
     label: row.label ?? row.tag,
     description: row.description ?? null,
     icon: row.icon ?? null,
-  };
+  });
 });

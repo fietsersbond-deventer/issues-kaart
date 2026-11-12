@@ -20,10 +20,8 @@
                 <v-text-field v-model="editedItem.name" label="Naam" required />
               </v-col>
               <v-col cols="6">
-                <v-text-field
-                  v-model="editedItem.description"
-                  label="Omschrijving"
-                />
+                <div class="text-subtitle-2 mb-2">Omschrijving</div>
+                <RichTextEditor ref="richTextEditorRef" v-model="editedItem.description" />
               </v-col>
               <v-col cols="4">
                 <h4 class="mb-3">Kleur</h4>
@@ -86,10 +84,13 @@
 
 <script setup lang="ts">
 import type { Legend } from "~~/shared/types/Legend";
+import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
+import RichTextEditor from "~/components/RichTextEditor.vue";
 import {
   createIconCanvasDataUrl,
   createFallbackIconDataUrl,
 } from "~/utils/iconCanvas";
+import { useSnackbar } from "~/composables/useSnackbar";
 
 const modelValue = defineModel<boolean>("modelValue");
 const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
@@ -137,15 +138,10 @@ const emit = defineEmits<{
   (e: "save", item: LegendFormData): void;
 }>();
 
-const defaultItem = {
-  name: "",
-  description: "",
-  color: "#2196F3",
-  icon: undefined as string | undefined,
-  icon_data_url: undefined as string | undefined,
-};
-
-type LegendFormData = Pick<Legend, "name" | "description" | "color"> & {
+type LegendFormData = {
+  name: string;
+  description: SanitizedHTML;
+  color: string;
   icon?: string;
   icon_data_url?: string;
 };
@@ -159,8 +155,15 @@ const editedItem = ref<LegendFormData>(
         icon: legend.icon,
         icon_data_url: legend.icon_data_url,
       }
-    : { ...defaultItem },
+    : {
+        name: "",
+        description: "" as SanitizedHTML,
+        color: "#2196F3",
+        icon: undefined as string | undefined,
+        icon_data_url: undefined as string | undefined,
+      },
 );
+const richTextEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
 const isEdit = computed(() => !!legend);
 
 async function setIcon() {
@@ -193,13 +196,23 @@ watch(
     if (newLegend) {
       editedItem.value = { ...newLegend, icon: newLegend.icon || undefined };
     } else {
-      editedItem.value = { ...defaultItem };
+      editedItem.value = {
+        name: "",
+        description: "" as SanitizedHTML,
+        color: "#2196F3",
+        icon: undefined as string | undefined,
+        icon_data_url: undefined as string | undefined,
+      };
     }
   },
   { immediate: true },
 );
 
 async function save() {
+  // Sanitize the description before saving
+  if (richTextEditorRef.value) {
+    richTextEditorRef.value.sanitize();
+  }
   await setIcon();
   emit("save", editedItem.value);
 }

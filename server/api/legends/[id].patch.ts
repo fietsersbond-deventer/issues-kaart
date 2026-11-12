@@ -1,6 +1,8 @@
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
+import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionHtml";
+import { toLegendType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -33,7 +35,7 @@ export default defineEventHandler(async (event) => {
   }
   if (updates.description !== undefined) {
     updateFields.push(`description = ?`);
-    values.push(updates.description);
+    values.push(updates.description?.trim() ? sanitizeDescriptionHtml(updates.description) : null);
   }
   if (updates.color !== undefined) {
     updateFields.push(`color = ?`);
@@ -76,5 +78,5 @@ export default defineEventHandler(async (event) => {
       message: `Legend item with ID ${id} not found after update`,
     });
   }
-  return row as unknown as Legend;
+  return toLegendType(row as any);
 });
