@@ -1,3 +1,4 @@
+import type { LegendRow } from "~~/shared/types/LegendRow";
 import { requireUserSession } from "~~/server/utils/requireUserSession";
 import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
@@ -78,5 +79,5 @@ export default defineEventHandler(async (event) => {
       message: `Legend item with ID ${id} not found after update`,
     });
   }
-  return toLegendType(row as any);
+  return toLegendType(row as unknown as LegendRow);
 });

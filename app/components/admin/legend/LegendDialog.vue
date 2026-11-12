@@ -95,7 +95,6 @@ import {
   createIconCanvasDataUrl,
   createFallbackIconDataUrl,
 } from "~/utils/iconCanvas";
-import { useSnackbar } from "~/composables/useSnackbar";
 
 const modelValue = defineModel<boolean>("modelValue");
 const sanitizeOptions = sanitizeDescriptionOptions();

@@ -1,3 +1,4 @@
+import type { TagRow } from "~~/shared/types/TagRow";
 import { getDb } from "~~/server/utils/db";
 import { normalizeTag } from "~~/server/utils/issueTags";
 import { toTagType } from "~~/server/utils/typeConversions";
@@ -24,7 +25,7 @@ export default defineEventHandler((event) => {
         )
         .all();
 
-  return (rows as any[]).map((row) =>
+  return (rows as unknown as TagRow[]).map((row) =>
     toTagType({
       id: Number(row.id),
       tag: String(row.tag),

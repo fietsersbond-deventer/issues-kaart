@@ -1,3 +1,4 @@
+import type { LegendRow } from "~~/shared/types/LegendRow";
 import { getDb } from "~~/server/utils/db";
 import { toLegendType } from "~~/server/utils/typeConversions";
 
@@ -25,5 +26,5 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return toLegendType(row as any);
+  return toLegendType(row as unknown as LegendRow);
 });

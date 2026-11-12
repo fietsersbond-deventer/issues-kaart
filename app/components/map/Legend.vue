@@ -24,7 +24,7 @@
           <v-tooltip v-if="item.description" location="top" max-width="40em">
             <template #default>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <div v-html="item.description" class="tooltip-content" />
+              <div class="tooltip-content" v-html="item.description" />
             </template>
             <template #activator="{ props }">
               <v-icon
@@ -68,7 +68,7 @@
           <v-tooltip v-if="tag.description" location="top" max-width="40em">
             <template #default>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <div v-html="tag.description" class="tooltip-content" />
+              <div class="tooltip-content" v-html="tag.description" />
             </template>
             <template #activator="{ props }">
               <v-icon

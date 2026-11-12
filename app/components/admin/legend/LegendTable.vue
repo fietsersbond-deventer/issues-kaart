@@ -16,11 +16,7 @@
         <td>{{ item.name }}</td>
         <td>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div
-            v-if="item.description"
-            class="description-preview"
-            v-html="removeLineBreaks(item.description)"
-          />
+          <div v-if="item.description" class="description-preview" v-html="item.description" />
           <span v-else class="text-medium-emphasis">Geen omschrijving</span>
         </td>
         <td>
@@ -51,7 +47,6 @@
 <script setup lang="ts">
 import type { Legend } from "~~/server/database/schema";
 import type { LegendUsage } from "~/composables/useCategories";
-import { removeLineBreaks } from "~~/shared/utils/getPlainText";
 
 const props = defineProps<{
   legends: Legend[];
