@@ -92,6 +92,8 @@ beforeEach(() => {
   vi.stubGlobal("useVDisplay", () => ({ mobile }));
   vi.stubGlobal("onServerPrefetch", vi.fn());
   vi.stubGlobal("useTitle", vi.fn());
+  vi.stubGlobal("useHead", vi.fn());
+  vi.stubGlobal("useRequestURL", () => new URL("https://example.test/kaart"));
   vi.stubGlobal("useIssueOpenGraph", vi.fn());
   vi.stubGlobal("definePageMeta", vi.fn());
   vi.stubGlobal("navigateTo", vi.fn());

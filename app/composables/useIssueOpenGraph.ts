@@ -60,6 +60,9 @@ export function useIssueOpenGraph(source: MaybeRefOrGetter<Issue | null>) {
     return {
       title,
       meta,
+      // Zonder canonical ziet Google elke queryvariant (filters, tags) als
+      // losse duplicaten van deze onderwerppagina zonder zelfgekozen canonieke versie.
+      link: [{ rel: "canonical", href: url }],
     };
   });
 }
