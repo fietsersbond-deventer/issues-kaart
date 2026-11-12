@@ -74,7 +74,9 @@ export default defineNuxtConfig({
   ],
   sitemap: {
     excludeAppSources: true,
-    urls: ["/", "/kaart", "/lijst"],
+    // "/" redirect-only hiervandaan weglaten: dat is geen eigen content,
+    // maar enkel een doorverwijzing naar /kaart (anders dubbel met /kaart).
+    urls: ["/kaart", "/lijst"],
     sources: ["/api/sitemap/urls"],
     exclude: ["/admin/**", "/login", "/reset-password/**", "/kaart/new"],
     cacheMaxAgeSeconds: 60,

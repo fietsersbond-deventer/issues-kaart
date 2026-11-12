@@ -389,7 +389,9 @@ it("renders admin navigation, login and welcome entry points, and declares root 
     render(): null;
   };
   meta.middleware();
-  expect(globalThis.navigateTo).toHaveBeenCalledWith("/kaart");
+  expect(globalThis.navigateTo).toHaveBeenCalledWith("/kaart", {
+    redirectCode: 301,
+  });
   expect(meta.render()).toBeNull();
 });
 it("limits ordinary users' admin navigation to categories, tags and texts", () => {
