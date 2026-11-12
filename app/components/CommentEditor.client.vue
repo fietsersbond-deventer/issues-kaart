@@ -160,6 +160,13 @@ function onCancel() {
   border-radius: 4px;
 }
 
+.quill-editor-container .ql-toolbar.ql-snow {
+  position: sticky !important;
+  top: 0;
+  z-index: 1;
+  background-color: rgb(var(--v-theme-surface));
+}
+
 :deep(.ql-container) {
   height: calc(100% - 42px) !important;
 }
