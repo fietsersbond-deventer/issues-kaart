@@ -66,10 +66,20 @@
             <template v-if="item.snippets?.length">
               <b v-html="emphasizeFilter(item.title)" />
               <div
-                v-for="snippet in item.snippets"
-                :key="snippet"
-                v-html="emphasizeFilter(snippet)"
-              />
+                v-for="(snippet, index) in item.snippets"
+                :key="index"
+                class="d-flex align-center ga-1"
+              >
+                <v-icon
+                  v-if="snippet.source === 'comment'"
+                  size="14"
+                  color="primary"
+                  aria-label="Resultaat in opmerking"
+                >
+                  mdi-comment-text-outline
+                </v-icon>
+                <span v-html="emphasizeFilter(snippet.text)" />
+              </div>
             </template>
             <template v-else>
               <span v-html="emphasizeFilter(item.title)" />

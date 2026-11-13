@@ -122,7 +122,7 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
         title: "Safe crossing",
         legend_id: 1,
         tags: ["bike"],
-        snippets: ["Safe crossing"],
+        snippets: [{ text: "Safe crossing", source: "description" }],
         imageUrl: "/api/issues/1/image",
         comment_count: 2,
       },

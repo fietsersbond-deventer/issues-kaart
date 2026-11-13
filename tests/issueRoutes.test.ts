@@ -607,6 +607,32 @@ describe("issue persistence contracts with the migrated schema", () => {
     ).not.toHaveProperty("comment_count");
   });
 
+  it("only searches comment bodies for authenticated users", async () => {
+    const commented = await create("Safe cycle route");
+    await create("Parking");
+    h.input.params.id = String(commented.id);
+    h.input.body = { body: "<p>Uniekeopmerkingstekst</p>" };
+    await commentRoutes.create(h.event);
+
+    h.input.query = { search: "Uniekeopmerkingstekst" };
+    const authenticated = await routes.search(h.event);
+    expect(authenticated.items).toEqual([
+      expect.objectContaining({
+        id: commented.id,
+        snippets: [
+          {
+            text: expect.stringContaining("Uniekeopmerkingstekst"),
+            source: "comment",
+          },
+        ],
+      }),
+    ]);
+
+    h.event.context.user = null;
+    const anonymous = await routes.search(h.event);
+    expect(anonymous.items).toEqual([]);
+  });
+
   describe("comment lifecycle, authorization and cascading contracts", () => {
     it("creates sanitized comment and broadcasts comment:created event", async () => {
       const issue = await create();

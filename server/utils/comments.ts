@@ -68,6 +68,33 @@ export function getCommentsForIssue(
   return rows.map((row) => formatComment(row, options));
 }
 
+export function getCommentsForIssueIds(
+  db: DatabaseSync,
+  issueIds: Array<number | string>,
+): Map<number, string[]> {
+  const ids = issueIds.map(Number).filter((id) => Number.isInteger(id));
+  const bodiesByIssueId = new Map<number, string[]>();
+
+  ids.forEach((id) => bodiesByIssueId.set(id, []));
+  if (ids.length === 0) return bodiesByIssueId;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = db
+    .prepare(
+      `SELECT issue_id, body
+       FROM comments
+       WHERE deleted_at IS NULL AND issue_id IN (${placeholders})
+       ORDER BY created_at ASC, id ASC`,
+    )
+    .all(...ids) as { issue_id: number; body: string }[];
+
+  for (const row of rows) {
+    bodiesByIssueId.get(row.issue_id)?.push(row.body);
+  }
+
+  return bodiesByIssueId;
+}
+
 export function getCommentById(
   db: DatabaseSync,
   id: number,
