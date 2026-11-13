@@ -14,28 +14,14 @@ import IssueCommentsDialog from "../app/components/IssueCommentsDialog.vue";
 import { useFilter } from "../app/composables/useFilter";
 import { parseSearchTerms } from "../app/utils/parseSearchTerms";
 import { transformBboxToOpenLayers } from "../app/utils/getIssuesBbox";
-const perform = vi.hoisted(() => vi.fn());
 vi.mock("vuetify", () => ({ useDisplay: () => ({ mobile }) }));
-vi.mock("../app/composables/useLocationSearch", async (original) => ({
-  ...(await original<typeof import("../app/composables/useLocationSearch")>()),
-  useLocationSearch: () => ({ search: perform, isSearching: ref(false) }),
-}));
 const mobile = ref(false);
-const Autocomplete = defineComponent({
-  name: "AutocompleteBoundary",
-  props: ["items", "search"],
-  emits: ["update:search", "update:modelValue", "blur"],
-  methods: { focus: vi.fn() },
-  template:
-    '<div><input :value="search" @input="$emit(\'update:search\', $event.target.value)"><slot name="prepend-inner" /><slot name="append-inner" /><div v-for="item in items" :key="item.id"><slot name="item" :item="item" :props="{}" /></div></div>',
-});
 const stubs = {
   ...uiStubs,
   VIcon: defineComponent({
     props: ["icon"],
     template: '<span class="test-icon">{{ icon }}<slot /></span>',
   }),
-  VAutocomplete: Autocomplete,
   VImg: defineComponent({
     name: "VImg",
     props: ["src"],
@@ -54,7 +40,6 @@ const wrappers: Array<{
 beforeEach(() => {
   vueGlobals();
   mobile.value = false;
-  perform.mockReset().mockResolvedValue([]);
   vi.useFakeTimers();
   vi.stubGlobal("useTitle", vi.fn());
   vi.stubGlobal("navigateTo", vi.fn());
@@ -66,53 +51,64 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-it("searches with debounce, displays empty state and emits a selected projected extent", async () => {
-  const wrapper = mount(Search, { global: { stubs } });
-  wrappers.push(wrapper);
-  await wrapper.get("input").setValue("missing");
-  await vi.advanceTimersByTimeAsync(301);
-  await flushPromises();
-  expect(wrapper.text()).toContain("Geen resultaten gevonden");
-  wrapper
-    .getComponent(Autocomplete)
-    .vm.$emit("update:modelValue", "no-results");
-  expect(wrapper.emitted("selected")).toBeUndefined();
-  const result = {
-    id: "one",
-    name: "Road",
-    displayName: "Road, Town",
-    type: "road",
-    coordinates: [6, 52],
-    boundingBox: [6, 52, 7, 53],
-  };
-  perform.mockResolvedValueOnce([result]);
-  await wrapper.get("input").setValue("road");
-  await vi.advanceTimersByTimeAsync(301);
-  await flushPromises();
-  expect(wrapper.text()).toContain("Road, Town");
-  wrapper.getComponent(Autocomplete).vm.$emit("update:modelValue", "one");
-  expect(wrapper.emitted("selected")?.at(-1)).toEqual([
-    transformBboxToOpenLayers([6, 52, 7, 53]),
-  ]);
-  await wrapper.get("input").setValue("");
-  await flushPromises();
-  expect(wrapper.text()).not.toContain("Road, Town");
+const Gazetteer = defineComponent({
+  name: "GazetteerBoundary",
+  emits: ["update:modelValue"],
+  template: "<div />",
 });
-it("expands mobile search, focuses it, then closes on blur or selection", async () => {
-  mobile.value = true;
-  const wrapper = mount(Search, { global: { stubs } });
+
+function mountSearch(view: Record<string, unknown>) {
+  vi.stubGlobal("transformBboxToOpenLayers", transformBboxToOpenLayers);
+  const wrapper = mount(Search, {
+    global: {
+      provide: { map: { getView: () => view } },
+      stubs: {
+        ...stubs,
+        Gazetteer,
+        VExpandXTransition: Slot,
+      },
+    },
+  });
   wrappers.push(wrapper);
-  expect(wrapper.find("input").exists()).toBe(false);
+  return wrapper;
+}
+it("toggles the search and fits the map to a selected result with a usable extent", async () => {
+  const view = { fit: vi.fn(), animate: vi.fn(), getZoom: () => 12 };
+  const wrapper = mountSearch(view);
+  const card = wrapper.get(".search-card");
+  expect(card.attributes("style")).toContain("display: none");
   await wrapper.get("button").trigger("click");
+  expect(card.attributes("style") ?? "").not.toContain("display: none");
+
+  wrapper.getComponent(Gazetteer).vm.$emit("update:modelValue", {
+    label: "Road",
+    lat: 52.5,
+    lon: 6.5,
+    boundingbox: { south: 52, west: 6, north: 53, east: 7 },
+  });
   await flushPromises();
-  expect(wrapper.emitted("searchExpanded")?.at(-1)).toEqual([true]);
-  wrapper.getComponent(Autocomplete).vm.$emit("blur");
-  await vi.advanceTimersByTimeAsync(201);
-  expect(wrapper.find("input").exists()).toBe(false);
+  expect(view.fit).toHaveBeenCalledWith(
+    transformBboxToOpenLayers([6, 52, 7, 53]),
+    expect.objectContaining({ maxZoom: 18 }),
+  );
+  expect(view.animate).not.toHaveBeenCalled();
+});
+it("zooms to a point for results without a usable extent", async () => {
+  const view = { fit: vi.fn(), animate: vi.fn(), getZoom: () => 12 };
+  const wrapper = mountSearch(view);
   await wrapper.get("button").trigger("click");
+
+  wrapper.getComponent(Gazetteer).vm.$emit("update:modelValue", {
+    label: "Address",
+    lat: 52.25,
+    lon: 6.16,
+    boundingbox: { south: 52.25, west: 6.16, north: 52.2501, east: 6.1601 },
+  });
   await flushPromises();
-  await wrapper.findAll("button").at(-1)!.trigger("click");
-  expect(wrapper.emitted("searchExpanded")?.at(-1)).toEqual([false]);
+  expect(view.fit).not.toHaveBeenCalled();
+  expect(view.animate).toHaveBeenCalledWith(
+    expect.objectContaining({ zoom: 17 }),
+  );
 });
 it("renders paginated issue search, enriches category/tag labels and opens the selected issue", async () => {
   const response = ref({

@@ -80,36 +80,22 @@
                   @mouseleave="hoveredResult = undefined"
                 >
                   <template #prepend>
-                    <v-tooltip
-                      :text="getCollectionId(item)"
-                      location="top left"
-                    >
-                      <template #activator="{ props: iconProps }">
-                        <span
-                          v-bind="iconProps"
-                          class="d-flex align-center justify-center mr-3"
-                        >
-                          <SearchResultIcon :item="item" />
-                        </span>
-                      </template>
-                    </v-tooltip>
+                    <span class="d-flex align-center justify-center mr-3">
+                      <SearchResultIcon :item="item" />
+                    </span>
                   </template>
                   <template #title>
-                    <v-tooltip :text="getLabel(item)" location="top left">
-                      <template #activator="{ props: tooltipProps }">
-                        <div v-bind="tooltipProps" class="text-truncate">
-                          <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
-                          <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
-                          <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
-                          <!-- eslint-disable-next-line vue/no-v-html -->
-                          <span
-                            v-if="getLabelHtml(item)"
-                            v-html="getLabelHtml(item)"
-                          />
-                          <span v-else>{{ getLabel(item) }}</span>
-                        </div>
-                      </template>
-                    </v-tooltip>
+                    <div class="text-truncate">
+                      <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
+                      <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
+                      <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
+                      <!-- eslint-disable-next-line vue/no-v-html -->
+                      <span
+                        v-if="getLabelHtml(item)"
+                        v-html="getLabelHtml(item)"
+                      />
+                      <span v-else>{{ getLabel(item) }}</span>
+                    </div>
                   </template>
                 </v-list-item>
               </template>
@@ -176,6 +162,7 @@ type PreviewTarget = {
 // Toont waar een zoekresultaat ligt zodra de gebruiker er met de muis overheen gaat,
 // via een eigen klein kaartje (zodat de grote kaart niet hoeft te verspringen).
 const hoveredResult = ref<PreviewTarget | undefined>();
+let searchController: AbortController | undefined;
 
 // PDOK-zoekresultaten bevatten alleen een punt; de volledige vorm (polygon/lijn) staat
 // achter de "href" van het resultaat. Net als de PDOK-viewer zelf halen we die pas op
@@ -266,9 +253,13 @@ const collections = ref<Partial<PDOKSearchCollections>>(
 );
 
 async function searchItems(val: string) {
+  searchController?.abort();
+  const controller = new AbortController();
+  searchController = controller;
   isLoading.value = true;
   // Start with base searchParams
   const params = { ...searchParams };
+  params.signal = controller.signal;
   // Use default collections if none are configured (e.g., unsaved project)
   params.collections =
     Object.keys(collections.value).length > 0
@@ -288,16 +279,17 @@ async function searchItems(val: string) {
     params.bbox = { west, south, east, north };
   }
 
-  // PDOK staat voorlopig uit (zie overleg over wegdeel-vlakken); Nominatim en
-  // Photon vullen elkaar aan (straten/adressen resp. losse punten als musea).
-  const [streetResult, poiResult, issueResult] = await Promise.all([
-    NominatimSearchProvider.search(val, params),
-    PhotonSearchProvider.search(val, params),
+  // Voorlopig alleen LocationIQ (PDOK/Nominatim/Photon staan uit terwijl we de
+  // providers een voor een vergelijken); onderwerpen blijven altijd actief.
+  const [locationResult, issueResult] = await Promise.all([
+    LocationIQSearchProvider.search(val, params),
     $fetch<IssueSearchResult[]>("/api/issues/search-locations", {
       query: { search: val },
+      signal: controller.signal,
     }).catch(() => []),
   ]);
-  entries.value = [...streetResult, ...poiResult] as SearchResult[];
+  if (controller.signal.aborted) return;
+  entries.value = locationResult;
   issueEntries.value = issueResult;
   isLoading.value = false;
 }
@@ -319,8 +311,11 @@ watch(
 
 let timeout: NodeJS.Timeout | undefined;
 watch(searchInput, async (value) => {
+  clearTimeout(timeout);
+  searchController?.abort();
+  isLoading.value = false;
+
   if (!value) {
-    clearTimeout(timeout);
     entries.value = [];
     issueEntries.value = [];
     isLoading.value = false;
@@ -334,18 +329,21 @@ watch(searchInput, async (value) => {
 
   // first try whether the coordinates can be determined directly
   const items = await tryCoordinateProviders(value);
+  if (value !== searchInput.value) return;
 
   if (items) {
     entries.value = items;
     issueEntries.value = [];
   } else {
-    clearTimeout(timeout); // Cleanup previous one
-    timeout = setTimeout(() => searchItems(value), 500);
-    if (isLoading.value) return;
-
-    clearTimeout(timeout);
-    searchItems(value);
+    timeout = setTimeout(() => {
+      void searchItems(value);
+    }, 1000);
   }
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(timeout);
+  searchController?.abort();
 });
 </script>
 
@@ -397,7 +395,7 @@ watch(searchInput, async (value) => {
 }
 
 .c-search-results {
-  max-width: 490px !important;
+  max-width: min(490px, calc(100vw - 16px)) !important;
   max-height: 400px !important;
   border-radius: 12px !important;
   background-color: rgba(var(--v-theme-surface-bright), 1) !important;

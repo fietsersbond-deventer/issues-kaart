@@ -10,7 +10,7 @@
       <v-icon>mdi-magnify</v-icon>
     </v-btn>
     <v-expand-x-transition>
-      <v-card v-show="active" flat width="600px" class="bg-surface-bright">
+      <v-card v-show="active" flat class="search-card bg-surface-bright">
         <Gazetteer v-model="location" />
       </v-card>
     </v-expand-x-transition>
@@ -67,9 +67,17 @@ function zoomToResult(result: SearchResult) {
 <style scoped>
 .search-control {
   width: fit-content;
+  max-width: 100%;
   min-height: 40px;
   border-radius: 12px;
   background: white;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Krimpt mee met de kaartbreedte, die kleiner wordt door het zijpaneel. */
+.search-card {
+  width: 600px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 </style>

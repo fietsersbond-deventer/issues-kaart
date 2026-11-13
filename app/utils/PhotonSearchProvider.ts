@@ -52,7 +52,10 @@ export const PhotonSearchProvider: SearchProvider<PhotonProperties> = {
           const [lon, lat] = feature.geometry.coordinates as [number, number];
           // Photon levert extent als [west, north, east, south], niet de gebruikelijke volgorde.
           const [west, north, east, south] = props.extent ?? [];
-          const typeLabel = (props.osm_value ?? props.type)?.replaceAll("_", " ");
+          const typeLabel = (props.osm_value ?? props.type)?.replaceAll(
+            "_",
+            " ",
+          );
 
           return {
             id:
@@ -65,7 +68,10 @@ export const PhotonSearchProvider: SearchProvider<PhotonProperties> = {
             lat,
             lon,
             boundingbox:
-              west !== undefined && south !== undefined && east !== undefined && north !== undefined
+              west !== undefined &&
+              south !== undefined &&
+              east !== undefined &&
+              north !== undefined
                 ? { south, west, north, east }
                 : undefined,
             type: props.osm_value ?? props.type,

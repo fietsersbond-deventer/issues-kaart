@@ -44,6 +44,7 @@ export type GazetteerSearchParams = {
   collections?: Partial<PDOKSearchCollections>;
   countrycodes?: string;
   limit?: number;
+  signal?: AbortSignal;
 };
 
 /** Generieke zoekprovider-interface, zodat PDOK later naast/door andere bronnen vervangen kan worden. */
