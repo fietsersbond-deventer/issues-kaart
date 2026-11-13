@@ -406,3 +406,928 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   wrapper.unmount();
   expect(unsubscribe).toHaveBeenCalledTimes(1);
 });
+
+it("handles error when fetching issue for editing", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 1,
+  });
+  const showError = vi.fn();
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: vi.fn(),
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: false,
+      canEdit: true,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn().mockRejectedValue(new Error("Network error")),
+    getUpdatedBy: vi.fn(),
+    remove: vi.fn(),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  await wrapper.get('button[aria-label="Test Issue bewerken"]').trigger("click");
+  await flushPromises();
+  expect(showError).toHaveBeenCalledWith(
+    "Issue kon niet worden geladen om te bewerken",
+  );
+});
+
+it("handles lock being taken before edit dialog opens", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 1,
+  });
+  const showError = vi.fn();
+  let lockAvailable = true;
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: vi.fn(),
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: lockAvailable ? false : "Other User",
+      canEdit: lockAvailable,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn().mockImplementation(() => {
+      lockAvailable = false;
+      return Promise.resolve({
+        id: 1,
+        slug: "test",
+        title: "Test Issue",
+        description: "Description",
+      });
+    }),
+    getUpdatedBy: vi.fn(),
+    remove: vi.fn(),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  await wrapper.get('button[aria-label="Test Issue bewerken"]').trigger("click");
+  await flushPromises();
+  expect(showError).toHaveBeenCalledWith(
+    "Onderwerp wordt door iemand anders bewerkt",
+  );
+});
+
+it("handles error when fetching issue info", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 1,
+  });
+  const showError = vi.fn();
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: vi.fn(),
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: false,
+      canEdit: true,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn(),
+    getUpdatedBy: vi.fn().mockRejectedValue(new Error("Network error")),
+    remove: vi.fn(),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  await wrapper.get('button[aria-label="Informatie over Test Issue"]').trigger("click");
+  await flushPromises();
+  expect(showError).toHaveBeenCalledWith(
+    "Informatie over het issue kon niet worden geladen",
+  );
+});
+
+it("ignores issue info when a different issue is selected while waiting", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue 1",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+      {
+        id: 2,
+        title: "Test Issue 2",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 2,
+  });
+  const getUpdatedByCallOrder: number[] = [];
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: vi.fn(),
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: false,
+      canEdit: true,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn(),
+    getUpdatedBy: vi.fn().mockImplementation((id: number) => {
+      getUpdatedByCallOrder.push(id);
+      if (id === 1) {
+        return new Promise((resolve) =>
+          setTimeout(() => {
+            resolve({
+              updated_by_name: "User 1",
+              updated_at: "2024-01-01",
+            });
+          }, 100),
+        );
+      }
+      return Promise.resolve({
+        updated_by_name: "User 2",
+        updated_at: "2024-01-02",
+      });
+    }),
+    remove: vi.fn(),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError: vi.fn() }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  const infoButtons = wrapper.findAll(
+    'button[aria-label^="Informatie over"]',
+  );
+  await infoButtons[0].trigger("click");
+  await flushPromises();
+  await infoButtons[1].trigger("click");
+  await flushPromises();
+  await vi.advanceTimersByTimeAsync(150);
+  await flushPromises();
+  expect(getUpdatedByCallOrder).toEqual([1, 2]);
+});
+
+it("handles error when deleting issue", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 1,
+  });
+  const showError = vi.fn();
+  const refreshList = vi.fn();
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: refreshList,
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: false,
+      canEdit: true,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn(),
+    getUpdatedBy: vi.fn(),
+    remove: vi.fn().mockRejectedValue(new Error("Network error")),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  await wrapper.get('button[aria-label="Test Issue verwijderen"]').trigger("click");
+  await flushPromises();
+  const confirmButton = wrapper
+    .findAll("button")
+    .find((button) => button.text() === "Verwijderen")!;
+  await confirmButton.trigger("click");
+  await flushPromises();
+  expect(showError).toHaveBeenCalledWith("Issue kon niet worden verwijderd");
+});
+
+it("refreshes results after successful delete", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 1,
+  });
+  const refreshList = vi.fn();
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: refreshList,
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: false,
+      canEdit: true,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn(),
+    getUpdatedBy: vi.fn(),
+    remove: vi.fn().mockResolvedValue(undefined),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError: vi.fn() }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  await wrapper.get('button[aria-label="Test Issue verwijderen"]').trigger("click");
+  await flushPromises();
+  const confirmButton = wrapper
+    .findAll("button")
+    .find((button) => button.text() === "Verwijderen")!;
+  await confirmButton.trigger("click");
+  await flushPromises();
+  expect(refreshList).toHaveBeenCalled();
+});
+
+it("prevents delete when lock is not available", async () => {
+  const response = ref({
+    items: [
+      {
+        id: 1,
+        title: "Test Issue",
+        legend_id: 1,
+        tags: [],
+        snippets: [],
+        imageUrl: null,
+        comment_count: 0,
+      },
+    ],
+    total: 1,
+  });
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useFetch", () => ({
+    data: response,
+    pending: ref(false),
+    refresh: vi.fn(),
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    token: ref("test-token"),
+  }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: "Other User",
+      canEdit: false,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", () => vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({
+    get: vi.fn(),
+    getUpdatedBy: vi.fn(),
+    remove: vi.fn(),
+  }));
+  vi.stubGlobal("useSnackbar", () => ({ showError: vi.fn() }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#fff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: [
+      "items",
+      "itemsLength",
+      "page",
+      "sortBy",
+      "itemsPerPage",
+      "headers",
+    ],
+    emits: ["click:row"],
+    setup(props, { slots }) {
+      return () =>
+        h(
+          "div",
+          props.items.map((item: unknown) =>
+            h(
+              "div",
+              Object.entries(slots).map(([, slot]) => slot?.({ item })),
+            ),
+          ),
+        );
+    },
+  });
+
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: {
+          IssueSearchTable,
+          IssueEditDialog,
+          IssueDeleteDialog,
+          IssueInfoDialog,
+          IssueCommentsDialog,
+        },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          CategoryChip: true,
+          Tag: true,
+          EditForm: defineComponent({
+            name: "EditFormBoundary",
+            emits: ["update:dialog"],
+            template:
+              '<button aria-label="Close editor" @click="$emit(\'update:dialog\', false)">Close</button>',
+          }),
+          IssueComments: defineComponent({
+            name: "IssueCommentsBoundary",
+            props: ["issueId"],
+            template: '<div class="issue-comments-stub">Comments</div>',
+          }),
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+
+  expect(
+    wrapper.find('button[aria-label="Test Issue verwijderen"]').exists(),
+  ).toBe(false);
+});

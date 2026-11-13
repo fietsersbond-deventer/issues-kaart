@@ -67,9 +67,6 @@ export default defineNuxtConfig({
           process.env.API_KEY ??
           "",
       },
-      geoapify: {
-        apiKey: "",
-      },
     },
     isProduction: process.env.NODE_ENV === "production",
   },

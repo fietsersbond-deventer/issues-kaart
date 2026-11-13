@@ -41,13 +41,12 @@ export type SearchResult<TRawResult = SearchResultRaw> = {
 /** Params die elke zoekprovider begrijpt, ongeacht de onderliggende bron. */
 export type GazetteerSearchParams = {
   bbox?: { west: number; south: number; east: number; north: number };
-  collections?: Partial<PDOKSearchCollections>;
   countrycodes?: string;
   limit?: number;
   signal?: AbortSignal;
 };
 
-/** Generieke zoekprovider-interface, zodat PDOK later naast/door andere bronnen vervangen kan worden. */
+/** Generieke zoekprovider-interface, zodat bronnen onderling vervangbaar zijn. */
 export type SearchProvider<TRaw = unknown> = {
   search: (
     query: string,

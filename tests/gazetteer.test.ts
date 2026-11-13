@@ -58,7 +58,6 @@ beforeEach(() => {
   locationSearch.mockReset().mockResolvedValue([]);
   fetch.mockReset().mockResolvedValue([]);
   vi.stubGlobal("LocationIQSearchProvider", { search: locationSearch });
-  vi.stubGlobal("PDOKSearchProvider", { defaultCollections: {} });
   vi.stubGlobal("tryCoordinateProviders", vi.fn().mockResolvedValue(null));
   vi.stubGlobal("useCurrentArea", () => ({
     bbox: [6, 52, 7, 53],
@@ -127,6 +126,101 @@ describe("Gazetteer search debounce", () => {
     await flushPromises();
     expect(requestSignal?.aborted).toBe(true);
 
+    wrapper.unmount();
+  });
+
+  it("shows a direct coordinate match without calling the providers", async () => {
+    vi.stubGlobal(
+      "tryCoordinateProviders",
+      vi
+        .fn()
+        .mockResolvedValue([{ id: "coord", label: "52, 6", lat: 52, lon: 6 }]),
+    );
+    const wrapper = mountGazetteer();
+
+    await wrapper.get("input").setValue("52, 6");
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(wrapper.text()).toContain("52, 6");
+    expect(locationSearch).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("selects the first location with the search button", async () => {
+    const result = { id: "a", label: "Park, Deventer", lat: 52, lon: 6 };
+    locationSearch.mockResolvedValueOnce([result]);
+    const wrapper = mountGazetteer();
+
+    await wrapper.get("input").setValue("park");
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    await wrapper.get("button").trigger("click");
+
+    expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([result]);
+    wrapper.unmount();
+  });
+
+  it("navigates to an issue before locations and clears results on empty input", async () => {
+    const navigateTo = vi.fn();
+    vi.stubGlobal("navigateTo", navigateTo);
+    locationSearch.mockResolvedValueOnce([
+      { id: "a", label: "Park", lat: 52, lon: 6 },
+    ]);
+    fetch.mockResolvedValueOnce([
+      { id: 7, slug: "fietsroute", label: "Route" },
+    ]);
+    const wrapper = mountGazetteer();
+
+    await wrapper.get("input").setValue("park");
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    await wrapper.get("button").trigger("click");
+    expect(navigateTo).toHaveBeenCalledWith("/kaart/fietsroute");
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+
+    await wrapper.get("input").setValue("");
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("Park");
+    wrapper.unmount();
+  });
+
+  it("selects a clicked location with html label and shows a hover preview", async () => {
+    const result = {
+      id: "a",
+      label: "Park",
+      labelHtml: "<b>Park</b>",
+      lat: 52,
+      lon: 6,
+    };
+    locationSearch.mockResolvedValueOnce([result]);
+    const wrapper = mountGazetteer();
+
+    await wrapper.get("input").setValue("park");
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(wrapper.html()).toContain("<b>Park</b>");
+
+    const item = wrapper.findComponent(ListItem);
+    await item.trigger("mouseenter");
+    expect(wrapper.html()).toContain("search-result-preview-map-stub");
+    await item.trigger("click");
+    expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([result]);
+    wrapper.unmount();
+  });
+
+  it("shows a message when nothing is found and clears the input when the selection is reset", async () => {
+    const wrapper = mountGazetteer();
+    await wrapper.get("input").setValue("niks");
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(wrapper.text()).toContain("Geen resultaten gevonden");
+
+    await wrapper.setProps({
+      modelValue: { id: "x", label: "X", lat: 1, lon: 1 },
+    });
+    await wrapper.setProps({ modelValue: undefined });
+    expect((wrapper.get("input").element as HTMLInputElement).value).toBe("");
     wrapper.unmount();
   });
 });

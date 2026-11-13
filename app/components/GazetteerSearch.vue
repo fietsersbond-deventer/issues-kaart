@@ -73,10 +73,7 @@
                   :key="index"
                   class="px-2"
                   @click="selectItem(item)"
-                  @mouseenter="
-                    hoveredResult = item;
-                    loadPdokGeometry(item);
-                  "
+                  @mouseenter="hoveredResult = item"
                   @mouseleave="hoveredResult = undefined"
                 >
                   <template #prepend>
@@ -125,10 +122,6 @@
 
 <script setup lang="ts">
 import type { Geometry } from "geojson";
-import type OlMap from "ol/Map";
-import { transformExtent } from "ol/proj";
-
-const map = inject<OlMap>("map");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getLabel(item: any): string {
@@ -145,10 +138,8 @@ const isLoading = ref(false);
 const selected = defineModel<SearchResult | undefined>();
 const entries = ref<SearchResult[]>([]);
 const issueEntries = ref<IssueSearchResult[]>([]);
-const searchInMapFrame = ref(false);
 const menuOpen = ref(false);
 const { bbox: areaBbox } = useCurrentArea();
-// PDOK staat voorlopig uit, zie searchItems hieronder.
 const hasResults = computed(
   () => entries.value.length > 0 || issueEntries.value.length > 0,
 );
@@ -164,46 +155,6 @@ type PreviewTarget = {
 // via een eigen klein kaartje (zodat de grote kaart niet hoeft te verspringen).
 const hoveredResult = ref<PreviewTarget | undefined>();
 let searchController: AbortController | undefined;
-
-// PDOK-zoekresultaten bevatten alleen een punt; de volledige vorm (polygon/lijn) staat
-// achter de "href" van het resultaat. Net als de PDOK-viewer zelf halen we die pas op
-// bij hover, niet eager voor alle resultaten tegelijk.
-async function loadPdokGeometry(item: SearchResult) {
-  if (item.geometry) return;
-  const href = (item.raw?.properties as { href?: string[] } | undefined)
-    ?.href?.[0];
-  if (!href) return;
-
-  try {
-    const feature = await $fetch<{ geometry?: Geometry }>(href, {
-      query: { f: "json" },
-    });
-    if (feature.geometry) item.geometry = feature.geometry;
-  } catch {
-    // Mislukte ophaalpoging: laat de puntmarker gewoon staan.
-  }
-}
-
-/** Huidige kaartuitsnede als WGS84-bbox, voor het beperken van zoekresultaten tot het zichtbare gebied. */
-function getViewportBbox(): GazetteerSearchParams["bbox"] | undefined {
-  const size = map?.getSize();
-  if (!map || !size) return undefined;
-
-  const [west, south, east, north] = transformExtent(
-    map.getView().calculateExtent(size),
-    "EPSG:3857",
-    "EPSG:4326",
-  );
-  if (
-    west === undefined ||
-    south === undefined ||
-    east === undefined ||
-    north === undefined
-  ) {
-    return undefined;
-  }
-  return { west, south, east, north };
-}
 
 watch(selected, (val) => {
   if (val === undefined) searchInput.value = "";
@@ -240,18 +191,8 @@ function selectFirstResult() {
 }
 
 const { searchParams = { countrycodes: "nl" } } = defineProps<{
-  searchParams?: GazetteerPDOKSearchParams;
+  searchParams?: GazetteerSearchParams;
 }>();
-
-const collections = ref<Partial<PDOKSearchCollections>>(
-  searchParams?.collections
-    ? JSON.parse(JSON.stringify(searchParams.collections))
-    : Object.fromEntries(
-        Object.entries(PDOKSearchProvider.defaultCollections).filter(
-          ([, config]) => config?.version === 1,
-        ),
-      ),
-);
 
 async function searchItems(val: string) {
   searchController?.abort();
@@ -261,27 +202,13 @@ async function searchItems(val: string) {
   // Start with base searchParams
   const params = { ...searchParams };
   params.signal = controller.signal;
-  // Use default collections if none are configured (e.g., unsaved project)
-  params.collections =
-    Object.keys(collections.value).length > 0
-      ? collections.value
-      : Object.fromEntries(
-          Object.entries(PDOKSearchProvider.defaultCollections).filter(
-            ([, config]) => config?.version === 1,
-          ),
-        );
-
-  if (searchInMapFrame.value) {
-    params.bbox = await getViewportBbox();
-  }
   // Zonder zichtbare-kaartuitsnede valt terug op het gebied van deze instantie (bv. Deventer).
   if (!params.bbox && areaBbox) {
     const [west, south, east, north] = areaBbox;
     params.bbox = { west, south, east, north };
   }
 
-  // Voorlopig alleen LocationIQ (PDOK/Nominatim/Photon staan uit terwijl we de
-  // providers een voor een vergelijken); onderwerpen blijven altijd actief.
+  // Alleen LocationIQ; onderwerpen blijven altijd actief.
   const [locationResult, issueResult] = await Promise.all([
     LocationIQSearchProvider.search(val, params),
     $fetch<IssueSearchResult[]>("/api/issues/search-locations", {
@@ -294,21 +221,6 @@ async function searchItems(val: string) {
   issueEntries.value = issueResult;
   isLoading.value = false;
 }
-
-// verwijder oude zoekresultaten wanneer de zoekcollecties worden aangepast, omdat deze resultaten mogelijk niet meer relevant zijn
-// en voer een nieuwe zoekopdracht uit als er een zoekterm is ingevuld
-watch(
-  collections,
-  async () => {
-    entries.value = [];
-    issueEntries.value = [];
-    // If user has already entered a search term, re-search with new collection settings
-    if (searchInput.value?.length) {
-      await searchItems(searchInput.value);
-    }
-  },
-  { deep: true },
-);
 
 let timeout: NodeJS.Timeout | undefined;
 watch(searchInput, async (value) => {
