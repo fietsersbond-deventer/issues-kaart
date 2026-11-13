@@ -3,8 +3,7 @@ export function parseSearchTerms(search: string): string[] {
   let currentTerm = "";
   let insideQuotes = false;
 
-  for (let index = 0; index < search.length; index++) {
-    const character = search[index];
+  for (const character of search) {
 
     if (character === '"') {
       insideQuotes = !insideQuotes;

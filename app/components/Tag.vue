@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import type { Tag } from "~~/shared/types/Tag";
+defineOptions({ name: "IssueTag" });
 
 const props = defineProps<{
   tag: Tag;

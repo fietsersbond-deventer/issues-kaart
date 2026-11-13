@@ -112,7 +112,6 @@ describe("HTML Sanitization Security Tests", () => {
       const input =
         "<p style=\"background-image: url(javascript:alert('XSS'))\">Text</p>";
       const result = sanitizeHtml(input);
-      // DOMPurify should clean the dangerous style
       expect(result).not.toContain("javascript:");
       expect(result).not.toContain("alert");
     });
@@ -204,24 +203,20 @@ describe("HTML Sanitization Security Tests", () => {
     });
 
     it("should handle null input", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(sanitizeHtml(null as any)).toBe("");
+      expect(sanitizeHtml(null as unknown as string)).toBe("");
     });
 
     it("should handle undefined input", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(sanitizeHtml(undefined as any)).toBe("");
+      expect(sanitizeHtml(undefined as unknown as string)).toBe("");
     });
 
     it("should handle non-string input", () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(sanitizeHtml(123 as any)).toBe("");
+      expect(sanitizeHtml(123 as unknown as string)).toBe("");
     });
 
     it("should handle malformed HTML", () => {
       const input = "<p>Unclosed paragraph<div>Nested div</p></div>";
       const result = sanitizeHtml(input);
-      // DOMPurify should fix the malformed HTML
       expect(result).toContain("Unclosed paragraph");
       expect(result).toContain("Nested div");
     });
@@ -231,7 +226,7 @@ describe("HTML Sanitization Security Tests", () => {
         "<p>&lt;script&gt;alert(&quot;safe&quot;)&lt;/script&gt;</p>";
       const result = sanitizeHtml(input);
       expect(result).toContain("&lt;script&gt;");
-      expect(result).toContain('alert("safe")'); // DOMPurify normalizes &quot; to "
+      expect(result).toContain('alert("safe")');
     });
   });
 

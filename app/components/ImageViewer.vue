@@ -8,7 +8,7 @@
       class="image-dialog"
     >
       <v-card v-if="selectedImage" class="image-card">
-        <img :src="selectedImage" class="dialog-image" />
+        <img :src="selectedImage" class="dialog-image" >
       </v-card>
     </v-dialog>
   </div>
@@ -23,7 +23,7 @@ const { selector = "img" } = defineProps<{
 const showImageDialog = ref(false);
 const selectedImage = ref<string | null>(null);
 const imageDialogWidth = ref<string>("90%");
-const { mobile } = useDisplay();
+const { mobile } = useVDisplay();
 
 // Handle image clicks to open dialog
 function handleImageClick(event: MouseEvent) {

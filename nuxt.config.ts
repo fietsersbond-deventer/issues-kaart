@@ -5,7 +5,7 @@ import { nl } from "vuetify/locale";
 export default defineNuxtConfig({
   compatibilityDate: "2025-04-25",
   future: { compatibilityVersion: 4 },
-  ssr: false,
+  ssr: true,
   app: {
     head: {
       link: [{ rel: "icon", type: "image/jpeg", href: "/fietsersbond.jpeg" }],
@@ -55,6 +55,7 @@ export default defineNuxtConfig({
         centerLon: "",
         initialZoom: "",
         searchBbox: "",
+        clusteringEnabled: true,
       },
       matomo: {
         siteId: "",
@@ -62,21 +63,24 @@ export default defineNuxtConfig({
     },
     isProduction: process.env.NODE_ENV === "production",
   },
-  content: {
-    experimental: { sqliteConnector: "native" },
-  },
   modules: [
     "@nuxt/eslint",
     "@sidebase/nuxt-auth",
-    "nuxt-mdi",
     "vuetify-nuxt-module",
     "@pinia/nuxt",
-    // "nuxt-security",
-    // "nuxt-db-migrations",
-    "@jfungus/ratelimit-nuxt",
     "nuxt-nodemailer",
     "@nuxt/icon",
+    "@nuxtjs/sitemap",
   ],
+  sitemap: {
+    excludeAppSources: true,
+    // "/" redirect-only hiervandaan weglaten: dat is geen eigen content,
+    // maar enkel een doorverwijzing naar /kaart (anders dubbel met /kaart).
+    urls: ["/kaart", "/lijst"],
+    sources: ["/api/sitemap/urls"],
+    exclude: ["/admin/**", "/login", "/reset-password/**", "/kaart/new"],
+    cacheMaxAgeSeconds: 60,
+  },
   auth: {
     baseURL: process.env.AUTH_ORIGIN,
     provider: {
@@ -92,11 +96,12 @@ export default defineNuxtConfig({
       },
       endpoints: {
         signIn: { path: "/login", method: "post" },
-        signOut: { path: "/logout", method: "post" },
+        signOut: false,
         getSession: { path: "/session", method: "get" },
       },
       refresh: {
         isEnabled: true,
+        refreshOnlyToken: false,
         endpoint: { path: "/refresh", method: "post" },
       },
     },
@@ -105,14 +110,17 @@ export default defineNuxtConfig({
     },
   },
   nitro: {
+    // Responsecache op schijf in plaats van in het geheugen.
+    storage: {
+      cache: { driver: "fs", base: "./.data/cache" },
+    },
+    devStorage: {
+      cache: { driver: "fs", base: "./.data/cache" },
+    },
     experimental: {
       openAPI: true,
       websocket: true,
     },
-  },
-  ratelimit: {
-    limit: 100,
-    windowMs: 60000, // 1 minute in milliseconds
   },
   // security: {
   //   headers: {
@@ -150,7 +158,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   vuetify: {
     moduleOptions: {
-      /* module specific options */
+      prefixComposables: true,
+      ssrClientHints: {
+        viewportSize: true,
+        reloadOnFirstRequest: true,
+      },
     },
     vuetifyOptions: {
       /* vuetify options */
@@ -189,16 +201,18 @@ export default defineNuxtConfig({
     optimizeDeps: {
       include: [
         "@turf/bbox",
-        "@turf/centroid",
         "@turf/helpers",
+        "@turf/union",
         "@vueup/vue-quill",
         "@vueuse/core",
+        "color",
         "mitt",
         "ol",
         "ol/control",
         "ol/easing",
         "ol/events/condition",
         "ol/format",
+        "ol/geom",
         "ol/proj",
         "ol/proj/Projection",
         "ol/proj/proj4.js",
@@ -212,12 +226,5 @@ export default defineNuxtConfig({
     server: {
       allowedHosts: true,
     },
-  },
-  dbMigrations: {
-    dir: "./server/database/migrations",
-    autoMigrate: true,
-    table: "_hub_migrations",
-    lockTimeout: 30000,
-    baseline: "0001_initial_schema.sql",
   },
 });

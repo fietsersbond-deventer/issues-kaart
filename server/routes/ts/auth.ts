@@ -1,5 +1,5 @@
-import type { WebSocketPeer } from "#nitro";
-import { defineWebSocketHandler } from "#nitro";
+import type { Peer as WebSocketPeer } from "crossws";
+
 import { verifyToken } from "../../utils/verifyToken";
 import {
   setPeerSession,
@@ -16,6 +16,10 @@ import {
   initializePresenceForPeer,
   cleanupPresenceForPeer,
 } from "../../utils/presenceHandler";
+import {
+  registerCommentBroadcastPeer,
+  unregisterCommentBroadcastPeer,
+} from "../../utils/broadcastComment.ts";
 
 export default defineWebSocketHandler({
   async open(peer: WebSocketPeer) {
@@ -52,6 +56,7 @@ export default defineWebSocketHandler({
 
       // Store authenticated session
       setPeerSession(peer.toString(), user);
+      registerCommentBroadcastPeer(peer);
 
       console.log(
         `[ws/auth] Gebruiker ${user.name || user.username} geauthenticeerd (${peer.toString()})`,
@@ -95,7 +100,7 @@ export default defineWebSocketHandler({
     }
   },
 
-  message(peer: WebSocketPeer, message: string) {
+  message(peer, message) {
     try {
       // Update activity timestamp for this peer
       updatePeerActivity(peer.toString());
@@ -121,6 +126,7 @@ export default defineWebSocketHandler({
 
   close(peer: WebSocketPeer) {
     // Remove authenticated session
+    unregisterCommentBroadcastPeer(peer);
     removePeerSession(peer.toString());
 
     // Cleanup both lock and presence functionality

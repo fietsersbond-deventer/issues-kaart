@@ -67,8 +67,6 @@ defineExpose({
 .control-container.bottom-left {
   bottom: 0.5em;
   left: 0.5em;
-  max-height: 70%;
-  overflow-y: auto;
 }
 
 .control-container.bottom-right {

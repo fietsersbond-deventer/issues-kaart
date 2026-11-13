@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sanitizeHtml } from "../server/utils/sanitizeHtml";
-import { getPlainText } from "../server/utils/getPlainText";
+import { getPlainText } from "../shared/utils/getPlainText";
 
 const DEFAULT_LEGEND_COLOR = "#2196F3";
 const DEFAULT_STYLE_ID = "default";
@@ -383,7 +383,7 @@ function parseArguments(args: string[]): CliOptions {
   return result;
 }
 
-async function main(args: string[]): Promise<void> {
+export async function main(args: string[]): Promise<void> {
   const options = parseArguments(args);
   const kmlPath = resolve(options.kmlPath);
   if (!existsSync(kmlPath)) throw new Error(`KML file not found: ${kmlPath}`);

@@ -1,9 +1,11 @@
 import { getDb } from "~~/server/utils/db";
 import { normalizeTag, setTagMetadata } from "~~/server/utils/issueTags";
-import { requireAdminSession } from "~~/server/utils/requireUserSession";
+import { requireUserSession } from "~~/server/utils/requireUserSession";
+import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionOptions";
+import { toTagType } from "~~/server/utils/typeConversions";
 
 export default defineEventHandler(async (event) => {
-  requireAdminSession(event);
+  requireUserSession(event);
 
   const body = await readBody<{
     tag?: string;
@@ -19,15 +21,18 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const tag = setTagMetadata(db, normalizedTag, {
-    label: body.label === undefined ? normalizedTag : body.label,
-    description: body.description ?? null,
+    label: body.label === undefined ? normalizedTag : body.label?.trim() || null,
+    description: body.description?.trim()
+      ? sanitizeDescriptionHtml(body.description.trim())
+      : null,
     icon: body.icon ?? null,
   });
 
   const row = db
-    .prepare("SELECT tag, label, description, icon FROM tags WHERE tag = ?")
+    .prepare("SELECT id, tag, label, description, icon FROM tags WHERE tag = ?")
     .get(tag) as
     | {
+        id: number;
         tag: string;
         label: string | null;
         description: string | null;
@@ -42,10 +47,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return {
+  return toTagType({
+    id: row.id,
     tag: row.tag,
     label: row.label ?? row.tag,
     description: row.description ?? null,
     icon: row.icon ?? null,
-  };
+  });
 });

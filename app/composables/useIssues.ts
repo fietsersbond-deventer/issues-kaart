@@ -3,27 +3,40 @@ import {
   isExistingIssue,
   type Issue,
   type NewIssue,
+  type MapIssue,
 } from "~~/shared/types/Issue";
 import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 import { useThrottleFn } from "@vueuse/core";
 
 export const useIssues = defineStore("issues", () => {
   const ws = useSharedIssuesWebSocket();
-  const issues = ref<Issue[]>([]);
+  const issues = ref<(MapIssue | NewIssue)[]>([]);
 
   // Get categories for enriching issues
   const { categories } = storeToRefs(useCategories());
 
   const fetchOptions = {
-    query: { fields: "id,title,legend_id,geometry,imageUrl,tags" },
+    query: { fields: "id,slug,title,legend_id,geometry,imageUrl,tags" },
   };
+  // Store creation can happen from several components. Keep the initial request
+  // explicit so the kaart page can await it during SSR before Pinia is serialized.
   const {
     data,
     refresh: refreshIssues,
     status,
-  } = useFetch<MapIssue[]>("/api/issues", fetchOptions);
+  } = useFetch<MapIssue[]>("/api/issues", {
+    ...fetchOptions,
+    immediate: false,
+  });
 
-  function processIssue(issue: Issue): Issue {
+  let hasConnected = ws.status.value === "OPEN";
+  watch(ws.status, (state) => {
+    if (state !== "OPEN") return;
+    if (hasConnected) refreshIssues();
+    hasConnected = true;
+  });
+
+  function processIssue<T extends MapIssue | NewIssue>(issue: T): T {
     if (issue.geometry && typeof issue.geometry === "string") {
       issue.geometry = JSON.parse(issue.geometry);
     }
@@ -33,7 +46,7 @@ export const useIssues = defineStore("issues", () => {
       const legend = categories.value.find((l) => l.id === issue.legend_id);
       if (legend) {
         // Add the full legend object to the issue
-        const enrichedIssue = issue as Issue & { legend: typeof legend };
+        const enrichedIssue = issue;
         enrichedIssue.legend = legend;
         return enrichedIssue;
       }
@@ -47,7 +60,11 @@ export const useIssues = defineStore("issues", () => {
     switch (parsed.type) {
       case "issue-created": {
         const issue = processIssue(parsed.payload as Issue);
-        issues.value.push(issue);
+        const existingIndex = issues.value.findIndex(
+          (entry) => entry.id === issue.id,
+        );
+        if (existingIndex === -1) issues.value.push(issue);
+        else issues.value[existingIndex] = issue;
         break;
       }
       case "issue-modified": {
@@ -77,7 +94,8 @@ export const useIssues = defineStore("issues", () => {
 
   // any changes to the selected issue should be reflected in this store
   const { issue } = storeToRefs(useSelectedIssue());
-  const throttledUpdate = useThrottleFn((issue: Issue | NewIssue | null) => {
+  const { isEditing } = useIsEditing();
+  function updateIssue(issue: Issue | NewIssue | null) {
     if (!issue) return;
 
     const existingIndex = issues.value.findIndex(
@@ -93,7 +111,8 @@ export const useIssues = defineStore("issues", () => {
       // Add new issue to store
       issues.value.push(processIssue(issue));
     }
-  }, 100);
+  }
+  const throttledUpdate = useThrottleFn(updateIssue, 100);
 
   // watch issue and update store accordingly
   watch(
@@ -115,8 +134,12 @@ export const useIssues = defineStore("issues", () => {
       } else {
         issues.value = [];
       }
+      // Keep the editor's local preview when replacing the persisted snapshot.
+      if (isEditing.value) updateIssue(issue.value);
     },
-    { immediate: true },
+    // Nuxt serializes Pinia immediately after server prefetch. Copy fetched
+    // rows in the same tick so the payload cannot contain an empty issue store.
+    { immediate: true, flush: "sync" },
   );
 
   // Reprocess issues when categories change
@@ -130,6 +153,21 @@ export const useIssues = defineStore("issues", () => {
     { deep: true },
   );
 
+  // Refresh issues when tags change (tags are removed/updated)
+  const tagsApi = useTagsApi();
+  watch(
+    () => tagsApi.tags.value,
+    () => {
+      refreshIssues();
+    },
+  );
+
+  async function load() {
+    // refresh() resolves after useFetch updates data and the synchronous watcher
+    // has copied that result into the serializable Pinia state.
+    await refreshIssues();
+  }
+
   function refresh() {
     refreshIssues();
   }
@@ -142,6 +180,7 @@ export const useIssues = defineStore("issues", () => {
   return {
     issues,
     isLoaded,
+    load,
     refresh,
     ...methods,
   };

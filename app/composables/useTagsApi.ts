@@ -1,9 +1,4 @@
-export type Tag = {
-  tag: string;
-  label: string | null;
-  description: string | null;
-  icon: string | null;
-};
+import type { Tag } from "~~/shared/types/Tag";
 
 export const useTagsApi = () => {
   const { token } = useAuth();
@@ -22,6 +17,7 @@ export const useTagsApi = () => {
   function getTag(slug: string): Tag {
     return (
       tags.value?.find((item) => item.tag === slug) ?? {
+        id: -1,
         tag: slug,
         label: slug,
         description: null,
@@ -46,7 +42,7 @@ export const useTagsApi = () => {
   }
 
   async function update(
-    tag: string,
+    tagId: number,
     payload: {
       tag?: string;
       label?: string | null;
@@ -54,7 +50,7 @@ export const useTagsApi = () => {
       icon?: string | null;
     },
   ) {
-    const result = await $fetch<Tag>(`/api/tags/${encodeURIComponent(tag)}`, {
+    const result = await $fetch<Tag>(`/api/tags/${tagId}`, {
       method: "PATCH",
       headers: headers.value,
       body: payload,
@@ -63,9 +59,9 @@ export const useTagsApi = () => {
     return result;
   }
 
-  async function remove(tag: string) {
+  async function remove(tagId: number) {
     const result = await $fetch<{ success: boolean }>(
-      `/api/tags/${encodeURIComponent(tag)}`,
+      `/api/tags/${tagId}`,
       {
         method: "DELETE",
         headers: headers.value,
@@ -84,5 +80,6 @@ export const useTagsApi = () => {
     create,
     update,
     remove,
+    refreshTags,
   };
 };

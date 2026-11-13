@@ -20,7 +20,7 @@ export function useSelectedIssues() {
           }
         }
 
-        return visibleCategoryIds.value?.has(issue.legend_id);
+        return issue.legend_id !== undefined && visibleCategoryIds.value?.has(issue.legend_id);
       }) ?? []
     );
   });

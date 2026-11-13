@@ -1,4 +1,4 @@
-import type { Issue } from "~~/shared/types/Issue";
+import type { Issue, NewIssue } from "~~/shared/types/Issue";
 
 /**
  * CRUD methods for issues - available without creating a store
@@ -23,7 +23,17 @@ export function useIssuesMethods() {
     });
   }
 
-  async function create(body: Issue) {
+  function getUpdatedBy(id: number | string) {
+    return $fetch<{ updated_by_name: string | null; updated_at: string | null }>(
+      `/api/issues/${id}/updated-by`,
+      {
+        method: "GET",
+        headers: headers.value,
+      },
+    );
+  }
+
+  async function create(body: NewIssue) {
     const issue = await $fetch<Issue>("/api/issues", {
       method: "POST",
       body,
@@ -41,6 +51,14 @@ export function useIssuesMethods() {
     return issue;
   }
 
+  function getUniqueSlug(slug: string, issueId?: number) {
+    return $fetch<{ slug: string }>("/api/issues/slug", {
+      method: "POST",
+      body: { slug, issueId },
+      headers: headers.value,
+    });
+  }
+
   async function remove(id: number) {
     const result = await $fetch<{ id: number }>(`/api/issues/${id}`, {
       method: "DELETE",
@@ -55,8 +73,10 @@ export function useIssuesMethods() {
 
   return {
     get,
+    getUpdatedBy,
     create,
     update,
+    getUniqueSlug,
     remove,
     getImageUrl,
   };

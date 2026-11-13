@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   // Find user by email
   const user = db
     .prepare("SELECT id, username, name FROM users WHERE username = ?")
-    .get(email);
+    .get(email) as { id: number; username: string; name: string | null } | undefined;
 
   // If no user found, return success to prevent email enumeration
   if (!user) {

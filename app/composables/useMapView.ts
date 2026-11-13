@@ -9,36 +9,41 @@ export interface MapViewState {
   rotation: number;
 }
 
+/** View state shared between the map and components outside of it (e.g. the side panel) */
+export function useMapViewState() {
+  const { map } = useRuntimeConfig().public;
+  const converter = proj4("EPSG:4326", "EPSG:3857");
+  const center = useState<[number, number]>("map-view-center", () => {
+    const [x, y] = converter.forward([
+      parseFloat(String(map.centerLon)),
+      parseFloat(String(map.centerLat)),
+    ]);
+    return [x, y];
+  });
+  const zoom = useState<number>("map-view-zoom", () =>
+    parseInt(String(map.initialZoom)),
+  );
+  const rotation = useState<number>("map-view-rotation", () => 0);
+  return { center, zoom, rotation };
+}
+
 /**
  * Composable to track and share map view state (center, zoom, rotation)
  * @param mapRef - Template ref to the ol-map component
  */
-export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
-  const { map } = useRuntimeConfig().public;
+export function useMapView(mapRef?: Ref<{ map?: Map } | null>) {
+  const { center, zoom, rotation } = useMapViewState();
 
-  // Parse the string values from env to numbers at runtime
-  const centerLat = parseFloat(String(map.centerLat));
-  const centerLon = parseFloat(String(map.centerLon));
-  const initialZoom = parseInt(String(map.initialZoom));
-
-  // Convert WGS84 (lat, lon) to Web Mercator (EPSG:3857) using proj4
-  const converter = proj4("EPSG:4326", "EPSG:3857");
-  const [centerX, centerY] = converter.forward([centerLon, centerLat]);
-
-  const center = ref<[number, number]>([centerX, centerY]);
-  const zoom = ref<number>(initialZoom);
-  const rotation = ref<number>(0);
-
-  // Try to get map from injection first, then from mapRef parameter
-  let olMap = inject<Map | null>("map", null);
+  // The map plugin provides this in descendant components. In IssueMap the
+  // template ref is the fallback because the OpenLayers map is exposed later.
+  const injectedMap = inject<Map | null>("map", null);
+  let trackedMap: Map | null = null;
 
   const setupMapViewTracking = (map: Map) => {
     const view = map.getView();
 
-    if (!view) {
-      console.warn("View not available from map");
-      return;
-    }
+    if (!view || trackedMap === map) return;
+    trackedMap = map;
 
     // Separate listeners for different types of changes
     const updateCenter = useThrottleFn(() => {
@@ -66,31 +71,18 @@ export function useMapView(mapRef?: Ref<{ map: Map } | null>) {
     });
   };
 
-  onMounted(() => {
-    // If injection didn't work, try to get map from mapRef
-    if (!olMap && mapRef?.value?.map) {
-      olMap = mapRef.value.map;
-    }
-
-    if (!olMap) {
-      console.warn("OpenLayers Map not found in component");
-      return;
-    }
-
-    setupMapViewTracking(olMap);
-  });
-
-  // Also watch mapRef in case it becomes available later
-  if (mapRef) {
+  if (injectedMap) {
+    onMounted(() => setupMapViewTracking(injectedMap));
+  } else if (mapRef) {
     watch(
-      mapRef,
-      (newMapRef) => {
-        if (newMapRef?.map && !olMap) {
-          olMap = newMapRef.map;
-          setupMapViewTracking(olMap);
-        }
+      () => mapRef.value?.map,
+      (map) => {
+        if (!map || trackedMap === map) return;
+        setupMapViewTracking(map);
       },
-      { immediate: true },
+      // OpenLayers fills the nested `map` property as part of rendering. A
+      // post-flush watcher sees that late value without warning during setup.
+      { immediate: true, flush: "post" },
     );
   }
 

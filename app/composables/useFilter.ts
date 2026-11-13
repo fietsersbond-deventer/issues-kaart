@@ -3,14 +3,26 @@ export function useFilter(filters: Ref<string[]>) {
     return new RegExp(`(${filters.value.join("|")})`, "ig");
   });
 
-  function emphasizeFilter(string: string) {
-    if (!filters.value.length) return string;
+  // Search titles and snippets are plain text. Escape them before inserting our
+  // own <mark> tags, so stored text can never become executable HTML.
+  function escapeHtml(text: string): string {
+    const entities: Record<string, string> = {
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    };
+    return text.replace(/[&<>"']/g, character => entities[character]!);
+  }
 
-    if (string.length < 1) return string;
+  function emphasizeFilter(text: string): string {
+    if (!filters.value.length || !text.length) return escapeHtml(text);
 
-    const emphasized =
-      string?.replace(filterRegex.value, "<mark>$&</mark>") ?? "";
-    return emphasized;
+    let result = "";
+    let previousEnd = 0;
+    for (const match of text.matchAll(filterRegex.value)) {
+      result += escapeHtml(text.slice(previousEnd, match.index));
+      result += `<mark>${escapeHtml(match[0])}</mark>`;
+      previousEnd = match.index + match[0].length;
+    }
+    return result + escapeHtml(text.slice(previousEnd));
   }
 
   return {

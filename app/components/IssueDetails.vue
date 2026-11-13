@@ -1,9 +1,16 @@
 <template>
   <article>
-    <h1 class="mb-4">{{ issue.title }}</h1>
+    <div class="issue-details-heading d-flex align-start">
+      <h1>{{ issue.title }}</h1>
+      <ShareButton :title="issue.title" class="mt-2" />
+    </div>
 
     <div class="d-flex flex-wrap align-center ga-2 mb-4">
-      <CategoryChip :legend="issue.legend" />
+      <CategoryChip
+        v-if="issue.legend"
+        :legend="issue.legend"
+        :style="'margin-left: 12px;'"
+      />
 
       <Tag
         v-for="tag in issue.tags"
@@ -15,14 +22,21 @@
 
     <!-- Street View-voorvertoningen openen geen lightbox: die laden via useStreetViewEmbeds.ts -->
     <ImageViewer selector="img:not(.streetview-embed img)">
-      <!-- eslint-disable-next-line vue/no-v-html -->
+      <!-- The API sanitizes descriptions on create/update with sanitizeHtml. -->
+      <!-- eslint-disable vue/no-v-html -->
       <div
         ref="descriptionRef"
         class="ql-editor viewer"
-        v-html="issue.description"
         @click="onDescriptionClick"
+        v-html="issue.description"
       />
+      <!-- eslint-enable vue/no-v-html -->
     </ImageViewer>
+
+    <template v-if="isAuthenticated && issue.id">
+      <v-divider class="my-6" />
+      <IssueComments :issue-id="issue.id" />
+    </template>
   </article>
 </template>
 
@@ -30,6 +44,8 @@
 import type { Issue } from "~~/shared/types/Issue";
 
 const { toggleTag } = useTagFilters();
+const { status } = useAuth();
+const isAuthenticated = computed(() => status.value === "authenticated");
 
 const props = defineProps<{
   issue: Issue;
@@ -95,10 +111,16 @@ watch(
       activateStreetViewEmbeds(descriptionRef.value);
     }
   },
-  { flush: "post" },
+  { flush: "post" }
 );
 </script>
 <style>
+.issue-details-heading > h1 {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 /* Wrapper-element voor een streetview-embed: bevat afwisselend de statische
    voorvertoning + knop, of (na een klik) het live Google-iframe. */
 .streetview-embed {

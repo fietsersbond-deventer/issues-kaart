@@ -20,9 +20,11 @@
                 <v-text-field v-model="editedItem.name" label="Naam" required />
               </v-col>
               <v-col cols="6">
-                <v-text-field
+                <div class="text-subtitle-2 mb-2">Omschrijving</div>
+                <RichTextEditor 
+                  ref="richTextEditorRef" 
                   v-model="editedItem.description"
-                  label="Omschrijving"
+                  :sanitize-options="sanitizeOptions"
                 />
               </v-col>
               <v-col cols="4">
@@ -30,8 +32,13 @@
                 <v-color-picker
                   v-model="editedItem.color"
                   v-model:mode="mode"
+                  :swatches="colorSwatches"
                   show-swatches
-                  swatches-max-height="150px"
+                  hide-canvas
+                  hide-inputs
+                  hide-mode-switch
+                  hide-sliders
+                  swatches-max-height="none"
                 />
               </v-col>
               <v-col cols="8">
@@ -48,7 +55,11 @@
                     <v-chip v-else color="grey" size="small"
                       >Genereren...</v-chip
                     >
-                    <v-chip class="ml-3">
+                    <v-chip
+                      class="ml-3"
+                      :closable="true"
+                      @click:close="editedItem.icon = undefined"
+                    >
                       {{ editedItem.icon }}
                     </v-chip>
                   </div>
@@ -77,13 +88,49 @@
 
 <script setup lang="ts">
 import type { Legend } from "~~/shared/types/Legend";
+import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
+import RichTextEditor from "~/components/RichTextEditor.vue";
+import { sanitizeDescriptionOptions } from "~~/shared/utils/sanitizeDescriptionOptions";
 import {
   createIconCanvasDataUrl,
   createFallbackIconDataUrl,
 } from "~/utils/iconCanvas";
 
 const modelValue = defineModel<boolean>("modelValue");
+const sanitizeOptions = sanitizeDescriptionOptions();
 const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
+const colorSwatches = [
+  "#FFD503",
+  "#F9C80E",
+  "#E9C46A",
+  "#A7C957",
+  "#6A994E",
+  "#1F921F",
+  "#386641",
+  "#2D6A4F",
+  "#40916C",
+  "#52B788",
+  "#2A9D8F",
+  "#4D908E",
+  "#0177A9",
+  "#0077B6",
+  "#0096C7",
+  "#48CAE4",
+  "#5DADE2",
+  "#264653",
+  "#FF7F27",
+  "#F8961E",
+  "#F4A261",
+  "#E76F51",
+  "#D84315",
+  "#E31E1E",
+  "#C1121F",
+  "#B23A48",
+  "#D45087",
+  "#A23B72",
+  "#9D4EDD",
+  "#6C757D",
+].map((color) => [color]);
 
 const { legend = undefined } = defineProps<{
   legend?: Pick<
@@ -96,15 +143,10 @@ const emit = defineEmits<{
   (e: "save", item: LegendFormData): void;
 }>();
 
-const defaultItem = {
-  name: "",
-  description: "",
-  color: "#2196F3",
-  icon: undefined as string | undefined,
-  icon_data_url: undefined as string | undefined,
-};
-
-type LegendFormData = Pick<Legend, "name" | "description" | "color"> & {
+type LegendFormData = {
+  name: string;
+  description: SanitizedHTML;
+  color: string;
   icon?: string;
   icon_data_url?: string;
 };
@@ -118,8 +160,15 @@ const editedItem = ref<LegendFormData>(
         icon: legend.icon,
         icon_data_url: legend.icon_data_url,
       }
-    : { ...defaultItem },
+    : {
+        name: "",
+        description: "" as SanitizedHTML,
+        color: "#2196F3",
+        icon: undefined as string | undefined,
+        icon_data_url: undefined as string | undefined,
+      },
 );
+const richTextEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
 const isEdit = computed(() => !!legend);
 
 async function setIcon() {
@@ -152,13 +201,23 @@ watch(
     if (newLegend) {
       editedItem.value = { ...newLegend, icon: newLegend.icon || undefined };
     } else {
-      editedItem.value = { ...defaultItem };
+      editedItem.value = {
+        name: "",
+        description: "" as SanitizedHTML,
+        color: "#2196F3",
+        icon: undefined as string | undefined,
+        icon_data_url: undefined as string | undefined,
+      };
     }
   },
   { immediate: true },
 );
 
 async function save() {
+  // Sanitize the description before saving
+  if (richTextEditorRef.value) {
+    richTextEditorRef.value.sanitize();
+  }
   await setIcon();
   emit("save", editedItem.value);
 }

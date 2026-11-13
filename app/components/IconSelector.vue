@@ -74,13 +74,12 @@ import {
   type MdiIcon,
 } from "@/utils/getAllMdiIcons";
 import ValidatedIcon from "@/components/ValidatedIcon.vue";
-import LegendIndicator from "@/components/LegendIndicator.vue";
 
 interface Props {
   previewColor?: string;
 }
 
-const { previewColor = "#666666" } = defineProps<Props>();
+defineProps<Props>();
 
 const selectedIcon = defineModel<string | undefined>({ required: true });
 
@@ -227,14 +226,7 @@ onMounted(async () => {
   }
 });
 
-const showSelectedIcon = () => {
-  if (selectedIcon.value) {
-    const iconIndex = filteredIcons.value.indexOf(selectedIcon.value);
-    if (iconIndex >= 0) {
-      currentPage.value = Math.floor(iconIndex / iconsPerPage) + 1;
-    }
-  }
-};
+
 
 // Reset pagination when filters change
 watch([searchQuery, selectedCategory], () => {

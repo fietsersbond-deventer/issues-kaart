@@ -29,8 +29,9 @@
 </template>
 
 <script lang="ts" setup>
+import { VSelect } from "vuetify/components/VSelect";
 import type { Legend } from "~~/shared/types/Legend";
 
-const legend_id = defineModel<number | null>({ required: true });
+const legend_id = defineModel<number | null | undefined>({ required: true });
 const { legends } = defineProps<{ legends: Legend[] }>();
 </script>

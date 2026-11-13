@@ -22,6 +22,7 @@
 </template>
 
 <script lang="ts" setup>
+defineOptions({ name: "MapToolbar" });
 const eventBus = useMapEventBus().inject();
 const activeDrawingTool = ref<string | null>(null);
 
@@ -41,7 +42,7 @@ function startDrawing(tool: string) {
     if (confirm("Wil je de huidige vorm vervangen?") === false) {
       return;
     }
-    issue.value.geometry = null;
+    if (issue.value) issue.value.geometry = null;
   }
 
   // If clicking the same tool, deactivate it

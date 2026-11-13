@@ -24,6 +24,7 @@ logs
 *.log
 
 # Misc
+.local/
 .DS_Store
 .fleet
 .idea
@@ -32,3 +33,7 @@ logs
 .env
 .env.*
 !.env.example
+
+# Playwright reports and failure artifacts
+playwright-report/
+test-results/

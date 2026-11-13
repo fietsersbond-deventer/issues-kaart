@@ -2,7 +2,9 @@ import type { Map as OLMap } from "ol";
 import type { Ref } from "vue";
 
 /** Tracks the map container size; moving the view is up to useMapFocus. */
-export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
+export function useMapResize(
+  mapRef: Ref<{ map?: OLMap; $el?: HTMLElement } | null | undefined>,
+) {
   const mapHeight = ref(0);
   const mapWidth = ref(0);
 
@@ -14,8 +16,7 @@ export function useMapResize(mapRef: Ref<{ map?: OLMap } | null | undefined>) {
       const mapComponent = unref(mapRef);
       if (!mapComponent) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mapContainer = (mapComponent as any).$el as HTMLElement;
+      const mapContainer = mapComponent.$el;
       if (!mapContainer) return;
 
       resizeObserver = new ResizeObserver((entries) => {

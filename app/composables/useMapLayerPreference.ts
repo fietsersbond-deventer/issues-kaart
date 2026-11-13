@@ -16,13 +16,12 @@ export function useMapLayerPreference() {
    * @param layerName - Name of the layer
    */
   function watchLayerVisibility(
-    layerRef: Ref<any>,
+    layerRef: Ref<{ tileLayer?: TileLayer; layer?: TileLayer } | null>,
     layerName: LayerName
   ): void {
     watch(layerRef, (layerComponent) => {
-      if (layerComponent?.tileLayer || layerComponent?.layer) {
-        const layer = (layerComponent.tileLayer ||
-          layerComponent.layer) as TileLayer;
+      const layer = layerComponent?.tileLayer || layerComponent?.layer;
+      if (layer) {
 
         layer.on("change:visible", () => {
           if (layer.getVisible()) {

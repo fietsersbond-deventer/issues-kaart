@@ -3,6 +3,7 @@ import type { Legend } from "./Legend";
 
 export type BaseIssue = {
   title: string;
+  slug?: string;
   legend_id: number;
   legend: Legend;
   tags: string[];
@@ -13,6 +14,7 @@ export type BaseIssue = {
  */
 export type Issue = BaseIssue & {
   id: number;
+  slug: string;
   description: string;
   geometry: Point | Polygon | LineString;
   created_at: Date;
@@ -21,25 +23,43 @@ export type Issue = BaseIssue & {
 
 export type NewIssue = Omit<
   Issue,
-  "id" | "created_at" | "imageUrl" | "geometry" | "legend_id" | "legend"
+  | "id"
+  | "slug"
+  | "created_at"
+  | "imageUrl"
+  | "geometry"
+  | "legend_id"
+  | "legend"
 > &
-  Partial<Pick<Issue, "geometry" | "legend_id" | "legend">>;
+  Partial<Pick<Issue, "legend_id" | "legend">> & {
+    slug?: string;
+    id?: never;
+    imageUrl?: never;
+    geometry?: Issue["geometry"] | null;
+  };
 
 export type MapIssue = Pick<
   Issue,
-  "id" | "title" | "geometry" | "legend" | "legend_id" | "imageUrl" | "tags"
+  | "id"
+  | "slug"
+  | "title"
+  | "geometry"
+  | "legend"
+  | "legend_id"
+  | "imageUrl"
+  | "tags"
 >;
 export type ExistingIssue = Issue;
 
 export type AdminListIssue = Pick<
   Issue,
-  "id" | "title" | "legend_id" | "legend" | "created_at"
+  "id" | "slug" | "title" | "legend_id" | "legend" | "created_at"
 >;
 
-export type MapIssueFields = "id,title,legend_id,geometry,imageUrl,tags";
-export type AdminIssueFields = "id,title,legend_id,created_at";
+export type MapIssueFields = "id,slug,title,legend_id,geometry,imageUrl,tags";
+export type AdminIssueFields = "id,slug,title,legend_id,created_at";
 export type FullIssueFields =
-  "id,title,description,legend_id,geometry,created_at,imageUrl,tags";
+  "id,slug,title,description,legend_id,geometry,created_at,imageUrl,tags";
 
 export type ParseFields<T extends string> =
   T extends `${infer Field},${infer Rest}`
@@ -50,13 +70,13 @@ export type ParseFields<T extends string> =
 
 export type IssueWithFields<T extends string> = Pick<Issue, ParseFields<T>>;
 
-export function isExistingIssue(
-  issue?: Issue | NewIssue | null,
-): issue is Issue {
+export function isExistingIssue<T extends { id?: number }>(
+  issue?: T | null,
+): issue is T & { id: number } {
   if (!issue) return false;
   return "id" in issue;
 }
 
-export function isNewIssue(issue: Issue | NewIssue): issue is NewIssue {
+export function isNewIssue(issue: Issue | MapIssue | NewIssue): issue is NewIssue {
   return !("id" in issue);
 }

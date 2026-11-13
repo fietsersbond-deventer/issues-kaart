@@ -2,11 +2,14 @@
   <div class="pa-4 d-flex flex-column" style="height: 100%; position: relative">
     <div class="flex-grow-1">
       <v-card variant="flat" class="mb-4 pa-4">
+        <!-- Rich text is validated by validateHTML in the texts PATCH endpoint. -->
+        <!-- eslint-disable vue/no-v-html -->
         <div
           v-if="introText"
           class="intro-content ql-editor"
           v-html="introText.text"
         />
+        <!-- eslint-enable vue/no-v-html -->
         <v-btn
           v-if="status === 'authenticated' && introText"
           v-tooltip:top="'Introductie bewerken'"
@@ -22,6 +25,7 @@
   </div>
 </template>
 <script setup lang="ts">
+defineOptions({ name: "AppIntro" });
 const { status } = useAuth();
 const { getText } = useTexts();
 const isEditorOpen = ref(false);

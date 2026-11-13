@@ -1,3 +1,5 @@
+import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
+
 export type User = {
   id: number;
   username: string;
@@ -18,7 +20,7 @@ export type RefreshToken = {
 export type Legend = {
   id: number;
   name: string;
-  description: string;
+  description: SanitizedHTML;
   color: string;
   created_at: Date;
   usage_count: number;
@@ -29,12 +31,15 @@ export type Legend = {
 
 export type Issue = {
   id: number;
+  slug: string;
   title: string;
   description: string;
   plain_text: string; // description with HTML/images stripped, kept in sync for search
   legend_id: number | null;
   geometry: string; // GeoJSON stored as string
   created_at: Date;
+  updated_by_user_id: number | null;
+  updated_at: string | null;
 };
 
 export type TextType = "plain" | "rich" | "url";
@@ -46,4 +51,29 @@ export type TextEntry = {
   updated_by_user_id: number | null;
   created_at: string;
   updated_at: string;
+};
+
+export type TagSchema = {
+  id: number;
+  tag: string;
+  label: string | null;
+  description: SanitizedHTML | null;
+  icon: string | null;
+  created_at: Date;
+};
+
+export type IssueTagSchema = {
+  issue_id: number;
+  tag_id: number;
+  created_at: Date;
+};
+
+export type Comment = {
+  id: number;
+  issue_id: number;
+  author_id: number | null;
+  body: string;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
 };

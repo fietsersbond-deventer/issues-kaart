@@ -1,9 +1,10 @@
 import { getDb } from "~~/server/utils/db";
-import { extractImageUrl } from "~~/server/utils/extractImageUrl";
+import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueIds, normalizeTag } from "~~/server/utils/issueTags";
 
 type IssueRow = {
   id?: number;
+  slug?: string;
   title?: string;
   description?: string;
   legend_id?: number;
@@ -31,6 +32,7 @@ export default defineEventHandler(async (event) => {
   // Define available fields and their SQL expressions
   const availableFields = {
     id: "i.id",
+    slug: "i.slug",
     title: "i.title",
     description: "i.description",
     legend_id: "i.legend_id",
@@ -78,7 +80,7 @@ export default defineEventHandler(async (event) => {
     includeGeometry = validFields.includes("geometry");
   } else {
     // Return all fields if none specified
-    selectFields = `i.id, i.title, i.description, i.legend_id, i.geometry, i.created_at`;
+    selectFields = `i.id, i.slug, i.title, i.description, i.legend_id, i.geometry, i.created_at`;
     includeImageUrl = true; // Include imageUrl processing for full data
     includeTags = true;
   }
@@ -87,7 +89,8 @@ export default defineEventHandler(async (event) => {
     ? `WHERE EXISTS (
         SELECT 1
         FROM issue_tags it
-        WHERE it.issue_id = i.id AND it.tag = ?
+        JOIN tags t ON t.id = it.tag_id
+        WHERE it.issue_id = i.id AND t.tag = ?
       )`
     : "";
   const values = requestedTag ? [requestedTag] : [];
@@ -125,9 +128,7 @@ export default defineEventHandler(async (event) => {
       typeof issue.id === "number" &&
       typeof issue.description === "string"
     ) {
-      // Check if issue has an image in description
-      const hasImage = extractImageUrl(issue.description) !== null;
-      result.imageUrl = hasImage ? `/api/issues/${issue.id}/image` : null;
+      result.imageUrl = getIssueImageUrl(issue.id, issue.description);
 
       // Remove description from result if it wasn't explicitly requested
       if (requestedFields && !requestedFields.includes("description")) {

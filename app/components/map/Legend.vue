@@ -1,6 +1,6 @@
 <template>
   <div class="legend-container pa-2">
-    <v-table class="legend-list pa-2">
+    <v-table class="legend-list categories-list pa-2">
       <tr
         v-for="item in usedCategories"
         :key="item.id"
@@ -17,11 +17,22 @@
         <td>
           <LegendIndicator :legend="item" :size="24" />
         </td>
-        <td class="text-body-2 text-truncate pa-2">{{ item.name }}</td>
+        <td class="text-body-2 text-truncate pa-2">
+          {{ item.name }}
+        </td>
         <td>
-          <v-tooltip v-if="item.description" :text="item.description" location="top">
+          <v-tooltip v-if="item.description" location="top" max-width="40em">
+            <template #default>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <div class="tooltip-content" v-html="item.description" />
+            </template>
             <template #activator="{ props }">
-              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
+              <v-icon
+                v-bind="props"
+                icon="mdi-information"
+                size="x-small"
+                color="grey"
+              />
             </template>
           </v-tooltip>
         </td>
@@ -29,6 +40,8 @@
           {{ countIssues[item.id] }}
         </td>
       </tr>
+    </v-table>
+    <v-table v-if="usedTags.length" class="legend-list tags-list pa-2">
       <tr
         v-for="tag in usedTags"
         :key="`tag-${tag.tag}`"
@@ -52,9 +65,18 @@
           />
         </td>
         <td>
-          <v-tooltip v-if="tag.description" :text="tag.description" location="top">
+          <v-tooltip v-if="tag.description" location="top" max-width="40em">
+            <template #default>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <div class="tooltip-content" v-html="tag.description" />
+            </template>
             <template #activator="{ props }">
-              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
+              <v-icon
+                v-bind="props"
+                icon="mdi-information"
+                size="x-small"
+                color="grey"
+              />
             </template>
           </v-tooltip>
         </td>
@@ -105,6 +127,7 @@ function onTagClick(tag: string) {
 const countIssues = computed(() => {
   const counts: Record<number, number> = {};
   selectedIssues.value.forEach((issue) => {
+    if (issue.legend_id === undefined) return;
     counts[issue.legend_id] = (counts[issue.legend_id] ?? 0) + 1;
   });
 
@@ -114,7 +137,8 @@ const countIssues = computed(() => {
 
 <style scoped>
 .legend-container {
-  height: 100%;
+  height: auto;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   background: white;
@@ -122,16 +146,49 @@ const countIssues = computed(() => {
 }
 
 .legend-list {
-  overflow-y: auto !important;
-  max-height: 100% !important;
   padding: 0;
+}
+
+/* Categorieën scrollen nooit: deze moeten altijd volledig zichtbaar zijn. */
+.categories-list {
+  flex: 0 0 auto;
+}
+
+/*
+ * Vuetify rendert de daadwerkelijke scrollcontainer als een interne
+ * .v-table__wrapper div (niet het buitenste .v-table-element), dus
+ * overflow en scrollbar-gutter moeten daar via :deep() worden toegepast.
+ * We forceren scrollbar-gutter: stable hier ook (zelfs zonder scrollbar),
+ * zodat deze tabel dezelfde breedte reserveert als de tags-tabel eronder.
+ * Zo blijven de tellerkolommen van beide tabellen mooi uitgelijnd.
+ */
+.categories-list :deep(.v-table__wrapper) {
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* Tags nemen alleen de ruimte die ze nodig hebben en scrollen zodra max-height wordt overschreden. */
+.tags-list {
+  flex: 0 1 auto;
+  min-height: 3 em;
+  display: flex;
+  flex-direction: column;
+}
+
+.tags-list :deep(.v-table__wrapper) {
+  overflow-y: auto;
+  height: auto;
+  max-height: var(--legend-tags-max-height, 10em);
+  scrollbar-gutter: stable;
 }
 
 .legend-item {
   min-height: 28px !important;
   height: 28px !important;
   padding: 0 8px !important;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .counter {
@@ -168,6 +225,31 @@ const countIssues = computed(() => {
   height: 16px;
   border-radius: 2px;
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-content {
+  line-height: 1.5;
+}
+
+.tooltip-content h2,
+.tooltip-content h3,
+.tooltip-content h4 {
+  margin: 0.5em 0 0.25em 0;
+  font-size: inherit;
+}
+
+.tooltip-content p {
+  margin: 0.5em 0;
+}
+
+.tooltip-content ul,
+.tooltip-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.tooltip-content li {
+  margin: 0.25em 0;
 }
 
 .legend-icon-image {

@@ -1,0 +1,55 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
+import Request from "../app/pages/reset-password/index.vue";
+import Confirm from "../app/pages/reset-password/[token].vue";
+import { vueGlobals } from "./helpers/vue";
+import { Field, Slot, uiStubs } from "./helpers/ui";
+const fetch = vi.fn(), navigate = vi.fn();
+const wrappers: Array<{
+    unmount(): void;
+}> = [];
+beforeEach(() => { vueGlobals(); fetch.mockReset(); navigate.mockClear(); vi.stubGlobal("$fetch", fetch); vi.stubGlobal("navigateTo", navigate); vi.stubGlobal("useTitle", vi.fn()); vi.stubGlobal("useRoute", () => ({ params: { token: "reset-token" } })); vi.stubGlobal("useRuntimeConfig", () => ({ public: { adminName: "Admin" } })); vi.spyOn(console, "error").mockImplementation(() => { }); });
+afterEach(() => { wrappers.splice(0).forEach((w) => w.unmount()); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+const stubs = { ...uiStubs, VLayout: Slot, VMain: Slot, NewPassword: Field, PasswordInput: Field };
+it("requests reset links without disclosing account existence and handles network errors", async () => {
+    const wrapper = mount(Request, { global: { stubs } });
+    wrappers.push(wrapper);
+    await wrapper.get("input").setValue("user@example.test");
+    fetch.mockRejectedValueOnce(new Error("offline"));
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Er is een fout opgetreden");
+    fetch.mockResolvedValueOnce({ success: true });
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(fetch).toHaveBeenLastCalledWith("/api/auth/reset-password/request", { method: "POST", body: { email: "user@example.test" } });
+    expect(wrapper.text()).toContain("Als dit e-mailadres bij ons bekend is");
+    expect(wrapper.get("input").element.value).toBe("");
+});
+it("requires matching strong passwords, handles expired links and redirects after confirmation", async () => {
+    const wrapper = mount(Confirm, { global: { stubs } });
+    wrappers.push(wrapper);
+    await wrapper.get("form").trigger("submit");
+    expect(fetch).not.toHaveBeenCalled();
+    const fields = wrapper.findAllComponents(Field);
+    await wrapper.findAll("input")[0]!.setValue("new-password");
+    await wrapper.findAll("input")[1]!.setValue("new-password");
+    await wrapper.get("form").trigger("submit");
+    expect(fetch).not.toHaveBeenCalled();
+    fields[0]!.vm.$emit("strength-change", { score: 4, isStrong: true });
+    await wrapper.findAll("input")[1]!.setValue("different-password");
+    await wrapper.get("form").trigger("submit");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(wrapper.get("button").attributes("disabled")).toBeDefined();
+    await wrapper.findAll("input")[1]!.setValue("new-password");
+    fetch.mockRejectedValueOnce(new Error("expired"));
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(wrapper.text()).toContain("De link is ongeldig of verlopen");
+    fetch.mockResolvedValueOnce({ success: true });
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+    expect(fetch).toHaveBeenLastCalledWith("/api/auth/reset-password/confirm", { method: "POST", body: { token: "reset-token", password: "new-password" } });
+    expect(navigate).toHaveBeenCalledWith("/login?reset=success");
+});

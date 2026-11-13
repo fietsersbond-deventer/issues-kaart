@@ -47,13 +47,19 @@ let registerPromise: Promise<void> | null = null;
 export function ensureStreetViewEmbedBlotRegistered(): Promise<void> {
   if (!registerPromise) {
     registerPromise = loadQuill().then((Quill) => {
+      if (!Quill || typeof Quill.import !== "function") {
+        return;
+      }
       // "blots/block/embed" is Quill's eigen basisklasse voor blok-elementen
       // die als één geheel worden behandeld (net als Quill's ingebouwde
       // "video"-embed, die op dezelfde manier is opgebouwd). We casten naar
       // `any` omdat Quill's eigen types hier geen bruikbare generieke variant
       // van bieden.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill.import lacks a constructible blot type; remove when the wrapper exports it.
       const BlockEmbed = Quill.import("blots/block/embed") as any;
+      if (!BlockEmbed) {
+        return;
+      }
 
       class StreetViewEmbedBlot extends BlockEmbed {
         // De naam waarmee we deze embed straks aanroepen via
@@ -108,4 +114,40 @@ export function ensureStreetViewEmbedBlotRegistered(): Promise<void> {
     });
   }
   return registerPromise;
+}
+
+export interface QuillInstance {
+  getSelection(focus?: boolean): { index: number; length: number } | null;
+  getLength(): number;
+  insertEmbed(
+    index: number,
+    type: string,
+    value: unknown,
+    source?: string,
+  ): unknown;
+  setSelection(index: number, length?: number, source?: string): unknown;
+}
+
+export async function insertStreetViewIntoQuill(
+  quillInstance: QuillInstance | null | undefined,
+  preview: StreetViewEmbedValue,
+  fallbackAppend?: (htmlSnippet: string) => void,
+): Promise<void> {
+  await ensureStreetViewEmbedBlotRegistered();
+  if (quillInstance) {
+    const range = quillInstance.getSelection(true) ?? {
+      index: quillInstance.getLength(),
+      length: 0,
+    };
+    quillInstance.insertEmbed(range.index, "streetviewEmbed", preview, "user");
+    quillInstance.setSelection(range.index + 1, 0, "user");
+  } else if (fallbackAppend) {
+    const code =
+      `<div class="streetview-embed" data-lat="${preview.lat}" ` +
+      `data-lng="${preview.lng}" data-heading="${preview.heading}" ` +
+      `data-pitch="${preview.pitch}" data-fov="${preview.fov}" ` +
+      `data-pano-id="${preview.panoId}" data-embed-src="${preview.embedSrc}">` +
+      `<img src="${preview.previewDataUrl}" alt="Street View voorvertoning" /></div>`;
+    fallbackAppend(code);
+  }
 }
