@@ -3,7 +3,10 @@ import { createError } from "h3";
 import type { Comment } from "~~/shared/types/Comment";
 import { sanitizeHtml } from "./sanitizeHtml";
 
-export type CreateCommentInput = Pick<Comment, "issue_id" | "author_id" | "body">;
+export type CreateCommentInput = Pick<
+  Comment,
+  "issue_id" | "author_id" | "body"
+>;
 export type UpdateCommentInput = Pick<Comment, "body">;
 export type CommentRow = {
   id: number;
