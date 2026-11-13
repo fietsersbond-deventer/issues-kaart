@@ -135,6 +135,21 @@
               :aria-label="`Informatie over ${item.title}`"
               @click.stop="emit('info', item)"
             />
+            <v-badge
+              :content="item.comment_count ?? 0"
+              :model-value="(item.comment_count ?? 0) > 0"
+              color="primary"
+              offset-x="8"
+              offset-y="8"
+            >
+              <v-btn
+                icon="mdi-comment-outline"
+                variant="text"
+                size="small"
+                :aria-label="`Opmerkingen bij ${item.title}`"
+                @click.stop="emit('comments', item)"
+              />
+            </v-badge>
           </div>
         </template>
       </v-data-table-server>
@@ -162,6 +177,7 @@ const emit = defineEmits<{
   edit: [item: IssueSearchItem];
   delete: [item: IssueSearchItem];
   info: [item: IssueSearchItem];
+  comments: [item: IssueSearchItem];
 }>();
 
 const page = defineModel<number>("page", { required: true });
@@ -181,7 +197,7 @@ const headers = computed(() => {
       title: "Acties",
       value: "actions",
       sortable: false,
-      width: "140px",
+      width: "180px",
     });
   }
   return columns;
@@ -213,7 +229,7 @@ function onRowClick(event: Event, { item }: { item: IssueSearchItem }) {
 
 .issue-actions {
   display: grid;
-  grid-template-columns: repeat(3, 40px);
+  grid-template-columns: repeat(4, 40px);
   align-items: center;
   gap: 4px;
 }

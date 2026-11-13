@@ -12,6 +12,7 @@
       @edit="openEditDialog"
       @delete="confirmDelete"
       @info="showIssueInfo"
+      @comments="showComments"
     />
 
     <IssueEditDialog
@@ -39,6 +40,12 @@
       :updated-by-name="updatedByName"
       :updated-at="updatedAt"
     />
+
+    <IssueCommentsDialog
+      v-model="commentsDialog"
+      :issue-id="issueForComments?.id ?? null"
+      :title="issueForComments?.title"
+    />
   </div>
 </template>
 
@@ -53,6 +60,15 @@ const { trackSiteSearch } = useMatomoTracking();
 const issueLocks = useIssueLocks();
 const { get: getIssue, getUpdatedBy, remove: removeIssue } = useIssuesMethods();
 const { showError } = useSnackbar();
+const { token } = useAuth();
+const authHeaders = computed(() => {
+  if (!token.value) return undefined;
+  // Remove "Bearer " if it's already there, then add it back
+  const cleanToken = token.value.replace(/^Bearer\s+/i, "");
+  return {
+    Authorization: `Bearer ${cleanToken}`,
+  };
+});
 
 // Persistent state management using Nuxt's useState
 const state = useState("issues-state", () => ({
@@ -70,7 +86,9 @@ const editDialog = ref(false);
 const loadingEdit = ref(false);
 const issueToEdit = ref<Issue | null>(null);
 const activeEditLockId = ref<number | null>(null);
-useIssueEditLock(computed(() => (editDialog.value ? activeEditLockId.value : null)));
+useIssueEditLock(
+  computed(() => (editDialog.value ? activeEditLockId.value : null)),
+);
 const deleteDialog = ref(false);
 const deleting = ref(false);
 const issueToDelete = ref<IssueSearchItem | null>(null);
@@ -79,6 +97,8 @@ const issueForInfo = ref<IssueSearchItem | null>(null);
 const loadingInfo = ref(false);
 const updatedByName = ref<string | null>(null);
 const updatedAt = ref<string | null>(null);
+const commentsDialog = ref(false);
+const issueForComments = ref<IssueSearchItem | null>(null);
 
 async function openEditDialog(item: IssueSearchItem) {
   if (!issueLocks.getEditAvailability(item.id).canEdit) return;
@@ -166,6 +186,11 @@ async function showIssueInfo(item: IssueSearchItem) {
   }
 }
 
+function showComments(item: IssueSearchItem) {
+  issueForComments.value = item;
+  commentsDialog.value = true;
+}
+
 // Reset pagination when search changes
 watch(
   () => state.value.search,
@@ -173,13 +198,13 @@ watch(
     if (newSearch !== oldSearch) {
       state.value.page = 1;
     }
-  }
+  },
 );
 
 // Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
 const debouncedSearch = refDebounced(
   computed(() => state.value.search ?? ""),
-  300
+  300,
 );
 
 const query = computed(() => ({
@@ -189,8 +214,8 @@ const query = computed(() => ({
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search).map((term) =>
-    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  )
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  ),
 );
 const { emphasizeFilter } = useFilter(filters);
 const {
@@ -199,6 +224,7 @@ const {
   refresh: refreshResults,
 } = await useFetch<SearchResponse>("/api/issues/search", {
   query,
+  headers: authHeaders,
   dedupe: "cancel",
 });
 
@@ -213,11 +239,26 @@ watch([debouncedSearch], () => {
 // Search results come from a separate endpoint, so invalidate them on persisted changes.
 const ws = useSharedIssuesWebSocket();
 const unsubscribe = ws.subscribe((message) => {
-  if (["issue-created", "issue-modified", "issue-deleted"].includes(message.type)) {
+  if (
+    ["issue-created", "issue-modified", "issue-deleted"].includes(message.type)
+  ) {
     refreshResults();
   }
 });
 onUnmounted(unsubscribe);
+
+// Comment counts come from the search results too; refresh them on comment activity.
+const authWs = useSharedAuthWebSocket();
+const unsubscribeComments = authWs.subscribe((message) => {
+  if (
+    ["comment-created", "comment-modified", "comment-deleted"].includes(
+      message.type,
+    )
+  ) {
+    refreshResults();
+  }
+});
+onUnmounted(unsubscribeComments);
 let hasConnected = ws.status.value === "OPEN";
 watch(ws.status, (state) => {
   if (state !== "OPEN") return;
@@ -231,7 +272,7 @@ const issues = computed(() =>
     ...issue,
     ...issueLocks.getEditAvailability(issue.id),
     legend: categories.value?.find((legend) => legend.id === issue.legend_id),
-  }))
+  })),
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 

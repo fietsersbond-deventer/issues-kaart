@@ -100,9 +100,15 @@ export default defineEventHandler(async (event) => {
     )
     .get(...likeParams) as { total: number };
 
+  const isAuthenticated = Boolean(event.context.user);
   const offset = (page - 1) * itemsPerPage;
   const sqlStatement = `SELECT i.id, i.slug, i.title, i.description, i.plain_text, i.legend_id, i.created_at, i.updated_at,
-      l.name AS legend_name
+      l.name AS legend_name${
+        isAuthenticated
+          ? `,
+      (SELECT COUNT(*) FROM comments c WHERE c.issue_id = i.id AND c.deleted_at IS NULL) AS comment_count`
+          : ""
+      }
      FROM issues i
      LEFT JOIN legend l ON l.id = i.legend_id
      ${whereClause}

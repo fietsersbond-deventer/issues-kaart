@@ -10,4 +10,5 @@ export type IssueSearchItem = {
   snippets: string[];
   legend?: Legend;
   tags: string[];
+  comment_count?: number;
 };
