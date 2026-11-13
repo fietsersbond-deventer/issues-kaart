@@ -31,4 +31,5 @@ export type IssueSearchResult = {
     north: number;
     east: number;
   };
+  geometry: GeoJSON.Geometry;
 };

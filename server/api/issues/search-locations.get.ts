@@ -66,6 +66,7 @@ export default defineEventHandler(async (event) => {
       lat,
       lon,
       boundingbox: { south, west, north, east },
+      geometry,
     };
   });
 });

@@ -20,11 +20,8 @@
           />
         </template>
 
-        <v-list
-          v-if="isLoading || hasResults || searchInput"
-          class="c-search-results"
-          style="max-width: 490px"
-        >
+        <div v-if="isLoading || hasResults || searchInput" class="d-flex align-start ga-2">
+          <v-list class="c-search-results" style="max-width: 490px">
           <v-list-item v-if="isLoading" class="px-2">
             <template #prepend>
               <v-progress-circular
@@ -52,6 +49,8 @@
                 :key="`issue-${item.id}`"
                 class="px-2"
                 @click="selectIssue(item)"
+                @mouseenter="hoveredResult = item"
+                @mouseleave="hoveredResult = undefined"
               >
                 <template #prepend>
                   <span class="d-flex align-center justify-center mr-3">
@@ -71,6 +70,8 @@
                 :key="index"
                 class="px-2"
                 @click="selectItem(item)"
+                @mouseenter="hoveredResult = item; loadPdokGeometry(item)"
+                @mouseleave="hoveredResult = undefined"
               >
                 <template #prepend>
                   <v-tooltip :text="getCollectionId(item)" location="top left">
@@ -104,7 +105,14 @@
               </v-list-item>
             </template>
           </template>
-        </v-list>
+          </v-list>
+          <SearchResultPreviewMap
+            v-if="hoveredResult"
+            :lat="hoveredResult.lat"
+            :lon="hoveredResult.lon"
+            :geometry="hoveredResult.geometry"
+          />
+        </div>
       </v-menu>
     </div>
     <div>
@@ -119,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Geometry } from "geojson";
 import type OlMap from "ol/Map";
 import { transformExtent } from "ol/proj";
 
@@ -142,10 +151,38 @@ const issueEntries = ref<IssueSearchResult[]>([]);
 const searchInMapFrame = ref(false);
 const menuOpen = ref(false);
 const { bbox: areaBbox } = useCurrentArea();
-const searchProvider = useSearchProvider();
+// PDOK staat voorlopig uit, zie searchItems hieronder.
 const hasResults = computed(
   () => entries.value.length > 0 || issueEntries.value.length > 0,
 );
+
+type PreviewTarget = {
+  lat: number;
+  lon: number;
+  geometry?: Geometry;
+};
+
+// Toont waar een zoekresultaat ligt zodra de gebruiker er met de muis overheen gaat,
+// via een eigen klein kaartje (zodat de grote kaart niet hoeft te verspringen).
+const hoveredResult = ref<PreviewTarget | undefined>();
+
+// PDOK-zoekresultaten bevatten alleen een punt; de volledige vorm (polygon/lijn) staat
+// achter de "href" van het resultaat. Net als de PDOK-viewer zelf halen we die pas op
+// bij hover, niet eager voor alle resultaten tegelijk.
+async function loadPdokGeometry(item: SearchResult) {
+  if (item.geometry) return;
+  const href = (item.raw?.properties as { href?: string[] } | undefined)?.href?.[0];
+  if (!href) return;
+
+  try {
+    const feature = await $fetch<{ geometry?: Geometry }>(href, {
+      query: { f: "json" },
+    });
+    if (feature.geometry) item.geometry = feature.geometry;
+  } catch {
+    // Mislukte ophaalpoging: laat de puntmarker gewoon staan.
+  }
+}
 
 /** Huidige kaartuitsnede als WGS84-bbox, voor het beperken van zoekresultaten tot het zichtbare gebied. */
 function getViewportBbox(): GazetteerSearchParams["bbox"] | undefined {
@@ -172,15 +209,21 @@ watch(selected, (val) => {
   if (val === undefined) searchInput.value = "";
 });
 
+watch(menuOpen, (open) => {
+  if (!open) hoveredResult.value = undefined;
+});
+
 function selectItem(item: SearchResult) {
   selected.value = item;
   menuOpen.value = false;
+  hoveredResult.value = undefined;
 }
 
 // Navigeren selecteert het onderwerp op de kaart; de URL-gedreven focuslogica
 // (zie useMapFocus) zorgt zelf voor het inzoomen.
 function selectIssue(item: IssueSearchResult) {
   menuOpen.value = false;
+  hoveredResult.value = undefined;
   navigateTo(`/kaart/${item.slug || item.id}`);
 }
 
@@ -233,13 +276,15 @@ async function searchItems(val: string) {
     params.bbox = { west, south, east, north };
   }
 
-  const [geoResult, issueResult] = await Promise.all([
-    searchProvider.value.search(val, params),
+  // PDOK staat voorlopig uit (zie overleg over wegdeel-vlakken); alleen straten
+  // (Nominatim) en onderwerpen blijven actief.
+  const [streetResult, issueResult] = await Promise.all([
+    NominatimSearchProvider.search(val, params),
     $fetch<IssueSearchResult[]>("/api/issues/search-locations", {
       query: { search: val },
     }).catch(() => []),
   ]);
-  entries.value = geoResult as SearchResult[];
+  entries.value = streetResult as SearchResult[];
   issueEntries.value = issueResult;
   isLoading.value = false;
 }
@@ -267,6 +312,7 @@ watch(searchInput, async (value) => {
     issueEntries.value = [];
     isLoading.value = false;
     menuOpen.value = false;
+    hoveredResult.value = undefined;
     return;
   }
 
@@ -345,5 +391,10 @@ watch(searchInput, async (value) => {
   box-shadow: none !important;
   transform: translateX(-40px) translateY(4px);
   overflow-y: auto !important;
+}
+
+.c-search-preview-marker {
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
 </style>

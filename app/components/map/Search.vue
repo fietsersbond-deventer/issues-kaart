@@ -38,8 +38,17 @@ function zoomToResult(result: SearchResult) {
   const view = map?.getView();
   if (!view) return;
 
-  if (result.boundingbox) {
-    const { south, west, north, east } = result.boundingbox;
+  // Een vrijwel puntvormige bbox (bv. een exact adres) laten fitten levert een
+  // onbruikbaar uitgezoomd resultaat op; behandel die dan gewoon als een punt.
+  const MIN_BBOX_SPAN = 0.0005; // graden, ruwweg 50 meter
+  const { boundingbox } = result;
+  const hasUsableBbox =
+    boundingbox &&
+    Math.abs(boundingbox.east - boundingbox.west) > MIN_BBOX_SPAN &&
+    Math.abs(boundingbox.north - boundingbox.south) > MIN_BBOX_SPAN;
+
+  if (hasUsableBbox) {
+    const { south, west, north, east } = boundingbox;
     view.fit(transformBboxToOpenLayers([west, south, east, north]), {
       padding: [50, 50, 50, 50],
       maxZoom: 18,
@@ -48,7 +57,7 @@ function zoomToResult(result: SearchResult) {
   } else {
     view.animate({
       center: fromLonLat([result.lon, result.lat]),
-      zoom: Math.max(view.getZoom() ?? 0, 16),
+      zoom: Math.max(view.getZoom() ?? 0, 17),
       duration: 500,
     });
   }
