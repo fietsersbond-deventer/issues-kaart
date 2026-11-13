@@ -119,6 +119,7 @@
             v-if="hoveredResult"
             :lat="hoveredResult.lat"
             :lon="hoveredResult.lon"
+            :boundingbox="hoveredResult.boundingbox"
             :geometry="hoveredResult.geometry"
           />
         </div>
@@ -168,6 +169,7 @@ const hasResults = computed(
 type PreviewTarget = {
   lat: number;
   lon: number;
+  boundingbox?: SearchResult["boundingbox"];
   geometry?: Geometry;
 };
 
@@ -286,15 +288,16 @@ async function searchItems(val: string) {
     params.bbox = { west, south, east, north };
   }
 
-  // PDOK staat voorlopig uit (zie overleg over wegdeel-vlakken); alleen straten
-  // (Nominatim) en onderwerpen blijven actief.
-  const [streetResult, issueResult] = await Promise.all([
+  // PDOK staat voorlopig uit (zie overleg over wegdeel-vlakken); Nominatim en
+  // Photon vullen elkaar aan (straten/adressen resp. losse punten als musea).
+  const [streetResult, poiResult, issueResult] = await Promise.all([
     NominatimSearchProvider.search(val, params),
+    PhotonSearchProvider.search(val, params),
     $fetch<IssueSearchResult[]>("/api/issues/search-locations", {
       query: { search: val },
     }).catch(() => []),
   ]);
-  entries.value = streetResult as SearchResult[];
+  entries.value = [...streetResult, ...poiResult] as SearchResult[];
   issueEntries.value = issueResult;
   isLoading.value = false;
 }

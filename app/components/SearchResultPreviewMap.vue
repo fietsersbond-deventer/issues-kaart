@@ -45,6 +45,7 @@ const rdProjection = new Projection({
 const props = defineProps<{
   lat: number;
   lon: number;
+  boundingbox?: { south: number; west: number; north: number; east: number };
   geometry?: Geometry;
 }>();
 
@@ -55,7 +56,7 @@ const geoJsonFormat = new GeoJSONFormat({
 
 const center = computed(() => fromLonLat([props.lon, props.lat]));
 
-const isArea = computed(() => {
+const hasAreaGeometry = computed(() => {
   const type = props.geometry?.type;
   return (
     type === "Polygon" ||
@@ -65,15 +66,49 @@ const isArea = computed(() => {
   );
 });
 
-const features = computed(() =>
-  isArea.value
-    ? geoJsonFormat.readFeatures({
-        type: "Feature",
-        properties: {},
-        geometry: props.geometry as Geometry,
-      })
-    : [new Feature({ geometry: new Point(center.value) })],
-);
+// Zonder echte geometrie (bv. Photon, dat alleen punt + bbox levert) toch het
+// gebied laten zien via een rechthoek, mits de bbox niet verwaarloosbaar klein is.
+const MIN_BBOX_SPAN = 0.0005; // graden, ruwweg 50 meter
+const hasUsableBbox = computed(() => {
+  const b = props.boundingbox;
+  return (
+    !!b &&
+    Math.abs(b.east - b.west) > MIN_BBOX_SPAN &&
+    Math.abs(b.north - b.south) > MIN_BBOX_SPAN
+  );
+});
+
+const isArea = computed(() => hasAreaGeometry.value || hasUsableBbox.value);
+
+const features = computed(() => {
+  if (hasAreaGeometry.value) {
+    return geoJsonFormat.readFeatures({
+      type: "Feature",
+      properties: {},
+      geometry: props.geometry as Geometry,
+    });
+  }
+  if (hasUsableBbox.value) {
+    const { west, south, east, north } = props.boundingbox!;
+    return geoJsonFormat.readFeatures({
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [west, south],
+            [east, south],
+            [east, north],
+            [west, north],
+            [west, south],
+          ],
+        ],
+      },
+    });
+  }
+  return [new Feature({ geometry: new Point(center.value) })];
+});
 
 const previewStyle = new Style({
   image: new Circle({
@@ -106,7 +141,7 @@ function fitToTarget() {
 
 onMounted(() => nextTick(fitToTarget));
 watch(
-  () => [props.lat, props.lon, props.geometry],
+  () => [props.lat, props.lon, props.geometry, props.boundingbox],
   () => nextTick(fitToTarget),
 );
 </script>
