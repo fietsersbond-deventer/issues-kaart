@@ -17,3 +17,18 @@ export type IssueSearchItem = {
   tags: string[];
   comment_count?: number;
 };
+
+/** Lichtgewicht zoekresultaat voor de Gazetteer-dropdown, inclusief locatie om op de kaart te tonen. */
+export type IssueSearchResult = {
+  id: number;
+  slug: string;
+  title: string;
+  lat: number;
+  lon: number;
+  boundingbox?: {
+    south: number;
+    west: number;
+    north: number;
+    east: number;
+  };
+};

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-surface-container-high d-flex align-center ga-2 py-1">
+  <div class="bg-surface-bright d-flex align-center ga-2 py-1">
     <div id="search-autocomplete" class="w-100" style="height: 40px">
       <v-menu
         v-model="menuOpen"
@@ -12,7 +12,7 @@
             v-model="searchInput"
             placeholder="Zoeken"
             density="compact"
-            :class="['c-gazetteer', 'bg-surface-container-high']"
+            :class="['c-gazetteer', 'bg-surface-bright']"
             :loading="isLoading"
             hide-details
             clearable
@@ -21,46 +21,89 @@
         </template>
 
         <v-list
-          v-if="entries.length > 0"
+          v-if="isLoading || hasResults || searchInput"
           class="c-search-results"
           style="max-width: 490px"
         >
-          <v-list-item
-            v-for="(item, index) in entries"
-            :key="index"
-            class="px-2"
-            @click="selectItem(item)"
-          >
+          <v-list-item v-if="isLoading" class="px-2">
             <template #prepend>
-              <v-tooltip :text="getCollectionId(item)" location="top left">
-                <template #activator="{ props: iconProps }">
-                  <span
-                    v-bind="iconProps"
-                    class="d-flex align-center justify-center mr-3"
-                  >
-                    <SearchResultIcon :item="item" />
+              <v-progress-circular
+                indeterminate
+                size="20"
+                width="2"
+                class="mr-3"
+              />
+            </template>
+            <template #title>Zoeken…</template>
+          </v-list-item>
+
+          <v-list-item
+            v-else-if="!hasResults"
+            class="px-2 text-medium-emphasis"
+          >
+            <template #title>Geen resultaten gevonden</template>
+          </v-list-item>
+
+          <template v-else>
+            <template v-if="issueEntries.length > 0">
+              <v-list-subheader>Onderwerpen</v-list-subheader>
+              <v-list-item
+                v-for="item in issueEntries"
+                :key="`issue-${item.id}`"
+                class="px-2"
+                @click="selectIssue(item)"
+              >
+                <template #prepend>
+                  <span class="d-flex align-center justify-center mr-3">
+                    <v-icon icon="mdi-map-marker-outline" size="20" />
                   </span>
                 </template>
-              </v-tooltip>
-            </template>
-            <template #title>
-              <v-tooltip :text="getLabel(item)" location="top left">
-                <template #activator="{ props: tooltipProps }">
-                  <div v-bind="tooltipProps" class="text-truncate">
-                    <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
-                    <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
-                    <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span
-                      v-if="getLabelHtml(item)"
-                      v-html="getLabelHtml(item)"
-                    />
-                    <span v-else>{{ getLabel(item) }}</span>
-                  </div>
+                <template #title>
+                  <div class="text-truncate">{{ item.title }}</div>
                 </template>
-              </v-tooltip>
+              </v-list-item>
             </template>
-          </v-list-item>
+
+            <template v-if="entries.length > 0">
+              <v-list-subheader>Locaties</v-list-subheader>
+              <v-list-item
+                v-for="(item, index) in entries"
+                :key="index"
+                class="px-2"
+                @click="selectItem(item)"
+              >
+                <template #prepend>
+                  <v-tooltip :text="getCollectionId(item)" location="top left">
+                    <template #activator="{ props: iconProps }">
+                      <span
+                        v-bind="iconProps"
+                        class="d-flex align-center justify-center mr-3"
+                      >
+                        <SearchResultIcon :item="item" />
+                      </span>
+                    </template>
+                  </v-tooltip>
+                </template>
+                <template #title>
+                  <v-tooltip :text="getLabel(item)" location="top left">
+                    <template #activator="{ props: tooltipProps }">
+                      <div v-bind="tooltipProps" class="text-truncate">
+                        <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
+                        <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
+                        <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
+                        <!-- eslint-disable-next-line vue/no-v-html -->
+                        <span
+                          v-if="getLabelHtml(item)"
+                          v-html="getLabelHtml(item)"
+                        />
+                        <span v-else>{{ getLabel(item) }}</span>
+                      </div>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-list-item>
+            </template>
+          </template>
         </v-list>
       </v-menu>
     </div>
@@ -76,7 +119,10 @@
 </template>
 
 <script setup lang="ts">
-import type { GazetteerPDOKSearchParams } from "~~/server/utils/PDOKSearchProvider";
+import type OlMap from "ol/Map";
+import { transformExtent } from "ol/proj";
+
+const map = inject<OlMap>("map");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getLabel(item: any): string {
@@ -92,9 +138,35 @@ const searchInput = ref("");
 const isLoading = ref(false);
 const selected = defineModel<SearchResult | undefined>();
 const entries = ref<SearchResult[]>([]);
+const issueEntries = ref<IssueSearchResult[]>([]);
 const searchInMapFrame = ref(false);
 const menuOpen = ref(false);
-const { bbox } = useCurrentArea();
+const { bbox: areaBbox } = useCurrentArea();
+const searchProvider = useSearchProvider();
+const hasResults = computed(
+  () => entries.value.length > 0 || issueEntries.value.length > 0,
+);
+
+/** Huidige kaartuitsnede als WGS84-bbox, voor het beperken van zoekresultaten tot het zichtbare gebied. */
+function getViewportBbox(): GazetteerSearchParams["bbox"] | undefined {
+  const size = map?.getSize();
+  if (!map || !size) return undefined;
+
+  const [west, south, east, north] = transformExtent(
+    map.getView().calculateExtent(size),
+    "EPSG:3857",
+    "EPSG:4326",
+  );
+  if (
+    west === undefined ||
+    south === undefined ||
+    east === undefined ||
+    north === undefined
+  ) {
+    return undefined;
+  }
+  return { west, south, east, north };
+}
 
 watch(selected, (val) => {
   if (val === undefined) searchInput.value = "";
@@ -105,9 +177,22 @@ function selectItem(item: SearchResult) {
   menuOpen.value = false;
 }
 
+// Navigeren selecteert het onderwerp op de kaart; de URL-gedreven focuslogica
+// (zie useMapFocus) zorgt zelf voor het inzoomen.
+function selectIssue(item: IssueSearchResult) {
+  menuOpen.value = false;
+  navigateTo(`/kaart/${item.slug || item.id}`);
+}
+
 function selectFirstResult() {
-  if (entries.value && entries.value.length > 0) {
-    selectItem(entries.value[0]);
+  const first = issueEntries.value?.[0];
+  if (first) {
+    selectIssue(first);
+    return;
+  }
+  const firstEntry = entries.value?.[0];
+  if (firstEntry) {
+    selectItem(firstEntry);
   }
 }
 
@@ -125,16 +210,6 @@ const collections = ref<Partial<PDOKSearchCollections>>(
       ),
 );
 
-function reset() {
-  collections.value = searchParams?.collections
-    ? JSON.parse(JSON.stringify(searchParams.collections))
-    : Object.fromEntries(
-        Object.entries(PDOKSearchProvider.defaultCollections).filter(
-          ([, config]) => config?.version === 1,
-        ),
-      );
-}
-
 async function searchItems(val: string) {
   isLoading.value = true;
   // Start with base searchParams
@@ -150,14 +225,22 @@ async function searchItems(val: string) {
         );
 
   if (searchInMapFrame.value) {
-    const bbox = await getViewportBbox();
-    if (bbox) {
-      params.bbox = bbox;
-    }
+    params.bbox = await getViewportBbox();
+  }
+  // Zonder zichtbare-kaartuitsnede valt terug op het gebied van deze instantie (bv. Deventer).
+  if (!params.bbox && areaBbox) {
+    const [west, south, east, north] = areaBbox;
+    params.bbox = { west, south, east, north };
   }
 
-  const result = await searchProvider.value.search(val, params);
-  entries.value = result as SearchResult[];
+  const [geoResult, issueResult] = await Promise.all([
+    searchProvider.value.search(val, params),
+    $fetch<IssueSearchResult[]>("/api/issues/search-locations", {
+      query: { search: val },
+    }).catch(() => []),
+  ]);
+  entries.value = geoResult as SearchResult[];
+  issueEntries.value = issueResult;
   isLoading.value = false;
 }
 
@@ -167,6 +250,7 @@ watch(
   collections,
   async () => {
     entries.value = [];
+    issueEntries.value = [];
     // If user has already entered a search term, re-search with new collection settings
     if (searchInput.value?.length) {
       await searchItems(searchInput.value);
@@ -180,6 +264,7 @@ watch(searchInput, async (value) => {
   if (!value) {
     clearTimeout(timeout);
     entries.value = [];
+    issueEntries.value = [];
     isLoading.value = false;
     menuOpen.value = false;
     return;
@@ -193,6 +278,7 @@ watch(searchInput, async (value) => {
 
   if (items) {
     entries.value = items;
+    issueEntries.value = [];
   } else {
     clearTimeout(timeout); // Cleanup previous one
     timeout = setTimeout(() => searchItems(value), 500);
@@ -204,62 +290,58 @@ watch(searchInput, async (value) => {
 });
 </script>
 
-<style lang="scss">
+<style>
 .c-gazetteer {
   width: 100%;
   max-height: 40px;
-
-  .v-text-field .v-input__control .v-input__slot {
-    height: 40px !important;
-  }
-
-  .v-field__outline {
-    display: none;
-  }
-
-  .v-field__input {
-    align-items: center !important;
-    height: 40px !important;
-    padding: 0 8px;
-  }
-
-  .v-field__append-inner {
-    padding: 0 4px;
-  }
-
-  input {
-    text-align: left;
-  }
 }
 
-.c-gazetteer--coord-active {
-  input {
-    color: rgba(var(--v-theme-primary), 1) !important;
-  }
+.c-gazetteer .v-text-field .v-input__control .v-input__slot {
+  height: 40px !important;
 }
 
-#pdok-options {
-  .v-overlay__content {
-    border-radius: 12px;
-    transform: translateY(8px);
-  }
+.c-gazetteer .v-field__outline {
+  display: none;
+}
+
+.c-gazetteer .v-field__input {
+  align-items: center !important;
+  height: 40px !important;
+  padding: 0 8px;
+}
+
+.c-gazetteer .v-field__append-inner {
+  padding: 0 4px;
+}
+
+.c-gazetteer input {
+  text-align: left;
+}
+
+.c-gazetteer--coord-active input {
+  color: rgba(var(--v-theme-primary), 1) !important;
+}
+
+#pdok-options .v-overlay__content {
+  border-radius: 12px;
+  transform: translateY(8px);
 }
 
 .c_search-collection {
   height: fit-content;
+}
 
-  &:hover {
-    background-color: rgba(var(--v-theme-surface-bright), 1);
-    opacity: 1;
-    cursor: default;
-  }
+.c_search-collection:hover {
+  background-color: rgba(var(--v-theme-surface-bright), 1);
+  opacity: 1;
+  cursor: default;
 }
 
 .c-search-results {
   max-width: 490px !important;
   max-height: 400px !important;
   border-radius: 12px !important;
-  background-color: rgba(var(--v-theme-surface-container-high), 1) !important;
+  background-color: rgba(var(--v-theme-surface-bright), 1) !important;
   box-shadow: none !important;
   transform: translateX(-40px) translateY(4px);
   overflow-y: auto !important;

@@ -1,4 +1,4 @@
-import { Feature, FeatureCollection, Point } from "geojson";
+import type { Feature, FeatureCollection, Point } from "geojson";
 import { center } from "@turf/center";
 
 export type PDOKObject = {
@@ -11,11 +11,9 @@ export type PDOKObject = {
   score: number;
 };
 
-export type GazetteerPDOKSearchParams = {
-  q: string;
-  limit?: number;
-  crs: string;
-} & Partial<PDOKSearchCollections>;
+export type GazetteerPDOKSearchParams = GazetteerSearchParams & {
+  crs?: string;
+};
 
 function convertToSearchResult(
   feature: Feature<Point, PDOKObject>,
@@ -30,7 +28,7 @@ function convertToSearchResult(
     ];
     boundingbox = { south, west, north, east };
   }
-  const [lon, lat] = center(feature).geometry.coordinates;
+  const [lon, lat] = center(feature).geometry.coordinates as [number, number];
   return {
     id: `${feature.id}`,
     label: feature.properties.display_name,
@@ -39,8 +37,21 @@ function convertToSearchResult(
     lat,
     lon,
     boundingbox,
-    raw: feature as SearchResultRaw,
+    raw: feature as unknown as SearchResultRaw,
   };
+}
+
+// PDOK verwacht per collectie bracket-notatie (plaats[version]=1), geen geneste objecten.
+function flattenCollections(
+  collections: Partial<PDOKSearchCollections> | undefined,
+): Record<string, number> {
+  const flat: Record<string, number> = {};
+  for (const [name, config] of Object.entries(collections ?? {})) {
+    if (!config) continue;
+    flat[`${name}[version]`] = config.version;
+    flat[`${name}[relevance]`] = config.relevance;
+  }
+  return flat;
 }
 
 let abortController: AbortController | null = null;
@@ -61,51 +72,49 @@ const defaultCollections: Readonly<Partial<PDOKSearchCollections>> = {
   wegdeel: { version: 0, relevance: 0.5 },
 };
 
+/** Doorzoekt de PDOK Locatieserver rechtstreeks vanuit de browser. */
 export const PDOKSearchProvider: SearchProvider<Feature<Point, PDOKObject>> & {
   defaultCollections: Readonly<Partial<PDOKSearchCollections>>;
 } = {
-  search: async (query: string, params?: GazetteerSearchParams) => {
+  search: async (query: string, params?: GazetteerPDOKSearchParams) => {
     if (query.trim().length < 2) {
       return [];
     }
-    const { countrycodes: _, bbox, collections, ...restParams } = params || {};
+    const {
+      countrycodes: _countrycodes,
+      bbox,
+      collections,
+      ...restParams
+    } = params || {};
 
     if (abortController) {
       abortController.abort();
     }
-
     abortController = new AbortController();
 
     try {
-      // bbox must be comma-separated for PDOK API (cannot use axios params encoding)
-      const bboxStr = bbox
-        ? `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`
-        : undefined;
-      const url = bboxStr
-        ? `https://api.pdok.nl/kadaster/location-api/v1/search?bbox=${bboxStr}`
-        : "https://api.pdok.nl/kadaster/location-api/v1/search?";
-      const { data } = await axios.get<FeatureCollection<Point, PDOKObject>>(
-        url,
+      const data = await $fetch<FeatureCollection<Point, PDOKObject>>(
+        "https://api.pdok.nl/kadaster/location-api/v1/search",
         {
-          params: {
+          query: {
             q: query,
             crs: "http://www.opengis.net/def/crs/OGC/1.3/CRS84",
-            ...(bboxStr
-              ? { "bbox-crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84" }
+            ...(bbox
+              ? {
+                  bbox: `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`,
+                  "bbox-crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84",
+                }
               : {}),
             limit: 20,
             ...restParams,
-            // Flatten collections into top-level params (plaats[version]=1, not collections[plaats][version]=1)
-            ...(collections || {}),
+            ...flattenCollections(collections),
           },
           signal: abortController.signal,
         },
       );
-      return data.features.map((entry: Feature<Point, PDOKObject>) =>
-        convertToSearchResult(entry),
-      );
+      return data.features.map((entry) => convertToSearchResult(entry));
     } catch (err) {
-      if ((err as any).name !== "CanceledError") {
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
         console.warn("Error with fetching search results: ", err);
       }
       return [];

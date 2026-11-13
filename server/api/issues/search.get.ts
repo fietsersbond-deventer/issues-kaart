@@ -2,14 +2,10 @@ import { getDb } from "~~/server/utils/db";
 import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 import { getTagsForIssueIds } from "~~/server/utils/issueTags";
 import { getCommentsForIssueIds } from "~~/server/utils/comments";
+import { escapeLikePattern } from "~~/server/utils/escapeLikePattern";
 import { getMatches } from "~~/app/utils/getMatch";
 import { parseSearchTerms } from "~~/app/utils/parseSearchTerms";
 import { getPlainText } from "~~/shared/utils/getPlainText";
-
-// Escape LIKE wildcards so search terms are matched literally.
-function escapeLikePattern(term: string): string {
-  return term.replace(/[\\%_]/g, (char) => `\\${char}`);
-}
 
 /**
  * Search endpoint
