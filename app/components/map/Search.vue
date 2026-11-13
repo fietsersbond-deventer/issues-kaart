@@ -11,7 +11,7 @@
     </v-btn>
     <v-expand-x-transition>
       <v-card v-show="active" flat class="search-card bg-surface-bright">
-        <Gazetteer v-model="location" />
+        <GazetteerSearch v-model="location" />
       </v-card>
     </v-expand-x-transition>
   </div>

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h } from "vue";
-import Gazetteer from "../app/components/Gazetteer.vue";
+import Gazetteer from "../app/components/GazetteerSearch.vue";
 import { vueGlobals } from "./helpers/vue";
 import { Button, Field } from "./helpers/ui";
 

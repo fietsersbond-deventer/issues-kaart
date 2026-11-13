@@ -1,4 +1,4 @@
-import sanitizeHtmlLib from "sanitize-html";
+import type sanitizeHtmlLib from "sanitize-html";
 import type { Nominal } from "./Nominal";
 
 /**

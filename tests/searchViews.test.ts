@@ -64,7 +64,7 @@ function mountSearch(view: Record<string, unknown>) {
       provide: { map: { getView: () => view } },
       stubs: {
         ...stubs,
-        Gazetteer,
+        GazetteerSearch: Gazetteer,
         VExpandXTransition: Slot,
       },
     },

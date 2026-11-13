@@ -89,11 +89,12 @@
                       <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
                       <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
                       <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
-                      <!-- eslint-disable-next-line vue/no-v-html -->
+                      <!-- eslint-disable vue/no-v-html -->
                       <span
                         v-if="getLabelHtml(item)"
                         v-html="getLabelHtml(item)"
                       />
+                      <!-- eslint-enable vue/no-v-html -->
                       <span v-else>{{ getLabel(item) }}</span>
                     </div>
                   </template>
