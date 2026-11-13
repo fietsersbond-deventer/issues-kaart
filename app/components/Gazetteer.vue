@@ -20,91 +20,100 @@
           />
         </template>
 
-        <div v-if="isLoading || hasResults || searchInput" class="d-flex align-start ga-2">
+        <div
+          v-if="isLoading || hasResults || searchInput"
+          class="d-flex align-start ga-2"
+        >
           <v-list class="c-search-results" style="max-width: 490px">
-          <v-list-item v-if="isLoading" class="px-2">
-            <template #prepend>
-              <v-progress-circular
-                indeterminate
-                size="20"
-                width="2"
-                class="mr-3"
-              />
-            </template>
-            <template #title>Zoeken…</template>
-          </v-list-item>
+            <v-list-item v-if="isLoading" class="px-2">
+              <template #prepend>
+                <v-progress-circular
+                  indeterminate
+                  size="20"
+                  width="2"
+                  class="mr-3"
+                />
+              </template>
+              <template #title>Zoeken…</template>
+            </v-list-item>
 
-          <v-list-item
-            v-else-if="!hasResults"
-            class="px-2 text-medium-emphasis"
-          >
-            <template #title>Geen resultaten gevonden</template>
-          </v-list-item>
+            <v-list-item
+              v-else-if="!hasResults"
+              class="px-2 text-medium-emphasis"
+            >
+              <template #title>Geen resultaten gevonden</template>
+            </v-list-item>
 
-          <template v-else>
-            <template v-if="issueEntries.length > 0">
-              <v-list-subheader>Onderwerpen</v-list-subheader>
-              <v-list-item
-                v-for="item in issueEntries"
-                :key="`issue-${item.id}`"
-                class="px-2"
-                @click="selectIssue(item)"
-                @mouseenter="hoveredResult = item"
-                @mouseleave="hoveredResult = undefined"
-              >
-                <template #prepend>
-                  <span class="d-flex align-center justify-center mr-3">
-                    <v-icon icon="mdi-map-marker-outline" size="20" />
-                  </span>
-                </template>
-                <template #title>
-                  <div class="text-truncate">{{ item.title }}</div>
-                </template>
-              </v-list-item>
-            </template>
+            <template v-else>
+              <template v-if="issueEntries.length > 0">
+                <v-list-subheader>Onderwerpen</v-list-subheader>
+                <v-list-item
+                  v-for="item in issueEntries"
+                  :key="`issue-${item.id}`"
+                  class="px-2"
+                  @click="selectIssue(item)"
+                  @mouseenter="hoveredResult = item"
+                  @mouseleave="hoveredResult = undefined"
+                >
+                  <template #prepend>
+                    <span class="d-flex align-center justify-center mr-3">
+                      <v-icon icon="mdi-map-marker-outline" size="20" />
+                    </span>
+                  </template>
+                  <template #title>
+                    <div class="text-truncate">{{ item.title }}</div>
+                  </template>
+                </v-list-item>
+              </template>
 
-            <template v-if="entries.length > 0">
-              <v-list-subheader>Locaties</v-list-subheader>
-              <v-list-item
-                v-for="(item, index) in entries"
-                :key="index"
-                class="px-2"
-                @click="selectItem(item)"
-                @mouseenter="hoveredResult = item; loadPdokGeometry(item)"
-                @mouseleave="hoveredResult = undefined"
-              >
-                <template #prepend>
-                  <v-tooltip :text="getCollectionId(item)" location="top left">
-                    <template #activator="{ props: iconProps }">
-                      <span
-                        v-bind="iconProps"
-                        class="d-flex align-center justify-center mr-3"
-                      >
-                        <SearchResultIcon :item="item" />
-                      </span>
-                    </template>
-                  </v-tooltip>
-                </template>
-                <template #title>
-                  <v-tooltip :text="getLabel(item)" location="top left">
-                    <template #activator="{ props: tooltipProps }">
-                      <div v-bind="tooltipProps" class="text-truncate">
-                        <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
-                        <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
-                        <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
-                        <!-- eslint-disable-next-line vue/no-v-html -->
+              <template v-if="entries.length > 0">
+                <v-list-subheader>Locaties</v-list-subheader>
+                <v-list-item
+                  v-for="(item, index) in entries"
+                  :key="index"
+                  class="px-2"
+                  @click="selectItem(item)"
+                  @mouseenter="
+                    hoveredResult = item;
+                    loadPdokGeometry(item);
+                  "
+                  @mouseleave="hoveredResult = undefined"
+                >
+                  <template #prepend>
+                    <v-tooltip
+                      :text="getCollectionId(item)"
+                      location="top left"
+                    >
+                      <template #activator="{ props: iconProps }">
                         <span
-                          v-if="getLabelHtml(item)"
-                          v-html="getLabelHtml(item)"
-                        />
-                        <span v-else>{{ getLabel(item) }}</span>
-                      </div>
-                    </template>
-                  </v-tooltip>
-                </template>
-              </v-list-item>
+                          v-bind="iconProps"
+                          class="d-flex align-center justify-center mr-3"
+                        >
+                          <SearchResultIcon :item="item" />
+                        </span>
+                      </template>
+                    </v-tooltip>
+                  </template>
+                  <template #title>
+                    <v-tooltip :text="getLabel(item)" location="top left">
+                      <template #activator="{ props: tooltipProps }">
+                        <div v-bind="tooltipProps" class="text-truncate">
+                          <!-- If labelHtml is present, use v-html to render it. Otherwise, fall back to the plain label. -->
+                          <!-- v-html is used here to allow for highlighted search terms or other HTML formatting provided by the search provider. -->
+                          <!-- labelHtml is guaranteed to be sanitized before being passed to this component, ensuring that it is safe to render. -->
+                          <!-- eslint-disable-next-line vue/no-v-html -->
+                          <span
+                            v-if="getLabelHtml(item)"
+                            v-html="getLabelHtml(item)"
+                          />
+                          <span v-else>{{ getLabel(item) }}</span>
+                        </div>
+                      </template>
+                    </v-tooltip>
+                  </template>
+                </v-list-item>
+              </template>
             </template>
-          </template>
           </v-list>
           <SearchResultPreviewMap
             v-if="hoveredResult"
@@ -171,7 +180,8 @@ const hoveredResult = ref<PreviewTarget | undefined>();
 // bij hover, niet eager voor alle resultaten tegelijk.
 async function loadPdokGeometry(item: SearchResult) {
   if (item.geometry) return;
-  const href = (item.raw?.properties as { href?: string[] } | undefined)?.href?.[0];
+  const href = (item.raw?.properties as { href?: string[] } | undefined)
+    ?.href?.[0];
   if (!href) return;
 
   try {
