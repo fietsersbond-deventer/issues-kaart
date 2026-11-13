@@ -31,7 +31,9 @@ watch(active, (isActive) => {
 });
 
 watch(location, (selected) => {
-  if (selected) zoomToResult(selected);
+  if (!selected) return;
+  zoomToResult(selected);
+  active.value = false;
 });
 
 function zoomToResult(result: SearchResult) {

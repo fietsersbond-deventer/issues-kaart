@@ -92,6 +92,7 @@ it("toggles the search and fits the map to a selected result with a usable exten
     expect.objectContaining({ maxZoom: 18 }),
   );
   expect(view.animate).not.toHaveBeenCalled();
+  expect(card.attributes("style")).toContain("display: none");
 });
 it("zooms to a point for results without a usable extent", async () => {
   const view = { fit: vi.fn(), animate: vi.fn(), getZoom: () => 12 };
