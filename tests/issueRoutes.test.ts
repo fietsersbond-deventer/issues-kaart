@@ -17,6 +17,7 @@ let routes: {
   checkSlug: typeof import("../server/api/issues/slug.post").default;
   list: typeof import("../server/api/issues/index.get").default;
   search: typeof import("../server/api/issues/search.get").default;
+  searchLocations: typeof import("../server/api/issues/search-locations.get").default;
   updatedBy: typeof import("../server/api/issues/[id]/updated-by.get").default;
   geojson: typeof import("../server/api/issues/geojson.get").default;
 };
@@ -41,6 +42,8 @@ beforeEach(async () => {
     checkSlug: (await import("../server/api/issues/slug.post")).default,
     list: (await import("../server/api/issues/index.get")).default,
     search: (await import("../server/api/issues/search.get")).default,
+    searchLocations: (await import("../server/api/issues/search-locations.get"))
+      .default,
     updatedBy: (await import("../server/api/issues/[id]/updated-by.get"))
       .default,
     geojson: (await import("../server/api/issues/geojson.get")).default,
@@ -572,6 +575,25 @@ describe("issue persistence contracts with the migrated schema", () => {
     expect((await routes.search(h.event)).total).toBe(0);
     h.input.query = {};
     expect((await routes.search(h.event)).total).toBe(2);
+  });
+  it("finds issues by title or tag with their location for the gazetteer", async () => {
+    await create();
+    await create("Parking");
+    h.input.query = { search: "cafe" };
+    const results = await routes.searchLocations(h.event);
+    expect(results).toHaveLength(2);
+    expect(results[0]).toMatchObject({
+      slug: expect.any(String),
+      lat: 52.2,
+      lon: 6.1,
+      geometry,
+    });
+    h.input.query = { search: "parking" };
+    expect(await routes.searchLocations(h.event)).toHaveLength(1);
+    h.input.query = { search: "100%" };
+    expect(await routes.searchLocations(h.event)).toEqual([]);
+    h.input.query = {};
+    expect(await routes.searchLocations(h.event)).toEqual([]);
   });
   it.each([
     { page: "0" },

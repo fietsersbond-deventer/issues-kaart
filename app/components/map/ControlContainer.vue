@@ -57,6 +57,7 @@ defineExpose({
 .control-container.top-left {
   top: 0.5em;
   left: 0.5em;
+  max-width: calc(100% - 1em);
 }
 
 .control-container.top-right {

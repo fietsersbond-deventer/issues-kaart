@@ -60,6 +60,13 @@ export default defineNuxtConfig({
       matomo: {
         siteId: "",
       },
+      // Optionele zoekproviders
+      locationiq: {
+        apiKey:
+          process.env.NUXT_PUBLIC_LOCATIONIQ_API_KEY ??
+          process.env.API_KEY ??
+          "",
+      },
     },
     isProduction: process.env.NODE_ENV === "production",
   },

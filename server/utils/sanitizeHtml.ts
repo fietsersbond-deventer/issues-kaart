@@ -11,7 +11,10 @@ import sanitizeHtmlLib, { type Tag } from "sanitize-html";
  *
  * Uses sanitize-html which is a well-established library for HTML sanitization.
  */
-export function sanitizeHtml(html: string): string {
+export function sanitizeHtml(
+  html: string,
+  options?: sanitizeHtmlLib.IOptions,
+): string {
   if (!html || typeof html !== "string") {
     return "";
   }
@@ -214,5 +217,6 @@ export function sanitizeHtml(html: string): string {
         return { tagName, attribs };
       },
     },
+    ...options,
   });
 }
