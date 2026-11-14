@@ -24,7 +24,7 @@
           v-if="isLoading || hasResults || searchInput"
           class="d-flex align-start ga-2"
         >
-          <v-list class="c-search-results" style="max-width: 490px">
+          <v-list class="c-search-results">
             <v-list-item v-if="isLoading" class="px-2">
               <template #prepend>
                 <v-progress-circular
@@ -105,6 +105,7 @@
             :lon="hoveredResult.lon"
             :boundingbox="hoveredResult.boundingbox"
             :geometry="hoveredResult.geometry"
+            :style="{ transform: 'translateY(4px)' }"
           />
         </div>
       </v-menu>
@@ -312,9 +313,9 @@ onBeforeUnmount(() => {
   max-height: 400px !important;
   border-radius: 12px !important;
   background-color: rgba(var(--v-theme-surface-bright), 1) !important;
-  box-shadow: none !important;
-  transform: translateX(-40px) translateY(4px);
+  transform: translateY(4px);
   overflow-y: auto !important;
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
 }
 
 .c-search-preview-marker {
