@@ -11,15 +11,12 @@
     <MapControlContainer position="top-left">
       <slot name="top-left-controls" />
       <MapResetExtentControl @reset="resetToOriginalExtent" />
-      <MapSearch />
+      <MapSearch v-if="!mobile" />
     </MapControlContainer>
 
     <MapFilterSummary />
 
-    <MapControlContainer
-      v-if="$slots['bottom-left-controls']"
-      position="bottom-left"
-    >
+    <MapControlContainer v-if="$slots['bottom-left-controls']" position="bottom-left">
       <SizeCalculator v-model="bottomLeftSize">
         <slot name="bottom-left-controls" :map-width="mapWidth" />
       </SizeCalculator>
@@ -84,10 +81,8 @@ defineSlots<{
   "bottom-left-controls"?: (props: { mapWidth: number }) => unknown;
 }>();
 const emit = defineEmits<{ "feature-clicked": [] }>();
-const issueLayer =
-  useTemplateRef<InstanceType<typeof IssueLayer>>("issueLayer");
-const addFeature =
-  useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
+const issueLayer = useTemplateRef<InstanceType<typeof IssueLayer>>("issueLayer");
+const addFeature = useTemplateRef<InstanceType<typeof AddFeature>>("addFeature");
 const isDrawing = computed(() => addFeature.value?.isDrawing || false);
 const { isEditing } = useIsEditing();
 const { clusteringEnabled } = useRuntimeConfig().public.map;
@@ -103,7 +98,7 @@ const {
 } = useMapIssueInteractions(
   () => emit("feature-clicked"),
   computed(() => issueLayer.value?.source),
-  isDrawing,
+  isDrawing
 );
 
 // BaseLayers and the layer picker read and write the same saved preference.
@@ -141,10 +136,7 @@ const { zoom } = useMapView(mapRef);
 
 // Refit when the map container changes size, for example when the bottom sheet moves.
 const { mapHeight, mapWidth } = useMapResize(mapRef);
-const mapSize = computed<[number, number]>(() => [
-  mapWidth.value,
-  mapHeight.value,
-]);
+const mapSize = computed<[number, number]>(() => [mapWidth.value, mapHeight.value]);
 
 const { refit, focusCluster } = useMapFocus(mapRef, currentPadding, mapSize);
 
@@ -187,15 +179,8 @@ function style(feature: Feature) {
   }
   // A one-feature cluster keeps its original icon and selection styling.
   const original = members?.[0] ?? feature;
-  const issue = selectedIssues.value.find(
-    (issue) => issue.id === original.get("id"),
-  );
-  return getIssueMapStyle(
-    original,
-    issue,
-    issue?.id === selectedId.value,
-    zoom.value,
-  );
+  const issue = selectedIssues.value.find((issue) => issue.id === original.get("id"));
+  return getIssueMapStyle(original, issue, issue?.id === selectedId.value, zoom.value);
 }
 
 // Parents can request a refit or change the background through this ref.
