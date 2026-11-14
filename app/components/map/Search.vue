@@ -1,12 +1,6 @@
 <template>
   <div class="search-control d-flex align-center">
-    <v-btn
-      icon
-      size="small"
-      variant="text"
-      title="Zoeken"
-      @click="active = !active"
-    >
+    <v-btn icon size="small" title="Zoeken" @click="active = !active">
       <v-icon>mdi-magnify</v-icon>
     </v-btn>
     <v-expand-x-transition>
@@ -71,7 +65,7 @@ function zoomToResult(result: SearchResult) {
   width: fit-content;
   max-width: 100%;
   min-height: 40px;
-  border-radius: 12px;
+  border-radius: 90px;
   background: white;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
