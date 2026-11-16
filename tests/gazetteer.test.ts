@@ -63,6 +63,7 @@ beforeEach(() => {
     bbox: [6, 52, 7, 53],
   }));
   vi.stubGlobal("$fetch", fetch);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
 });
 
 afterEach(() => {
