@@ -144,6 +144,7 @@ const { bbox: areaBbox } = useCurrentArea();
 const hasResults = computed(
   () => entries.value.length > 0 || issueEntries.value.length > 0,
 );
+const { trackSiteSearch } = useMatomoTracking();
 
 type PreviewTarget = {
   lat: number;
@@ -220,6 +221,11 @@ async function searchItems(val: string) {
   if (controller.signal.aborted) return;
   entries.value = locationResult;
   issueEntries.value = issueResult;
+
+  trackSiteSearch(
+    val,
+    (entries.value?.length ?? 0) + (issueResult?.length ?? 0),
+  );
   isLoading.value = false;
 }
 
