@@ -218,14 +218,18 @@ export default defineNuxtConfig({
         "ol/control",
         "ol/easing",
         "ol/events/condition",
+        "ol/extent",
         "ol/format",
+        "ol/format/GeoJSON",
         "ol/geom",
+        "ol/geom/Point",
         "ol/proj",
         "ol/proj/Projection",
         "ol/proj/proj4.js",
         "ol/style",
         "proj4",
         "quill-image-compress", // CJS
+        "sanitize-html", // CJS
         "vue3-openlayers",
       ],
     },
