@@ -7,6 +7,11 @@ const { snackbar } = useSnackbar();
 const isPrinting = useMediaQuery('print')
 
 
+// De NavBar leest de teksten uit de cache (useCachedTexts). Een useFetch in de
+// NavBar zelf maakt hem asynchroon tijdens SSR, waardoor <v-main> rendert
+// voordat de app-bar is geregistreerd en de pagina na hydration 64px zakt.
+useTexts();
+
 // Initialize issue notifications
 useIssueNotifications();
 </script>

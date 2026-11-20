@@ -83,7 +83,7 @@
 import { NuxtLink } from "#components";
 
 const { status, signOut } = useAuth();
-const { getText } = useTexts();
+const { getText } = useCachedTexts();
 
 const headerText = computed(() => {
   return getText("navbar.header")?.text ?? "";

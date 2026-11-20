@@ -66,6 +66,7 @@ const stubs = {
 };
 const status = ref("authenticated"),
   mobile = ref(false),
+  displayWidth = ref(1280),
   editing = ref(false),
   connected = ref(true),
   lockedBy = ref<string | false>(false),
@@ -80,16 +81,18 @@ beforeEach(() => {
   menu.value = false;
   status.value = "authenticated";
   mobile.value = false;
+  displayWidth.value = 1280;
   editing.value = false;
   connected.value = true;
   lockedBy.value = false;
   vi.stubGlobal("useAuth", () => ({ status, signOut }));
-  vi.stubGlobal("useTexts", () => ({
+  vi.stubGlobal("useTexts", vi.fn());
+  vi.stubGlobal("useCachedTexts", () => ({
     getText: (key: string) => ({
       text: key === "navbar.header" ? "Organization" : "https://example.test",
     }),
   }));
-  vi.stubGlobal("useVDisplay", () => ({ mobile }));
+  vi.stubGlobal("useVDisplay", () => ({ mobile, width: displayWidth }));
   vi.stubGlobal("onServerPrefetch", vi.fn());
   vi.stubGlobal("useTitle", vi.fn());
   vi.stubGlobal("useHead", vi.fn());
@@ -181,19 +184,13 @@ it("renders the shared snackbar as a persistent alert or transient snackbar", as
   expect(wrapper.text()).toContain("Saved");
   expect(globalThis.useIssueNotifications).toHaveBeenCalledTimes(1);
 });
-it("resizes the desktop drawer and removes resize listeners on unmount", async () => {
-  const unlisten = vi.spyOn(window, "removeEventListener");
+it("sizes the desktop drawer from the Vuetify display width", async () => {
   const wrapper = keep(mount(Desktop, { global: { stubs } }));
   await flushPromises();
-  expect(wrapper.getComponent(Drawer).props("width")).toBe(
-    Math.min(window.innerWidth / 2, 600),
-  );
-  vi.stubGlobal("innerWidth", 800);
-  window.dispatchEvent(new Event("resize"));
+  expect(wrapper.getComponent(Drawer).props("width")).toBe(600);
+  displayWidth.value = 800;
   await flushPromises();
   expect(wrapper.getComponent(Drawer).props("width")).toBe(400);
-  wrapper.unmount();
-  expect(unlisten).toHaveBeenCalledWith("resize", expect.any(Function));
 });
 it("toggles the mobile sheet accessibly and opens the map menu", async () => {
   const sheetHeight = ref(50),
