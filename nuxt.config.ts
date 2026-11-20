@@ -37,6 +37,9 @@ export default defineNuxtConfig({
         user: process.env.NUXT_NODEMAILER_AUTH_USER,
         pass: process.env.NUXT_NODEMAILER_AUTH_PASSWORD,
       },
+      // nuxt-nodemailer gebruikt dit als afzender (zie useNodeMailer), maar het
+      // veld ontbreekt in het SMTPTransportOptions-type dat Nuxt 4.6.4+ afdwingt.
+      // @ts-expect-error from is geen SMTP-optie maar wordt wel door de module gelezen
       from: process.env.NUXT_NODEMAILER_FROM,
     },
     public: {
