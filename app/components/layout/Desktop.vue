@@ -47,27 +47,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 
 // legend/layer panel is open by default on desktop
 const panel = ref<number | undefined>(0);
 
 const { preferredLayer } = useMapLayerPreference();
 
-const drawerWidth = ref(600);
-
-const updateDrawerWidth = () => {
-  drawerWidth.value = Math.min(window.innerWidth * 0.5, 600);
-};
-
-onMounted(() => {
-  updateDrawerWidth();
-  window.addEventListener("resize", updateDrawerWidth);
-});
-
-onUnmounted(() => {
-  window.removeEventListener("resize", updateDrawerWidth);
-});
+// De Vuetify-breedte is ook tijdens SSR bekend (client hints/cookie), zodat de
+// drawer niet na hydration van breedte verandert.
+const { width } = useVDisplay();
+const drawerWidth = computed(() => Math.min(width.value * 0.5, 600));
 </script>
 
 <style scoped>
