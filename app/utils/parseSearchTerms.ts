@@ -4,7 +4,6 @@ export function parseSearchTerms(search: string): string[] {
   let insideQuotes = false;
 
   for (const character of search) {
-
     if (character === '"') {
       insideQuotes = !insideQuotes;
     } else if (/\s/.test(character) && !insideQuotes) {

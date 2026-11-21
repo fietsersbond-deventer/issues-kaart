@@ -134,8 +134,8 @@
             <!-- Geometry validation message -->
             <v-col v-if="!issue.geometry" cols="12">
               <v-alert type="warning" variant="tonal" class="mb-0">
-                Voeg een locatie toe op de kaart door te tekenen met de knoppen bovenin de
-                kaart.
+                Voeg een locatie toe op de kaart door te tekenen met de knoppen
+                bovenin de kaart.
               </v-alert>
             </v-col>
           </v-row>
@@ -173,10 +173,7 @@
     @confirm="confirmDelete"
   />
 
-  <StreetViewDialog
-    v-model="showStreetViewDialog"
-    @insert="insertStreetView"
-  />
+  <StreetViewDialog v-model="showStreetViewDialog" @insert="insertStreetView" />
 </template>
 
 <script setup lang="ts">

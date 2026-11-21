@@ -34,9 +34,9 @@ export function getIssueIdFromIdentifier(
   if (/^\d+$/.test(identifier)) {
     const numericId = Number(identifier);
     if (Number.isSafeInteger(numericId) && numericId > 0) {
-      const byId = db.prepare("SELECT id FROM issues WHERE id = ?").get(numericId) as
-        | { id: number }
-        | undefined;
+      const byId = db
+        .prepare("SELECT id FROM issues WHERE id = ?")
+        .get(numericId) as { id: number } | undefined;
       if (byId) return byId.id;
     }
   }

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { getPlainText, getPlainTextTruncated, removeLineBreaks } from "./getPlainText";
+import {
+  getPlainText,
+  getPlainTextTruncated,
+  removeLineBreaks,
+} from "./getPlainText";
 
 describe("getPlainText", () => {
   it("returns empty string for null", () => {
@@ -32,9 +36,9 @@ describe("getPlainText", () => {
   });
 
   it("removes links and images", () => {
-    expect(getPlainText("<a href='#'>Link</a> and <img src='test.jpg' />")).toContain(
-      "Link",
-    );
+    expect(
+      getPlainText("<a href='#'>Link</a> and <img src='test.jpg' />"),
+    ).toContain("Link");
   });
 
   it("preserves word boundaries with text filter", () => {

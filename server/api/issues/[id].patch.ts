@@ -7,7 +7,10 @@ import {
   getTagsForIssueId,
   replaceTagsForIssue,
 } from "~~/server/utils/issueTags";
-import { createUniqueIssueSlug, getIssueIdFromIdentifier } from "~~/server/utils/issueSlugs";
+import {
+  createUniqueIssueSlug,
+  getIssueIdFromIdentifier,
+} from "~~/server/utils/issueSlugs";
 import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
 
 export default defineEventHandler(async (event) => {
@@ -126,9 +129,10 @@ export default defineEventHandler(async (event) => {
       const slugIndex = updateFields.indexOf("slug = ?");
       const currentTitle =
         updates.title ??
-        (db.prepare("SELECT title FROM issues WHERE id = ?").get(issueId) as
-          | { title: string }
-          | undefined)?.title ??
+        (
+          db.prepare("SELECT title FROM issues WHERE id = ?").get(issueId) as
+            { title: string } | undefined
+        )?.title ??
         "";
       values[slugIndex] = createUniqueIssueSlug(
         db,

@@ -1,5 +1,10 @@
 <template>
-  <ol-overlay v-if="area" :position="area.position" :offset="[0,-5]" positioning="bottom-center">
+  <ol-overlay
+    v-if="area"
+    :position="area.position"
+    :offset="[0, -5]"
+    positioning="bottom-center"
+  >
     <div class="tooltip">{{ area.name }}</div>
   </ol-overlay>
 </template>

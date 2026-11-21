@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
  * @returns The data URL string or null if no image found
  */
 export function extractImageUrl(
-  description: string | null | undefined
+  description: string | null | undefined,
 ): string | null {
   if (!description) return null;
 

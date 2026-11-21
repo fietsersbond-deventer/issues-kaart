@@ -107,7 +107,9 @@ describe("RichTextEditor.vue", () => {
   });
 
   it("watches for changes to modelValue prop", async () => {
-    await wrapper.setProps({ modelValue: SanitizedHTMLFactory.from("<em>Updated</em>") });
+    await wrapper.setProps({
+      modelValue: SanitizedHTMLFactory.from("<em>Updated</em>"),
+    });
     const vm = wrapper.vm as RichTextEditorVM;
     expect(vm.localContent).toBe("<em>Updated</em>");
   });

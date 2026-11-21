@@ -526,7 +526,9 @@ it("handles error when fetching issue for editing", async () => {
   wrappers.push(wrapper);
   await flushPromises();
 
-  await wrapper.get('button[aria-label="Test Issue bewerken"]').trigger("click");
+  await wrapper
+    .get('button[aria-label="Test Issue bewerken"]')
+    .trigger("click");
   await flushPromises();
   expect(showError).toHaveBeenCalledWith(
     "Issue kon niet worden geladen om te bewerken",
@@ -661,7 +663,9 @@ it("handles lock being taken before edit dialog opens", async () => {
   wrappers.push(wrapper);
   await flushPromises();
 
-  await wrapper.get('button[aria-label="Test Issue bewerken"]').trigger("click");
+  await wrapper
+    .get('button[aria-label="Test Issue bewerken"]')
+    .trigger("click");
   await flushPromises();
   expect(showError).toHaveBeenCalledWith(
     "Onderwerp wordt door iemand anders bewerkt",
@@ -787,7 +791,9 @@ it("handles error when fetching issue info", async () => {
   wrappers.push(wrapper);
   await flushPromises();
 
-  await wrapper.get('button[aria-label="Informatie over Test Issue"]').trigger("click");
+  await wrapper
+    .get('button[aria-label="Informatie over Test Issue"]')
+    .trigger("click");
   await flushPromises();
   expect(showError).toHaveBeenCalledWith(
     "Informatie over het issue kon niet worden geladen",
@@ -938,9 +944,7 @@ it("ignores issue info when a different issue is selected while waiting", async 
   wrappers.push(wrapper);
   await flushPromises();
 
-  const infoButtons = wrapper.findAll(
-    'button[aria-label^="Informatie over"]',
-  );
+  const infoButtons = wrapper.findAll('button[aria-label^="Informatie over"]');
   await infoButtons[0].trigger("click");
   await flushPromises();
   await infoButtons[1].trigger("click");
@@ -1070,7 +1074,9 @@ it("handles error when deleting issue", async () => {
   wrappers.push(wrapper);
   await flushPromises();
 
-  await wrapper.get('button[aria-label="Test Issue verwijderen"]').trigger("click");
+  await wrapper
+    .get('button[aria-label="Test Issue verwijderen"]')
+    .trigger("click");
   await flushPromises();
   const confirmButton = wrapper
     .findAll("button")
@@ -1199,7 +1205,9 @@ it("refreshes results after successful delete", async () => {
   wrappers.push(wrapper);
   await flushPromises();
 
-  await wrapper.get('button[aria-label="Test Issue verwijderen"]').trigger("click");
+  await wrapper
+    .get('button[aria-label="Test Issue verwijderen"]')
+    .trigger("click");
   await flushPromises();
   const confirmButton = wrapper
     .findAll("button")

@@ -9,7 +9,7 @@ export default defineEventHandler(async () => {
      i.legend_id,
      i.geometry, i.created_at
      FROM issues i 
-     ORDER BY i.created_at DESC`
+     ORDER BY i.created_at DESC`,
     )
     .all();
 

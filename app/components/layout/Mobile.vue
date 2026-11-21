@@ -19,14 +19,19 @@
       </Map>
     </v-main>
 
-    <div class="bottom-sheet" :style="{ height: `calc(${sheetHeight}% + 8px)` }">
+    <div
+      class="bottom-sheet"
+      :style="{ height: `calc(${sheetHeight}% + 8px)` }"
+    >
       <div
         class="drag-handle"
         tabindex="0"
         role="button"
         :aria-pressed="isSheetExpanded"
         aria-controls="mobile-bottom-sheet-content"
-        :aria-label="isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'"
+        :aria-label="
+          isSheetExpanded ? 'Onderpaneel inklappen' : 'Onderpaneel uitklappen'
+        "
         @touchstart="startDrag"
         @touchmove="onDrag"
         @touchend="endDrag"
@@ -36,7 +41,11 @@
       >
         <div class="drag-indicator" />
       </div>
-      <div id="mobile-bottom-sheet-content" ref="sheetContentRef" class="sheet-content">
+      <div
+        id="mobile-bottom-sheet-content"
+        ref="sheetContentRef"
+        class="sheet-content"
+      >
         <NuxtPage />
       </div>
     </div>
@@ -64,7 +73,9 @@ menuOpen.value = false;
 
 const collapsedSheetHeight = 40;
 const expandedSheetHeight = 75;
-const isSheetExpanded = computed(() => sheetHeight.value >= expandedSheetHeight);
+const isSheetExpanded = computed(
+  () => sheetHeight.value >= expandedSheetHeight,
+);
 
 function toggleSheetHeight() {
   setHeight(isSheetExpanded.value ? collapsedSheetHeight : expandedSheetHeight);

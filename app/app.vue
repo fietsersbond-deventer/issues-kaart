@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useSnackbar } from "~/composables/useSnackbar";
-import { useMediaQuery } from '@vueuse/core'
-
+import { useMediaQuery } from "@vueuse/core";
 
 const { snackbar } = useSnackbar();
-const isPrinting = useMediaQuery('print')
-
+const isPrinting = useMediaQuery("print");
 
 // De NavBar leest de teksten uit de cache (useCachedTexts). Een useFetch in de
 // NavBar zelf maakt hem asynchroon tijdens SSR, waardoor <v-main> rendert

@@ -50,9 +50,7 @@ export function resolveFocusTarget(input: FocusInput): FocusTarget | undefined {
   };
 
   const found =
-    prefer === "issue"
-      ? (issueTarget() ?? filterTarget())
-      : filterTarget();
+    prefer === "issue" ? (issueTarget() ?? filterTarget()) : filterTarget();
   if (found) return found;
   return areaBbox && { type: "area", bbox: areaBbox };
 }

@@ -48,7 +48,9 @@
       </Toolbar>
     </v-toolbar>
 
-    <v-alert v-if="loadError" type="error" class="ma-4">{{ loadError }}</v-alert>
+    <v-alert v-if="loadError" type="error" class="ma-4">{{
+      loadError
+    }}</v-alert>
     <div v-if="issue" class="pa-4">
       <template v-if="isExistingIssue(issue)">
         <EditForm
@@ -69,7 +71,9 @@
             @cancel="setEditing(false)"
           />
         </template>
-        <div v-else>Klik op de edit knop om een nieuw onderwerp toe te voegen</div>
+        <div v-else>
+          Klik op de edit knop om een nieuw onderwerp toe te voegen
+        </div>
       </template>
 
       <IssueEditDialog
@@ -94,7 +98,7 @@ const showEditDialog = ref(false);
 const { isEditing, setEditing, toggleEditing } = useIsEditing();
 const { issue, loadError } = storeToRefs(useSelectedIssue());
 const { isConnected, isLockedByOther, canEdit } = useIssueEditAvailability(
-  computed(() => (isExistingIssue(issue.value) ? issue.value.id : null))
+  computed(() => (isExistingIssue(issue.value) ? issue.value.id : null)),
 );
 
 // Safe toggle function that checks connection
@@ -111,7 +115,9 @@ useTitle(title);
 // Registreer de metadata tijdens setup, niet pas in een watcher na het laden.
 // Alleen opgeslagen onderwerpen hebben een deelbare URL en afbeelding; concepten niet.
 // De computed-bron volgt ook vervangingen door navigatie of WebSocket-berichten.
-useIssueOpenGraph(computed(() => (isExistingIssue(issue.value) ? issue.value : null)));
+useIssueOpenGraph(
+  computed(() => (isExistingIssue(issue.value) ? issue.value : null)),
+);
 
 if (!id || typeof id !== "string") {
   navigateTo("/kaart");

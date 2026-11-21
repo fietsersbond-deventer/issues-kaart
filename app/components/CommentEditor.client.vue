@@ -62,10 +62,7 @@
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import StreetViewDialog from "./StreetViewDialog.vue";
-import {
-  defaultQuillToolbar,
-  defaultQuillModules,
-} from "~/utils/quillConfig";
+import { defaultQuillToolbar, defaultQuillModules } from "~/utils/quillConfig";
 import {
   ensureStreetViewEmbedBlotRegistered,
   insertStreetViewIntoQuill,
@@ -113,11 +110,7 @@ const quillEditorRef = ref<InstanceType<typeof QuillEditor> | null>(null);
 const errorMessage = ref("");
 
 const canSubmit = computed(() => {
-  return (
-    !!content.value &&
-    isConnected.value &&
-    !props.loading
-  );
+  return !!content.value && isConnected.value && !props.loading;
 });
 
 // Street View dialog logic

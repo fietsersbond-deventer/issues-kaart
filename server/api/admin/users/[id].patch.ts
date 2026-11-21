@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
     }
     const user = db
       .prepare(
-        "SELECT id, username, name, role, created_at FROM users WHERE id = ?"
+        "SELECT id, username, name, role, created_at FROM users WHERE id = ?",
       )
       .get(id);
     if (!user) {

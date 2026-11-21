@@ -8,9 +8,8 @@ import { toLegendType } from "~~/server/utils/typeConversions";
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
 
-  const { name, description, color, icon, icon_data_url } = await readBody<
-    Partial<Legend>
-  >(event);
+  const { name, description, color, icon, icon_data_url } =
+    await readBody<Partial<Legend>>(event);
 
   if (!name || !color) {
     throw createError({
@@ -21,17 +20,17 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const insertStmt = db.prepare(
-    "INSERT INTO legend (name, description, color, icon, icon_data_url) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO legend (name, description, color, icon, icon_data_url) VALUES (?, ?, ?, ?, ?)",
   );
   const result = insertStmt.run(
     name,
     description?.trim() ? sanitizeDescriptionHtml(description) : null,
     color,
     icon || null,
-    icon_data_url || null
+    icon_data_url || null,
   );
   const selectStmt = db.prepare(
-    "SELECT id, name, description, color, icon, icon_data_url, created_at FROM legend WHERE id = ?"
+    "SELECT id, name, description, color, icon, icon_data_url, created_at FROM legend WHERE id = ?",
   );
   const row = selectStmt.get(result.lastInsertRowid);
   if (!row) {

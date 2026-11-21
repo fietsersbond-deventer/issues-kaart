@@ -21,7 +21,7 @@
             :src="parsedPreview.previewDataUrl"
             alt="Street View voorvertoning"
             class="streetview-dialog-preview"
-          >
+          />
         </div>
       </v-card-text>
       <v-card-actions>
@@ -37,12 +37,7 @@
         >
           Ophalen
         </v-btn>
-        <v-btn
-          v-else
-          color="primary"
-          variant="flat"
-          @click="insert"
-        >
+        <v-btn v-else color="primary" variant="flat" @click="insert">
           Invoegen
         </v-btn>
       </v-card-actions>

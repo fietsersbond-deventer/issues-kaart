@@ -24,25 +24,36 @@ export function useEditableMapFeatures(
   const editableFeatures = shallowRef(new Collection<EditableFeature>());
 
   // Populate immediately and update synchronously when editing mode changes.
-  watch([source, selectedId, enabled], ([currentSource, selectedIssueId, editingEnabled], _, onCleanup) => {
-    function syncEditableFeature() {
-      const feature = editingEnabled && selectedIssueId !== null
-        ? currentSource?.getFeatures().find(feature => feature.get("id") === selectedIssueId)
-        : undefined;
-      const features = editableFeatures.value;
-      // Dragging a vertex also changes the source. If the same
-      // feature is already present, leave the collection and ongoing edit intact.
-      if (features.getLength() === (feature ? 1 : 0) && features.item(0) === feature) return;
-      features.clear();
-      if (feature) features.push(feature);
-    }
+  watch(
+    [source, selectedId, enabled],
+    ([currentSource, selectedIssueId, editingEnabled], _, onCleanup) => {
+      function syncEditableFeature() {
+        const feature =
+          editingEnabled && selectedIssueId !== null
+            ? currentSource
+                ?.getFeatures()
+                .find((feature) => feature.get("id") === selectedIssueId)
+            : undefined;
+        const features = editableFeatures.value;
+        // Dragging a vertex also changes the source. If the same
+        // feature is already present, leave the collection and ongoing edit intact.
+        if (
+          features.getLength() === (feature ? 1 : 0) &&
+          features.item(0) === feature
+        )
+          return;
+        features.clear();
+        if (feature) features.push(feature);
+      }
 
-    syncEditableFeature();
-    // Features may appear after navigation or be replaced after drawing or filtering.
-    currentSource?.on("change", syncEditableFeature);
-    // Remove the previous listener when watcher inputs change or the component unmounts.
-    onCleanup(() => currentSource?.un("change", syncEditableFeature));
-  }, { immediate: true, flush: "sync" });
+      syncEditableFeature();
+      // Features may appear after navigation or be replaced after drawing or filtering.
+      currentSource?.on("change", syncEditableFeature);
+      // Remove the previous listener when watcher inputs change or the component unmounts.
+      onCleanup(() => currentSource?.un("change", syncEditableFeature));
+    },
+    { immediate: true, flush: "sync" },
+  );
 
   return editableFeatures;
 }

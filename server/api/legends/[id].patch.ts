@@ -36,7 +36,11 @@ export default defineEventHandler(async (event) => {
   }
   if (updates.description !== undefined) {
     updateFields.push(`description = ?`);
-    values.push(updates.description?.trim() ? sanitizeDescriptionHtml(updates.description) : null);
+    values.push(
+      updates.description?.trim()
+        ? sanitizeDescriptionHtml(updates.description)
+        : null,
+    );
   }
   if (updates.color !== undefined) {
     updateFields.push(`color = ?`);
@@ -60,7 +64,7 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb();
   const updateStmt = db.prepare(
-    `UPDATE legend SET ${updateFields.join(", ")} WHERE id = ?`
+    `UPDATE legend SET ${updateFields.join(", ")} WHERE id = ?`,
   );
   const result = updateStmt.run(...values);
   if (result.changes === 0) {
@@ -70,7 +74,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   const selectStmt = db.prepare(
-    "SELECT id, name, description, color, icon, icon_data_url, created_at FROM legend WHERE id = ?"
+    "SELECT id, name, description, color, icon, icon_data_url, created_at FROM legend WHERE id = ?",
   );
   const row = selectStmt.get(id);
   if (!row) {

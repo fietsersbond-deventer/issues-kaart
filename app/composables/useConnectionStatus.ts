@@ -40,7 +40,7 @@ export function useConnectionStatus() {
           connectionWarningShown.value = false;
         }
       }
-    }
+    },
   );
 
   // Cleanup function

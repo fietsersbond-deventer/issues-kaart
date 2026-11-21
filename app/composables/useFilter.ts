@@ -7,9 +7,13 @@ export function useFilter(filters: Ref<string[]>) {
   // own <mark> tags, so stored text can never become executable HTML.
   function escapeHtml(text: string): string {
     const entities: Record<string, string> = {
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
     };
-    return text.replace(/[&<>"']/g, character => entities[character]!);
+    return text.replace(/[&<>"']/g, (character) => entities[character]!);
   }
 
   function emphasizeFilter(text: string): string {

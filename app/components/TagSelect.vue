@@ -45,6 +45,6 @@ const items = computed(() =>
   tags.value.map((tag) => ({
     title: tag.label || tag.tag,
     value: tag.tag,
-  }))
+  })),
 );
 </script>

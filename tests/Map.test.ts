@@ -206,7 +206,9 @@ beforeEach(() => {
   }));
   vi.stubGlobal("useVDisplay", () => ({ mobile }));
   vi.stubGlobal("useIsEditing", () => ({ isEditing: editing }));
-  vi.stubGlobal("useRuntimeConfig", () => ({ public: { map: { clusteringEnabled: false } } }));
+  vi.stubGlobal("useRuntimeConfig", () => ({
+    public: { map: { clusteringEnabled: false } },
+  }));
   vi.stubGlobal("useMapView", () => ({ zoom }));
   vi.stubGlobal("useMapResize", () => ({ mapHeight: height, mapWidth: width }));
   vi.stubGlobal(

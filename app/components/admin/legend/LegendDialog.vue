@@ -21,8 +21,8 @@
               </v-col>
               <v-col cols="6">
                 <div class="text-subtitle-2 mb-2">Omschrijving</div>
-                <RichTextEditor 
-                  ref="richTextEditorRef" 
+                <RichTextEditor
+                  ref="richTextEditorRef"
                   v-model="editedItem.description"
                   :sanitize-options="sanitizeOptions"
                 />

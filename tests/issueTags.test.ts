@@ -29,7 +29,9 @@ describe("setTagMetadata", () => {
     });
 
     expect(
-      db.prepare("SELECT label, description, icon FROM tags WHERE tag = ?").get("fiets"),
+      db
+        .prepare("SELECT label, description, icon FROM tags WHERE tag = ?")
+        .get("fiets"),
     ).toEqual({
       label: "Fietsen",
       description: "Bestaande omschrijving",
@@ -51,7 +53,9 @@ describe("setTagMetadata", () => {
     });
 
     expect(
-      db.prepare("SELECT label, description, icon FROM tags WHERE tag = ?").get("fiets"),
+      db
+        .prepare("SELECT label, description, icon FROM tags WHERE tag = ?")
+        .get("fiets"),
     ).toEqual({
       label: null,
       description: "Omschrijving",

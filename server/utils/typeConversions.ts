@@ -50,6 +50,8 @@ export function toTagType(row: {
   return {
     ...row,
     label: row.label ?? row.tag,
-    description: row.description ? sanitizeDescriptionHtml(row.description) : null,
+    description: row.description
+      ? sanitizeDescriptionHtml(row.description)
+      : null,
   };
 }

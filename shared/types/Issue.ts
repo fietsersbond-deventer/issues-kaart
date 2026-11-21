@@ -77,6 +77,8 @@ export function isExistingIssue<T extends { id?: number }>(
   return "id" in issue;
 }
 
-export function isNewIssue(issue: Issue | MapIssue | NewIssue): issue is NewIssue {
+export function isNewIssue(
+  issue: Issue | MapIssue | NewIssue,
+): issue is NewIssue {
   return !("id" in issue);
 }

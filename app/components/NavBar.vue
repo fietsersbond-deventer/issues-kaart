@@ -7,7 +7,7 @@
         alt="Fietsersbond"
         max-height="40"
         class="ml-4"
-      >
+      />
       <div class="header-link ml-3">{{ headerText }}</div>
     </NuxtLink>
     <v-spacer />
@@ -138,7 +138,8 @@ a.v-btn {
   background-size: cover;
   z-index: 0;
   opacity: 0;
-  animation: ellipse-drop 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.4s forwards;
+  animation: ellipse-drop 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0.4s
+    forwards;
 }
 
 @keyframes ellipse-drop {

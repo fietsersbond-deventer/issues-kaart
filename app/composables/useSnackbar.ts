@@ -16,7 +16,7 @@ export function useSnackbar() {
   function showMessage(
     text: string,
     color: string = "success",
-    timeout: number = 4000
+    timeout: number = 4000,
   ) {
     snackbar.value = {
       show: true,

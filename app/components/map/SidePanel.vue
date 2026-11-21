@@ -23,7 +23,10 @@
         <MapLegend class="mt-3" />
       </div>
       <!-- Altijd zichtbaar onderaan, ook als de legenda scrollt -->
-      <MapLayerSwitcher v-model="preferredLayer" class="map-side-panel-layers" />
+      <MapLayerSwitcher
+        v-model="preferredLayer"
+        class="map-side-panel-layers"
+      />
     </div>
   </v-navigation-drawer>
 </template>

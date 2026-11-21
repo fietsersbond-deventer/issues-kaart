@@ -40,10 +40,7 @@ export type ConfigWMSLayer = {
 };
 
 export type ConfigLayer = (
-  | ConfigTileLayer
-  | ConfigWMTSLayer
-  | ConfigWMSLayer
-  | ConfigStadiaSLayer
+  ConfigTileLayer | ConfigWMTSLayer | ConfigWMSLayer | ConfigStadiaSLayer
 ) & {
   name: string;
   visible?: boolean;

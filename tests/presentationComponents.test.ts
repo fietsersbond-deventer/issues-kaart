@@ -28,7 +28,7 @@ vi.mock("@vueup/vue-quill", () => ({
   loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
 }));
 vi.mock("quill-image-compress", () => ({
-  imageCompressor: {}
+  imageCompressor: {},
 }));
 
 const Tooltip = defineComponent({
@@ -559,313 +559,512 @@ it("opens desktop image previews and prevents mobile lightboxes", async () => {
 });
 
 it("renders comments only for authenticated users on IssueDetails and excludes them when logged out", async () => {
-    vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
-    vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
-    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
-    const IssueCommentsStub = defineComponent({ props: ["issueId"], template: '<div class="issue-comments-stub">Comments for {{ issueId }}</div>' });
-    const issue = { id: 42, title: "Issue with comments", description: "<p>Details</p>", tags: [] } as unknown as Issue;
+  vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
+  vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
+  vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+  const IssueCommentsStub = defineComponent({
+    props: ["issueId"],
+    template:
+      '<div class="issue-comments-stub">Comments for {{ issueId }}</div>',
+  });
+  const issue = {
+    id: 42,
+    title: "Issue with comments",
+    description: "<p>Details</p>",
+    tags: [],
+  } as unknown as Issue;
 
-    auth.value = "authenticated";
-    const wrapper = keep(mount(IssueDetails, { props: { issue }, global: { stubs: { ...stubs, ImageViewer: Slot, CategoryChip: true, IssueComments: IssueCommentsStub } } }));
-    expect(wrapper.find(".issue-comments-stub").exists()).toBe(true);
-    expect(wrapper.find(".issue-comments-stub").text()).toBe("Comments for 42");
+  auth.value = "authenticated";
+  const wrapper = keep(
+    mount(IssueDetails, {
+      props: { issue },
+      global: {
+        stubs: {
+          ...stubs,
+          ImageViewer: Slot,
+          CategoryChip: true,
+          IssueComments: IssueCommentsStub,
+        },
+      },
+    }),
+  );
+  expect(wrapper.find(".issue-comments-stub").exists()).toBe(true);
+  expect(wrapper.find(".issue-comments-stub").text()).toBe("Comments for 42");
 
-    auth.value = "unauthenticated";
-    await flushPromises();
-    expect(wrapper.find(".issue-comments-stub").exists()).toBe(false);
+  auth.value = "unauthenticated";
+  await flushPromises();
+  expect(wrapper.find(".issue-comments-stub").exists()).toBe(false);
 });
 
 it("manages issue comments lifecycle, permissions, edits, deletions and live WebSocket updates", async () => {
-    const list = vi.fn().mockResolvedValue([
-        { id: 1, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>First comment</p>", created_at: "2026-01-01T10:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
-        { id: 2, issue_id: 10, author_id: 2, author_name: "Bob", body: "[deleted comment]", created_at: "2026-01-01T11:00:00Z", updated_at: null, deleted_at: "2026-01-01T12:00:00Z", is_deleted: true },
-    ]);
-    const create = vi.fn().mockResolvedValue({ id: 3, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>Brand new</p>", created_at: "2026-01-01T13:00:00Z", updated_at: null, deleted_at: null, is_deleted: false });
-    const update = vi.fn().mockResolvedValue({ id: 1, issue_id: 10, author_id: 1, author_name: "Alice", body: "<p>Updated text</p>", created_at: "2026-01-01T10:00:00Z", updated_at: "2026-01-01T14:00:00Z", deleted_at: null, is_deleted: false });
-    const remove = vi.fn().mockResolvedValue({ id: 1, deleted: true, soft: true });
+  const list = vi.fn().mockResolvedValue([
+    {
+      id: 1,
+      issue_id: 10,
+      author_id: 1,
+      author_name: "Alice",
+      body: "<p>First comment</p>",
+      created_at: "2026-01-01T10:00:00Z",
+      updated_at: null,
+      deleted_at: null,
+      is_deleted: false,
+    },
+    {
+      id: 2,
+      issue_id: 10,
+      author_id: 2,
+      author_name: "Bob",
+      body: "[deleted comment]",
+      created_at: "2026-01-01T11:00:00Z",
+      updated_at: null,
+      deleted_at: "2026-01-01T12:00:00Z",
+      is_deleted: true,
+    },
+  ]);
+  const create = vi.fn().mockResolvedValue({
+    id: 3,
+    issue_id: 10,
+    author_id: 1,
+    author_name: "Alice",
+    body: "<p>Brand new</p>",
+    created_at: "2026-01-01T13:00:00Z",
+    updated_at: null,
+    deleted_at: null,
+    is_deleted: false,
+  });
+  const update = vi.fn().mockResolvedValue({
+    id: 1,
+    issue_id: 10,
+    author_id: 1,
+    author_name: "Alice",
+    body: "<p>Updated text</p>",
+    created_at: "2026-01-01T10:00:00Z",
+    updated_at: "2026-01-01T14:00:00Z",
+    deleted_at: null,
+    is_deleted: false,
+  });
+  const remove = vi
+    .fn()
+    .mockResolvedValue({ id: 1, deleted: true, soft: true });
 
-    vi.stubGlobal("useCommentsApi", () => ({ list, create, update, remove }));
-    vi.stubGlobal("useAuth", () => ({ status: ref("authenticated"), data: ref({ id: 1, name: "Alice", role: "user" }), token: ref("Bearer token") }));
-    vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
-    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
-    vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
+  vi.stubGlobal("useCommentsApi", () => ({ list, create, update, remove }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    data: ref({ id: 1, name: "Alice", role: "user" }),
+    token: ref("Bearer token"),
+  }));
+  vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
+  vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+  vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
 
-    let wsSubscriber: ((msg: unknown) => void) | null = null;
-    vi.stubGlobal("useSharedAuthWebSocket", () => ({
-        subscribe: (cb: (msg: unknown) => void) => {
-            wsSubscriber = cb;
-            return () => { wsSubscriber = null; };
+  let wsSubscriber: ((msg: unknown) => void) | null = null;
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: (cb: (msg: unknown) => void) => {
+      wsSubscriber = cb;
+      return () => {
+        wsSubscriber = null;
+      };
+    },
+  }));
+
+  const CommentEditorStub = defineComponent({
+    name: "CommentEditor",
+    props: ["modelValue", "submitText", "loading"],
+    emits: ["submit", "cancel", "update:modelValue"],
+    template:
+      '<div class="comment-editor-stub"><input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /><button class="submit-btn" @click="$emit(\'submit\', modelValue)">{{ submitText }}</button><button class="cancel-btn" @click="$emit(\'cancel\')">Cancel</button></div>',
+  });
+
+  const wrapper = keep(
+    mount(IssueComments, {
+      props: { issueId: 10 },
+      global: {
+        stubs: {
+          ...stubs,
+          ImageViewer: Slot,
+          CommentEditor: CommentEditorStub,
         },
-    }));
+      },
+    }),
+  );
 
-    const CommentEditorStub = defineComponent({
-        name: "CommentEditor",
-        props: ["modelValue", "submitText", "loading"],
-        emits: ["submit", "cancel", "update:modelValue"],
-        template: '<div class="comment-editor-stub"><input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /><button class="submit-btn" @click="$emit(\'submit\', modelValue)">{{ submitText }}</button><button class="cancel-btn" @click="$emit(\'cancel\')">Cancel</button></div>',
-    });
+  await flushPromises();
+  expect(list).toHaveBeenCalledWith(10);
+  expect(wrapper.text()).toContain("Alice");
+  expect(wrapper.text()).toContain("First comment");
+  expect(wrapper.text()).toContain("[deleted comment]");
 
-    const wrapper = keep(mount(IssueComments, { props: { issueId: 10 }, global: { stubs: { ...stubs, ImageViewer: Slot, CommentEditor: CommentEditorStub } } }));
+  // Edit own comment
+  const editBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
+  expect(editBtn.exists()).toBe(true);
+  await editBtn.trigger("click");
+  expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
+  await wrapper
+    .find(".comment-editor-stub input")
+    .setValue("<p>Updated text</p>");
+  await wrapper.find(".comment-editor-stub .submit-btn").trigger("click");
+  await flushPromises();
+  expect(update).toHaveBeenCalledWith(1, "<p>Updated text</p>");
+  expect(showSuccess).toHaveBeenCalledWith("Opmerking gewijzigd");
 
-    await flushPromises();
-    expect(list).toHaveBeenCalledWith(10);
-    expect(wrapper.text()).toContain("Alice");
-    expect(wrapper.text()).toContain("First comment");
-    expect(wrapper.text()).toContain("[deleted comment]");
+  // Delete comment
+  const deleteBtn = wrapper.find('button[aria-label="Opmerking verwijderen"]');
+  await deleteBtn.trigger("click");
+  await flushPromises();
+  expect(remove).toHaveBeenCalledWith(1);
+  expect(showSuccess).toHaveBeenCalledWith("Opmerking verwijderd");
 
-    // Edit own comment
-    const editBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
-    expect(editBtn.exists()).toBe(true);
-    await editBtn.trigger("click");
-    expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
-    await wrapper.find(".comment-editor-stub input").setValue("<p>Updated text</p>");
-    await wrapper.find(".comment-editor-stub .submit-btn").trigger("click");
-    await flushPromises();
-    expect(update).toHaveBeenCalledWith(1, "<p>Updated text</p>");
-    expect(showSuccess).toHaveBeenCalledWith("Opmerking gewijzigd");
+  // Create new comment
+  const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
+  newEditor.vm.$emit("update:modelValue", "<p>Brand new</p>");
+  newEditor.vm.$emit("submit", "<p>Brand new</p>");
+  await flushPromises();
+  expect(create).toHaveBeenCalledWith(10, "<p>Brand new</p>");
+  expect(showSuccess).toHaveBeenCalledWith("Opmerking geplaatst");
 
-    // Delete comment
-    const deleteBtn = wrapper.find('button[aria-label="Opmerking verwijderen"]');
-    await deleteBtn.trigger("click");
-    await flushPromises();
-    expect(remove).toHaveBeenCalledWith(1);
-    expect(showSuccess).toHaveBeenCalledWith("Opmerking verwijderd");
+  // WebSocket message handling
+  expect(wsSubscriber).toBeTruthy();
+  wsSubscriber!({
+    type: "comment-created",
+    payload: {
+      id: 4,
+      issue_id: 10,
+      author_id: 3,
+      author_name: "Charlie",
+      body: "<p>Live comment</p>",
+      created_at: "2026-01-01T15:00:00Z",
+      updated_at: null,
+      deleted_at: null,
+      is_deleted: false,
+    },
+  });
+  await flushPromises();
+  expect(wrapper.text()).toContain("Charlie");
+  expect(wrapper.text()).toContain("Live comment");
 
-    // Create new comment
-    const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
-    newEditor.vm.$emit("update:modelValue", "<p>Brand new</p>");
-    newEditor.vm.$emit("submit", "<p>Brand new</p>");
-    await flushPromises();
-    expect(create).toHaveBeenCalledWith(10, "<p>Brand new</p>");
-    expect(showSuccess).toHaveBeenCalledWith("Opmerking geplaatst");
+  wsSubscriber!({
+    type: "comment-modified",
+    payload: {
+      id: 4,
+      issue_id: 10,
+      author_id: 3,
+      author_name: "Charlie",
+      body: "<p>Modified live</p>",
+      created_at: "2026-01-01T15:00:00Z",
+      updated_at: "2026-01-01T15:30:00Z",
+      deleted_at: null,
+      is_deleted: false,
+    },
+  });
+  await flushPromises();
+  expect(wrapper.text()).toContain("Modified live");
 
-    // WebSocket message handling
-    expect(wsSubscriber).toBeTruthy();
-    wsSubscriber!({
-        type: "comment-created",
-        payload: { id: 4, issue_id: 10, author_id: 3, author_name: "Charlie", body: "<p>Live comment</p>", created_at: "2026-01-01T15:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
-    });
-    await flushPromises();
-    expect(wrapper.text()).toContain("Charlie");
-    expect(wrapper.text()).toContain("Live comment");
+  wsSubscriber!({
+    type: "comment-deleted",
+    payload: {
+      id: 4,
+      issue_id: 10,
+      deletedBy: "Charlie",
+      deletedByUserId: 3,
+      soft: true,
+    },
+  });
+  await flushPromises();
+  expect(wrapper.find(".comment-deleted").exists()).toBe(true);
 
-    wsSubscriber!({
-        type: "comment-modified",
-        payload: { id: 4, issue_id: 10, author_id: 3, author_name: "Charlie", body: "<p>Modified live</p>", created_at: "2026-01-01T15:00:00Z", updated_at: "2026-01-01T15:30:00Z", deleted_at: null, is_deleted: false },
-    });
-    await flushPromises();
-    expect(wrapper.text()).toContain("Modified live");
+  // Cancel edit
+  const editAgainBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
+  await editAgainBtn.trigger("click");
+  expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
+  await wrapper.find(".comment-editor-stub .cancel-btn").trigger("click");
+  await flushPromises();
 
-    wsSubscriber!({
-        type: "comment-deleted",
-        payload: { id: 4, issue_id: 10, deletedBy: "Charlie", deletedByUserId: 3, soft: true },
-    });
-    await flushPromises();
-    expect(wrapper.find(".comment-deleted").exists()).toBe(true);
-
-    // Cancel edit
-    const editAgainBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
-    await editAgainBtn.trigger("click");
-    expect(wrapper.find(".comment-editor-stub").exists()).toBe(true);
-    await wrapper.find(".comment-editor-stub .cancel-btn").trigger("click");
-    await flushPromises();
-
-    // Hard delete via websocket message removes item completely
-    wsSubscriber!({
-        type: "comment-deleted",
-        payload: { id: 4, issue_id: 10, deletedBy: "Charlie", deletedByUserId: 3, soft: false },
-    });
-    await flushPromises();
-    expect(wrapper.text()).not.toContain("Live comment");
+  // Hard delete via websocket message removes item completely
+  wsSubscriber!({
+    type: "comment-deleted",
+    payload: {
+      id: 4,
+      issue_id: 10,
+      deletedBy: "Charlie",
+      deletedByUserId: 3,
+      soft: false,
+    },
+  });
+  await flushPromises();
+  expect(wrapper.text()).not.toContain("Live comment");
 });
 
 it("handles error states, deletion cancellation, and author initials in IssueComments", async () => {
-    const list = vi.fn().mockRejectedValueOnce(new Error("Network error")).mockResolvedValueOnce([
-        { id: 1, issue_id: 10, author_id: 1, author_name: "SingleName", body: "<p>Comment 1</p>", created_at: "2026-01-01T10:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
-        { id: 2, issue_id: 10, author_id: 2, author_name: null, body: "<p>Anonymous comment</p>", created_at: "2026-01-01T11:00:00Z", updated_at: null, deleted_at: null, is_deleted: false },
+  const list = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("Network error"))
+    .mockResolvedValueOnce([
+      {
+        id: 1,
+        issue_id: 10,
+        author_id: 1,
+        author_name: "SingleName",
+        body: "<p>Comment 1</p>",
+        created_at: "2026-01-01T10:00:00Z",
+        updated_at: null,
+        deleted_at: null,
+        is_deleted: false,
+      },
+      {
+        id: 2,
+        issue_id: 10,
+        author_id: 2,
+        author_name: null,
+        body: "<p>Anonymous comment</p>",
+        created_at: "2026-01-01T11:00:00Z",
+        updated_at: null,
+        deleted_at: null,
+        is_deleted: false,
+      },
     ]);
-    const create = vi.fn().mockRejectedValue(new Error("Create failed"));
-    const update = vi.fn().mockRejectedValue(new Error("Update failed"));
-    const remove = vi.fn().mockRejectedValue(new Error("Delete failed"));
+  const create = vi.fn().mockRejectedValue(new Error("Create failed"));
+  const update = vi.fn().mockRejectedValue(new Error("Update failed"));
+  const remove = vi.fn().mockRejectedValue(new Error("Delete failed"));
 
-    vi.stubGlobal("useCommentsApi", () => ({ list, create, update, remove }));
-    vi.stubGlobal("useAuth", () => ({ status: ref("authenticated"), data: ref({ id: 1, name: "Admin", role: "admin" }), token: ref("Bearer token") }));
-    vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
-    vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
-    const confirmMock = vi.fn().mockReturnValue(false);
-    vi.stubGlobal("confirm", confirmMock);
-    vi.stubGlobal("useSharedAuthWebSocket", () => ({ subscribe: () => () => {} }));
+  vi.stubGlobal("useCommentsApi", () => ({ list, create, update, remove }));
+  vi.stubGlobal("useAuth", () => ({
+    status: ref("authenticated"),
+    data: ref({ id: 1, name: "Admin", role: "admin" }),
+    token: ref("Bearer token"),
+  }));
+  vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
+  vi.stubGlobal("useStreetViewEmbeds", useStreetViewEmbeds);
+  const confirmMock = vi.fn().mockReturnValue(false);
+  vi.stubGlobal("confirm", confirmMock);
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({
+    subscribe: () => () => {},
+  }));
 
-    const CommentEditorStub = defineComponent({
-        name: "CommentEditor",
-        props: ["modelValue", "submitText", "loading"],
-        emits: ["submit", "cancel", "update:modelValue"],
-        template: '<div class="comment-editor-stub"><button class="submit-btn" @click="$emit(\'submit\', modelValue)">{{ submitText }}</button></div>',
-    });
+  const CommentEditorStub = defineComponent({
+    name: "CommentEditor",
+    props: ["modelValue", "submitText", "loading"],
+    emits: ["submit", "cancel", "update:modelValue"],
+    template:
+      '<div class="comment-editor-stub"><button class="submit-btn" @click="$emit(\'submit\', modelValue)">{{ submitText }}</button></div>',
+  });
 
-    const wrapper = keep(mount(IssueComments, { props: { issueId: 10 }, global: { stubs: { ...stubs, ImageViewer: Slot, CommentEditor: CommentEditorStub } } }));
-    await flushPromises();
-    expect(wrapper.text()).toContain("Kon opmerkingen niet laden.");
+  const wrapper = keep(
+    mount(IssueComments, {
+      props: { issueId: 10 },
+      global: {
+        stubs: {
+          ...stubs,
+          ImageViewer: Slot,
+          CommentEditor: CommentEditorStub,
+        },
+      },
+    }),
+  );
+  await flushPromises();
+  expect(wrapper.text()).toContain("Kon opmerkingen niet laden.");
 
-    // Reload comments
-    await wrapper.setProps({ issueId: 11 });
-    await flushPromises();
-    expect(wrapper.text()).toContain("SingleName");
-    expect(wrapper.text()).toContain("SI");
-    expect(wrapper.text()).toContain("?");
+  // Reload comments
+  await wrapper.setProps({ issueId: 11 });
+  await flushPromises();
+  expect(wrapper.text()).toContain("SingleName");
+  expect(wrapper.text()).toContain("SI");
+  expect(wrapper.text()).toContain("?");
 
-    // Creation error handling
-    const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
-    newEditor.vm.$emit("update:modelValue", "<p>Failing comment</p>");
-    newEditor.vm.$emit("submit", "<p>Failing comment</p>");
-    await flushPromises();
-    expect(showError).toHaveBeenCalledWith("Kon opmerking niet plaatsen");
+  // Creation error handling
+  const newEditor = wrapper.findAllComponents(CommentEditorStub).at(-1)!;
+  newEditor.vm.$emit("update:modelValue", "<p>Failing comment</p>");
+  newEditor.vm.$emit("submit", "<p>Failing comment</p>");
+  await flushPromises();
+  expect(showError).toHaveBeenCalledWith("Kon opmerking niet plaatsen");
 
-    // Deletion cancelled by user confirm = false
-    const deleteBtn = wrapper.find('button[aria-label="Opmerking verwijderen"]');
-    await deleteBtn.trigger("click");
-    expect(remove).not.toHaveBeenCalled();
+  // Deletion cancelled by user confirm = false
+  const deleteBtn = wrapper.find('button[aria-label="Opmerking verwijderen"]');
+  await deleteBtn.trigger("click");
+  expect(remove).not.toHaveBeenCalled();
 
-    // Deletion error handling
-    confirmMock.mockReturnValue(true);
-    await deleteBtn.trigger("click");
-    await flushPromises();
-    expect(remove).toHaveBeenCalledWith(1);
-    expect(showError).toHaveBeenCalledWith("Kon opmerking niet verwijderen");
+  // Deletion error handling
+  confirmMock.mockReturnValue(true);
+  await deleteBtn.trigger("click");
+  await flushPromises();
+  expect(remove).toHaveBeenCalledWith(1);
+  expect(showError).toHaveBeenCalledWith("Kon opmerking niet verwijderen");
 
-    // Update error handling
-    const editBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
-    await editBtn.trigger("click");
-    const editEditor = wrapper.findComponent(CommentEditorStub);
-    editEditor.vm.$emit("update:modelValue", "<p>Failed edit</p>");
-    editEditor.vm.$emit("submit", "<p>Failed edit</p>");
-    await flushPromises();
-    expect(update).toHaveBeenCalledWith(1, "<p>Failed edit</p>");
-    expect(showError).toHaveBeenCalledWith("Kon opmerking niet wijzigen");
+  // Update error handling
+  const editBtn = wrapper.find('button[aria-label="Opmerking bewerken"]');
+  await editBtn.trigger("click");
+  const editEditor = wrapper.findComponent(CommentEditorStub);
+  editEditor.vm.$emit("update:modelValue", "<p>Failed edit</p>");
+  editEditor.vm.$emit("submit", "<p>Failed edit</p>");
+  await flushPromises();
+  expect(update).toHaveBeenCalledWith(1, "<p>Failed edit</p>");
+  expect(showError).toHaveBeenCalledWith("Kon opmerking niet wijzigen");
 });
 
 it("validates CommentEditor submission constraints and inserts Street View embeds", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("$fetch", fetchMock);
-    vi.stubGlobal("useAuth", () => ({ token: ref("Bearer token") }));
-    vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
+  const fetchMock = vi.fn();
+  vi.stubGlobal("$fetch", fetchMock);
+  vi.stubGlobal("useAuth", () => ({ token: ref("Bearer token") }));
+  vi.stubGlobal("useConnectionStatus", () => ({ isConnected: ref(true) }));
 
-    const wrapper = keep(mount(CommentEditor, {
-        props: { modelValue: "", placeholder: "Schrijf een opmerking..." },
-        global: {
-            stubs: {
-                ...stubs,
-                QuillEditor: defineComponent({
-                    methods: {
-                        getQuill: () => ({
-                            getLength: () => 0,
-                            getSelection: () => ({ index: 0, length: 0 }),
-                            insertEmbed: vi.fn(),
-                            setSelection: vi.fn(),
-                        }),
-                    },
-                    template: "<div />",
-                }),
+  const wrapper = keep(
+    mount(CommentEditor, {
+      props: { modelValue: "", placeholder: "Schrijf een opmerking..." },
+      global: {
+        stubs: {
+          ...stubs,
+          QuillEditor: defineComponent({
+            methods: {
+              getQuill: () => ({
+                getLength: () => 0,
+                getSelection: () => ({ index: 0, length: 0 }),
+                insertEmbed: vi.fn(),
+                setSelection: vi.fn(),
+              }),
             },
+            template: "<div />",
+          }),
         },
-    }));
+      },
+    }),
+  );
 
-    // Disabled initially because content is empty
-    const submitBtn = wrapper.findAll("button").find((b) => b.text() === "Plaatsen")!;
-    expect(submitBtn.attributes("disabled")).toBeDefined();
+  // Disabled initially because content is empty
+  const submitBtn = wrapper
+    .findAll("button")
+    .find((b) => b.text() === "Plaatsen")!;
+  expect(submitBtn.attributes("disabled")).toBeDefined();
 
-    // Enable when non-empty
-    await wrapper.setProps({ modelValue: "<p>Non-empty content</p>", showCancel: true });
-    expect(submitBtn.attributes("disabled")).toBeUndefined();
+  // Enable when non-empty
+  await wrapper.setProps({
+    modelValue: "<p>Non-empty content</p>",
+    showCancel: true,
+  });
+  expect(submitBtn.attributes("disabled")).toBeUndefined();
 
-    // Disabled when loading
-    await wrapper.setProps({ loading: true });
-    expect(submitBtn.attributes("disabled")).toBeDefined();
-    await wrapper.setProps({ loading: false });
+  // Disabled when loading
+  await wrapper.setProps({ loading: true });
+  expect(submitBtn.attributes("disabled")).toBeDefined();
+  await wrapper.setProps({ loading: false });
 
-    // Cancel action
-    const cancelBtn = wrapper.findAll("button").find((b) => b.text() === "Annuleren")!;
-    await cancelBtn.trigger("click");
-    expect(wrapper.emitted("cancel")?.length).toBe(1);
+  // Cancel action
+  const cancelBtn = wrapper
+    .findAll("button")
+    .find((b) => b.text() === "Annuleren")!;
+  await cancelBtn.trigger("click");
+  expect(wrapper.emitted("cancel")?.length).toBe(1);
 
-    await submitBtn.trigger("click");
-    expect(wrapper.emitted("submit")?.at(-1)).toEqual(["<p>Non-empty content</p>"]);
+  await submitBtn.trigger("click");
+  expect(wrapper.emitted("submit")?.at(-1)).toEqual([
+    "<p>Non-empty content</p>",
+  ]);
 
-    // Street view preview insertion
-    const svBtn = wrapper.findAll("button").find((b) => b.text().includes("Street View toevoegen"))!;
-    await svBtn.trigger("click");
-    const svInput = wrapper.findAll("input").at(-1)!;
-    await svInput.setValue("https://maps.app.goo.gl/street");
+  // Street view preview insertion
+  const svBtn = wrapper
+    .findAll("button")
+    .find((b) => b.text().includes("Street View toevoegen"))!;
+  await svBtn.trigger("click");
+  const svInput = wrapper.findAll("input").at(-1)!;
+  await svInput.setValue("https://maps.app.goo.gl/street");
 
-    const preview = { lat: 52.1, lng: 5.1, heading: 10, pitch: 0, fov: 90, panoId: "pano123", previewDataUrl: "data:image/png;base64,123", embedSrc: "https://embed.google.com" };
-    fetchMock.mockResolvedValueOnce(preview);
-    const getPreviewBtn = wrapper.findAll("button").find((b) => b.text() === "Ophalen")!;
-    await getPreviewBtn.trigger("click");
-    await flushPromises();
+  const preview = {
+    lat: 52.1,
+    lng: 5.1,
+    heading: 10,
+    pitch: 0,
+    fov: 90,
+    panoId: "pano123",
+    previewDataUrl: "data:image/png;base64,123",
+    embedSrc: "https://embed.google.com",
+  };
+  fetchMock.mockResolvedValueOnce(preview);
+  const getPreviewBtn = wrapper
+    .findAll("button")
+    .find((b) => b.text() === "Ophalen")!;
+  await getPreviewBtn.trigger("click");
+  await flushPromises();
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/streetview/parse", expect.objectContaining({ body: { url: "https://maps.app.goo.gl/street" } }));
-    const insertBtn = wrapper.findAll("button").find((b) => b.text() === "Invoegen")!;
-    await insertBtn.trigger("click");
-    await flushPromises();
+  expect(fetchMock).toHaveBeenCalledWith(
+    "/api/streetview/parse",
+    expect.objectContaining({
+      body: { url: "https://maps.app.goo.gl/street" },
+    }),
+  );
+  const insertBtn = wrapper
+    .findAll("button")
+    .find((b) => b.text() === "Invoegen")!;
+  await insertBtn.trigger("click");
+  await flushPromises();
 });
 
 describe("StreetViewDialog", () => {
-    function mountDialog(props = { modelValue: true }) {
-        return keep(mount(StreetViewDialog, { props, global: { stubs } }));
-    }
+  function mountDialog(props = { modelValue: true }) {
+    return keep(mount(StreetViewDialog, { props, global: { stubs } }));
+  }
 
-    it("emits false on update:modelValue when cancelled", async () => {
-        const wrapper = mountDialog();
-        const cancelBtn = wrapper.findAll("button").find((b) => b.text() === "Annuleren")!;
+  it("emits false on update:modelValue when cancelled", async () => {
+    const wrapper = mountDialog();
+    const cancelBtn = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Annuleren")!;
 
-        await cancelBtn.trigger("click");
+    await cancelBtn.trigger("click");
 
-        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
-    });
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
+  });
 
-    it("displays error message when Street View parsing fails", async () => {
-        const fetchMock = vi.fn().mockRejectedValueOnce({ data: { message: "Invalid URL" } });
-        vi.stubGlobal("$fetch", fetchMock);
-        vi.stubGlobal("useAuth", () => ({ token: ref("Bearer auth-token") }));
+  it("displays error message when Street View parsing fails", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce({ data: { message: "Invalid URL" } });
+    vi.stubGlobal("$fetch", fetchMock);
+    vi.stubGlobal("useAuth", () => ({ token: ref("Bearer auth-token") }));
 
-        const wrapper = mountDialog();
-        await wrapper.find("input").setValue("https://maps.app.goo.gl/fail");
+    const wrapper = mountDialog();
+    await wrapper.find("input").setValue("https://maps.app.goo.gl/fail");
 
-        const getBtn = wrapper.findAll("button").find((b) => b.text() === "Ophalen")!;
-        await getBtn.trigger("click");
-        await flushPromises();
+    const getBtn = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Ophalen")!;
+    await getBtn.trigger("click");
+    await flushPromises();
 
-        expect(wrapper.text()).toContain("Invalid URL");
-    });
+    expect(wrapper.text()).toContain("Invalid URL");
+  });
 
-    it("fetches preview and emits insert event with parsed embed payload", async () => {
-        const preview = {
-            lat: 52.3,
-            lng: 4.9,
-            heading: 180,
-            pitch: 0,
-            fov: 90,
-            panoId: "pano999",
-            previewDataUrl: "data:image/png;base64,abc",
-            embedSrc: "https://maps.google.com/embed",
-        };
-        const fetchMock = vi.fn().mockResolvedValueOnce(preview);
-        vi.stubGlobal("$fetch", fetchMock);
-        vi.stubGlobal("useAuth", () => ({ token: ref("Bearer auth-token") }));
+  it("fetches preview and emits insert event with parsed embed payload", async () => {
+    const preview = {
+      lat: 52.3,
+      lng: 4.9,
+      heading: 180,
+      pitch: 0,
+      fov: 90,
+      panoId: "pano999",
+      previewDataUrl: "data:image/png;base64,abc",
+      embedSrc: "https://maps.google.com/embed",
+    };
+    const fetchMock = vi.fn().mockResolvedValueOnce(preview);
+    vi.stubGlobal("$fetch", fetchMock);
+    vi.stubGlobal("useAuth", () => ({ token: ref("Bearer auth-token") }));
 
-        const wrapper = mountDialog();
-        await wrapper.find("input").setValue("https://maps.app.goo.gl/success");
+    const wrapper = mountDialog();
+    await wrapper.find("input").setValue("https://maps.app.goo.gl/success");
 
-        const getBtn = wrapper.findAll("button").find((b) => b.text() === "Ophalen")!;
-        await getBtn.trigger("click");
-        await flushPromises();
+    const getBtn = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Ophalen")!;
+    await getBtn.trigger("click");
+    await flushPromises();
 
-        expect(wrapper.find("img.streetview-dialog-preview").attributes("src")).toBe("data:image/png;base64,abc");
+    expect(
+      wrapper.find("img.streetview-dialog-preview").attributes("src"),
+    ).toBe("data:image/png;base64,abc");
 
-        const insertBtn = wrapper.findAll("button").find((b) => b.text() === "Invoegen")!;
-        await insertBtn.trigger("click");
+    const insertBtn = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Invoegen")!;
+    await insertBtn.trigger("click");
 
-        expect(wrapper.emitted("insert")?.at(-1)).toEqual([preview]);
-        expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
-    });
+    expect(wrapper.emitted("insert")?.at(-1)).toEqual([preview]);
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([false]);
+  });
 });

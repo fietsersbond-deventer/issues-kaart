@@ -37,7 +37,22 @@ export function removeLineBreaks(html: string | null | undefined): string {
     return "";
   }
   return sanitizeHtmlLib(html, {
-    allowedTags: ["h2", "h3", "h4", "b", "i", "strong", "em", "u", "s", "span", "ol", "ul", "li", "blockquote"],
+    allowedTags: [
+      "h2",
+      "h3",
+      "h4",
+      "b",
+      "i",
+      "strong",
+      "em",
+      "u",
+      "s",
+      "span",
+      "ol",
+      "ul",
+      "li",
+      "blockquote",
+    ],
     allowedAttributes: {},
     textFilter: (text) => `${text} `,
   })

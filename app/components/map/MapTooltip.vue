@@ -16,7 +16,9 @@ const props = defineProps<{ feature: Feature }>();
 const { getTag } = useTagsApi();
 const properties = computed(() => props.feature.getProperties());
 const title = computed(() => properties.value.title || "Geen titel");
-const image = computed(() => properties.value.imageUrl ? thumbnailUrl(properties.value.imageUrl) : null);
+const image = computed(() =>
+  properties.value.imageUrl ? thumbnailUrl(properties.value.imageUrl) : null,
+);
 const tags = computed<Tag[]>(() => {
   const result: Tag[] = [];
   for (const slug of properties.value.tags) {
@@ -27,8 +29,12 @@ const tags = computed<Tag[]>(() => {
 });
 
 // Show all three tags instead of replacing the last one with "+ 1".
-const visibleTags = computed(() => tags.value.slice(0, tags.value.length === 3 ? 3 : 2));
-const overflowCount = computed(() => tags.value.length - visibleTags.value.length);
+const visibleTags = computed(() =>
+  tags.value.slice(0, tags.value.length === 3 ? 3 : 2),
+);
+const overflowCount = computed(
+  () => tags.value.length - visibleTags.value.length,
+);
 const overflowTag = computed<Tag>(() => ({
   id: -1,
   tag: "",
@@ -44,7 +50,9 @@ const overflowTag = computed<Tag>(() => ({
   background-color: white;
   padding: 0.5rem;
   border-radius: 0.375rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.06);
   border: 1px solid #d1d5db;
   white-space: normal;
   max-width: 15em;

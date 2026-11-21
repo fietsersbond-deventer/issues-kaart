@@ -35,7 +35,7 @@ export default defineNuxtPlugin(() => {
   // Fout handler voor het script
   script.onerror = () => {
     console.error(
-      "Failed to load Matomo tracking script - Matomo may not be properly configured on the server"
+      "Failed to load Matomo tracking script - Matomo may not be properly configured on the server",
     );
   };
 
@@ -60,6 +60,6 @@ export default defineNuxtPlugin(() => {
     (newTitle) => {
       debounced(newTitle as string);
     },
-    { immediate: true }
+    { immediate: true },
   );
 });

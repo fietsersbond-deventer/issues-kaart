@@ -37,15 +37,23 @@ function cleanup() {
   mailSink.server.close();
   rmSync(directory, { recursive: true, force: true });
 }
-process.once("SIGTERM", () => { cleanup(); process.exit(0); });
-process.once("SIGINT", () => { cleanup(); process.exit(0); });
+process.once("SIGTERM", () => {
+  cleanup();
+  process.exit(0);
+});
+process.once("SIGINT", () => {
+  cleanup();
+  process.exit(0);
+});
 process.once("exit", cleanup);
 
 async function run(command: string, args: string[]) {
   await new Promise<void>((resolve, reject) => {
     child = spawn(command, args, { env: environment, stdio: "inherit" });
     child.once("error", reject);
-    child.once("exit", (code) => code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)));
+    child.once("exit", (code) =>
+      code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)),
+    );
   });
 }
 
@@ -58,5 +66,8 @@ try {
   db.close();
 }
 await run("pnpm", ["exec", "nuxt", "build", "--dotenv", "/dev/null"]);
-writeFileSync(".output/e2e-runtime.json", JSON.stringify({ directory, mailFile, dbPath: environment.NUXT_DB_PATH }));
+writeFileSync(
+  ".output/e2e-runtime.json",
+  JSON.stringify({ directory, mailFile, dbPath: environment.NUXT_DB_PATH }),
+);
 await run(process.execPath, [".output/server/index.mjs"]);

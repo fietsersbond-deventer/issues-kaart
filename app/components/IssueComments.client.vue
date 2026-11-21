@@ -1,9 +1,7 @@
 <template>
   <section class="ml-3 issue-comments" aria-label="Opmerkingen">
     <div class="d-flex align-center justify-space-between mb-4">
-      <h2 class="text-h6 font-weight-bold">
-        Opmerkingen
-      </h2>
+      <h2 class="text-h6 font-weight-bold">Opmerkingen</h2>
     </div>
 
     <v-alert v-if="fetchError" type="error" variant="tonal" class="mb-4">

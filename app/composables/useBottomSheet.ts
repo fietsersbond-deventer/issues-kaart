@@ -64,7 +64,7 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
       const deltaPercentage = (deltaY / window.innerHeight) * 100;
       sheetHeight.value = Math.min(
         Math.max(initialHeight.value + deltaPercentage, minHeight),
-        maxHeight
+        maxHeight,
       );
     }
   }
@@ -91,7 +91,7 @@ export function useBottomSheet(options: BottomSheetOptions = {}) {
     const deltaPercentage = (deltaY / window.innerHeight) * 100;
     sheetHeight.value = Math.min(
       Math.max(initialHeight.value + deltaPercentage, minHeight),
-      maxHeight
+      maxHeight,
     );
   }
 

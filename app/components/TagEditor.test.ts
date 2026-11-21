@@ -282,7 +282,9 @@ describe("TagEditor.vue", () => {
     const mockError = new Error("API Error");
     mockCreate.mockRejectedValue(mockError);
 
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
 
     const vm = wrapper.vm as TagEditorVM;
     vm.openCreateDialog();
@@ -296,7 +298,9 @@ describe("TagEditor.vue", () => {
     await vm.handleSave();
     await wrapper.vm.$nextTick();
 
-    expect(mockShowError).toHaveBeenCalledWith("Tag kon niet worden opgeslagen");
+    expect(mockShowError).toHaveBeenCalledWith(
+      "Tag kon niet worden opgeslagen",
+    );
     expect(vm.saving).toBe(false);
 
     consoleErrorSpy.mockRestore();

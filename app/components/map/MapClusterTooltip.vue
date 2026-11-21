@@ -16,7 +16,7 @@ import type { Feature } from "ol";
 
 const props = defineProps<{ members: Feature[] }>();
 const category = computed<string | undefined>(
-  () => props.members[0]?.get("legend")?.name
+  () => props.members[0]?.get("legend")?.name,
 );
 </script>
 

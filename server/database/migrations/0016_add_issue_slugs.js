@@ -6,14 +6,13 @@ function slugify(value) {
     .replace(/[łŁ]/g, "l")
     .replace(/[ß]/g, "ss");
 
-  const slug =
-    transliterated
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+  const slug = transliterated
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
   if (!slug) return "onderwerp";
   return /^\d+$/.test(slug) ? `onderwerp-${slug}` : slug;

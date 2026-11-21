@@ -60,13 +60,10 @@ export const useTagsApi = () => {
   }
 
   async function remove(tagId: number) {
-    const result = await $fetch<{ success: boolean }>(
-      `/api/tags/${tagId}`,
-      {
-        method: "DELETE",
-        headers: headers.value,
-      },
-    );
+    const result = await $fetch<{ success: boolean }>(`/api/tags/${tagId}`, {
+      method: "DELETE",
+      headers: headers.value,
+    });
     if (result.success) {
       await refreshTags();
     }

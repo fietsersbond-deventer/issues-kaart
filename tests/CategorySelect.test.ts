@@ -6,19 +6,35 @@ import CategorySelect from "../app/components/CategorySelect.vue";
 
 vi.mock("vuetify/components/VSelect", () => ({ VSelect: { name: "VSelect" } }));
 
-const legend = { id: 1, name: "Fietspad", description: "Routes voor fietsers", color: "#123456", created_at: "2026-01-01" };
+const legend = {
+  id: 1,
+  name: "Fietspad",
+  description: "Routes voor fietsers",
+  color: "#123456",
+  created_at: "2026-01-01",
+};
 const SelectStub = defineComponent({
   props: ["items", "modelValue"],
-  template: '<div><slot name="selection" :item="items[0]" :internal-item="{ raw: items[0] }" /><slot name="item" :item="items[0]" :internal-item="{ raw: items[0] }" :props="{}" /></div>',
+  template:
+    '<div><slot name="selection" :item="items[0]" :internal-item="{ raw: items[0] }" /><slot name="item" :item="items[0]" :internal-item="{ raw: items[0] }" :props="{}" /></div>',
 });
 function mountSelect() {
   return mount(CategorySelect, {
     props: { modelValue: 1, legends: [legend] },
-    global: { stubs: {
-      VSelect: SelectStub,
-      VListItem: defineComponent({ props: ["subtitle"], template: '<div><span>{{ subtitle }}</span><slot name="prepend" /></div>' }),
-      LegendIndicator: defineComponent({ props: ["legend"], template: '<span>{{ legend.name }}</span>' }),
-    } },
+    global: {
+      stubs: {
+        VSelect: SelectStub,
+        VListItem: defineComponent({
+          props: ["subtitle"],
+          template:
+            '<div><span>{{ subtitle }}</span><slot name="prepend" /></div>',
+        }),
+        LegendIndicator: defineComponent({
+          props: ["legend"],
+          template: "<span>{{ legend.name }}</span>",
+        }),
+      },
+    },
   });
 }
 

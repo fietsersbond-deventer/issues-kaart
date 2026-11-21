@@ -24,7 +24,7 @@ interface MdiIconRaw {
 export async function getAllMdiIcons(): Promise<MdiIcon[]> {
   try {
     const response = await fetch(
-      "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json"
+      "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json",
     );
     const icons: MdiIconRaw[] = await response.json();
 
@@ -44,7 +44,7 @@ export async function getAllMdiIcons(): Promise<MdiIcon[]> {
  * Get all unique tags from icons for dropdown options
  */
 export function getTagOptions(
-  icons: MdiIcon[]
+  icons: MdiIcon[],
 ): Array<{ title: string; value: string }> {
   // Collect all tags
   const tagCounts: Record<string, number> = {};
@@ -69,7 +69,7 @@ export function getTagOptions(
  */
 export function getIconsByTag(icons: MdiIcon[], tag: string): MdiIcon[] {
   return icons.filter((icon) =>
-    icon.tags.some((iconTag) => iconTag.toLowerCase() === tag.toLowerCase())
+    icon.tags.some((iconTag) => iconTag.toLowerCase() === tag.toLowerCase()),
   );
 }
 
@@ -82,7 +82,7 @@ export function searchIcons(icons: MdiIcon[], query: string): MdiIcon[] {
     (icon) =>
       icon.name.toLowerCase().includes(searchTerm) ||
       icon.tags.some((tag) => tag.toLowerCase().includes(searchTerm)) ||
-      icon.aliases.some((alias) => alias.toLowerCase().includes(searchTerm))
+      icon.aliases.some((alias) => alias.toLowerCase().includes(searchTerm)),
   );
 }
 
@@ -116,7 +116,7 @@ export function getTransportIcons(icons: MdiIcon[]): MdiIcon[] {
           "road",
           "traffic",
           "sign",
-        ].includes(tag.toLowerCase())
-      )
+        ].includes(tag.toLowerCase()),
+      ),
   );
 }

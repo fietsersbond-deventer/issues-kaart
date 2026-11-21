@@ -4,7 +4,11 @@
       <v-card-title class="d-flex align-center">
         <span>Gebruikers</span>
         <v-spacer />
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="showNewUserDialog = true">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="showNewUserDialog = true"
+        >
           Nieuwe gebruiker
         </v-btn>
       </v-card-title>
@@ -25,7 +29,9 @@
               <td>{{ user.name || "-" }}</td>
               <td>{{ user.role }}</td>
               <td v-if="hasActiveResetTokens">
-                <template v-if="user.reset_token && user.reset_token_expires_at">
+                <template
+                  v-if="user.reset_token && user.reset_token_expires_at"
+                >
                   <div>
                     <div class="d-flex align-center">
                       <span
@@ -116,7 +122,8 @@
       <v-card>
         <v-card-title>Gebruiker verwijderen</v-card-title>
         <v-card-text>
-          Weet je zeker dat je de gebruiker "{{ deleteUser?.username }}" wilt verwijderen?
+          Weet je zeker dat je de gebruiker "{{ deleteUser?.username }}" wilt
+          verwijderen?
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -151,11 +158,15 @@ const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const loading = ref(false);
 const deleteUser = ref<{ id: number; username: string } | null>(null);
-const editedUser = ref<Pick<User, "id" | "username" | "name" | "role"> | null>(null);
+const editedUser = ref<Pick<User, "id" | "username" | "name" | "role"> | null>(
+  null,
+);
 
 const hasActiveResetTokens = computed(() => {
   return (
-    users.value?.some((user) => user.reset_token && user.reset_token_expires_at) ?? false
+    users.value?.some(
+      (user) => user.reset_token && user.reset_token_expires_at,
+    ) ?? false
   );
 });
 
@@ -225,7 +236,11 @@ async function createUser(data: {
   }
 }
 
-async function updateUser(data: { username: string; name: string | null; role: string }) {
+async function updateUser(data: {
+  username: string;
+  name: string | null;
+  role: string;
+}) {
   if (!editedUser.value) return;
 
   loading.value = true;

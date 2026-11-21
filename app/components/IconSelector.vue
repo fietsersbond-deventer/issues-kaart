@@ -60,7 +60,11 @@
 
     <v-row v-if="totalPages > 1">
       <v-col cols="12" class="d-flex justify-center">
-        <v-pagination v-model="currentPage" :length="totalPages" :total-visible="7" />
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+        />
       </v-col>
     </v-row>
   </div>
@@ -225,8 +229,6 @@ onMounted(async () => {
     loading.value = false;
   }
 });
-
-
 
 // Reset pagination when filters change
 watch([searchQuery, selectedCategory], () => {

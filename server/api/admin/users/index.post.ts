@@ -33,11 +33,11 @@ export default defineEventHandler(async (event) => {
 
   try {
     const insertStmt = db.prepare(
-      "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)"
+      "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)",
     );
     const result = insertStmt.run(username, passwordHash, name || null, role);
     const selectStmt = db.prepare(
-      "SELECT id, username, name, role, created_at FROM users WHERE id = ?"
+      "SELECT id, username, name, role, created_at FROM users WHERE id = ?",
     );
     const user = selectStmt.get(result.lastInsertRowid);
     if (!user) {

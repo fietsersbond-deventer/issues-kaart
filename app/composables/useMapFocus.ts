@@ -198,7 +198,9 @@ export function useMapFocus(
     if (!view || isEditing.value || !features.length) return;
     // Fit the member points using the same panel-aware padding as issue focus.
     // maxZoom also makes coincident points separate when clustering stops at 18.
-    const extent = boundingExtent(features.map(feature => feature.getGeometry()!.getCoordinates()));
+    const extent = boundingExtent(
+      features.map((feature) => feature.getGeometry()!.getCoordinates()),
+    );
     view.cancelAnimations();
     view.fit(extent, {
       padding: padding.value,

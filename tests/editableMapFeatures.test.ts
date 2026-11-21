@@ -14,29 +14,46 @@ afterEach(() => vi.unstubAllGlobals());
 describe("bewerkselectie", () => {
   it.each([
     new Point([0, 0]),
-    new LineString([[0, 0], [10, 10]]),
-    new Polygon([[[0, 0], [10, 0], [10, 10], [0, 0]]]),
-  ])("selecteert de huidige geometrie bij starten via URL of lijst (%s)", geometry => {
-    const scope = effectScope();
-    const feature = new Feature({ id: 125, geometry });
-    const source = shallowRef(new VectorSource({ features: [feature] }));
-    const id = ref<number | null>(125);
-    const enabled = ref(false);
-    const features = scope.run(() => useEditableMapFeatures(source, id, enabled))!;
-    expect(features.value.getLength()).toBe(0);
-    enabled.value = true;
-    expect(features.value.getArray()).toEqual([feature]);
-    enabled.value = false;
-    expect(features.value.getLength()).toBe(0);
-    scope.stop();
-  });
+    new LineString([
+      [0, 0],
+      [10, 10],
+    ]),
+    new Polygon([
+      [
+        [0, 0],
+        [10, 0],
+        [10, 10],
+        [0, 0],
+      ],
+    ]),
+  ])(
+    "selecteert de huidige geometrie bij starten via URL of lijst (%s)",
+    (geometry) => {
+      const scope = effectScope();
+      const feature = new Feature({ id: 125, geometry });
+      const source = shallowRef(new VectorSource({ features: [feature] }));
+      const id = ref<number | null>(125);
+      const enabled = ref(false);
+      const features = scope.run(() =>
+        useEditableMapFeatures(source, id, enabled),
+      )!;
+      expect(features.value.getLength()).toBe(0);
+      enabled.value = true;
+      expect(features.value.getArray()).toEqual([feature]);
+      enabled.value = false;
+      expect(features.value.getLength()).toBe(0);
+      scope.stop();
+    },
+  );
 
   it("volgt bron, onderwerp en vervangende features zonder duplicaten; ruimt listeners op", () => {
     const scope = effectScope();
     const source = shallowRef<VectorSource<Feature<Point>> | undefined>();
     const id = ref<number | null>(125);
     const enabled = ref(true);
-    const features = scope.run(() => useEditableMapFeatures(source, id, enabled))!;
+    const features = scope.run(() =>
+      useEditableMapFeatures(source, id, enabled),
+    )!;
     expect(features.value.getLength()).toBe(0);
     const first = new Feature({ id: 125, geometry: new Point([0, 0]) });
     const second = new Feature({ id: 126, geometry: new Point([1, 1]) });

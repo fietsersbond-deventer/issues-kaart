@@ -1,6 +1,10 @@
 <template>
   <v-fade-transition>
-    <v-btn v-if="hasActiveFilters" class="map-filter-summary" @click="resetFilters">
+    <v-btn
+      v-if="hasActiveFilters"
+      class="map-filter-summary"
+      @click="resetFilters"
+    >
       <span
         ><b>{{ count }}</b> plek{{ count !== 1 ? "ken" : "" }} op de kaart</span
       >
@@ -21,7 +25,7 @@ const { selectedIssues } = useSelectedIssues();
 const count = computed(() => selectedIssues.value.length);
 
 const hasActiveFilters = computed(
-  () => !isShowingAllCategories.value || selectedTags.value.length > 0
+  () => !isShowingAllCategories.value || selectedTags.value.length > 0,
 );
 
 async function resetFilters() {

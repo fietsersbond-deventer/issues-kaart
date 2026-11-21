@@ -63,4 +63,3 @@ export function sanitizeDescriptionHtml(html: string): SanitizedHTML {
 
   return sanitizeHtmlLib(html, sanitizeDescriptionOptions()) as SanitizedHTML;
 }
-

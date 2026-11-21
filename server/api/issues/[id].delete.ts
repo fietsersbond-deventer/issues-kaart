@@ -5,7 +5,7 @@ import { getIssueIdFromIdentifier } from "~~/server/utils/issueSlugs";
 export default defineEventHandler(async (event) => {
   const emitter = getEmitter();
   requireUserSession(event);
-  
+
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({
@@ -22,9 +22,11 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID or slug ${id} not found`,
     });
   }
-  
+
   // Get the issue title before deletion
-  const issue = db.prepare("SELECT title FROM issues WHERE id = ?").get(issueId) as { title: string } | undefined;
+  const issue = db
+    .prepare("SELECT title FROM issues WHERE id = ?")
+    .get(issueId) as { title: string } | undefined;
   if (!issue) {
     throw createError({
       statusCode: 404,
@@ -39,7 +41,7 @@ export default defineEventHandler(async (event) => {
       message: `Issue with ID ${id} not found`,
     });
   }
-  
+
   // Emit with user info
   const user = event.context.user;
   const deletedBy = user?.name || user?.username || "Onbekend";

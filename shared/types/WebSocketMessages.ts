@@ -78,8 +78,7 @@ export type LockMessage =
   | WebSocketMessage<"clearMyLocks">;
 
 export type OnlineUserMessage =
-  | WebSocketMessage<"user-online">
-  | WebSocketMessage<"user-offline">;
+  WebSocketMessage<"user-online"> | WebSocketMessage<"user-offline">;
 
 export type EditingStatusMessage = WebSocketMessage<"editing-status">;
 export type OnlineUsersMessage = WebSocketMessage<"online-users">;
@@ -145,9 +144,7 @@ export function isIssueMessage(
 export function isCommentMessage(
   message: unknown,
 ): message is
-  | CommentCreatedMessage
-  | CommentModifiedMessage
-  | CommentDeletedMessage {
+  CommentCreatedMessage | CommentModifiedMessage | CommentDeletedMessage {
   return (
     typeof message === "object" &&
     message !== null &&

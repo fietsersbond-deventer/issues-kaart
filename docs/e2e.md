@@ -78,18 +78,18 @@ canvasinteracties, zonder Vue/Pinia-state te lezen.
 
 Er zijn vijftien scenario's voor de tien groepen:
 
-| Groep | Bestand | Gedrag |
-| --- | --- | --- |
-| 1 | `e2e/auth.spec.ts` | Fout/geldig wachtwoord, sessiebehoud na herladen, uitloggen en verlies van toegang tot beheer |
-| 2 | `e2e/issues.spec.ts` | Punt, lijn en vlak tekenen met muisklikken; categorie/tags; opslaan, herladen en persistente API-/lijstgegevens |
-| 3 | `e2e/issues.spec.ts`, `e2e/navigation.spec.ts` | Tekst/categorie/tags/geometrie wijzigen; annuleren; verplichte titel; falende save behoudt concept; opslaan; mobiele editor |
-| 4 | `e2e/navigation.spec.ts` | Lijst naar kaart, directe links, back/forward, onbekend ID, laagvoorkeur na herladen, extentknop en mobiel paneel |
-| 5 | `e2e/navigation.spec.ts` | Lijstzoekopdracht/lege resultaten; gecombineerde categorie/tagfilters op kaart, reset, lege kaartselectie en URL-behoud bij klikken op werkelijk gerenderde marker |
-| 6 | `e2e/collaboration.spec.ts` | Twee gebruikers, zichtbare lock-eigenaar, concurrerende editor, annuleren, reconnect en vrijgave na afsluiten |
-| 7 | `e2e/collaboration.spec.ts` | Echte create/update/delete in een tweede browser; lijst/kaart/details verversen; gemiste update ophalen na reconnect; geen dubbele kaartitems |
-| 8 | `e2e/issues.spec.ts` | Verwijderbevestiging annuleren/accepteren, persistent verdwijnen, unauthenticated mutaties en verboden admin-actie |
-| 9 | `e2e/admin.spec.ts` | Rol wijzigen; categorie/tag/tekst beheren; ongeldige categorie en verwijdering van gebruikte categorie geweigerd; rolgrenzen |
-| 10 | `e2e/password-reset.spec.ts` | Mail ontvangen, resetlink, nieuw wachtwoord, oud wachtwoord geweigerd, verlopen/hergebruikte/ongeldige links en gelijke melding voor onbekend account |
+| Groep | Bestand                                        | Gedrag                                                                                                                                                             |
+| ----- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1     | `e2e/auth.spec.ts`                             | Fout/geldig wachtwoord, sessiebehoud na herladen, uitloggen en verlies van toegang tot beheer                                                                      |
+| 2     | `e2e/issues.spec.ts`                           | Punt, lijn en vlak tekenen met muisklikken; categorie/tags; opslaan, herladen en persistente API-/lijstgegevens                                                    |
+| 3     | `e2e/issues.spec.ts`, `e2e/navigation.spec.ts` | Tekst/categorie/tags/geometrie wijzigen; annuleren; verplichte titel; falende save behoudt concept; opslaan; mobiele editor                                        |
+| 4     | `e2e/navigation.spec.ts`                       | Lijst naar kaart, directe links, back/forward, onbekend ID, laagvoorkeur na herladen, extentknop en mobiel paneel                                                  |
+| 5     | `e2e/navigation.spec.ts`                       | Lijstzoekopdracht/lege resultaten; gecombineerde categorie/tagfilters op kaart, reset, lege kaartselectie en URL-behoud bij klikken op werkelijk gerenderde marker |
+| 6     | `e2e/collaboration.spec.ts`                    | Twee gebruikers, zichtbare lock-eigenaar, concurrerende editor, annuleren, reconnect en vrijgave na afsluiten                                                      |
+| 7     | `e2e/collaboration.spec.ts`                    | Echte create/update/delete in een tweede browser; lijst/kaart/details verversen; gemiste update ophalen na reconnect; geen dubbele kaartitems                      |
+| 8     | `e2e/issues.spec.ts`                           | Verwijderbevestiging annuleren/accepteren, persistent verdwijnen, unauthenticated mutaties en verboden admin-actie                                                 |
+| 9     | `e2e/admin.spec.ts`                            | Rol wijzigen; categorie/tag/tekst beheren; ongeldige categorie en verwijdering van gebruikte categorie geweigerd; rolgrenzen                                       |
+| 10    | `e2e/password-reset.spec.ts`                   | Mail ontvangen, resetlink, nieuw wachtwoord, oud wachtwoord geweigerd, verlopen/hergebruikte/ongeldige links en gelijke melding voor onbekend account              |
 
 Groepen 4 en 5 draaien op desktop (1440×1000) en mobiel (390×844). De marker-test
 zoekt de rode fixturemarker in de werkelijke canvaspixels en klikt die aan; hij

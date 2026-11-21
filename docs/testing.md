@@ -72,15 +72,15 @@ artifactopslag of bewaartermijn voor deze rapporten ingesteld.
 
 Alle suites staan in `tests/`. Enkele startpunten:
 
-| Onderdeel | Tests (zonder `.test.ts`) |
-| --- | --- |
-| Inloggen, rechten en wachtwoorden | `authRoutes`, `adminRoutes`, `refreshTokens`, `passwordPages` |
-| Meldingen opslaan, zoeken en filteren | `issueRoutes`, `serviceRoutes`, `searchViews`, `filter` |
-| Bewerken, formulieren en selectie | `editor`, `selectedIssue`, `issueState`, `forms` |
-| Realtime samenwerken | `realtimeServer`, `websocketRoutes`, `websocketClients`, `liveStores` |
-| Kaart en geometrie | `Map*`, `issueMap*`, `mapControls`, `mapLifecycle`, `boundsGuards` |
-| Beheer en interface | `adminPages`, `categoryDialogs`, `applicationShell`, `presentationComponents` |
-| Migraties en imports | `migrations`, `importWorkflow`, `areasCommand` en KML-tests |
+| Onderdeel                             | Tests (zonder `.test.ts`)                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------- |
+| Inloggen, rechten en wachtwoorden     | `authRoutes`, `adminRoutes`, `refreshTokens`, `passwordPages`                 |
+| Meldingen opslaan, zoeken en filteren | `issueRoutes`, `serviceRoutes`, `searchViews`, `filter`                       |
+| Bewerken, formulieren en selectie     | `editor`, `selectedIssue`, `issueState`, `forms`                              |
+| Realtime samenwerken                  | `realtimeServer`, `websocketRoutes`, `websocketClients`, `liveStores`         |
+| Kaart en geometrie                    | `Map*`, `issueMap*`, `mapControls`, `mapLifecycle`, `boundsGuards`            |
+| Beheer en interface                   | `adminPages`, `categoryDialogs`, `applicationShell`, `presentationComponents` |
+| Migraties en imports                  | `migrations`, `importWorkflow`, `areasCommand` en KML-tests                   |
 
 `selectedIssue` controleert ook kaartfocus tijdens slugnavigatie: zolang de
 gegevens van het aangeklikte onderwerp laden, mag de kaart niet eerst naar

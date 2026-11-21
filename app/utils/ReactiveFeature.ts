@@ -14,13 +14,13 @@ export type PostProcessor = (feature: GeoJSON.Feature | null) => void;
 export class ReactiveFeature {
   public readonly type = ref<string | null>(null);
   public readonly feature = ref<Feature<Point | LineString | Polygon> | null>(
-    null
+    null,
   );
 
   public readonly editable = ref<boolean>(false);
   constructor(
     feature: Feature<Point | LineString | Polygon> | null = null,
-    editable = false
+    editable = false,
   ) {
     this.feature.value = null;
     this.editable.value = editable;

@@ -11,11 +11,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = getDb();
-  
+
   // Check if tag exists
-  const tag = db
-    .prepare("SELECT id FROM tags WHERE id = ?")
-    .get(tagId) as { id: number } | undefined;
+  const tag = db.prepare("SELECT id FROM tags WHERE id = ?").get(tagId) as
+    { id: number } | undefined;
 
   if (!tag) {
     throw createError({ statusCode: 404, message: "Tag not found" });

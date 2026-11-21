@@ -17,7 +17,10 @@
     </template>
 
     <template #item="{ props: itemProps, item: legend }">
-      <v-list-item v-bind="itemProps" :subtitle="legend.description || undefined">
+      <v-list-item
+        v-bind="itemProps"
+        :subtitle="legend.description || undefined"
+      >
         <template #prepend>
           <div class="me-2">
             <LegendIndicator :legend="legend" :size="20" />

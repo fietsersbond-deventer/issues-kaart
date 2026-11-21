@@ -159,13 +159,19 @@ it("focuses selected issues after loading, uses filters for overview and never m
     )!;
     expect(fit).toHaveBeenCalledTimes(1);
     padding.value = [100, 50, 50, 250];
-    focus.focusCluster([new Feature(new Point([0, 0])), new Feature(new Point([0, 0]))]);
-    expect(fit).toHaveBeenLastCalledWith([0, 0, 0, 0], expect.objectContaining({
-      padding: [100, 50, 50, 250],
-      size: [800, 600],
-      maxZoom: 18,
-      duration: 1000,
-    }));
+    focus.focusCluster([
+      new Feature(new Point([0, 0])),
+      new Feature(new Point([0, 0])),
+    ]);
+    expect(fit).toHaveBeenLastCalledWith(
+      [0, 0, 0, 0],
+      expect.objectContaining({
+        padding: [100, 50, 50, 250],
+        size: [800, 600],
+        maxZoom: 18,
+        duration: 1000,
+      }),
+    );
     loaded.value = true;
     await nextTick();
     await vi.advanceTimersByTimeAsync(150);

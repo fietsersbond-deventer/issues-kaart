@@ -29,8 +29,8 @@
     "typecheck:e2e": "tsc -p tsconfig.e2e.json",
     "test:e2e:debug": "pnpm run typecheck:e2e && playwright test --debug=inspector",
     "test:e2e:ci": "pnpm run test:e2e --forbid-only --trace on",
-    "format": "prettier --write eslint.config.mjs tsconfig.eslint.json tests/eslintConfig.test.ts app/composables/useMapResize.ts server/api/profile.post.ts",
-    "format:check": "prettier --check eslint.config.mjs tsconfig.eslint.json tests/eslintConfig.test.ts app/composables/useMapResize.ts server/api/profile.post.ts"
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@iconify/vue": "5.0.4",

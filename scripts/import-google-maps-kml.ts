@@ -442,8 +442,7 @@ export async function main(args: string[]): Promise<void> {
       const legendIds = new Map<string, number>();
       for (const legend of parsed.legends) {
         const existingLegend = findLegend.get(legend.name) as
-          | { id: number }
-          | undefined;
+          { id: number } | undefined;
         let legendId = existingLegend?.id;
         if (legendId === undefined && legend.styleIds.length === 1) {
           const legacyLegend = findLegacyLegend.get(
@@ -471,8 +470,7 @@ export async function main(args: string[]): Promise<void> {
       for (const issue of preparedIssues) {
         const geometry = JSON.stringify(issue.geometry);
         const existingIssue = findExistingIssue.get(issue.title, geometry) as
-          | { id: number }
-          | undefined;
+          { id: number } | undefined;
         if (existingIssue) {
           updateIssue.run(
             issue.description,

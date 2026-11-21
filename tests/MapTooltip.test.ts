@@ -1,7 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { computed, inject, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
 import MapTooltips from "../app/components/map/MapTooltips.vue";
 
 const Overlay = {
@@ -92,14 +101,31 @@ describe("MapTooltip bestaand gedrag", () => {
   it("toont bij een cluster het aantal en bij één punt het onderwerp", async () => {
     mountTooltip();
     const single = {
-      getProperties: () => ({ title: "Fietsroute", imageUrl: "", tags: [], legend: { name: "Fietsroutes" } }),
-      get: (name: string) => name === "legend" ? { name: "Fietsroutes" } : name === "title" ? "Fietsroute" : undefined,
+      getProperties: () => ({
+        title: "Fietsroute",
+        imageUrl: "",
+        tags: [],
+        legend: { name: "Fietsroutes" },
+      }),
+      get: (name: string) =>
+        name === "legend"
+          ? { name: "Fietsroutes" }
+          : name === "title"
+            ? "Fietsroute"
+            : undefined,
     };
-    const other = { ...single, get: (name: string) => name === "title" ? "Parkeerplaats" : single.get(name) };
+    const other = {
+      ...single,
+      get: (name: string) =>
+        name === "title" ? "Parkeerplaats" : single.get(name),
+    };
     await hover({ features: [single, other] } as never);
     expect(wrapper.text()).toContain("2 punten");
     expect(wrapper.text()).toContain("Fietsroutes");
-    expect(wrapper.findAll("ul li").map(item => item.text())).toEqual(["Fietsroute", "Parkeerplaats"]);
+    expect(wrapper.findAll("ul li").map((item) => item.text())).toEqual([
+      "Fietsroute",
+      "Parkeerplaats",
+    ]);
     expect(wrapper.findAll('[data-test="tag"]')).toHaveLength(0);
     await hover({ features: [single] } as never);
     expect(wrapper.text()).toContain("Fietsroute");
@@ -116,9 +142,13 @@ describe("MapTooltip bestaand gedrag", () => {
     mountTooltip();
     getTag.mockImplementation((slug: string) => ({ tag: slug, name: slug }));
     await hover({ title: "Route", imageUrl: "", tags: ["a", "b", "c"] });
-    expect(wrapper.findAll('[data-test="tag"]').map(tag => tag.text())).toEqual(["a", "b", "c"]);
+    expect(
+      wrapper.findAll('[data-test="tag"]').map((tag) => tag.text()),
+    ).toEqual(["a", "b", "c"]);
     await hover({ title: "Route", imageUrl: "", tags: ["a", "b", "c", "d"] });
-    expect(wrapper.findAll('[data-test="tag"]').map(tag => tag.text())).toEqual(["a", "b", "+ 2"]);
+    expect(
+      wrapper.findAll('[data-test="tag"]').map((tag) => tag.text()),
+    ).toEqual(["a", "b", "+ 2"]);
   });
 
   it("registreert en verwijdert dezelfde muisbewegingslistener", () => {
@@ -139,9 +169,11 @@ describe("MapTooltip bestaand gedrag", () => {
     mountTooltip();
     await hover();
     expect(wrapper.text()).toContain("Route");
-    expect(wrapper.get("img").attributes("src")).toBe("/photo.jpg?width=300&height=300");
+    expect(wrapper.get("img").attributes("src")).toBe(
+      "/photo.jpg?width=300&height=300",
+    );
     expect(
-      wrapper.findAll('[data-test="tag"]').map(tag => tag.text()),
+      wrapper.findAll('[data-test="tag"]').map((tag) => tag.text()),
     ).toEqual(["Known tag"]);
     expect(getTag.mock.calls).toEqual([["known"], ["unknown"]]);
     expect(target.style.cursor).toBe("pointer");
@@ -149,7 +181,9 @@ describe("MapTooltip bestaand gedrag", () => {
     expect(wrapper.getComponent(Overlay).props("position")).toEqual([6, 52]);
     const options = map.getFeaturesAtPixel.mock.calls[0][1];
     expect(options.hitTolerance).toBe(3);
-    expect(options.layerFilter({ getClassName: () => "area-layer" })).toBe(false);
+    expect(options.layerFilter({ getClassName: () => "area-layer" })).toBe(
+      false,
+    );
     expect(options.layerFilter({ getClassName: () => "issues" })).toBe(true);
   });
 
@@ -207,7 +241,7 @@ describe("MapTooltip bestaand gedrag", () => {
 describe("MapTooltip regressies bij interactie", () => {
   it.each(["bewerken", "tekenen"])(
     "wist de tooltip zodra %s begint en toont deze pas na opnieuw aanwijzen",
-    async mode => {
+    async (mode) => {
       mountTooltip();
       await hover();
       map.getFeaturesAtPixel.mockClear();

@@ -8,11 +8,19 @@ export default defineNitroPlugin((nitroApp) => {
     // cachehit terug om afbeeldingsbytes te versturen, niet het JSON-object.
     const body: unknown = response.body;
     if (
-      body !== null && typeof body === "object"
-      && "type" in body && body.type === "Buffer"
-      && "data" in body && Array.isArray(body.data)
-      && body.data.every((byte: unknown) =>
-        typeof byte === "number" && Number.isInteger(byte) && byte >= 0 && byte <= 255)
+      body !== null &&
+      typeof body === "object" &&
+      "type" in body &&
+      body.type === "Buffer" &&
+      "data" in body &&
+      Array.isArray(body.data) &&
+      body.data.every(
+        (byte: unknown) =>
+          typeof byte === "number" &&
+          Number.isInteger(byte) &&
+          byte >= 0 &&
+          byte <= 255,
+      )
     ) {
       response.body = Buffer.from(body.data);
     }

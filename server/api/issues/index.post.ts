@@ -108,7 +108,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const imageUrl = getIssueImageUrl(Number(result.lastInsertRowid), sanitizedDescription);
+  const imageUrl = getIssueImageUrl(
+    Number(result.lastInsertRowid),
+    sanitizedDescription,
+  );
 
   // Get user info for notification
   const user = event.context.user;

@@ -3,9 +3,7 @@ export default function migrate(db) {
   // by testing if tags table has an 'id' column
   let hasIdColumn = false;
   try {
-    const tableInfo = db
-      .prepare("PRAGMA table_info(tags)")
-      .all();
+    const tableInfo = db.prepare("PRAGMA table_info(tags)").all();
     hasIdColumn = tableInfo.some((col) => col.name === "id");
   } catch {
     // Table might not exist yet, continue with migration

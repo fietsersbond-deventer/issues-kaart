@@ -13,7 +13,8 @@ export default defineConfig({
     {
       name: "test-nuxt-client-flag",
       transform(code, id) {
-        if (!id.includes("/app/") || !code.includes("import.meta.client")) return;
+        if (!id.includes("/app/") || !code.includes("import.meta.client"))
+          return;
         // Nuxt normally replaces this flag. Match the selected node/jsdom environment.
         return code.replaceAll(
           "import.meta.client",

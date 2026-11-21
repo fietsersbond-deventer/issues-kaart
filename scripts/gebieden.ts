@@ -184,7 +184,10 @@ export async function main(args: string[]) {
   else usage();
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   main(process.argv.slice(2)).catch((e: unknown) => {
     console.error(e instanceof Error ? e.message : String(e));
     process.exitCode = 1;

@@ -48,7 +48,7 @@ watch(
     nextTick(() => {
       validateIcon();
     });
-  }
+  },
 );
 
 function validateIcon() {

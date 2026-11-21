@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.NUXT_JWT_SECRET || "your-secret-key";
 const ACCESS_TOKEN_EXPIRY = "4h"; // 4 hours
 
 export function generateAccessToken(
-  user: Omit<User, "password_hash" | "created_at">
+  user: Omit<User, "password_hash" | "created_at">,
 ) {
   if (!JWT_SECRET) {
     throw new Error("JWT geheim is niet geconfigureerd");
@@ -32,7 +32,7 @@ export function generateRefreshToken(userId: number): string {
 
   // Ruim verlopen tokens op
   db.prepare(
-    "DELETE FROM refresh_tokens WHERE julianday(expires_at) <= julianday('now')"
+    "DELETE FROM refresh_tokens WHERE julianday(expires_at) <= julianday('now')",
   ).run();
 
   // Set expiry date to 30 days from now
@@ -40,7 +40,7 @@ export function generateRefreshToken(userId: number): string {
   expiresAt.setDate(expiresAt.getDate() + 30);
 
   db.prepare(
-    "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)"
+    "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
   ).run(userId, token, expiresAt.toISOString());
 
   return token;
@@ -54,7 +54,7 @@ export function verifyRefreshToken(token: string) {
     .prepare(
       `SELECT rt.*, u.* FROM refresh_tokens rt 
      JOIN users u ON u.id = rt.user_id 
-     WHERE rt.token = ? AND julianday(rt.expires_at) > julianday('now')`
+     WHERE rt.token = ? AND julianday(rt.expires_at) > julianday('now')`,
     )
     .get(token);
 

@@ -1,12 +1,22 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computed, defineComponent, h, nextTick, onUnmounted, reactive, ref, watch } from "vue";
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import { renderToString } from "vue/server-renderer";
 import { resolveFocusTarget } from "../app/utils/mapFocusTarget";
 vi.stubGlobal("defineStore", defineStore);
-const { useSelectedIssue } = await import("../app/composables/useSelectedIssue");
+const { useSelectedIssue } =
+  await import("../app/composables/useSelectedIssue");
 
 let receive: (message: { type: string; payload: unknown }) => void;
 let wrapper: ReturnType<typeof mount>;
@@ -15,48 +25,80 @@ let route: { params: { id: string } };
 const categories = ref<{ id: number; name: string }[]>([]);
 const navigate = vi.fn();
 const socketStatus = ref("OPEN");
-const loadedIssue = { id: 1, title: "Onderwerp", geometry: { type: "Point", coordinates: [6, 52] } };
+const loadedIssue = {
+  id: 1,
+  title: "Onderwerp",
+  geometry: { type: "Point", coordinates: [6, 52] },
+};
 
 beforeEach(async () => {
   vi.clearAllMocks();
   socketStatus.value = "OPEN";
   categories.value = [];
   route = reactive({ params: { id: "1" } });
-  for (const [name, value] of Object.entries({ computed, defineStore, onUnmounted, ref, watch })) vi.stubGlobal(name, value);
+  for (const [name, value] of Object.entries({
+    computed,
+    defineStore,
+    onUnmounted,
+    ref,
+    watch,
+  }))
+    vi.stubGlobal(name, value);
   vi.stubGlobal("storeToRefs", (value: unknown) => value);
   vi.stubGlobal("useRoute", () => route);
   vi.stubGlobal("useIsEditing", () => ({ isEditing: ref(false) }));
   vi.stubGlobal("useCategories", () => ({ categories }));
-  vi.stubGlobal("useSharedIssuesWebSocket", () => ({ status: socketStatus, subscribe: (listener: typeof receive) => { receive = listener; return vi.fn(); } }));
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: socketStatus,
+    subscribe: (listener: typeof receive) => {
+      receive = listener;
+      return vi.fn();
+    },
+  }));
   vi.stubGlobal("$fetch", vi.fn().mockResolvedValue(loadedIssue));
   vi.stubGlobal("navigateTo", navigate);
   const pinia = createPinia();
   setActivePinia(pinia);
-  wrapper = mount(defineComponent({ setup() { store = useSelectedIssue(); return () => null; } }), { global: { plugins: [pinia] } });
+  wrapper = mount(
+    defineComponent({
+      setup() {
+        store = useSelectedIssue();
+        return () => null;
+      },
+    }),
+    { global: { plugins: [pinia] } },
+  );
   await nextTick();
 });
 
-afterEach(() => { store.$dispose(); wrapper.unmount(); vi.unstubAllGlobals(); });
+afterEach(() => {
+  store.$dispose();
+  wrapper.unmount();
+  vi.unstubAllGlobals();
+});
 
 describe("geselecteerd onderwerp", () => {
   it("wacht bij slugnavigatie op het aangeklikte onderwerp zonder eerst het kaartoverzicht te tonen", async () => {
     let resolveIssue: (value: typeof loadedIssue) => void;
-    vi.mocked(globalThis.$fetch).mockReturnValueOnce(new Promise((resolve) => {
-      resolveIssue = resolve;
-    }));
+    vi.mocked(globalThis.$fetch).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveIssue = resolve;
+      }),
+    );
     store.selectedId = 2;
     route.params.id = "ander-onderwerp";
     await nextTick();
     expect(store.selectedId).toBe(2);
     expect(store.issue).toBeNull();
-    const target = () => resolveFocusTarget({
-      prefer: "issue",
-      areaBbox: [5, 51, 7, 53],
-      selectedId: store.selectedId,
-      issue: store.issue,
-      filterActive: false,
-      selectedIssues: [],
-    });
+    const target = () =>
+      resolveFocusTarget({
+        prefer: "issue",
+        areaBbox: [5, 51, 7, 53],
+        selectedId: store.selectedId,
+        issue: store.issue,
+        filterActive: false,
+        selectedIssues: [],
+      });
     expect(target()).toBeUndefined();
     resolveIssue!({ ...loadedIssue, id: 2 });
     await nextTick();
@@ -65,34 +107,70 @@ describe("geselecteerd onderwerp", () => {
 
   it("waits for issue details before completing server rendering", async () => {
     setActivePinia(createPinia());
-    let resolveIssue: (value: typeof loadedIssue & { slug: string; imageUrl: string }) => void;
-    vi.mocked(globalThis.$fetch).mockReturnValueOnce(new Promise((resolve) => {
-      resolveIssue = resolve;
-    }));
+    let resolveIssue: (
+      value: typeof loadedIssue & { slug: string; imageUrl: string },
+    ) => void;
+    vi.mocked(globalThis.$fetch).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveIssue = resolve;
+      }),
+    );
     let completed = false;
-    let metadata: () => { meta?: Array<{ property?: string; name?: string; content: string }> };
-    vi.stubGlobal("useHead", (callback: typeof metadata) => { metadata = callback; });
-    vi.stubGlobal("useRequestURL", () => new URL("https://example.test/kaart/ssr-preview"));
-    vi.stubGlobal("useRuntimeConfig", () => ({ public: { organization: { name: "Test Organization" } } }));
-    const { useIssueOpenGraph } = await import("../app/composables/useIssueOpenGraph");
-    const rendering = renderToString(h(defineComponent({
-      setup() {
-        const selected = useSelectedIssue();
-        useIssueOpenGraph(computed(() => selected.issue && "id" in selected.issue ? selected.issue : null));
-        return () => selected.issue?.title ?? "Loading";
-      },
-    }))).then((html) => {
+    let metadata: () => {
+      meta?: Array<{ property?: string; name?: string; content: string }>;
+    };
+    vi.stubGlobal("useHead", (callback: typeof metadata) => {
+      metadata = callback;
+    });
+    vi.stubGlobal(
+      "useRequestURL",
+      () => new URL("https://example.test/kaart/ssr-preview"),
+    );
+    vi.stubGlobal("useRuntimeConfig", () => ({
+      public: { organization: { name: "Test Organization" } },
+    }));
+    const { useIssueOpenGraph } =
+      await import("../app/composables/useIssueOpenGraph");
+    const rendering = renderToString(
+      h(
+        defineComponent({
+          setup() {
+            const selected = useSelectedIssue();
+            useIssueOpenGraph(
+              computed(() =>
+                selected.issue && "id" in selected.issue
+                  ? selected.issue
+                  : null,
+              ),
+            );
+            return () => selected.issue?.title ?? "Loading";
+          },
+        }),
+      ),
+    ).then((html) => {
       completed = true;
       return html;
     });
     await nextTick();
     expect(completed).toBe(false);
-    resolveIssue!({ ...loadedIssue, title: "SSR issue title", slug: "ssr-preview", imageUrl: "/api/issues/1/image?v=ssr-version" });
+    resolveIssue!({
+      ...loadedIssue,
+      title: "SSR issue title",
+      slug: "ssr-preview",
+      imageUrl: "/api/issues/1/image?v=ssr-version",
+    });
     expect(await rendering).toContain("SSR issue title");
     expect(completed).toBe(true);
-    const ogUrl = "https://example.test/api/issues/1/image?v=ssr-version&width=1200&height=630&maxBytes=1000000";
-    expect(metadata!().meta).toContainEqual({ property: "og:image", content: ogUrl });
-    expect(metadata!().meta).toContainEqual({ name: "twitter:image", content: ogUrl });
+    const ogUrl =
+      "https://example.test/api/issues/1/image?v=ssr-version&width=1200&height=630&maxBytes=1000000";
+    expect(metadata!().meta).toContainEqual({
+      property: "og:image",
+      content: ogUrl,
+    });
+    expect(metadata!().meta).toContainEqual({
+      name: "twitter:image",
+      content: ogUrl,
+    });
   });
 
   it("maakt een leeg concept bij het openen van een nieuw onderwerp", async () => {
@@ -103,7 +181,10 @@ describe("geselecteerd onderwerp", () => {
   });
 
   it("haalt een ander onderwerp op wanneer de route verandert", async () => {
-    vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, id: 2 });
+    vi.mocked(globalThis.$fetch).mockResolvedValueOnce({
+      ...loadedIssue,
+      id: 2,
+    });
     route.params.id = "2";
     await nextTick();
     await nextTick();
@@ -115,7 +196,9 @@ describe("geselecteerd onderwerp", () => {
     route.params.id = "de-brink-op-slot";
     await nextTick();
     await nextTick();
-    expect(globalThis.$fetch).toHaveBeenLastCalledWith("/api/issues/de-brink-op-slot");
+    expect(globalThis.$fetch).toHaveBeenLastCalledWith(
+      "/api/issues/de-brink-op-slot",
+    );
     expect(store.selectedId).toBe(1);
     expect(store.issue?.id).toBe(1);
   });
@@ -127,21 +210,37 @@ describe("geselecteerd onderwerp", () => {
   });
 
   it("werkt het geselecteerde onderwerp bij vanuit een websocketbericht", () => {
-    receive({ type: "issue-modified", payload: { ...loadedIssue, title: "Gewijzigd" } });
+    receive({
+      type: "issue-modified",
+      payload: { ...loadedIssue, title: "Gewijzigd" },
+    });
     expect(store.issue?.title).toBe("Gewijzigd");
   });
 
   it("decodeert geometrie en zoekt de categorie op bij een wijzigingsbericht", () => {
     categories.value = [{ id: 3, name: "Fietsroute" }];
-    receive({ type: "issue-modified", payload: { ...loadedIssue, legend_id: 3, geometry: JSON.stringify(loadedIssue.geometry) } });
+    receive({
+      type: "issue-modified",
+      payload: {
+        ...loadedIssue,
+        legend_id: 3,
+        geometry: JSON.stringify(loadedIssue.geometry),
+      },
+    });
     expect(store.issue?.geometry).toEqual(loadedIssue.geometry);
     expect(store.issue?.legend).toEqual(categories.value[0]);
   });
 
   it("behoudt gegevens als een categorie ontbreekt en negeert wijzigingen van andere onderwerpen", () => {
-    receive({ type: "issue-modified", payload: { ...loadedIssue, legend_id: 99 } });
+    receive({
+      type: "issue-modified",
+      payload: { ...loadedIssue, legend_id: 99 },
+    });
     expect(store.issue?.legend_id).toBe(99);
-    receive({ type: "issue-modified", payload: { ...loadedIssue, id: 2, title: "Ander" } });
+    receive({
+      type: "issue-modified",
+      payload: { ...loadedIssue, id: 2, title: "Ander" },
+    });
     expect(store.issue?.id).toBe(1);
   });
 
@@ -156,7 +255,10 @@ describe("geselecteerd onderwerp", () => {
   });
 
   it("blijft bij het onderwerp wanneer een ander onderwerp wordt verwijderd", () => {
-    receive({ type: "issue-deleted", payload: { id: 2, title: "Ander onderwerp" } });
+    receive({
+      type: "issue-deleted",
+      payload: { id: 2, title: "Ander onderwerp" },
+    });
     expect(navigate).not.toHaveBeenCalled();
   });
 });
@@ -165,8 +267,16 @@ it("keeps the most recently selected issue when older requests resolve last", as
   let resolveOld: (value: typeof loadedIssue) => void;
   let resolveNew: (value: typeof loadedIssue) => void;
   vi.mocked(globalThis.$fetch)
-    .mockReturnValueOnce(new Promise((resolve) => { resolveOld = resolve; }))
-    .mockReturnValueOnce(new Promise((resolve) => { resolveNew = resolve; }));
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOld = resolve;
+      }),
+    )
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveNew = resolve;
+      }),
+    );
   route.params.id = "2";
   await nextTick();
   route.params.id = "3";
@@ -191,7 +301,10 @@ it("clears stale details and exposes a missing issue instead of rejecting the ro
 it("reloads the selected issue after a notification connection recovers", async () => {
   socketStatus.value = "CLOSED";
   await nextTick();
-  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, title: "Updated while disconnected" });
+  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({
+    ...loadedIssue,
+    title: "Updated while disconnected",
+  });
   socketStatus.value = "OPEN";
   await nextTick();
   await nextTick();
@@ -215,7 +328,11 @@ it("reports a load failure and clears it when another selection succeeds", async
 it("does not overwrite a newer selection with an older failed response", async () => {
   let rejectOld: (reason: unknown) => void;
   vi.mocked(globalThis.$fetch)
-    .mockReturnValueOnce(new Promise((_resolve, reject) => { rejectOld = reject; }))
+    .mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectOld = reject;
+      }),
+    )
     .mockResolvedValueOnce({ ...loadedIssue, id: 3 });
   route.params.id = "2";
   await nextTick();
@@ -228,10 +345,13 @@ it("does not overwrite a newer selection with an older failed response", async (
   expect(store.loadError).toBe("");
 });
 
-
 it("enriches fetched details with the selected category", async () => {
   categories.value = [{ id: 3, name: "Fietsroute" }];
-  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, id: 2, legend_id: 3 });
+  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({
+    ...loadedIssue,
+    id: 2,
+    legend_id: 3,
+  });
   route.params.id = "2";
   await nextTick();
   await nextTick();
@@ -239,7 +359,11 @@ it("enriches fetched details with the selected category", async () => {
 });
 
 it("enriches details when categories arrive after the issue", async () => {
-  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({ ...loadedIssue, id: 2, legend_id: 3 });
+  vi.mocked(globalThis.$fetch).mockResolvedValueOnce({
+    ...loadedIssue,
+    id: 2,
+    legend_id: 3,
+  });
   route.params.id = "2";
   await nextTick();
   await nextTick();

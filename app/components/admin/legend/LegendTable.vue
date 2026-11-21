@@ -15,8 +15,13 @@
         </td>
         <td>{{ item.name }}</td>
         <td>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div v-if="item.description" class="description-preview" v-html="item.description" />
+          <!-- eslint-disable vue/no-v-html -->
+          <div
+            v-if="item.description"
+            class="description-preview"
+            v-html="item.description"
+          />
+          <!-- eslint-enable vue/no-v-html -->
           <span v-else class="text-medium-emphasis">Geen omschrijving</span>
         </td>
         <td>

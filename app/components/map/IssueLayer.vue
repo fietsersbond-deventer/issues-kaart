@@ -1,8 +1,5 @@
 <template>
-  <ol-vector-layer
-    :display-in-layer-switcher="false"
-    :style="style"
-  >
+  <ol-vector-layer :display-in-layer-switcher="false" :style="style">
     <ol-source-vector ref="issueSource">
       <ol-feature
         v-for="marker in markers"
@@ -77,16 +74,22 @@ const props = defineProps<{
   issues: (MapIssue | NewIssue)[];
   featureStyle: (feature: Feature) => Style | Style[] | undefined;
   modifyEnabled: boolean;
-  selectedFeatures: UnwrapRef<Collection<Feature<Point | LineString | Polygon>>>;
+  selectedFeatures: UnwrapRef<
+    Collection<Feature<Point | LineString | Polygon>>
+  >;
   clusterEnabled?: boolean;
   zoom?: number;
   editing?: boolean;
 }>();
-const issueSource = useTemplateRef<{ source: VectorSource<Feature<Point | LineString | Polygon>> }>("issueSource");
+const issueSource = useTemplateRef<{
+  source: VectorSource<Feature<Point | LineString | Polygon>>;
+}>("issueSource");
 const source = computed(() => issueSource.value?.source);
 defineExpose({ source });
 // Keep the actual features visible when editing or when zoomed in far enough.
-const clustering = computed(() => Boolean(props.clusterEnabled && (props.zoom ?? 0) < 18 && !props.editing));
+const clustering = computed(() =>
+  Boolean(props.clusterEnabled && (props.zoom ?? 0) < 18 && !props.editing),
+);
 watch(clustering, () => source.value?.changed());
 
 const emit = defineEmits<{ modifyend: [event: ModifyEvent] }>();
@@ -126,7 +129,10 @@ const clusterGroups = computed(() => {
     entries.push(marker);
     groups.set(categoryId, entries);
   }
-  return Array.from(groups, ([categoryId, entries]) => ({ categoryId: categoryId ?? "none", markers: entries }));
+  return Array.from(groups, ([categoryId, entries]) => ({
+    categoryId: categoryId ?? "none",
+    markers: entries,
+  }));
 });
 
 const polygons = computed(() => {

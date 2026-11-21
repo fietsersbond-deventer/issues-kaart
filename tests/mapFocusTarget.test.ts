@@ -62,9 +62,9 @@ describe("resolveFocusTarget", () => {
   });
 
   it("falls back to the area when the filter matches nothing", () => {
-    expect(
-      resolveFocusTarget({ ...base, filterActive: true })?.type,
-    ).toBe("area");
+    expect(resolveFocusTarget({ ...base, filterActive: true })?.type).toBe(
+      "area",
+    );
   });
 });
 

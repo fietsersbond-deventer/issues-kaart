@@ -3,11 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 process.env.NUXT_DB_PATH = ":memory:";
 
 const { getDb } = await import("../server/utils/db");
-const {
-  generateRefreshToken,
-  verifyRefreshToken,
-  rotateRefreshToken,
-} = await import("../server/utils/tokenUtils");
+const { generateRefreshToken, verifyRefreshToken, rotateRefreshToken } =
+  await import("../server/utils/tokenUtils");
 
 const db = getDb();
 
@@ -44,7 +41,7 @@ describe("refresh tokens", () => {
   it("removes expired tokens when a new token is generated", () => {
     const past = new Date(Date.now() - 86400000).toISOString();
     db.prepare(
-      "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (1, 'old', ?)"
+      "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (1, 'old', ?)",
     ).run(past);
 
     const token = generateRefreshToken(1);
@@ -56,7 +53,7 @@ describe("refresh tokens", () => {
   it("rejects expired tokens", () => {
     const past = new Date(Date.now() - 1000).toISOString();
     db.prepare(
-      "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (1, 'old', ?)"
+      "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (1, 'old', ?)",
     ).run(past);
 
     expect(() => verifyRefreshToken("old")).toThrow();
@@ -85,7 +82,7 @@ describe("refresh tokens", () => {
   it("rolls back when rotation fails", () => {
     const token = generateRefreshToken(1);
     db.exec(
-      "CREATE TRIGGER fail_insert BEFORE INSERT ON refresh_tokens BEGIN SELECT RAISE(ABORT, 'boom'); END"
+      "CREATE TRIGGER fail_insert BEFORE INSERT ON refresh_tokens BEGIN SELECT RAISE(ABORT, 'boom'); END",
     );
 
     expect(() => rotateRefreshToken(token)).toThrow();

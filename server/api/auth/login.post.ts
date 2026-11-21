@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const user = db
     .prepare(
-      "SELECT id, username, name, role, password_hash FROM users WHERE username = ?"
+      "SELECT id, username, name, role, password_hash FROM users WHERE username = ?",
     )
     .get(username);
 

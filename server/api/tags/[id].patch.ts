@@ -21,12 +21,18 @@ export default defineEventHandler(async (event) => {
   }>(event);
 
   const db = getDb();
-  
+
   // Get the existing tag by ID
   const existingTag = db
     .prepare("SELECT id, tag, label, description, icon FROM tags WHERE id = ?")
     .get(tagId) as
-    | { id: number; tag: string; label: string | null; description: string | null; icon: string | null }
+    | {
+        id: number;
+        tag: string;
+        label: string | null;
+        description: string | null;
+        icon: string | null;
+      }
     | undefined;
 
   if (!existingTag) {
@@ -56,19 +62,25 @@ export default defineEventHandler(async (event) => {
     if (!nextTag) {
       throw createError({ statusCode: 400, message: "Invalid tag slug" });
     }
-    
+
     if (nextTag !== existingTag.tag) {
       // Check if the new tag already exists
       const existing = db
         .prepare("SELECT id FROM tags WHERE tag = ?")
         .get(nextTag) as { id: number } | undefined;
-      
+
       if (existing) {
-        throw createError({ statusCode: 409, message: "Tag slug already exists" });
+        throw createError({
+          statusCode: 409,
+          message: "Tag slug already exists",
+        });
       }
 
       // Update the tag slug
-      db.prepare("UPDATE tags SET tag = ? WHERE id = ?").run(nextTag, existingTag.id);
+      db.prepare("UPDATE tags SET tag = ? WHERE id = ?").run(
+        nextTag,
+        existingTag.id,
+      );
     }
   }
 

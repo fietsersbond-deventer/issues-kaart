@@ -1,5 +1,9 @@
 import type { Ref } from "vue";
-import { isExistingIssue, type Issue, type NewIssue } from "~~/shared/types/Issue";
+import {
+  isExistingIssue,
+  type Issue,
+  type NewIssue,
+} from "~~/shared/types/Issue";
 import { slugify } from "~~/shared/utils/slug";
 
 export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
@@ -35,7 +39,8 @@ export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
         generationSequence !== sequence ||
         initialized ||
         issue.value.title !== title
-      ) return;
+      )
+        return;
       issue.value.slug = result.slug;
       initialized = true;
     } catch (caughtError) {
@@ -111,8 +116,8 @@ export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
     isGenerating,
     isChecking,
     error,
-    isValid: computed(() =>
-      !isGenerating.value && !isChecking.value && !error.value,
+    isValid: computed(
+      () => !isGenerating.value && !isChecking.value && !error.value,
     ),
     onInput,
     generateOnBlur,

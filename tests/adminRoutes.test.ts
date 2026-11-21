@@ -138,7 +138,10 @@ describe("admin boundary and metadata persistence", () => {
       "INSERT INTO issues (title, slug, description, geometry, legend_id) VALUES ('Linked', 'linked', 'text', '{}', 1)",
     ).run();
     expect(await call("admin/legends/usage.get")).toEqual({
-      1: { usage_count: 1, used_by_issues: [{ id: 1, slug: "linked", title: "Linked" }] },
+      1: {
+        usage_count: 1,
+        used_by_issues: [{ id: 1, slug: "linked", title: "Linked" }],
+      },
       2: { usage_count: 0, used_by_issues: [] },
     });
     h.input.params.id = "1";

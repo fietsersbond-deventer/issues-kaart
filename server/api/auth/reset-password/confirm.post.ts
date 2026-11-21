@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     .prepare(
       "SELECT prt.*, u.id as user_id FROM password_reset_tokens prt " +
         "JOIN users u ON u.id = prt.user_id " +
-        "WHERE prt.token = ? AND julianday(prt.expires_at) > julianday('now')"
+        "WHERE prt.token = ? AND julianday(prt.expires_at) > julianday('now')",
     )
     .get(token) as { user_id: number } | undefined;
 
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
   // Update password and delete used token
   db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
     passwordHash,
-    resetToken.user_id
+    resetToken.user_id,
   );
   db.prepare("DELETE FROM password_reset_tokens WHERE token = ?").run(token);
 

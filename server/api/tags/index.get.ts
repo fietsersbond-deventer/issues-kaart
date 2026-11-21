@@ -32,6 +32,6 @@ export default defineEventHandler((event) => {
       label: row.label ?? String(row.tag),
       description: row.description ?? null,
       icon: row.icon ?? null,
-    })
+    }),
   );
 });

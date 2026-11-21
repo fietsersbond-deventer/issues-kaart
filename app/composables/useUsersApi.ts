@@ -11,7 +11,7 @@ export const useUsersApi = () => {
     "/api/admin/users",
     {
       headers: headers.value,
-    }
+    },
   );
 
   function refresh() {
@@ -33,11 +33,14 @@ export const useUsersApi = () => {
     return user;
   }
 
-  async function update(id: number, body: {
-    username: string;
-    name?: string | null;
-    role: string;
-  }) {
+  async function update(
+    id: number,
+    body: {
+      username: string;
+      name?: string | null;
+      role: string;
+    },
+  ) {
     const user = await $fetch<User>(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: headers.value,
@@ -53,7 +56,7 @@ export const useUsersApi = () => {
       {
         method: "DELETE",
         headers: headers.value,
-      }
+      },
     );
     refresh();
     return result;

@@ -9,8 +9,8 @@ import EditForm from "../app/components/EditForm.client.vue";
 import { useIssueSlug } from "../app/composables/useIssueSlug";
 
 vi.mock("@vueup/vue-quill", () => ({
-    QuillEditor: { name: "QuillEditor", template: "<div />" },
-    loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
+  QuillEditor: { name: "QuillEditor", template: "<div />" },
+  loadQuill: vi.fn().mockResolvedValue({ register: vi.fn() }),
 }));
 vi.mock("quill-image-compress", () => ({ imageCompressor: {} }));
 

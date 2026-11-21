@@ -7,7 +7,7 @@ export function useMapLayerPreference() {
   // Layer preference stored in sessionStorage
   const preferredLayer = useSessionStorage<LayerName>(
     "preferred-map-layer",
-    "Licht"
+    "Licht",
   );
 
   /**
@@ -17,12 +17,11 @@ export function useMapLayerPreference() {
    */
   function watchLayerVisibility(
     layerRef: Ref<{ tileLayer?: TileLayer; layer?: TileLayer } | null>,
-    layerName: LayerName
+    layerName: LayerName,
   ): void {
     watch(layerRef, (layerComponent) => {
       const layer = layerComponent?.tileLayer || layerComponent?.layer;
       if (layer) {
-
         layer.on("change:visible", () => {
           if (layer.getVisible()) {
             preferredLayer.value = layerName;

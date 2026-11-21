@@ -1,7 +1,14 @@
 <template>
   <div>
-    <ol-overlay v-if="feature && !isInteracting" :position="position" positioning="bottom-center">
-      <MapClusterTooltip v-if="members && members.length > 1" :members="members" />
+    <ol-overlay
+      v-if="feature && !isInteracting"
+      :position="position"
+      positioning="bottom-center"
+    >
+      <MapClusterTooltip
+        v-if="members && members.length > 1"
+        :members="members"
+      />
       <MapTooltip v-else :feature="members?.[0] ?? feature" />
     </ol-overlay>
   </div>
@@ -19,7 +26,9 @@ const map: OlMap | undefined = inject("map");
 const { isEditing } = useIsEditing();
 const isInteracting = computed(() => isDrawing || isEditing.value);
 const feature = shallowRef<Feature | null>(null);
-const members = computed<Feature[] | undefined>(() => feature.value?.getProperties().features);
+const members = computed<Feature[] | undefined>(
+  () => feature.value?.getProperties().features,
+);
 const position = ref<number[]>([0, 0]);
 
 function clearTooltip() {
@@ -28,7 +37,7 @@ function clearTooltip() {
   if (target) target.style.cursor = "";
 }
 
-watch(isInteracting, active => {
+watch(isInteracting, (active) => {
   if (active) clearTooltip();
 });
 
@@ -40,7 +49,7 @@ function onPointerMove(event: MapBrowserEvent) {
   const pixel = event.pixel;
   const hit = map.getFeaturesAtPixel(pixel, {
     hitTolerance: 3,
-    layerFilter: layer => layer.getClassName() !== "area-layer",
+    layerFilter: (layer) => layer.getClassName() !== "area-layer",
   })?.[0];
   if (!hit) {
     clearTooltip();

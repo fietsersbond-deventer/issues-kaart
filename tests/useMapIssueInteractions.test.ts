@@ -18,9 +18,22 @@ const route = { query: { tag: "veilig", cat: "2" } };
 const geometry: Issue["geometry"] = { type: "Point", coordinates: [6, 52] };
 function issue(id = 1): Issue {
   return {
-    id, slug: `onderwerp-${id}`, title: "Onderwerp", description: "", geometry: structuredClone(geometry),
-    tags: [], legend_id: 1, imageUrl: null, created_at: new Date(),
-    legend: { id: 1, name: "Categorie", color: "red", description: "", created_at: "2026-01-01" },
+    id,
+    slug: `onderwerp-${id}`,
+    title: "Onderwerp",
+    description: "",
+    geometry: structuredClone(geometry),
+    tags: [],
+    legend_id: 1,
+    imageUrl: null,
+    created_at: new Date(),
+    legend: {
+      id: 1,
+      name: "Categorie",
+      color: "red",
+      description: "",
+      created_at: "2026-01-01",
+    },
   };
 }
 function modify(features: Feature[]): ModifyEvent {
@@ -34,9 +47,19 @@ beforeEach(() => {
   selectedIssues.value = [issue()];
   editing.value = false;
   route.query = { tag: "veilig", cat: "2" };
-  for (const [name, value] of Object.entries({ ref, computed, shallowRef, watch, useEditableMapFeatures })) vi.stubGlobal(name, value);
+  for (const [name, value] of Object.entries({
+    ref,
+    computed,
+    shallowRef,
+    watch,
+    useEditableMapFeatures,
+  }))
+    vi.stubGlobal(name, value);
   vi.stubGlobal("storeToRefs", (store: unknown) => store);
-  vi.stubGlobal("useSelectedIssue", () => ({ issue: selectedIssue, selectedId }));
+  vi.stubGlobal("useSelectedIssue", () => ({
+    issue: selectedIssue,
+    selectedId,
+  }));
   vi.stubGlobal("useSelectedIssues", () => ({ selectedIssues }));
   vi.stubGlobal("useIsEditing", () => ({ isEditing: editing }));
   vi.stubGlobal("useRoute", () => route);
@@ -50,7 +73,10 @@ describe("useMapIssueInteractions", () => {
     route.query = { tag: "nieuw", cat: "3" };
     interaction.onFeatureSelect(new Feature({ id: 2 }));
     expect(selectedId.value).toBe(2);
-    expect(navigate).toHaveBeenCalledExactlyOnceWith({ path: "/kaart/2", query: route.query });
+    expect(navigate).toHaveBeenCalledExactlyOnceWith({
+      path: "/kaart/2",
+      query: route.query,
+    });
     expect(clicked).toHaveBeenCalledOnce();
     expect(interaction.selectedFeatures.value.getLength()).toBe(0);
   });
@@ -83,13 +109,17 @@ describe("useMapIssueInteractions", () => {
     const first = useMapIssueInteractions(clicked);
     const second = useMapIssueInteractions(clicked);
     first.onFeatureSelect(new Feature({ id: 1 }));
-    expect(first.selectedFeatures.value).not.toBe(second.selectedFeatures.value);
+    expect(first.selectedFeatures.value).not.toBe(
+      second.selectedFeatures.value,
+    );
     expect(second.selectedFeatures.value.getLength()).toBe(0);
   });
 
   it("sluit alleen de gebiedslaag uit van selectie", () => {
     const interaction = useMapIssueInteractions(clicked);
-    expect(interaction.isNotAreaLayer(new VectorLayer({ className: "area-layer" }))).toBe(false);
+    expect(
+      interaction.isNotAreaLayer(new VectorLayer({ className: "area-layer" })),
+    ).toBe(false);
     expect(interaction.isNotAreaLayer(new VectorLayer())).toBe(true);
   });
 
@@ -109,23 +139,42 @@ describe("useMapIssueInteractions", () => {
 
   it.each([
     new Point([6, 52]),
-    new LineString([[6, 52], [6.1, 52.1]]),
-    new Polygon([[[6, 52], [6.1, 52], [6, 52.1], [6, 52]]]),
-  ])("schrijft een gewijzigde geometrie in WGS84 naar beide onderwerpobjecten", original => {
-    selectedId.value = 1;
-    selectedIssue.value = issue();
-    selectedIssues.value = [issue(2), issue()];
-    const unchanged = structuredClone(toRaw(selectedIssues.value[0]));
-    const interaction = useMapIssueInteractions(clicked);
-    interaction.onModifyEnd(modify([new Feature(original.clone().transform("EPSG:4326", "EPSG:3857"))]));
-    const result = selectedIssue.value.geometry!;
-    expect(result.type).toBe(original.getType());
-    const actual = (result.coordinates as number[]).flat(Infinity);
-    const expected = original.getCoordinates().flat(Infinity) as number[];
-    actual.forEach((coordinate, index) => expect(coordinate).toBeCloseTo(expected[index]!, 7));
-    expect(selectedIssues.value[1]!.geometry).toEqual(result);
-    expect(selectedIssues.value[0]).toEqual(unchanged);
-  });
+    new LineString([
+      [6, 52],
+      [6.1, 52.1],
+    ]),
+    new Polygon([
+      [
+        [6, 52],
+        [6.1, 52],
+        [6, 52.1],
+        [6, 52],
+      ],
+    ]),
+  ])(
+    "schrijft een gewijzigde geometrie in WGS84 naar beide onderwerpobjecten",
+    (original) => {
+      selectedId.value = 1;
+      selectedIssue.value = issue();
+      selectedIssues.value = [issue(2), issue()];
+      const unchanged = structuredClone(toRaw(selectedIssues.value[0]));
+      const interaction = useMapIssueInteractions(clicked);
+      interaction.onModifyEnd(
+        modify([
+          new Feature(original.clone().transform("EPSG:4326", "EPSG:3857")),
+        ]),
+      );
+      const result = selectedIssue.value.geometry!;
+      expect(result.type).toBe(original.getType());
+      const actual = (result.coordinates as number[]).flat(Infinity);
+      const expected = original.getCoordinates().flat(Infinity) as number[];
+      actual.forEach((coordinate, index) =>
+        expect(coordinate).toBeCloseTo(expected[index]!, 7),
+      );
+      expect(selectedIssues.value[1]!.geometry).toEqual(result);
+      expect(selectedIssues.value[0]).toEqual(unchanged);
+    },
+  );
 
   it("werkt de geselecteerde geometrie ook bij als het onderwerp niet in het filter staat", () => {
     selectedId.value = 7;

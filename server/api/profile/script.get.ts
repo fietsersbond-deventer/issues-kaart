@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
 
   if (!matomoAuthToken) {
     console.error(
-      "[Matomo Script Proxy] Error: Matomo auth token is not configured"
+      "[Matomo Script Proxy] Error: Matomo auth token is not configured",
     );
     throw createError({
       statusCode: 400,

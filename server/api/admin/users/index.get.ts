@@ -20,7 +20,7 @@ export default defineEventHandler((event) => {
       LEFT JOIN password_reset_tokens prt ON u.id = prt.user_id
         AND prt.expires_at > datetime('now')
       ORDER BY u.created_at DESC
-    `
+    `,
     )
     .all();
   return rows;

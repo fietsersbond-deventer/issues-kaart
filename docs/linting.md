@@ -10,13 +10,13 @@ volledige CI-volgorde, zie [testen](testing.md).
 Volg eerst de installatie-instructies in de [README](../README.md).
 De postinstall-stap (`nuxt prepare`) maakt de Nuxt-configuratie die ESLint nodig heeft.
 
-| Commando | Wat gebeurt er? | Wijzigt bestanden? |
-| --- | --- | --- |
-| `pnpm lint` | ESLint over de checkout, daarna `pnpm format:check`; waarschuwingen laten de controle falen. | Nee |
-| `pnpm lint:fix` | ESLint past beschikbare fixes toe, daarna draait `pnpm format`. | Ja |
-| `pnpm format:check` | Alleen Prettier-controle van de vijf geselecteerde bestanden hieronder. | Nee |
-| `pnpm format` | Alleen Prettier-opmaak van diezelfde vijf bestanden. | Ja |
-| `pnpm typecheck` | Nuxt/TypeScript controleert typen; dit staat los van ESLint. | Nee, afgezien van gegenereerde Nuxt-bestanden |
+| Commando            | Wat gebeurt er?                                                                              | Wijzigt bestanden?                            |
+| ------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `pnpm lint`         | ESLint over de checkout, daarna `pnpm format:check`; waarschuwingen laten de controle falen. | Nee                                           |
+| `pnpm lint:fix`     | ESLint past beschikbare fixes toe, daarna draait `pnpm format`.                              | Ja                                            |
+| `pnpm format:check` | Alleen Prettier-controle van de hele checkout (met `.gitignore` gerespecteerd).              | Nee                                           |
+| `pnpm format`       | Alleen Prettier-opmaak van de hele checkout.                                                 | Ja                                            |
+| `pnpm typecheck`    | Nuxt/TypeScript controleert typen; dit staat los van ESLint.                                 | Nee, afgezien van gegenereerde Nuxt-bestanden |
 
 De vervolgstap na `&&` draait alleen als de eerste stap slaagt. Blijft ESLint bij
 `lint:fix` een niet automatisch herstelbare fout melden, los die dan eerst op of
@@ -25,15 +25,15 @@ en draai daarna `pnpm lint`.
 
 ## Welke configuratie doet wat?
 
-| Bestand | Rol | Zelf aanpassen? |
-| --- | --- | --- |
-| `eslint.config.mjs` | Het ingangspunt: neemt Nuxts basis over en voegt onze regels en importgrenzen toe. | Ja, hier wijzigen we lintbeleid. |
-| `.nuxt/eslint.config.mjs` | Door Nuxt gegenereerde regels, parsers voor TS/Vue en namen van auto-imports. | Nee; opnieuw maken met `pnpm exec nuxt prepare`. |
-| `tsconfig.eslint.json` | Klein TypeScript-project waarmee ESLint de typen in `shared` kan opzoeken. | Alleen als het bereik van typed linting verandert. |
-| `tsconfig.json` | De bestaande Nuxt-appconfiguratie voor TypeScript. | Geen vervanging voor het lintproject; dit heeft een ander doel. |
-| `package.json` | De lint-/formatteercommando's, de lijst te formatteren bestanden en de exacte Prettier-versie. | Ja; houd `format` en `format:check` gelijk. |
-| `tests/eslintConfig.test.ts` | Voert geldige en ongeldige voorbeelden door de echte ESLint-configuratie. | Ja, bij beleidswijzigingen. |
-| `.github/workflows/ci.yml` | Roept hetzelfde `pnpm lint` aan als lokaal. De volledige pipeline staat in [testen](testing.md#ci). | Alleen als de CI-stappen veranderen. |
+| Bestand                      | Rol                                                                                                 | Zelf aanpassen?                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `eslint.config.mjs`          | Het ingangspunt: neemt Nuxts basis over en voegt onze regels en importgrenzen toe.                  | Ja, hier wijzigen we lintbeleid.                                |
+| `.nuxt/eslint.config.mjs`    | Door Nuxt gegenereerde regels, parsers voor TS/Vue en namen van auto-imports.                       | Nee; opnieuw maken met `pnpm exec nuxt prepare`.                |
+| `tsconfig.eslint.json`       | Klein TypeScript-project waarmee ESLint de typen in `shared` kan opzoeken.                          | Alleen als het bereik van typed linting verandert.              |
+| `tsconfig.json`              | De bestaande Nuxt-appconfiguratie voor TypeScript.                                                  | Geen vervanging voor het lintproject; dit heeft een ander doel. |
+| `package.json`               | De lint-/formatteercommando's en de exacte Prettier-versie.                                         | Ja; houd `format` en `format:check` gelijk.                     |
+| `tests/eslintConfig.test.ts` | Voert geldige en ongeldige voorbeelden door de echte ESLint-configuratie.                           | Ja, bij beleidswijzigingen.                                     |
+| `.github/workflows/ci.yml`   | Roept hetzelfde `pnpm lint` aan als lokaal. De volledige pipeline staat in [testen](testing.md#ci). | Alleen als de CI-stappen veranderen.                            |
 
 Er is geen aparte Prettier-configuratie: we gebruiken de standaardinstellingen
 van de vastgelegde versie, waaronder twee spaties, dubbele quotes en puntkomma's.
@@ -48,12 +48,12 @@ ambient typepakketten; de bibliotheken ES2022 en DOM zijn wel beschikbaar.
 Een bestand krijgt alle blokken waarvan het `files`-patroon overeenkomt.
 Deze projectregels komen dus boven op de bestaande Nuxt-regels:
 
-| Blok in `eslint.config.mjs` | Bereik | Toegevoegde controle |
-| --- | --- | --- |
-| `project/typescript-policy` | Alle niet genegeerde TS/TSX/MTS/CTS- en Vue-bestanden, ook tests, scripts en toekomstige E2E-/lintregelbestanden. | Geen expliciete `any`, `@ts-ignore` of `@ts-nocheck`; `@ts-expect-error` vereist minimaal tien tekens uitleg. |
-| `project/browser-boundaries` | TS/JS/Vue in `app`, TS/JS in `shared`. | Geen statische runtime-imports of re-exports van servercode, server-only pakketten of Node-built-ins. |
-| `project/shared-boundaries` | TS/JS in `shared`. | Dezelfde grenzen, plus geen app-code of Nuxt-appimports zoals `#app` en `#imports`. |
-| `project/shared-type-safety` | Alleen `shared/**/*.ts`. | Vier regels die type-informatie nodig hebben; zie hieronder. |
+| Blok in `eslint.config.mjs`  | Bereik                                                                                                            | Toegevoegde controle                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `project/typescript-policy`  | Alle niet genegeerde TS/TSX/MTS/CTS- en Vue-bestanden, ook tests, scripts en toekomstige E2E-/lintregelbestanden. | Geen expliciete `any`, `@ts-ignore` of `@ts-nocheck`; `@ts-expect-error` vereist minimaal tien tekens uitleg. |
+| `project/browser-boundaries` | TS/JS/Vue in `app`, TS/JS in `shared`.                                                                            | Geen statische runtime-imports of re-exports van servercode, server-only pakketten of Node-built-ins.         |
+| `project/shared-boundaries`  | TS/JS in `shared`.                                                                                                | Dezelfde grenzen, plus geen app-code of Nuxt-appimports zoals `#app` en `#imports`.                           |
+| `project/shared-type-safety` | Alleen `shared/**/*.ts`.                                                                                          | Vier regels die type-informatie nodig hebben; zie hieronder.                                                  |
 
 Daarnaast zijn ongebruikte ESLint-suppressies fouten. Gegenereerde bestanden en
 andere Nuxt-ignores vallen onder de basisconfiguratie; onze extra ignores zijn
@@ -61,12 +61,12 @@ andere Nuxt-ignores vallen onder de basisconfiguratie; onze extra ignores zijn
 
 De vier typed regels hebben ieder een eigen taak:
 
-| Regel (`@typescript-eslint/…`) | Voorbeeld van een probleem |
-| --- | --- |
-| `no-floating-promises` | Een promise wordt gestart zonder afhandeling. |
-| `no-misused-promises` | Een async callback wordt gebruikt waar de ontvanger een callback met `void` verwacht. |
-| `no-unsafe-assignment` | Een waarde met type `any`, bijvoorbeeld uit `JSON.parse`, stroomt ongecontroleerd verder. |
-| `no-unsafe-member-access` | Code leest bijvoorbeeld `.payload` van een waarde met type `any`. |
+| Regel (`@typescript-eslint/…`) | Voorbeeld van een probleem                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `no-floating-promises`         | Een promise wordt gestart zonder afhandeling.                                             |
+| `no-misused-promises`          | Een async callback wordt gebruikt waar de ontvanger een callback met `void` verwacht.     |
+| `no-unsafe-assignment`         | Een waarde met type `any`, bijvoorbeeld uit `JSON.parse`, stroomt ongecontroleerd verder. |
+| `no-unsafe-member-access`      | Code leest bijvoorbeeld `.payload` van een waarde met type `any`.                         |
 
 Deze vier regels gelden momenteel **alleen voor shared TypeScript**. De
 syntactische regels gelden wel voor alle bovengenoemde TS/Vue-scopes. Een brede
@@ -104,20 +104,20 @@ De regels controleren statische imports en re-exports. Ze controleren geen
 dynamische imports, `require`-aanroepen of de inhoud van netwerkberichten.
 Runtimevalidatie en autorisatietests blijven daarvoor nodig.
 
-## Waarom formatteert Prettier maar vijf bestanden?
+## Prettier-opmaak van de hele checkout
 
-De bestaande repository is niet overal op dezelfde manier opgemaakt. We beginnen
-met een beperkte lijst om een grote diff met alleen opmaak te voorkomen:
+Prettier formatteerde eerst alleen een beperkte lijst bestanden, omdat de
+repository niet overal op dezelfde manier was opgemaakt en een opmaak-brede
+diff ongewenst was. Die migratie is afgerond: `pnpm format`/`pnpm format:check`
+draaien nu over de hele checkout (met `.gitignore` gerespecteerd, net als
+ESLint). Nieuwe bestanden moeten dus al bij het schrijven aan Prettier voldoen;
+`pnpm lint:fix` of je editor met `esbenp.prettier-vscode` als formatter lost
+afwijkingen automatisch op.
 
-- `eslint.config.mjs`
-- `tsconfig.eslint.json`
-- `tests/eslintConfig.test.ts`
-- `app/composables/useMapResize.ts`
-- `server/api/profile.post.ts`
-
-ESLint controleert wel de hele niet genegeerde checkout. Deze lijst beperkt
-uitsluitend Prettier. Breid hem stapsgewijs uit en wijzig beide commando's in
-`package.json` samen; neem de bijbehorende opmaakwijzigingen bewust in de diff op.
+Let bij grote reformatteringen op `eslint-disable-next-line`-comments in Vue
+templates: als Prettier een tag over meerdere regels verdeelt, kan de
+onderdrukte regel verschuiven. Gebruik in dat geval een `eslint-disable`/
+`eslint-enable`-paar rond het element in plaats van `-next-line`.
 
 ## Beleid aanpassen of een fout onderzoeken
 

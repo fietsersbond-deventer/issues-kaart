@@ -29,10 +29,12 @@ export default defineEventHandler(async (event) => {
        LEFT JOIN users ON users.id = issues.updated_by_user_id
        WHERE issues.id = ?`,
     )
-    .get(issueId) as {
-      updated_by_name: string | null;
-      updated_at: string | null;
-    } | undefined;
+    .get(issueId) as
+    | {
+        updated_by_name: string | null;
+        updated_at: string | null;
+      }
+    | undefined;
 
   if (!row) {
     throw createError({

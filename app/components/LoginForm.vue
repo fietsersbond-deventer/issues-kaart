@@ -58,7 +58,7 @@ async function handleSubmit() {
       { username: username.value, password: password.value },
       {
         callbackUrl: "/",
-      }
+      },
     );
   } catch (e) {
     console.error(e);

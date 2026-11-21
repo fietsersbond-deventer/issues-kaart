@@ -16,7 +16,7 @@ export const useTitle = (title: MaybeRef<string>) => {
         currentTitle.value = get(title);
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   return {
