@@ -69,10 +69,9 @@ export function seedDatabase(db: DatabaseSync) {
       index === 1 ? 102 : 101,
       JSON.stringify(geometry),
     );
-    db.prepare("INSERT INTO issue_tags (issue_id, tag) VALUES (?, ?)").run(
-      101 + index,
-      index === 2 ? "e2e-route" : "e2e-veilig",
-    );
+    db.prepare(
+      "INSERT INTO issue_tags (issue_id, tag_id) SELECT ?, id FROM tags WHERE tag = ?",
+    ).run(101 + index, index === 2 ? "e2e-route" : "e2e-veilig");
   }
   const insertText = db.prepare(
     "INSERT INTO text (key, text, text_type) VALUES (?, ?, ?)",

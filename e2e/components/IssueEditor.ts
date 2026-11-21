@@ -26,12 +26,16 @@ export class IssueEditor {
       .click();
   }
   async delete(confirm: boolean) {
-    this.page.once("dialog", (dialog) =>
-      confirm ? dialog.accept() : dialog.dismiss(),
-    );
     await this.page
       .getByRole("button", { name: "Verwijderen", exact: true })
       .first()
+      .click();
+    const dialog = this.page.getByRole("dialog");
+    await dialog
+      .getByRole("button", {
+        name: confirm ? "Verwijderen" : "Annuleren",
+        exact: true,
+      })
       .click();
   }
   async selectCategory(name: string) {

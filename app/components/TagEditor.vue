@@ -53,6 +53,7 @@
                 ref="richTextEditorRef"
                 v-model="form.description"
                 :sanitize-options="sanitizeOptions"
+                aria-label="Omschrijving"
               />
             </v-col>
 

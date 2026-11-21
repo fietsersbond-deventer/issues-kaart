@@ -25,6 +25,7 @@
                   ref="richTextEditorRef"
                   v-model="editedItem.description"
                   :sanitize-options="sanitizeOptions"
+                  aria-label="Omschrijving"
                 />
               </v-col>
               <v-col cols="4">

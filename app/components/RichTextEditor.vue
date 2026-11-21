@@ -7,6 +7,7 @@
       :toolbar="toolbar"
       class="rich-text-editor"
       @blur="onBlur"
+      @ready="onReady"
     />
   </div>
 </template>
@@ -23,14 +24,24 @@ import sanitizeHtmlLib from "sanitize-html";
 
 interface Props {
   sanitizeOptions?: Partial<SanitizeDescriptionOptions>;
+  ariaLabel?: string;
 }
 
-const { sanitizeOptions: customOptions = {} } = defineProps<Props>();
+const { sanitizeOptions: customOptions = {}, ariaLabel = undefined } =
+  defineProps<Props>();
 
 const modelValue = defineModel<SanitizedHTML>({ required: true });
 
 const localContent = ref<string>(modelValue.value ?? "");
 const editorRef = ref<InstanceType<typeof QuillEditor> | null>(null);
+
+type QuillInstance = ReturnType<InstanceType<typeof QuillEditor>["getQuill"]>;
+
+function onReady(quill: QuillInstance) {
+  if (ariaLabel) {
+    quill.root.setAttribute("aria-label", ariaLabel);
+  }
+}
 
 watch(
   () => modelValue.value,
