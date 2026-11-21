@@ -1,19 +1,11 @@
 <template>
   <div class="legend-container pa-2">
     <v-table class="legend-list categories-list pa-2">
-      <tr
-        v-for="item in usedCategories"
-        :key="item.id"
-        class="legend-item clickable"
-        :class="{ 'legend-item--disabled': !isCategoryVisible(item.id) }"
-        density="compact"
-        tabindex="0"
-        role="checkbox"
-        :aria-checked="isCategoryVisible(item.id)"
-        @click="toggleCategoryVisibility(item.id)"
+      <tr v-for="item in usedCategories" :key="item.id" class="legend-item clickable"
+        :class="{ 'legend-item--disabled': !isCategoryVisible(item.id) }" density="compact" tabindex="0" role="checkbox"
+        :aria-checked="isCategoryVisible(item.id)" @click="toggleCategoryVisibility(item.id)"
         @keydown.enter.prevent="toggleCategoryVisibility(item.id)"
-        @keydown.space.prevent="toggleCategoryVisibility(item.id)"
-      >
+        @keydown.space.prevent="toggleCategoryVisibility(item.id)">
         <td>
           <LegendIndicator :legend="item" :size="24" />
         </td>
@@ -27,12 +19,7 @@
               <div class="tooltip-content" v-html="item.description" />
             </template>
             <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
+              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
             </template>
           </v-tooltip>
         </td>
@@ -42,27 +29,13 @@
       </tr>
     </v-table>
     <v-table v-if="usedTags.length" class="legend-list tags-list pa-2">
-      <tr
-        v-for="tag in usedTags"
-        :key="`tag-${tag.tag}`"
-        class="legend-item clickable"
-        :class="{ 'legend-item--disabled': isTagDisabled(tag.tag) }"
-        density="compact"
-        tabindex="0"
-        role="checkbox"
-        :aria-checked="hasTag(tag.tag)"
-        :aria-disabled="isTagDisabled(tag.tag)"
-        @click="onTagClick(tag.tag)"
-        @keydown.enter.prevent="onTagClick(tag.tag)"
-        @keydown.space.prevent="onTagClick(tag.tag)"
-      >
+      <tr v-for="tag in usedTags" :key="`tag-${tag.tag}`" class="legend-item clickable"
+        :class="{ 'legend-item--disabled': isTagDisabled(tag.tag) }" density="compact" tabindex="0" role="checkbox"
+        :aria-checked="hasTag(tag.tag)" :aria-disabled="isTagDisabled(tag.tag)" @click="onTagClick(tag.tag)"
+        @keydown.enter.prevent="onTagClick(tag.tag)" @keydown.space.prevent="onTagClick(tag.tag)">
         <td colspan="2" class="py-1">
           <!-- description is shown via the info icon, not Tag's own tooltip -->
-          <Tag
-            :tag="{ ...tag, description: null }"
-            :active="hasTag(tag.tag)"
-            class="w-100"
-          />
+          <Tag :tag="{ ...tag, description: null }" :active="hasTag(tag.tag)" class="w-100" />
         </td>
         <td>
           <v-tooltip v-if="tag.description" location="top" max-width="40em">
@@ -71,12 +44,7 @@
               <div class="tooltip-content" v-html="tag.description" />
             </template>
             <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
+              <v-icon v-bind="props" icon="mdi-information" size="x-small" color="grey" />
             </template>
           </v-tooltip>
         </td>
@@ -135,14 +103,15 @@ const countIssues = computed(() => {
 });
 </script>
 
-<style scoped>
+<style>
 .legend-container {
   height: auto;
   max-height: 100%;
   display: flex;
   flex-direction: column;
   background: white;
-  overflow: hidden; /* Contain the overflow */
+  overflow: hidden;
+  /* Contain the overflow */
 }
 
 .legend-list {
