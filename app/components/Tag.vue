@@ -1,6 +1,11 @@
 <template>
-  <v-chip label :color="active ? 'primary' : undefined" :variant="active ? 'flat' : 'tonal'" size="small"
-    class="tag-chip">
+  <v-chip
+    label
+    :color="active ? 'primary' : undefined"
+    :variant="active ? 'flat' : 'tonal'"
+    size="small"
+    class="tag-chip"
+  >
     <template #prepend>
       <AppIcon :icon="iconName" size="16" class="mr-2" />
     </template>
@@ -8,7 +13,12 @@
     <template #append>
       <slot name="append" />
     </template>
-    <v-tooltip v-if="tag.description" activator="parent" location="top" max-width="40em">
+    <v-tooltip
+      v-if="tag.description"
+      activator="parent"
+      location="top"
+      max-width="40em"
+    >
       <template #default>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div class="tooltip-content" v-html="tag.description" />
