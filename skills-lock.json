@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "skills": {
+    "nitro": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/nitro/SKILL.md",
+      "computedHash": "5594bbaea6a93f1038f65267554108e4d2be4fc68f6b8523a40bc4103086efcc"
+    },
+    "nuxt": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/nuxt/SKILL.md",
+      "computedHash": "e5a8ab37c060456a4922dcce4b0e76a08ea32f479dcaf177f9139b4720182353"
+    },
+    "pinia": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/pinia/SKILL.md",
+      "computedHash": "78c3289d16c646eccc1d404cd3c2b04101715080e77d13b6910130b5fa10e20d"
+    },
+    "vite": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/vite/SKILL.md",
+      "computedHash": "2bb086639544a42e1a65d75c574b9771e74b6d0d722e069138aa225d747ce857"
+    },
+    "vitest": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "9a32ac49e9abcbbf756293c47f6f75716a832b2dfd681b0bf3f44d3ed9d8629a"
+    },
+    "vue": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/vue/SKILL.md",
+      "computedHash": "5133e6157dbc1a81078161932924f96dbad0213108f3b311ceb449c1efb95018"
+    },
+    "vue-best-practices": {
+      "source": "onmax/nuxt-skills",
+      "commit": "b4e1a3fb0d25704a70becfe84fddcce3463ebf91",
+      "sourceType": "github",
+      "skillPath": "skills/vue-best-practices/SKILL.md",
+      "computedHash": "5aa4899782d76e4672d82ae6f6a6407e796ce76d19af5e3705268a6c64e50ffb"
+    }
+  }
+}
