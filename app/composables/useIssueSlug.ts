@@ -29,7 +29,11 @@ export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
     error.value = "";
   }
 
-  async function setGeneratedSlug(title: string, generationSequence: number) {
+  async function setGeneratedSlug(
+    title: string,
+    generationSequence: number,
+    force = false,
+  ) {
     try {
       const result = await getUniqueSlug(
         slugify(title),
@@ -37,7 +41,7 @@ export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
       );
       if (
         generationSequence !== sequence ||
-        initialized ||
+        (initialized && !force) ||
         issue.value.title !== title
       )
         return;
@@ -62,6 +66,15 @@ export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
     isChecking.value = true;
     error.value = "";
     void setGeneratedSlug(issue.value.title, generationSequence);
+  }
+
+  function regenerate() {
+    if (!issue.value.title.trim()) return;
+    cancelTitleTimer();
+    const generationSequence = ++sequence;
+    isChecking.value = true;
+    error.value = "";
+    void setGeneratedSlug(issue.value.title, generationSequence, true);
   }
 
   watch(
@@ -122,5 +135,6 @@ export function useIssueSlug(issue: Ref<Issue | NewIssue>) {
     onInput,
     generateOnBlur,
     checkOnBlur,
+    regenerate,
   };
 }

@@ -38,41 +38,13 @@
                 :rules="[(v: string) => !!v || 'Titel is verplicht']"
                 required
                 hide-details="auto"
-                @blur="generateSlugOnBlur"
+                @blur="slugEditorRef?.generateOnBlur()"
               />
-              <div class="issue-url-editor">
-                <div class="issue-url-control">
-                  <span class="issue-url-prefix"
-                    >{{ requestURL.origin }}/kaart/</span
-                  >
-                  <input
-                    v-model.trim="issue.slug"
-                    aria-label="URL-deel"
-                    autocomplete="off"
-                    spellcheck="false"
-                    @input="onSlugInput"
-                    @blur="checkSlugOnBlur"
-                  />
-                </div>
-                <div
-                  v-if="isGeneratingSlug"
-                  class="issue-url-status"
-                  role="status"
-                >
-                  Wachten tot de titel compleet is; de URL wordt over 2 seconden
-                  of bij verlaten van het titelveld gegenereerd.
-                </div>
-                <div
-                  v-else-if="isCheckingSlug"
-                  class="issue-url-status"
-                  role="status"
-                >
-                  URL controleren…
-                </div>
-                <div v-if="slugError" class="issue-url-error" role="alert">
-                  {{ slugError }}
-                </div>
-              </div>
+              <SlugEditor
+                ref="slugEditorRef"
+                v-model="issue"
+                v-model:valid="isSlugValid"
+              />
             </v-col>
 
             <v-col cols="12">
@@ -180,6 +152,7 @@
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import StreetViewDialog from "./StreetViewDialog.vue";
+import SlugEditor from "./SlugEditor.vue";
 import IssueDeleteDialog from "~/components/IssueDeleteDialog.vue";
 import {
   isExistingIssue,
@@ -204,16 +177,8 @@ const props = defineProps<{ navigateOnSlugChange?: boolean }>();
 const showDialog = defineModel<boolean>("dialog", { required: false });
 const issue = defineModel<Issue | NewIssue>({ required: true });
 const route = useRoute();
-const requestURL = useRequestURL();
-const {
-  isGenerating: isGeneratingSlug,
-  isChecking: isCheckingSlug,
-  error: slugError,
-  isValid: isSlugValid,
-  onInput: onSlugInput,
-  generateOnBlur: generateSlugOnBlur,
-  checkOnBlur: checkSlugOnBlur,
-} = useIssueSlug(issue);
+const slugEditorRef = ref<InstanceType<typeof SlugEditor> | null>(null);
+const isSlugValid = ref(true);
 const showDeleteDialog = ref(false);
 const deleting = ref(false);
 useIssueEditLock(
@@ -392,55 +357,6 @@ async function confirmDelete() {
 
 .quill-editor {
   height: 250px;
-}
-
-.issue-url-control {
-  display: flex;
-  align-items: center;
-  min-height: 24px;
-  font-size: 0.875rem;
-}
-
-.issue-url-editor {
-  margin-top: 6px;
-}
-
-.issue-url-prefix {
-  flex: 0 0 auto;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  white-space: nowrap;
-}
-
-.issue-url-control input {
-  flex: 1;
-  min-width: 0;
-  margin-left: 2px;
-  padding: 2px 4px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.24);
-  border-radius: 3px;
-  color: rgb(var(--v-theme-on-surface));
-  background: transparent;
-  font: inherit;
-}
-
-.issue-url-control input:focus {
-  border-color: rgb(var(--v-theme-primary));
-  outline: 1px solid rgb(var(--v-theme-primary));
-}
-
-.issue-url-status,
-.issue-url-error {
-  min-height: 20px;
-  padding-top: 4px;
-  font-size: 0.75rem;
-}
-
-.issue-url-status {
-  color: rgba(var(--v-theme-on-surface), 0.6);
-}
-
-.issue-url-error {
-  color: rgb(var(--v-theme-error));
 }
 
 /* Force Quill editor to fit within container */

@@ -182,6 +182,23 @@ describe("issue editor persistence boundaries", () => {
     expect(wrapper.findAll("input")[1]!.element.value).toBe("de-brink-op-slot");
     expect(getUniqueSlug).toHaveBeenCalledWith("de-brink-op-slot", undefined);
   });
+  it("regenerates an existing slug from the current title on request", async () => {
+    const wrapper = editor();
+    getUniqueSlug.mockImplementation(async (slug: string) => ({
+      slug: `${slug}-2`,
+    }));
+    await wrapper.findAll("input")[0]!.setValue("Nieuwe titel");
+    const slugInput = wrapper.find('input[aria-label="URL-deel"]');
+    expect(slugInput.element.value).toBe("draft");
+
+    await wrapper
+      .get('button[aria-label="URL opnieuw genereren op basis van de titel"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(getUniqueSlug).toHaveBeenCalledWith("nieuwe-titel", undefined);
+    expect(slugInput.element.value).toBe("nieuwe-titel-2");
+  });
   it("updates existing issues, exits editing and blocks submission while disconnected", async () => {
     const wrapper = editor({ ...draft(), id: 3 } as Issue);
     connected.value = false;
