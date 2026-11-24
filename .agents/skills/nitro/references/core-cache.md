@@ -16,12 +16,16 @@ Nitro's cache layer (powered by [ocache](https://ocache.unjs.io)) builds on the 
 ```ts [routes/cached.ts]
 import { defineCachedHandler } from "nitro/cache";
 
-export default defineCachedHandler((event) => {
-  return "I am cached for an hour";
-}, { maxAge: 60 * 60 });
+export default defineCachedHandler(
+  (event) => {
+    return "I am cached for an hour";
+  },
+  { maxAge: 60 * 60 },
+);
 ```
 
 Behavior:
+
 - Only `GET`/`HEAD` are cached (stored under **separate** entries); other methods and requests with a `Range` header bypass and call the handler.
 - Auto-manages `etag` (weak, from body hash), `cache-control` (synthesized from the enforced lifetime), `vary`, and `x-cache` (`HIT`/`STALE`/`REVALIDATED`/`MISS`) headers, plus `304 Not Modified` for conditional requests.
 - Concurrent requests for the same key are deduplicated (handler runs once), bounded by `maxResolveTime` (30s default).
@@ -47,14 +51,19 @@ Cache any async function (e.g. an upstream API call) and reuse it across handler
 import { defineHandler, type H3Event } from "nitro";
 import { defineCachedFunction } from "nitro/cache";
 
-const cachedGHStars = defineCachedFunction(async (repo: string) => {
-  const data = await fetch(`https://api.github.com/repos/${repo}`).then((r) => r.json());
-  return data.stargazers_count;
-}, {
-  maxAge: 60 * 60,
-  name: "ghStars",
-  getKey: (repo: string) => repo,
-});
+const cachedGHStars = defineCachedFunction(
+  async (repo: string) => {
+    const data = await fetch(`https://api.github.com/repos/${repo}`).then((r) =>
+      r.json(),
+    );
+    return data.stargazers_count;
+  },
+  {
+    maxAge: 60 * 60,
+    name: "ghStars",
+    getKey: (repo: string) => repo,
+  },
+);
 
 export default defineHandler(async (event) => {
   const { repo } = event.context.params;
@@ -77,9 +86,9 @@ import { defineConfig } from "nitro";
 export default defineConfig({
   kv: { redis: { driver: "redis", url: "redis://localhost:6379" } },
   routeRules: {
-    "/blog/**": { swr: 3600 },                       // SWR, 1h (swr:true = 1s default)
+    "/blog/**": { swr: 3600 }, // SWR, 1h (swr:true = 1s default)
     "/heavy/**": { cache: { maxAge: 3600, base: "redis" } }, // custom mountpoint
-    "/api/realtime/**": { cache: false },            // disable
+    "/api/realtime/**": { cache: false }, // disable
   },
 });
 ```
@@ -90,22 +99,22 @@ Route-rule handlers use the group `nitro/route-rules`, and the generated `name` 
 
 ### Shared (`defineCachedHandler` + `defineCachedFunction`)
 
-| Option | Default | Description |
-|---|---|---|
-| `maxAge` | `1` | Seconds the cache is valid. `0` disables caching. |
-| `swr` | `false` | Serve stale while revalidating in background. |
-| `staleMaxAge` | — | Extra seconds a stale value is served (only with `swr`). `0` = never stale; unset = no TTL written. |
-| `base` | `/cache` | Storage base (→ `cache:` prefix). An array enables multi-tier reads/writes. |
-| `name` | inferred | Cache namespace (falls back to a hash of the function source). |
-| `group` | `nitro/handlers` / `nitro/functions` | Key group. |
-| `getKey(...args)` | hash | Compute cache key (does not change request narrowing). |
-| `integrity` | code+options hash | Invalidate when changed. |
-| `getMaxAge(entry)` | — | Derive lifetime per entry from the resolved value. |
-| `maxResolveTime` | `30` | Deadline (s) for one shared resolution. |
-| `storage` | cache storage | Override the backend for this handler/function. |
-| `waitUntil(promise)` | — | Hand background work to the host runtime. |
-| `shouldInvalidateCache` / `shouldBypassCache` | — | Per-call predicates. |
-| `onError(err)` | log | Custom error handling. |
+| Option                                        | Default                              | Description                                                                                         |
+| --------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `maxAge`                                      | `1`                                  | Seconds the cache is valid. `0` disables caching.                                                   |
+| `swr`                                         | `false`                              | Serve stale while revalidating in background.                                                       |
+| `staleMaxAge`                                 | —                                    | Extra seconds a stale value is served (only with `swr`). `0` = never stale; unset = no TTL written. |
+| `base`                                        | `/cache`                             | Storage base (→ `cache:` prefix). An array enables multi-tier reads/writes.                         |
+| `name`                                        | inferred                             | Cache namespace (falls back to a hash of the function source).                                      |
+| `group`                                       | `nitro/handlers` / `nitro/functions` | Key group.                                                                                          |
+| `getKey(...args)`                             | hash                                 | Compute cache key (does not change request narrowing).                                              |
+| `integrity`                                   | code+options hash                    | Invalidate when changed.                                                                            |
+| `getMaxAge(entry)`                            | —                                    | Derive lifetime per entry from the resolved value.                                                  |
+| `maxResolveTime`                              | `30`                                 | Deadline (s) for one shared resolution.                                                             |
+| `storage`                                     | cache storage                        | Override the backend for this handler/function.                                                     |
+| `waitUntil(promise)`                          | —                                    | Hand background work to the host runtime.                                                           |
+| `shouldInvalidateCache` / `shouldBypassCache` | —                                    | Per-call predicates.                                                                                |
+| `onError(err)`                                | log                                  | Custom error handling.                                                                              |
 
 ### Handler-only
 
@@ -126,10 +135,10 @@ Key pattern: `` `${base}:${group}:${name}:${getKey(...args)}.json` `` (`group`/`
 Cached **functions** expose on-demand methods:
 
 ```ts
-await cachedGHStars("unjs/nitro");              // populate
-await cachedGHStars.expire("unjs/nitro");       // mark stale (SWR: served while refreshing)
-await cachedGHStars.invalidate("unjs/nitro");   // remove entirely
-await cachedGHStars.resolveKeys("unjs/nitro");  // storage key(s) for these args
+await cachedGHStars("unjs/nitro"); // populate
+await cachedGHStars.expire("unjs/nitro"); // mark stale (SWR: served while refreshing)
+await cachedGHStars.invalidate("unjs/nitro"); // remove entirely
+await cachedGHStars.resolveKeys("unjs/nitro"); // storage key(s) for these args
 ```
 
 > `defineCachedHandler` returns a plain handler and does **not** expose these methods — move expensive work into a `defineCachedFunction` (called from a plain `defineHandler`) and invalidate the function when you need on-demand invalidation.

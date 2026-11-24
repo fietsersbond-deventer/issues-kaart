@@ -91,7 +91,7 @@ Dynamic layout:
 </template>
 
 <script setup>
-const layout = computed(() => isAdmin ? 'admin' : 'default')
+const layout = computed(() => (isAdmin ? "admin" : "default"));
 </script>
 ```
 
@@ -145,7 +145,7 @@ Catch and handle errors in child components:
 
 <script setup>
 function handleError(error) {
-  console.error('Error caught:', error)
+  console.error("Error caught:", error);
 }
 </script>
 ```
@@ -208,10 +208,7 @@ Optimized images (requires `@nuxt/image` module):
   />
 
   <!-- Art direction with picture -->
-  <NuxtPicture
-    src="/images/hero.jpg"
-    :img-attrs="{ alt: 'Hero image' }"
-  />
+  <NuxtPicture src="/images/hero.jpg" :img-attrs="{ alt: 'Hero image' }" />
 </template>
 ```
 
@@ -274,8 +271,8 @@ Accessibility: a hidden live region for **manual** announcements of dynamic cont
 
 ```vue
 <script setup lang="ts">
-const { polite, assertive } = useAnnouncer()
-assertive('Error: form is invalid') // interrupts immediately
+const { polite, assertive } = useAnnouncer();
+assertive("Error: form is invalid"); // interrupts immediately
 </script>
 ```
 

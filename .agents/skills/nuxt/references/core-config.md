@@ -16,30 +16,28 @@ The main configuration file at the root of your project:
 export default defineNuxtConfig({
   // Configuration options
   devtools: { enabled: true },
-  modules: ['@nuxt/ui'],
-})
+  modules: ["@nuxt/ui"],
+});
 ```
 
 ### Path Aliases
 
 The default `srcDir` is `app/`, so path aliases resolve as:
 
-| Alias | Resolves to |
-|-------|-------------|
-| `~` / `@` | `<rootDir>/app` |
+| Alias       | Resolves to                |
+| ----------- | -------------------------- |
+| `~` / `@`   | `<rootDir>/app`            |
 | `~~` / `@@` | `<rootDir>` (project root) |
-| `#shared` | `<rootDir>/shared` |
-| `#server` | `<rootDir>/server` |
+| `#shared`   | `<rootDir>/shared`         |
+| `#server`   | `<rootDir>/server`         |
 
 Reference root-level paths (modules, server handlers) with `~~` or `#server`:
 
 ```ts
 export default defineNuxtConfig({
-  modules: ['~~/custom-modules/awesome.js'], // relative to rootDir
-  serverHandlers: [
-    { route: '/foo/**', handler: '#server/foohandler.ts' },
-  ],
-})
+  modules: ["~~/custom-modules/awesome.js"], // relative to rootDir
+  serverHandlers: [{ route: "/foo/**", handler: "#server/foohandler.ts" }],
+});
 ```
 
 ### `nuxt.config` Loading (Nuxt 5: no more `jiti`)
@@ -63,7 +61,7 @@ Configure environment-specific settings:
 export default defineNuxtConfig({
   $production: {
     routeRules: {
-      '/**': { isr: true },
+      "/**": { isr: true },
     },
   },
   $development: {
@@ -74,7 +72,7 @@ export default defineNuxtConfig({
       // Staging environment config
     },
   },
-})
+});
 ```
 
 Use `--envName` flag to select environment: `nuxt build --envName staging`
@@ -88,13 +86,13 @@ For values that need to be overridden via environment variables:
 export default defineNuxtConfig({
   runtimeConfig: {
     // Server-only keys
-    apiSecret: '123',
+    apiSecret: "123",
     // Keys within public are exposed to client
     public: {
-      apiBase: '/api',
+      apiBase: "/api",
     },
   },
-})
+});
 ```
 
 Override with environment variables:
@@ -109,7 +107,7 @@ Access in components/composables:
 
 ```vue
 <script setup lang="ts">
-const config = useRuntimeConfig()
+const config = useRuntimeConfig();
 // Server: config.apiSecret, config.public.apiBase
 // Client: config.public.apiBase only
 </script>
@@ -122,33 +120,33 @@ For public tokens determined at build time (not overridable via env vars):
 ```ts
 // app/app.config.ts
 export default defineAppConfig({
-  title: 'Hello Nuxt',
+  title: "Hello Nuxt",
   theme: {
     dark: true,
     colors: {
-      primary: '#ff0000',
+      primary: "#ff0000",
     },
   },
-})
+});
 ```
 
 Access in components:
 
 ```vue
 <script setup lang="ts">
-const appConfig = useAppConfig()
+const appConfig = useAppConfig();
 </script>
 ```
 
 ## runtimeConfig vs app.config
 
-| Feature | runtimeConfig | app.config |
-|---------|--------------|------------|
-| Client-side | Hydrated | Bundled |
-| Environment variables | Yes | No |
-| Reactive | Yes | Yes |
-| Hot module replacement | No | Yes |
-| Non-primitive JS types | No | Yes |
+| Feature                | runtimeConfig | app.config |
+| ---------------------- | ------------- | ---------- |
+| Client-side            | Hydrated      | Bundled    |
+| Environment variables  | Yes           | No         |
+| Reactive               | Yes           | Yes        |
+| Hot module replacement | No            | Yes        |
+| Non-primitive JS types | No            | Yes        |
 
 **Use runtimeConfig** for secrets and values that change per environment.
 **Use app.config** for public tokens, theme settings, and non-sensitive config.
@@ -165,8 +163,8 @@ export default defineNuxtConfig({
   },
   // Prerendering applies to any server builder; Nitro-only options (concurrency, failOnError) stay in `nitro.prerender`
   prerender: {
-    routes: ['/user/1', '/user/2'],
-    ignore: ['/dynamic'],
+    routes: ["/user/1", "/user/2"],
+    ignore: ["/dynamic"],
     crawlLinks: true,
   },
   // Client bundler: 'vite' (default) | 'webpack' | 'rsbuild' (`rspack` is deprecated, use rsbuild + `rsbuild: {}` options)
@@ -182,7 +180,7 @@ export default defineNuxtConfig({
   postcss: {
     // postcss options
   },
-})
+});
 ```
 
 ### Environment-specific Vite Config
@@ -193,13 +191,17 @@ Top-level `vite` options are shared. Use `$client` and `$server` to target a sin
 export default defineNuxtConfig({
   vite: {
     $client: {
-      build: { rollupOptions: { output: { manualChunks: { analytics: ['analytics-package'] } } } },
+      build: {
+        rollupOptions: {
+          output: { manualChunks: { analytics: ["analytics-package"] } },
+        },
+      },
     },
     $server: {
-      build: { sourcemap: 'inline' }, // `sourcemap` also accepts 'hidden' | 'nosource' at the top level
+      build: { sourcemap: "inline" }, // `sourcemap` also accepts 'hidden' | 'nosource' at the top level
     },
   },
-})
+});
 ```
 
 Vite 8 / Rolldown: `vite.esbuild` and `vite.optimizeDeps.esbuildOptions` are deprecated for `vite.oxc` and `vite.optimizeDeps.rolldownOptions`; `build.rollupOptions` for `build.rolldownOptions`. A Nitro rollup plugin that must run before Vite's resolution needs to be a Vite plugin with `enforce: 'pre'` (scope server-only plugins with `applyToEnvironment: env => env.name === 'nitro'`).
@@ -213,34 +215,34 @@ export default defineNuxtConfig({
   vue: {
     propsDestructure: true,
   },
-})
+});
 ```
 
 ## Nuxt 5 Default Changes
 
 Many former experimental flags are now on by default. Each can be reverted via the named option:
 
-| Behavior | Now default | Restore Nuxt 4 with |
-|----------|-------------|---------------------|
-| Case-sensitive page routing | `router.options.sensitive: true` | `router.options.sensitive: false` |
-| Typed pages (`useRoute`/`navigateTo`/`<NuxtLink>` type-checked) | on | `experimental.typedPages: false` |
-| Page component name = route name | on | `experimental.normalizePageNames: false` |
-| All serializable `definePageMeta` written to route record | on | `experimental.extractSerializablePageMeta: false` |
-| Payload inlined in HTML, `_payload.json` only for SPA nav | `experimental.payloadExtraction: 'client'` | `payloadExtraction: true` |
-| `clearNuxtState` resets to `useState` init value | on | `experimental.defaults.useState.resetOnClear: false` |
-| `await navigateTo()` early-returns from `setup()` | on | `experimental.navigateToEarlyReturn: false` |
-| `callHook` may return `void` (not always a Promise) | on | `experimental.asyncCallHook: true` |
-| Client-only SSR placeholder is a comment node, not `<div>` | on | `experimental.clientNodePlaceholder: false` |
-| Reuse builder's file watcher | `experimental.watcher: 'builder'` | `watcher: 'chokidar'` |
-| Server auto-imports (Nitro helpers) | off | `experimental.nitroAutoImports: true` |
-| Error format: page errors return the HTML error page, server route errors return JSON (request headers no longer matter) | `experimental.inlineErrorRendering` on | `experimental.inlineErrorRendering: false` |
-| `$fetch` is not set on `globalThis` in the browser (import from `#build/fetch`) | on | provide your own instance via a plugin (`provide: { api: $fetch.create(...) }`) |
-| `routeRules` keys use URLPattern: `*` matches nested paths, one `*`/`**` per key, regex constraints cannot match encoded chars | on | use named params (`/blog/:slug`) |
-| `server/utils/` subdirectories not auto-imported (warns `NUXT_B9006`) | on | re-export from a top-level file, or `nitroLegacy.imports` |
-| h3 v1 / `nitropack` imports in your `server/` dir | not supported (`NUXT_B9005` lists them) | `nitroLegacy: true` (or per-switch object) while migrating |
-| `error.data` parsed (never stringified) | forced on | — (`parseErrorData` no longer configurable) |
-| Vue Options API compiled out of client bundle | on | `vue: { optionsApi: true }` |
-| `noUncheckedSideEffectImports` in generated tsconfig | on | `typescript.tsConfig.compilerOptions.noUncheckedSideEffectImports: false` |
+| Behavior                                                                                                                       | Now default                                | Restore Nuxt 4 with                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| Case-sensitive page routing                                                                                                    | `router.options.sensitive: true`           | `router.options.sensitive: false`                                               |
+| Typed pages (`useRoute`/`navigateTo`/`<NuxtLink>` type-checked)                                                                | on                                         | `experimental.typedPages: false`                                                |
+| Page component name = route name                                                                                               | on                                         | `experimental.normalizePageNames: false`                                        |
+| All serializable `definePageMeta` written to route record                                                                      | on                                         | `experimental.extractSerializablePageMeta: false`                               |
+| Payload inlined in HTML, `_payload.json` only for SPA nav                                                                      | `experimental.payloadExtraction: 'client'` | `payloadExtraction: true`                                                       |
+| `clearNuxtState` resets to `useState` init value                                                                               | on                                         | `experimental.defaults.useState.resetOnClear: false`                            |
+| `await navigateTo()` early-returns from `setup()`                                                                              | on                                         | `experimental.navigateToEarlyReturn: false`                                     |
+| `callHook` may return `void` (not always a Promise)                                                                            | on                                         | `experimental.asyncCallHook: true`                                              |
+| Client-only SSR placeholder is a comment node, not `<div>`                                                                     | on                                         | `experimental.clientNodePlaceholder: false`                                     |
+| Reuse builder's file watcher                                                                                                   | `experimental.watcher: 'builder'`          | `watcher: 'chokidar'`                                                           |
+| Server auto-imports (Nitro helpers)                                                                                            | off                                        | `experimental.nitroAutoImports: true`                                           |
+| Error format: page errors return the HTML error page, server route errors return JSON (request headers no longer matter)       | `experimental.inlineErrorRendering` on     | `experimental.inlineErrorRendering: false`                                      |
+| `$fetch` is not set on `globalThis` in the browser (import from `#build/fetch`)                                                | on                                         | provide your own instance via a plugin (`provide: { api: $fetch.create(...) }`) |
+| `routeRules` keys use URLPattern: `*` matches nested paths, one `*`/`**` per key, regex constraints cannot match encoded chars | on                                         | use named params (`/blog/:slug`)                                                |
+| `server/utils/` subdirectories not auto-imported (warns `NUXT_B9006`)                                                          | on                                         | re-export from a top-level file, or `nitroLegacy.imports`                       |
+| h3 v1 / `nitropack` imports in your `server/` dir                                                                              | not supported (`NUXT_B9005` lists them)    | `nitroLegacy: true` (or per-switch object) while migrating                      |
+| `error.data` parsed (never stringified)                                                                                        | forced on                                  | — (`parseErrorData` no longer configurable)                                     |
+| Vue Options API compiled out of client bundle                                                                                  | on                                         | `vue: { optionsApi: true }`                                                     |
+| `noUncheckedSideEffectImports` in generated tsconfig                                                                           | on                                         | `typescript.tsConfig.compilerOptions.noUncheckedSideEffectImports: false`       |
 
 **Removed options** (behavior now unconditional): `experimental.viteEnvironmentApi`, `experimental.routeTypedFetch`, `experimental.renderJsonPayloads`, `experimental.externalVue`. Delete them from config.
 
@@ -269,7 +271,7 @@ export default defineNuxtConfig({
       useAsyncData: { deep: true },
     },
   },
-})
+});
 ```
 
 <!--

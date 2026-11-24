@@ -22,13 +22,13 @@ export default defineHandler((event) => {
 `defineHandler` gives type inference. A plain `(event) => ...` function also works. The `event` is web-standard based:
 
 ```ts
-event.req            // web Request
-event.res            // response init (headers, status)
-event.url            // URL object (event.url.pathname, event.url.searchParams)
-event.path           // request path
-event.method         // HTTP method
-event.context        // mutable per-request context (params, custom data)
-event.context.params // route params
+event.req; // web Request
+event.res; // response init (headers, status)
+event.url; // URL object (event.url.pathname, event.url.searchParams)
+event.path; // request path
+event.method; // HTTP method
+event.context; // mutable per-request context (params, custom data)
+event.context.params; // route params
 ```
 
 Read the body with native `Request` methods (H3 v2 dropped `readBody`):
@@ -116,7 +116,11 @@ Register handlers/middleware in config in addition to (or instead of) the filesy
 export default defineConfig({
   routes: {
     "/api/hello": "./routes/api/hello.ts",
-    "/api/custom": { handler: "./routes/custom.ts", method: "POST", lazy: true },
+    "/api/custom": {
+      handler: "./routes/custom.ts",
+      method: "POST",
+      lazy: true,
+    },
   },
   handlers: [
     { route: "/blog/**", handler: "./handlers/blog.ts", method: "get" },
@@ -155,18 +159,20 @@ import { defineConfig } from "nitro";
 
 export default defineConfig({
   routeRules: {
-    "/blog/**": { swr: 600 },                   // stale-while-revalidate w/ maxAge
-    "/api/data/**": { cache: { maxAge: 60 } },  // full cache options
-    "/api/realtime/**": { cache: false },       // disable caching
+    "/blog/**": { swr: 600 }, // stale-while-revalidate w/ maxAge
+    "/api/data/**": { cache: { maxAge: 60 } }, // full cache options
+    "/api/realtime/**": { cache: false }, // disable caching
     "/assets/**": { headers: { "cache-control": "s-maxage=0" } },
-    "/api/public/**": { cors: true },           // permissive CORS defaults
-    "/api/v1/**": { cors: { origin: ["https://app.example.com"], credentials: true } },
-    "/old-page": { redirect: "/new-page" },     // 307 by default
+    "/api/public/**": { cors: true }, // permissive CORS defaults
+    "/api/v1/**": {
+      cors: { origin: ["https://app.example.com"], credentials: true },
+    },
+    "/old-page": { redirect: "/new-page" }, // 307 by default
     "/legacy": { redirect: { to: "https://example.com/", status: 308 } },
     "/old-blog/**": { redirect: "https://blog.example.com/**" }, // wildcard preserves suffix
     "/proxy/**": { proxy: "https://api.example.com/**" },
     "/about": { prerender: true },
-    "/isr/**": { isr: 60 },                      // Vercel ISR
+    "/isr/**": { isr: 60 }, // Vercel ISR
   },
 });
 ```
@@ -174,6 +180,7 @@ export default defineConfig({
 Route rule keys: `headers`, `redirect`, `proxy`, `cors`, `cache`, `swr`, `static`, `prerender`, `isr`. `swr: true` = `cache: { swr: true }` (1s default `maxAge`); `swr: <n>` adds `maxAge: <n>`. Rules can also be supplied via `runtimeConfig.nitro.routeRules` for env-var overrides without rebuilding.
 
 > **No `auth`/`basicAuth` route rule.** Auth needs executable logic → use [middleware](#middleware). For a single route use h3's `basicAuth` from `nitro/h3` in the handler's `middleware` array:
+>
 > ```ts
 > import { defineHandler } from "nitro";
 > import { basicAuth } from "nitro/h3";

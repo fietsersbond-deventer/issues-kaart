@@ -20,23 +20,20 @@ defineConfig({
   test: {
     coverage: {
       // Provider: 'v8' (default, faster) or 'istanbul' (more compatible)
-      provider: 'v8',
+      provider: "v8",
 
       // Enable coverage
       enabled: true,
 
       // Reporters
-      reporter: ['text', 'json', 'html'],
+      reporter: ["text", "json", "html"],
 
       // v4: define `include` to report uncovered files too.
       // Without it, only files loaded during the run are reported.
-      include: ['src/**/*.{ts,tsx}'],
+      include: ["src/**/*.{ts,tsx}"],
 
       // Exclusion is applied to files matched by `include`
-      exclude: [
-        '**/*.d.ts',
-        '**/*.test.ts',
-      ],
+      exclude: ["**/*.d.ts", "**/*.test.ts"],
 
       // Thresholds
       thresholds: {
@@ -51,7 +48,7 @@ defineConfig({
       autoAttachSubprocess: false,
     },
   },
-})
+});
 ```
 
 ## Providers
@@ -126,7 +123,7 @@ coverage: {
 ```ts
 /* v8 ignore next -- @preserve */
 function ignored() {
-  return 'not covered'
+  return "not covered";
 }
 
 /* v8 ignore start -- @preserve */

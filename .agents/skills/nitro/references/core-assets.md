@@ -28,9 +28,9 @@ import { defineConfig } from "nitro";
 export default defineConfig({
   publicAssets: [
     {
-      baseURL: "build",       // served under /build/
-      dir: "public/build",    // source on disk
-      maxAge: 3600,           // Cache-Control: public, max-age=3600, immutable
+      baseURL: "build", // served under /build/
+      dir: "public/build", // source on disk
+      maxAge: 3600, // Cache-Control: public, max-age=3600, immutable
     },
   ],
 });
@@ -58,7 +58,7 @@ Inline any file into the server bundle with an import attribute (base64-encoded 
 import logo from "./logo.png" with { type: "bytes" }; // Uint8Array
 import readme from "./README.md" with { type: "text" }; // string
 // or the raw: prefix
-import logo2 from "raw:./logo.png";   // Uint8Array
+import logo2 from "raw:./logo.png"; // Uint8Array
 import readme2 from "raw:./README.md"; // string
 ```
 
@@ -91,9 +91,7 @@ export default defineHandler(async () => {
 import { defineConfig } from "nitro";
 
 export default defineConfig({
-  serverAssets: [
-    { baseName: "templates", dir: "./templates" },
-  ],
+  serverAssets: [{ baseName: "templates", dir: "./templates" }],
 });
 ```
 

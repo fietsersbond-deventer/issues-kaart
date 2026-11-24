@@ -89,7 +89,7 @@ export default defineConfig({
   renderer: {
     template: "./index.html", // HTML template
     handler: "./renderer.ts", // OR a custom handler (template ignored if set)
-    static: false,            // serve template as-is, skip processing
+    static: false, // serve template as-is, skip processing
   },
 });
 ```
@@ -118,7 +118,9 @@ HTML templates support the [rendu](https://github.com/h3js/rendu) preprocessor:
 
 ```html [index.html]
 <h1>Hello {{ $URL.pathname }}</h1>
-<? if ($METHOD === "POST") { ?><p>Submitted!</p><? } ?>
+<? if ($METHOD === "POST") { ?>
+<p>Submitted!</p>
+<? } ?>
 <script server>
   const data = await fetch("https://api.example.com/data").then((r) => r.json());
 </script>

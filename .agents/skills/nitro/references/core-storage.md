@@ -29,17 +29,17 @@ await useKV("test").getItem<{ hello: string }>("foo");
 
 ### Common methods
 
-| Method | Description |
-|---|---|
-| `getItem(key)` / `setItem(key, val)` | Read / write (returns `null` if missing). |
-| `getItemRaw` / `setItemRaw` | Binary / unserialized values. |
-| `getItems` / `setItems` | Batch operations. |
-| `hasItem(key)` | Existence check. |
-| `removeItem(key)` | Delete a key. |
-| `getKeys(base?)` / `clear(base?)` | List / clear by prefix. |
+| Method                                                    | Description                               |
+| --------------------------------------------------------- | ----------------------------------------- |
+| `getItem(key)` / `setItem(key, val)`                      | Read / write (returns `null` if missing). |
+| `getItemRaw` / `setItemRaw`                               | Binary / unserialized values.             |
+| `getItems` / `setItems`                                   | Batch operations.                         |
+| `hasItem(key)`                                            | Existence check.                          |
+| `removeItem(key)`                                         | Delete a key.                             |
+| `getKeys(base?)` / `clear(base?)`                         | List / clear by prefix.                   |
 | `getMeta(key)` / `setMeta(key, meta)` / `removeMeta(key)` | Metadata (mtime, atime, etag, type, ttl). |
-| `mount(base, driver)` / `unmount(base)` | Dynamically attach a driver. |
-| `watch(cb)` / `unwatch()` | React to `"update"` / `"remove"` events. |
+| `mount(base, driver)` / `unmount(base)`                   | Dynamically attach a driver.              |
+| `watch(cb)` / `unwatch()`                                 | React to `"update"` / `"remove"` events.  |
 
 Aliases: `get`, `set`, `has`, `del`, `remove`, `keys`.
 
@@ -86,12 +86,15 @@ import { useKV } from "nitro/kv";
 import redisDriver from "unstorage/drivers/redis";
 
 export default definePlugin(() => {
-  useKV().mount("redis", redisDriver({
-    base: "redis",
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-    lib: () => import("ioredis"), // pass the lib explicitly so it is bundled
-  }));
+  useKV().mount(
+    "redis",
+    redisDriver({
+      base: "redis",
+      host: process.env.REDIS_HOST,
+      port: Number(process.env.REDIS_PORT),
+      lib: () => import("ioredis"), // pass the lib explicitly so it is bundled
+    }),
+  );
 });
 ```
 

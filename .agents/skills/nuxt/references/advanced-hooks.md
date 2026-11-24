@@ -17,23 +17,23 @@ Used in `nuxt.config.ts` or modules:
 // nuxt.config.ts
 export default defineNuxtConfig({
   hooks: {
-    'build:before': () => {
-      console.log('Build starting...')
+    "build:before": () => {
+      console.log("Build starting...");
     },
-    'pages:extend': (pages) => {
+    "pages:extend": (pages) => {
       // Add custom pages
       pages.push({
-        name: 'custom',
-        path: '/custom',
-        file: '~/pages/custom.vue',
-      })
+        name: "custom",
+        path: "/custom",
+        file: "~/pages/custom.vue",
+      });
     },
-    'components:dirs': (dirs) => {
+    "components:dirs": (dirs) => {
       // Add component directories
-      dirs.push({ path: '~/extra-components' })
+      dirs.push({ path: "~/extra-components" });
     },
   },
-})
+});
 ```
 
 ### In Modules
@@ -42,40 +42,40 @@ export default defineNuxtConfig({
 // modules/my-module.ts
 export default defineNuxtModule({
   setup(options, nuxt) {
-    nuxt.hook('ready', async (nuxt) => {
-      console.log('Nuxt is ready')
-    })
+    nuxt.hook("ready", async (nuxt) => {
+      console.log("Nuxt is ready");
+    });
 
-    nuxt.hook('close', async (nuxt) => {
-      console.log('Nuxt is closing')
-    })
+    nuxt.hook("close", async (nuxt) => {
+      console.log("Nuxt is closing");
+    });
 
-    nuxt.hook('modules:done', () => {
-      console.log('All modules loaded')
-    })
+    nuxt.hook("modules:done", () => {
+      console.log("All modules loaded");
+    });
   },
-})
+});
 ```
 
 ### Common Build Hooks
 
-| Hook | When |
-|------|------|
-| `ready` | Nuxt initialization complete |
-| `close` | Nuxt is closing |
-| `modules:done` | All modules installed |
-| `build:before` | Before build starts |
-| `build:done` | Build complete |
-| `pages:extend` | Add/modify routes (before meta scan) |
-| `pages:resolved` | After page meta is scanned (with `scanPageMeta`) |
-| `components:dirs` | Component dirs being resolved |
-| `imports:extend` | Auto-imports being resolved |
-| `nitro:config` | Before Nitro config finalized |
-| `vite:extend` | Vite context created |
-| `vite:extendConfig` | Before Vite config finalized |
-| `build:manifest` | Customize the manifest Nitro uses for `<script>`/`<link>` tags (entries have `prefetch`/`preload` flags) |
-| `rsbuild:config` | Rsbuild builder: before the instance is created (config has `client` and `ssr` environments); `rspack:config`/`rspack:configResolved` also fire |
-| `rsbuild:compile` / `rsbuild:compiled` | Before first compile / after an environment compiled |
+| Hook                                   | When                                                                                                                                            |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ready`                                | Nuxt initialization complete                                                                                                                    |
+| `close`                                | Nuxt is closing                                                                                                                                 |
+| `modules:done`                         | All modules installed                                                                                                                           |
+| `build:before`                         | Before build starts                                                                                                                             |
+| `build:done`                           | Build complete                                                                                                                                  |
+| `pages:extend`                         | Add/modify routes (before meta scan)                                                                                                            |
+| `pages:resolved`                       | After page meta is scanned (with `scanPageMeta`)                                                                                                |
+| `components:dirs`                      | Component dirs being resolved                                                                                                                   |
+| `imports:extend`                       | Auto-imports being resolved                                                                                                                     |
+| `nitro:config`                         | Before Nitro config finalized                                                                                                                   |
+| `vite:extend`                          | Vite context created                                                                                                                            |
+| `vite:extendConfig`                    | Before Vite config finalized                                                                                                                    |
+| `build:manifest`                       | Customize the manifest Nitro uses for `<script>`/`<link>` tags (entries have `prefetch`/`preload` flags)                                        |
+| `rsbuild:config`                       | Rsbuild builder: before the instance is created (config has `client` and `ssr` environments); `rspack:config`/`rspack:configResolved` also fire |
+| `rsbuild:compile` / `rsbuild:compiled` | Before first compile / after an environment compiled                                                                                            |
 
 ## App Hooks (Runtime)
 
@@ -86,55 +86,55 @@ Used in plugins and composables:
 ```ts
 // plugins/lifecycle.ts
 export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.hook('app:created', (vueApp) => {
-    console.log('Vue app created')
-  })
+  nuxtApp.hook("app:created", (vueApp) => {
+    console.log("Vue app created");
+  });
 
-  nuxtApp.hook('app:mounted', (vueApp) => {
-    console.log('App mounted')
-  })
+  nuxtApp.hook("app:mounted", (vueApp) => {
+    console.log("App mounted");
+  });
 
-  nuxtApp.hook('page:start', () => {
-    console.log('Page navigation starting')
-  })
+  nuxtApp.hook("page:start", () => {
+    console.log("Page navigation starting");
+  });
 
-  nuxtApp.hook('page:finish', () => {
-    console.log('Page navigation finished')
-  })
+  nuxtApp.hook("page:finish", () => {
+    console.log("Page navigation finished");
+  });
 
-  nuxtApp.hook('page:loading:start', () => {
-    console.log('Page loading started')
-  })
+  nuxtApp.hook("page:loading:start", () => {
+    console.log("Page loading started");
+  });
 
-  nuxtApp.hook('page:loading:end', () => {
-    console.log('Page loading ended')
-  })
-})
+  nuxtApp.hook("page:loading:end", () => {
+    console.log("Page loading ended");
+  });
+});
 ```
 
 ### Common App Hooks
 
-| Hook | When |
-|------|------|
-| `app:created` | Vue app created |
-| `app:mounted` | Vue app mounted (client only) |
-| `app:error` | Fatal error occurred |
-| `page:start` | Page navigation starting |
-| `page:finish` | Page navigation finished |
+| Hook                 | When                          |
+| -------------------- | ----------------------------- |
+| `app:created`        | Vue app created               |
+| `app:mounted`        | Vue app mounted (client only) |
+| `app:error`          | Fatal error occurred          |
+| `page:start`         | Page navigation starting      |
+| `page:finish`        | Page navigation finished      |
 | `page:loading:start` | Loading indicator should show |
-| `page:loading:end` | Loading indicator should hide |
-| `link:prefetch` | Link is being prefetched |
+| `page:loading:end`   | Loading indicator should hide |
+| `link:prefetch`      | Link is being prefetched      |
 
 ### Using Runtime Hooks
 
 ```ts
 // composables/usePageTracking.ts
 export function usePageTracking() {
-  const nuxtApp = useNuxtApp()
+  const nuxtApp = useNuxtApp();
 
-  nuxtApp.hook('page:finish', () => {
-    trackPageView(useRoute().path)
-  })
+  nuxtApp.hook("page:finish", () => {
+    trackPageView(useRoute().path);
+  });
 }
 ```
 
@@ -146,38 +146,38 @@ In Nitro v3 the plugin factory is `definePlugin` from `nitro`:
 
 ```ts
 // server/plugins/hooks.ts
-import { definePlugin } from 'nitro'
+import { definePlugin } from "nitro";
 
 export default definePlugin((nitroApp) => {
   // Modify HTML before sending
-  nitroApp.hooks.hook('render:html', (html, { event }) => {
-    html.head.push('<meta name="custom" content="value">')
-    html.bodyAppend.push('<script>console.log("injected")</script>')
-  })
+  nitroApp.hooks.hook("render:html", (html, { event }) => {
+    html.head.push('<meta name="custom" content="value">');
+    html.bodyAppend.push('<script>console.log("injected")</script>');
+  });
 
   // Before request
-  nitroApp.hooks.hook('request', (event) => {
-    console.log('Request:', event.url.pathname)
-  })
+  nitroApp.hooks.hook("request", (event) => {
+    console.log("Request:", event.url.pathname);
+  });
 
   // Single response hook (replaces beforeResponse/afterResponse in v3)
-  nitroApp.hooks.hook('response', (response, { event }) => {
-    console.log('Sending response')
-  })
-})
+  nitroApp.hooks.hook("response", (response, { event }) => {
+    console.log("Sending response");
+  });
+});
 ```
 
 > Inside a Nitro plugin, `useServerHooks()` from `nuxt/server` registers renderer hooks (`render:html`) and `NuxtServerHooks`; Nitro's own hooks (`request`, `response`, `error`) come from `useNitroHooks()` in `nitro/app`.
 
 ### Common Nitro Hooks
 
-| Hook | When |
-|------|------|
-| `request` | Request received |
-| `response` | Before/around sending response (replaces `beforeResponse`/`afterResponse`) |
-| `render:html` | Before HTML is sent |
-| `render:response` | Before response is finalized |
-| `error` | Error occurred |
+| Hook              | When                                                                       |
+| ----------------- | -------------------------------------------------------------------------- |
+| `request`         | Request received                                                           |
+| `response`        | Before/around sending response (replaces `beforeResponse`/`afterResponse`) |
+| `render:html`     | Before HTML is sent                                                        |
+| `render:response` | Before response is finalized                                               |
+| `error`           | Error occurred                                                             |
 
 > **Nitro v3:** `beforeResponse`/`afterResponse` are merged into `response`. The compatibility layer re-emits them from `response` when active.
 
@@ -187,23 +187,23 @@ export default definePlugin((nitroApp) => {
 
 ```ts
 // types/hooks.d.ts
-import type { HookResult } from '@nuxt/schema'
+import type { HookResult } from "@nuxt/schema";
 
-declare module '#app' {
+declare module "#app" {
   interface RuntimeNuxtHooks {
-    'my-app:event': (data: MyEventData) => HookResult
+    "my-app:event": (data: MyEventData) => HookResult;
   }
 }
 
-declare module '@nuxt/schema' {
+declare module "@nuxt/schema" {
   interface NuxtHooks {
-    'my-module:init': () => HookResult
+    "my-module:init": () => HookResult;
   }
 }
 
-declare module 'nitro/types' {
+declare module "nitro/types" {
   interface NitroRuntimeHooks {
-    'my-server:event': (data: any) => void
+    "my-server:event": (data: any) => void;
   }
 }
 ```
@@ -216,15 +216,15 @@ declare module 'nitro/types' {
 // In a plugin
 export default defineNuxtPlugin((nuxtApp) => {
   // Call custom hook
-  nuxtApp.callHook('my-app:event', { type: 'custom' })
-})
+  nuxtApp.callHook("my-app:event", { type: "custom" });
+});
 
 // In a module
 export default defineNuxtModule({
   setup(options, nuxt) {
-    nuxt.callHook('my-module:init')
+    nuxt.callHook("my-module:init");
   },
-})
+});
 ```
 
 > **Nuxt 5:** `callHook` may now return `void` (not always a `Promise`), for performance. Always `await` it instead of chaining `.then()`/`.catch()`. Restore the always-Promise behavior with `experimental.asyncCallHook: true`.
@@ -236,9 +236,9 @@ Call hooks at runtime from components:
 ```vue
 <script setup lang="ts">
 // Register a callback for a runtime hook
-useRuntimeHook('app:error', (error) => {
-  console.error('App error:', error)
-})
+useRuntimeHook("app:error", (error) => {
+  console.error("App error:", error);
+});
 </script>
 ```
 
@@ -249,14 +249,14 @@ useRuntimeHook('app:error', (error) => {
 ```ts
 // plugins/analytics.client.ts
 export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.hook('page:finish', () => {
-    const route = useRoute()
-    analytics.track('pageview', {
+  nuxtApp.hook("page:finish", () => {
+    const route = useRoute();
+    analytics.track("pageview", {
       path: route.path,
       title: document.title,
-    })
-  })
-})
+    });
+  });
+});
 ```
 
 ### Performance Monitoring
@@ -264,34 +264,34 @@ export default defineNuxtPlugin((nuxtApp) => {
 ```ts
 // plugins/performance.client.ts
 export default defineNuxtPlugin((nuxtApp) => {
-  let navigationStart: number
+  let navigationStart: number;
 
-  nuxtApp.hook('page:start', () => {
-    navigationStart = performance.now()
-  })
+  nuxtApp.hook("page:start", () => {
+    navigationStart = performance.now();
+  });
 
-  nuxtApp.hook('page:finish', () => {
-    const duration = performance.now() - navigationStart
-    console.log(`Navigation took ${duration}ms`)
-  })
-})
+  nuxtApp.hook("page:finish", () => {
+    const duration = performance.now() - navigationStart;
+    console.log(`Navigation took ${duration}ms`);
+  });
+});
 ```
 
 ### Inject HTML
 
 ```ts
 // server/plugins/inject.ts
-import { definePlugin } from 'nitro'
+import { definePlugin } from "nitro";
 
 export default definePlugin((nitroApp) => {
-  nitroApp.hooks.hook('render:html', (html) => {
+  nitroApp.hooks.hook("render:html", (html) => {
     html.head.push(`
       <script>
         window.APP_CONFIG = ${JSON.stringify(config)}
       </script>
-    `)
-  })
-})
+    `);
+  });
+});
 ```
 
 <!--

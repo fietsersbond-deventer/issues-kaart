@@ -63,10 +63,10 @@ export default defineWebSocketHandler({
 `peer` (in all hooks except `upgrade`) exposes `id`, `namespace`, `context`, `request`, `peers`, `topics`, `remoteAddress`, `websocket`, plus methods:
 
 ```ts
-peer.send("text");                 // or an object -> JSON
+peer.send("text"); // or an object -> JSON
 peer.subscribe("topic");
 peer.unsubscribe("topic");
-peer.publish("topic", data);       // broadcast to subscribers (not the sender)
+peer.publish("topic", data); // broadcast to subscribers (not the sender)
 peer.close(1000, "bye");
 peer.terminate();
 ```

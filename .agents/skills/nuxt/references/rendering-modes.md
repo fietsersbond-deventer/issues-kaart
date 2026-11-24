@@ -15,15 +15,17 @@ Server renders HTML, then hydrates on client:
 // nuxt.config.ts - this is the default
 export default defineNuxtConfig({
   ssr: true,
-})
+});
 ```
 
 **Benefits:**
+
 - Fast initial page load (HTML is ready)
 - SEO-friendly (content is in HTML)
 - Works without JavaScript initially
 
 **How it works:**
+
 1. Server executes Vue code, generates HTML
 2. Browser displays HTML immediately
 3. JavaScript loads and hydrates the page
@@ -37,15 +39,17 @@ Render entirely in the browser:
 // nuxt.config.ts
 export default defineNuxtConfig({
   ssr: false,
-})
+});
 ```
 
 **Benefits:**
+
 - Simpler development (no SSR constraints)
 - Cheaper hosting (static files only)
 - Works offline
 
 **Use cases:**
+
 - Admin dashboards
 - SaaS applications
 - Apps behind authentication
@@ -62,24 +66,26 @@ Provide loading UI while app hydrates:
 </div>
 
 <style>
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #00dc82;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #00dc82;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 </style>
 ```
 
@@ -92,37 +98,38 @@ Mix rendering modes per route using route rules:
 export default defineNuxtConfig({
   routeRules: {
     // Static pages - prerendered at build
-    '/': { prerender: true },
-    '/about': { prerender: true },
+    "/": { prerender: true },
+    "/about": { prerender: true },
 
     // ISR - regenerate in background
-    '/blog/**': { isr: 3600 }, // Cache for 1 hour
-    '/products/**': { swr: true }, // Stale-while-revalidate
+    "/blog/**": { isr: 3600 }, // Cache for 1 hour
+    "/products/**": { swr: true }, // Stale-while-revalidate
 
     // Client-only rendering
-    '/admin/**': { ssr: false },
-    '/dashboard/**': { ssr: false },
+    "/admin/**": { ssr: false },
+    "/dashboard/**": { ssr: false },
 
     // Server-rendered (default)
-    '/api/**': { cors: true },
+    "/api/**": { cors: true },
   },
-})
+});
 ```
 
 ### Route Rules Reference
 
-| Rule | Description |
-|------|-------------|
-| `prerender: true` | Pre-render at build time |
-| `ssr: false` | Client-side only |
-| `swr: number \| true` | Stale-while-revalidate caching |
-| `isr: number \| true` | Incremental static regeneration |
-| `cache: { maxAge: number }` | Cache with TTL |
-| `redirect: string` | Redirect to another path |
-| `cors: true` | Add CORS headers |
-| `headers: object` | Custom response headers |
+| Rule                        | Description                     |
+| --------------------------- | ------------------------------- |
+| `prerender: true`           | Pre-render at build time        |
+| `ssr: false`                | Client-side only                |
+| `swr: number \| true`       | Stale-while-revalidate caching  |
+| `isr: number \| true`       | Incremental static regeneration |
+| `cache: { maxAge: number }` | Cache with TTL                  |
+| `redirect: string`          | Redirect to another path        |
+| `cors: true`                | Add CORS headers                |
+| `headers: object`           | Custom response headers         |
 
 > **Nitro v3 changes:**
+>
 > - Redirect rules use `status` (not `statusCode`): `redirect: { to: '/new', status: 302 }`.
 > - Cached routes (`cache`/`swr`/`isr`) now key on **path only** — the query string is dropped. Keep it with `allowQuery: true` or a list of param names: `cache: { swr: true, maxAge: 60, allowQuery: ['page'] }`.
 
@@ -134,7 +141,7 @@ Define per-page:
 <script setup lang="ts">
 defineRouteRules({
   prerender: true,
-})
+});
 </script>
 ```
 
@@ -147,11 +154,11 @@ Generate static HTML at build time:
 export default defineNuxtConfig({
   // Prerender specific routes
   routeRules: {
-    '/': { prerender: true },
-    '/about': { prerender: true },
-    '/posts/*': { prerender: true },
+    "/": { prerender: true },
+    "/about": { prerender: true },
+    "/posts/*": { prerender: true },
   },
-})
+});
 ```
 
 Or use `nuxt generate`:
@@ -172,22 +179,22 @@ nuxt generate
 // nuxt.config.ts
 export default defineNuxtConfig({
   hooks: {
-    'prerender:routes'({ routes }) {
+    "prerender:routes"({ routes }) {
       // Add dynamic routes
-      const posts = await fetchPostSlugs()
+      const posts = await fetchPostSlugs();
       for (const slug of posts) {
-        routes.add(`/posts/${slug}`)
+        routes.add(`/posts/${slug}`);
       }
     },
   },
-})
+});
 ```
 
 Or in pages:
 
 ```ts
 // server/api/posts.ts or a plugin
-prerenderRoutes(['/posts/1', '/posts/2', '/posts/3'])
+prerenderRoutes(["/posts/1", "/posts/2", "/posts/3"]);
 ```
 
 ## Edge-Side Rendering
@@ -198,12 +205,13 @@ Render at CDN edge servers:
 // nuxt.config.ts
 export default defineNuxtConfig({
   nitro: {
-    preset: 'cloudflare-pages', // or 'vercel-edge', 'netlify-edge'
+    preset: "cloudflare-pages", // or 'vercel-edge', 'netlify-edge'
   },
-})
+});
 ```
 
 Supported platforms:
+
 - Cloudflare Pages/Workers
 - Vercel Edge Functions
 - Netlify Edge Functions
@@ -216,12 +224,12 @@ Use `import.meta.server` and `import.meta.client`:
 <script setup>
 if (import.meta.server) {
   // Server-only code
-  console.log('Running on server')
+  console.log("Running on server");
 }
 
 if (import.meta.client) {
   // Client-only code
-  console.log('Running in browser')
+  console.log("Running in browser");
 }
 </script>
 ```

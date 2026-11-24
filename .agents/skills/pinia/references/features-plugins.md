@@ -10,18 +10,18 @@ Plugins extend all stores with custom properties, methods, or behavior.
 ## Basic Plugin
 
 ```ts
-import { createPinia } from 'pinia'
+import { createPinia } from "pinia";
 
 function SecretPiniaPlugin() {
-  return { secret: 'the cake is a lie' }
+  return { secret: "the cake is a lie" };
 }
 
-const pinia = createPinia()
-pinia.use(SecretPiniaPlugin)
+const pinia = createPinia();
+pinia.use(SecretPiniaPlugin);
 
 // In any store
-const store = useStore()
-store.secret // 'the cake is a lie'
+const store = useStore();
+store.secret; // 'the cake is a lie'
 ```
 
 ## Plugin Context
@@ -29,13 +29,13 @@ store.secret // 'the cake is a lie'
 Plugins receive a context object:
 
 ```ts
-import { PiniaPluginContext } from 'pinia'
+import { PiniaPluginContext } from "pinia";
 
 export function myPiniaPlugin(context: PiniaPluginContext) {
-  context.pinia   // pinia instance
-  context.app     // Vue app instance
-  context.store   // store being augmented
-  context.options // store definition options
+  context.pinia; // pinia instance
+  context.app; // Vue app instance
+  context.store; // store being augmented
+  context.options; // store definition options
 }
 ```
 
@@ -44,19 +44,19 @@ export function myPiniaPlugin(context: PiniaPluginContext) {
 Return an object to add properties (tracked in devtools):
 
 ```ts
-pinia.use(() => ({ hello: 'world' }))
+pinia.use(() => ({ hello: "world" }));
 ```
 
 Or set directly on store:
 
 ```ts
 pinia.use(({ store }) => {
-  store.hello = 'world'
+  store.hello = "world";
   // For devtools visibility in dev mode
-  if (process.env.NODE_ENV === 'development') {
-    store._customProperties.add('hello')
+  if (process.env.NODE_ENV === "development") {
+    store._customProperties.add("hello");
   }
-})
+});
 ```
 
 ## Adding State
@@ -64,16 +64,16 @@ pinia.use(({ store }) => {
 Add to both `store` and `store.$state` for SSR/devtools:
 
 ```ts
-import { toRef, ref } from 'vue'
+import { toRef, ref } from "vue";
 
 pinia.use(({ store }) => {
   // guard against overriding an existing value (important for SSR)
-  if (!Object.hasOwn(store.$state, 'hasError')) {
-    const hasError = ref(false)
-    store.$state.hasError = hasError
+  if (!Object.hasOwn(store.$state, "hasError")) {
+    const hasError = ref(false);
+    store.$state.hasError = hasError;
   }
-  store.hasError = toRef(store.$state, 'hasError')
-})
+  store.hasError = toRef(store.$state, "hasError");
+});
 ```
 
 ## Adding External Properties
@@ -81,12 +81,12 @@ pinia.use(({ store }) => {
 Wrap non-reactive objects with `markRaw()`:
 
 ```ts
-import { markRaw } from 'vue'
-import { router } from './router'
+import { markRaw } from "vue";
+import { router } from "./router";
 
 pinia.use(({ store }) => {
-  store.router = markRaw(router)
-})
+  store.router = markRaw(router);
+});
 ```
 
 ## Custom Store Options
@@ -95,38 +95,42 @@ Define custom options consumed by plugins:
 
 ```ts
 // Store definition
-defineStore('search', {
+defineStore("search", {
   actions: {
-    searchContacts() { /* ... */ },
+    searchContacts() {
+      /* ... */
+    },
   },
   debounce: {
     searchContacts: 300,
   },
-})
+});
 
 // Plugin reads custom option
-import debounce from 'lodash/debounce'
+import debounce from "lodash/debounce";
 
 pinia.use(({ options, store }) => {
   if (options.debounce) {
     return Object.keys(options.debounce).reduce((acc, action) => {
-      acc[action] = debounce(store[action], options.debounce[action])
-      return acc
-    }, {})
+      acc[action] = debounce(store[action], options.debounce[action]);
+      return acc;
+    }, {});
   }
-})
+});
 ```
 
 For Setup Stores, pass options as third argument:
 
 ```ts
 defineStore(
-  'search',
-  () => { /* ... */ },
+  "search",
+  () => {
+    /* ... */
+  },
   {
     debounce: { searchContacts: 300 },
-  }
-)
+  },
+);
 ```
 
 ## TypeScript Augmentation
@@ -134,13 +138,13 @@ defineStore(
 ### Custom Properties
 
 ```ts
-import 'pinia'
-import type { Router } from 'vue-router'
+import "pinia";
+import type { Router } from "vue-router";
 
-declare module 'pinia' {
+declare module "pinia" {
   export interface PiniaCustomProperties {
-    router: Router
-    hello: string
+    router: Router;
+    hello: string;
   }
 }
 ```
@@ -148,9 +152,9 @@ declare module 'pinia' {
 ### Custom State
 
 ```ts
-declare module 'pinia' {
+declare module "pinia" {
   export interface PiniaCustomStateProperties<S> {
-    hasError: boolean
+    hasError: boolean;
   }
 }
 ```
@@ -158,9 +162,9 @@ declare module 'pinia' {
 ### Custom Options
 
 ```ts
-declare module 'pinia' {
+declare module "pinia" {
   export interface DefineStoreOptionsBase<S, Store> {
-    debounce?: Partial<Record<keyof StoreActions<Store>, number>>
+    debounce?: Partial<Record<keyof StoreActions<Store>, number>>;
   }
 }
 ```
@@ -171,11 +175,11 @@ declare module 'pinia' {
 pinia.use(({ store }) => {
   store.$subscribe(() => {
     // React to state changes
-  })
+  });
   store.$onAction(() => {
     // React to actions
-  })
-})
+  });
+});
 ```
 
 ## Nuxt Plugin
@@ -184,18 +188,18 @@ Create a Nuxt plugin to add Pinia plugins:
 
 ```ts
 // plugins/myPiniaPlugin.ts
-import { PiniaPluginContext } from 'pinia'
+import { PiniaPluginContext } from "pinia";
 
 function MyPiniaPlugin({ store }: PiniaPluginContext) {
   store.$subscribe((mutation) => {
-    console.log(`[🍍 ${mutation.storeId}]: ${mutation.type}`)
-  })
-  return { creationTime: new Date() }
+    console.log(`[🍍 ${mutation.storeId}]: ${mutation.type}`);
+  });
+  return { creationTime: new Date() };
 }
 
 export default defineNuxtPlugin(({ $pinia }) => {
-  $pinia.use(MyPiniaPlugin)
-})
+  $pinia.use(MyPiniaPlugin);
+});
 ```
 
 <!--
