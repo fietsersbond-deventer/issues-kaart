@@ -77,7 +77,8 @@ export const useCategoryFilters = defineStore("categoryFilters", () => {
       delete query.cat;
     }
 
-    await router.replace({ query });
+    // push: a selection can be undone with the browser back button
+    await router.push({ query });
   }
 
   const usedCategories = computed(() =>

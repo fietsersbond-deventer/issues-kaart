@@ -5,6 +5,8 @@
     size="small"
     :color="legend.color"
     :style="{ color: getContrastColor(legend.color) }"
+    :aria-pressed="active"
+    @click.stop.prevent="categoryFilters.toggleCategoryVisibility(legend.id)"
     >{{ legend.name }}
     <v-tooltip
       v-if="legend.description"
@@ -17,8 +19,14 @@
         <div class="tooltip-content" v-html="legend.description"></div>
       </template>
     </v-tooltip>
-    <template v-if="legend.icon" #prepend>
-      <AppIcon :icon="legend.icon" size="16" class="mr-2" />
+    <template v-if="active || legend.icon" #prepend>
+      <v-icon
+        v-if="active"
+        icon="mdi-check"
+        size="16"
+        class="mr-1 d-print-none"
+      />
+      <AppIcon v-if="legend.icon" :icon="legend.icon" size="16" class="mr-2" />
     </template>
   </v-chip>
 </template>
@@ -27,6 +35,15 @@
 import type { Legend } from "~~/shared/types/Legend";
 
 const { legend } = defineProps<{ legend: Legend }>();
+
+// Active when this category is explicitly selected in the ?cat= filter.
+const categoryFilters = useCategoryFilters();
+const { isShowingAllCategories } = storeToRefs(categoryFilters);
+const active = computed(
+  () =>
+    !isShowingAllCategories.value &&
+    categoryFilters.isCategoryVisible(legend.id),
+);
 </script>
 
 <style></style>

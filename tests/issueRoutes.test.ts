@@ -576,6 +576,32 @@ describe("issue persistence contracts with the migrated schema", () => {
     h.input.query = {};
     expect((await routes.search(h.event)).total).toBe(2);
   });
+  it("filters search results on categories (any) and tags (all)", async () => {
+    await create();
+    const parking = await create("Parking");
+    db.prepare("UPDATE issues SET legend_id = 2 WHERE id = ?").run(parking.id!);
+    db.prepare(
+      "DELETE FROM issue_tags WHERE issue_id = ? AND tag_id = (SELECT id FROM tags WHERE tag = 'bike')",
+    ).run(parking.id!);
+    const titles = async (query: Record<string, string>) => {
+      h.input.query = query;
+      return (await routes.search(h.event)).items.map((item) => item.title);
+    };
+    expect(await titles({ cat: "2" })).toEqual(["Parking"]);
+    expect((await titles({ cat: "1,2" })).sort()).toEqual([
+      "Parking",
+      "Safe cycle route",
+    ]);
+    expect(await titles({ tag: "bike" })).toEqual(["Safe cycle route"]);
+    expect(await titles({ tag: "bike+cafe" })).toEqual(["Safe cycle route"]);
+    expect(await titles({ tag: "cafe", cat: "2" })).toEqual(["Parking"]);
+    expect(await titles({ tag: "bike", cat: "2" })).toEqual([]);
+    expect(await titles({ tag: "cafe", search: "parking" })).toEqual([
+      "Parking",
+    ]);
+    h.input.query = { tag: "bike" };
+    expect((await routes.search(h.event)).total).toBe(1);
+  });
   it("finds issues by title or tag with their location for the gazetteer", async () => {
     await create();
     await create("Parking");
@@ -603,6 +629,8 @@ describe("issue persistence contracts with the migrated schema", () => {
     { itemsPerPage: "101" },
     { search: "x".repeat(201) },
     { search: ["x"] },
+    { cat: "1,x" },
+    { tag: ["bike"] },
   ])("rejects invalid search options %j", async (query) => {
     h.input.query = query;
     await expect(routes.search(h.event)).rejects.toMatchObject({

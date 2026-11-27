@@ -1,6 +1,6 @@
 import { getDb } from "~~/server/utils/db";
 import { getIssueImageUrl } from "~~/server/utils/extractImageUrl";
-import { getTagsForIssueIds } from "~~/server/utils/issueTags";
+import { getTagsForIssueIds, normalizeTag } from "~~/server/utils/issueTags";
 import { getCommentsForIssueIds } from "~~/server/utils/comments";
 import { escapeLikePattern } from "~~/server/utils/escapeLikePattern";
 import { getMatches } from "~~/app/utils/getMatch";
@@ -67,6 +67,31 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "Search query is too long" });
   }
 
+  // ?cat=1,2 limits results to any of these categories (same format as the map)
+  const categoryParam = getStringParam("cat", "");
+  const categoryIds = categoryParam
+    .split(",")
+    .filter(Boolean)
+    .map((id) => {
+      if (!/^\d+$/.test(id)) {
+        throw createError({
+          statusCode: 400,
+          message: "Invalid cat parameter",
+        });
+      }
+      return Number(id);
+    });
+
+  // ?tag=a+b limits results to issues having all these tags (same as the map)
+  const tags = [
+    ...new Set(
+      getStringParam("tag", "")
+        .split(/[+,\s]/)
+        .map(normalizeTag)
+        .filter((tag): tag is string => Boolean(tag)),
+    ),
+  ];
+
   const searchTerms = parseSearchTerms(search);
   const isAuthenticated = Boolean(event.context.user);
 
@@ -90,15 +115,35 @@ export default defineEventHandler(async (event) => {
           : ""
       }`,
   );
-  const whereClause = searchConditions.length
-    ? `WHERE ${searchConditions.join(" OR ")}`
-    : "";
   const likeParams = searchTerms.flatMap((term) => {
     const pattern = `%${escapeLikePattern(term)}%`;
     const params = [pattern, pattern, pattern, pattern, pattern, pattern];
     if (isAuthenticated) params.push(pattern);
     return params;
   });
+
+  const conditions: string[] = [];
+  const whereParams: (string | number)[] = [];
+  if (searchConditions.length) {
+    conditions.push(`(${searchConditions.join(" OR ")})`);
+    whereParams.push(...likeParams);
+  }
+  if (categoryIds.length) {
+    conditions.push(
+      `i.legend_id IN (${categoryIds.map(() => "?").join(", ")})`,
+    );
+    whereParams.push(...categoryIds);
+  }
+  for (const tag of tags) {
+    conditions.push(`EXISTS (
+        SELECT 1 FROM issue_tags it JOIN tags t ON t.id = it.tag_id
+        WHERE it.issue_id = i.id AND t.tag = ?
+      )`);
+    whereParams.push(tag);
+  }
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(" AND ")}`
+    : "";
 
   const countRow = db
     .prepare(
@@ -107,7 +152,7 @@ export default defineEventHandler(async (event) => {
        LEFT JOIN legend l ON l.id = i.legend_id
        ${whereClause}`,
     )
-    .get(...likeParams) as { total: number };
+    .get(...whereParams) as { total: number };
 
   const offset = (page - 1) * itemsPerPage;
   const sqlStatement = `SELECT i.id, i.slug, i.title, i.description, i.plain_text, i.legend_id, i.created_at, i.updated_at,
@@ -125,7 +170,7 @@ export default defineEventHandler(async (event) => {
      `;
   const rows = db
     .prepare(sqlStatement)
-    .all(...likeParams, itemsPerPage, offset);
+    .all(...whereParams, itemsPerPage, offset);
 
   const tagsByIssueId = getTagsForIssueIds(
     db,

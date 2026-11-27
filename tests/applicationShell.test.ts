@@ -5,6 +5,7 @@ import { defineComponent, ref, effectScope, h, Suspense } from "vue";
 import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import NavBar from "../app/components/NavBar.vue";
+import { useFilterQuery } from "../app/composables/useFilterQuery";
 import Desktop from "../app/components/layout/Desktop.vue";
 import Mobile from "../app/components/layout/Mobile.vue";
 import MapPage from "../app/pages/kaart.vue";
@@ -158,10 +159,23 @@ function keep<
   return wrapper;
 }
 it("shows authenticated actions and logs out, then displays configured public links", async () => {
+  vi.stubGlobal("useRoute", () => ({
+    query: { cat: "1,2", tag: "bike", s: "crossing", page: "2" },
+  }));
+  vi.stubGlobal("useFilterQuery", useFilterQuery);
   const wrapper = keep(
     mount(NavBar, { global: { stubs, directives: { tooltip: () => {} } } }),
   );
   expect(wrapper.text()).toContain("Organization");
+  // Map and list links keep the category and tag filters, nothing else.
+  const links = wrapper
+    .findAllComponents({ name: "VBtn" })
+    .map((button) => button.vm.$attrs.to)
+    .filter((to) => typeof to === "object");
+  expect(links).toEqual([
+    { path: "/kaart", query: { cat: "1,2", tag: "bike" } },
+    { path: "/lijst", query: { cat: "1,2", tag: "bike" } },
+  ]);
   await wrapper.get('button[aria-label="Uitloggen"]').trigger("click");
   await flushPromises();
   expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/" });

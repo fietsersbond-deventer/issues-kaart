@@ -12,12 +12,7 @@
         :style="'margin-left: 12px;'"
       />
 
-      <Tag
-        v-for="tag in issue.tags"
-        :key="tag"
-        :tag="getTag(tag)"
-        @click.stop="toggleTag(tag)"
-      />
+      <Tag v-for="tag in issue.tags" :key="tag" :tag="getTag(tag)" />
     </div>
 
     <!-- Street View-voorvertoningen openen geen lightbox: die laden via useStreetViewEmbeds.ts -->
@@ -43,7 +38,6 @@
 <script setup lang="ts">
 import type { Issue } from "~~/shared/types/Issue";
 
-const { toggleTag } = useTagFilters();
 const { status } = useAuth();
 const isAuthenticated = computed(() => status.value === "authenticated");
 

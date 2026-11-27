@@ -1,9 +1,9 @@
 <template>
   <div>
     <IssueSearchTable
-      v-model:page="state.page"
-      v-model:items-per-page="state.itemsPerPage"
-      v-model:search="state.search"
+      v-model:page="page"
+      v-model:items-per-page="itemsPerPage"
+      v-model:search="search"
       :items="issues"
       :total-items="totalItems"
       :pending="pending"
@@ -13,7 +13,11 @@
       @delete="confirmDelete"
       @info="showIssueInfo"
       @comments="showComments"
-    />
+    >
+      <template #actions>
+        <IssueFilter />
+      </template>
+    </IssueSearchTable>
 
     <IssueEditDialog
       v-model:dialog="editDialog"
@@ -70,12 +74,59 @@ const authHeaders = computed(() => {
   };
 });
 
-// Persistent state management using Nuxt's useState
-const state = useState("issues-state", () => ({
-  search: "",
-  page: 1,
-  itemsPerPage: 10,
-}));
+const route = useRoute();
+const router = useRouter();
+const filterQuery = useFilterQuery();
+
+const itemsPerPage = useState("issues-items-per-page", () => 10);
+
+// Search (?s=), page and the category/tag filters live in the URL, so a
+// selection can be shared and is kept when switching between map and list.
+// Changes are pushed, so the browser back button undoes them.
+function updateQuery(
+  changes: Record<string, string | undefined>,
+  { replace = false } = {},
+) {
+  const query = Object.fromEntries(
+    Object.entries({ ...route.query, ...changes }).filter(
+      ([, value]) => value !== undefined,
+    ),
+  );
+  return replace ? router.replace({ query }) : router.push({ query });
+}
+
+const urlSearch = computed(() =>
+  typeof route.query.s === "string" ? route.query.s : "",
+);
+const page = computed({
+  get: () => {
+    const value = Number(route.query.page);
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  },
+  set: (value: number) =>
+    updateQuery({ page: value > 1 ? String(value) : undefined }),
+});
+
+// The input updates immediately; the URL (and thus the request) is debounced.
+const search = ref(urlSearch.value);
+const debouncedSearch = refDebounced(
+  computed(() => search.value ?? ""),
+  300,
+);
+watch(debouncedSearch, (value) => {
+  if (value !== urlSearch.value)
+    updateQuery({ s: value || undefined, page: undefined });
+});
+// Follow URL changes from elsewhere, such as browser back/forward.
+watch(urlSearch, (value) => {
+  if (value !== debouncedSearch.value) search.value = value;
+});
+
+// A different filter gives different pages: start at the first one.
+watch([() => route.query.cat, () => route.query.tag], () => {
+  // replace: the filter change itself is already in the history
+  if (route.query.page) updateQuery({ page: undefined }, { replace: true });
+});
 
 type SearchResponse = {
   items: IssueSearchItem[];
@@ -191,26 +242,12 @@ function showComments(item: IssueSearchItem) {
   commentsDialog.value = true;
 }
 
-// Reset pagination when search changes
-watch(
-  () => state.value.search,
-  (newSearch, oldSearch) => {
-    if (newSearch !== oldSearch) {
-      state.value.page = 1;
-    }
-  },
-);
-
-// Throttle outgoing search requests; dedupe:'cancel' aborts any request still in flight.
-const debouncedSearch = refDebounced(
-  computed(() => state.value.search ?? ""),
-  300,
-);
-
+// dedupe:'cancel' aborts any request still in flight.
 const query = computed(() => ({
-  page: state.value.page,
-  itemsPerPage: state.value.itemsPerPage,
-  search: debouncedSearch.value,
+  page: page.value,
+  itemsPerPage: itemsPerPage.value,
+  search: urlSearch.value,
+  ...filterQuery.value,
 }));
 const filters = computed(() =>
   parseSearchTerms(query.value.search).map((term) =>
@@ -228,10 +265,10 @@ const {
   dedupe: "cancel",
 });
 
-watch([debouncedSearch], () => {
+watch(urlSearch, () => {
   nextTick(() => {
-    if (debouncedSearch.value) {
-      trackSiteSearch(debouncedSearch.value, totalItems.value);
+    if (urlSearch.value) {
+      trackSiteSearch(urlSearch.value, totalItems.value);
     }
   });
 });
@@ -277,7 +314,10 @@ const issues = computed(() =>
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
 
 function gotoIssue(_event: Event, item: IssueSearchItem) {
-  navigateTo(`/kaart/${item.slug || item.id}`);
+  navigateTo({
+    path: `/kaart/${item.slug || item.id}`,
+    query: filterQuery.value,
+  });
 }
 </script>
 

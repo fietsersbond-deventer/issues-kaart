@@ -13,14 +13,14 @@
     <v-spacer />
     <v-btn
       v-tooltip:top="'Kaart'"
-      to="/kaart"
+      :to="{ path: '/kaart', query: filterQuery }"
       variant="text"
       aria-label="Ga naar kaart"
       icon="mdi-map"
     />
     <v-btn
       v-tooltip:top="'Lijst'"
-      to="/lijst"
+      :to="{ path: '/lijst', query: filterQuery }"
       variant="text"
       aria-label="Ga naar lijst"
       icon="mdi-list-box-outline"
@@ -83,6 +83,7 @@
 import { NuxtLink } from "#components";
 
 const { status, signOut } = useAuth();
+const filterQuery = useFilterQuery();
 const { getText } = useCachedTexts();
 
 const headerText = computed(() => {

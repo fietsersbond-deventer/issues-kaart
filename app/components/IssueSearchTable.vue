@@ -13,6 +13,7 @@
         hide-details
         clearable
       />
+      <slot name="actions" />
     </v-card-title>
     <v-card-text>
       <v-data-table-server
@@ -213,8 +214,9 @@ const headers = computed(() => {
   return columns;
 });
 
+const filterQuery = useFilterQuery();
 function issueURL(item: IssueSearchItem) {
-  return `/kaart/${item.slug || item.id}`;
+  return { path: `/kaart/${item.slug || item.id}`, query: filterQuery.value };
 }
 
 function onRowClick(event: Event, { item }: { item: IssueSearchItem }) {
