@@ -62,7 +62,7 @@
     "mitt": "^3.0.1",
     "nitropack": "^2.13.5",
     "nodemailer": "^10.2.1",
-    "nuxt": "^4.6.4",
+    "nuxt": "^4.7.0",
     "nuxt-nodemailer": "1.1.4",
     "nuxt-security": "2.7.0",
     "ofetch": "^1.5.1",
