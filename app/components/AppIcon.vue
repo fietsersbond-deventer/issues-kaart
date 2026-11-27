@@ -9,12 +9,12 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+const { icon } = defineProps<{
   icon: string;
   size?: string | number;
   color?: string;
 }>();
 
 // "prefix:name" is an Iconify icon; "mdi-name" is a legacy MDI font icon
-const isIconify = computed(() => props.icon.includes(":"));
+const isIconify = computed(() => icon.includes(":"));
 </script>

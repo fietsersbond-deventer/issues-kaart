@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { fromLonLat } from "ol/proj";
 
-const props = defineProps<{
+const { coordinates } = defineProps<{
   coordinates: [number, number][]; // Array of coordinates for polyline
   color: string;
   selected?: boolean;
@@ -34,18 +34,18 @@ const showTooltip = ref(false);
 
 // Transform coordinates to EPSG:3857
 const transformedCoords = computed(() => {
-  return props.coordinates.map((coord) => fromLonLat(coord));
+  return coordinates.map((coord) => fromLonLat(coord));
 });
 
 // Calculate center of line for tooltip
 const tooltipPosition = computed(() => {
-  if (!props.coordinates.length) {
+  if (!coordinates.length) {
     return fromLonLat([0, 0]);
   }
 
   // Use middle point of the line
-  const midIndex = Math.floor(props.coordinates.length / 2);
-  const coord = props.coordinates[midIndex];
+  const midIndex = Math.floor(coordinates.length / 2);
+  const coord = coordinates[midIndex];
   return fromLonLat(coord || [0, 0]);
 });
 

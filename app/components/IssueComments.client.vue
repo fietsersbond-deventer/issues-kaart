@@ -122,7 +122,7 @@
 import type { Comment } from "~~/shared/types/Comment";
 import type { AnyWebSocketMessage } from "~~/shared/types/WebSocketMessages";
 
-const props = defineProps<{
+const { issueId } = defineProps<{
   issueId: number;
 }>();
 
@@ -206,7 +206,7 @@ function canManageComment(comment: Comment): boolean {
 }
 
 async function loadComments() {
-  if (!isAuthenticated.value || !props.issueId) {
+  if (!isAuthenticated.value || !issueId) {
     comments.value = [];
     return;
   }
@@ -214,7 +214,7 @@ async function loadComments() {
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const list = await commentsApi.list(props.issueId);
+    const list = await commentsApi.list(issueId);
     comments.value = list;
   } catch (err) {
     console.error("Failed to load comments:", err);
@@ -225,14 +225,11 @@ async function loadComments() {
 }
 
 async function onCreateComment() {
-  if (!props.issueId || !newCommentBody.value.trim()) return;
+  if (!issueId || !newCommentBody.value.trim()) return;
 
   isSubmitting.value = true;
   try {
-    const created = await commentsApi.create(
-      props.issueId,
-      newCommentBody.value,
-    );
+    const created = await commentsApi.create(issueId, newCommentBody.value);
     const exists = comments.value.some((c) => c.id === created.id);
     if (!exists) {
       comments.value.push(created);
@@ -309,7 +306,7 @@ function handleWebSocketMessage(message: AnyWebSocketMessage) {
 
   if (message.type === "comment-created") {
     const payload = message.payload as Comment;
-    if (payload.issue_id === props.issueId) {
+    if (payload.issue_id === issueId) {
       const exists = comments.value.some((c) => c.id === payload.id);
       if (!exists) {
         comments.value.push(payload);
@@ -317,7 +314,7 @@ function handleWebSocketMessage(message: AnyWebSocketMessage) {
     }
   } else if (message.type === "comment-modified") {
     const payload = message.payload as Comment;
-    if (payload.issue_id === props.issueId) {
+    if (payload.issue_id === issueId) {
       const index = comments.value.findIndex((c) => c.id === payload.id);
       if (index !== -1) {
         comments.value[index] = payload;
@@ -329,7 +326,7 @@ function handleWebSocketMessage(message: AnyWebSocketMessage) {
       issue_id: number;
       soft: boolean;
     };
-    if (payload.issue_id === props.issueId) {
+    if (payload.issue_id === issueId) {
       const index = comments.value.findIndex((c) => c.id === payload.id);
       if (index !== -1) {
         if (payload.soft) {
@@ -361,7 +358,7 @@ onUnmounted(() => {
 });
 
 watch(
-  () => props.issueId,
+  () => issueId,
   () => {
     loadComments();
   },

@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { useShare } from "@vueuse/core";
 
-const props = defineProps<{
+const { title, url } = defineProps<{
   title?: string;
   url?: string;
 }>();
@@ -23,8 +23,8 @@ const { isSupported, share } = useShare();
 const { showSuccess, showError, showPersistent } = useSnackbar();
 
 async function shareUrl() {
-  const url = props.url ?? window.location.href;
-  const data = { title: props.title, url };
+  const sharedUrl = url ?? window.location.href;
+  const data = { title, url: sharedUrl };
   let shareError = "";
 
   if (isSupported.value && navigator.canShare(data)) {
@@ -71,7 +71,7 @@ async function shareUrl() {
       return;
     }
 
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(sharedUrl);
     showSuccess("URL gekopieerd!");
   } catch {
     if (shareError) {

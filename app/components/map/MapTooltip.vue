@@ -12,9 +12,9 @@ import type { Feature } from "ol";
 import type { Tag } from "~~/shared/types/Tag";
 import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
-const props = defineProps<{ feature: Feature }>();
+const { feature } = defineProps<{ feature: Feature }>();
 const { getTag } = useTagsApi();
-const properties = computed(() => props.feature.getProperties());
+const properties = computed(() => feature.getProperties());
 const title = computed(() => properties.value.title || "Geen titel");
 const image = computed(() =>
   properties.value.imageUrl ? thumbnailUrl(properties.value.imageUrl) : null,

@@ -31,14 +31,14 @@
 import type { Tag } from "~~/shared/types/Tag";
 defineOptions({ name: "IssueTag" });
 
-const props = defineProps<{
+const { tag } = defineProps<{
   tag: Tag;
   active?: boolean;
 }>();
 
 const iconName = computed(() => {
-  if (!props.tag.icon) return "mdi-tag-outline";
-  return props.tag.icon;
+  if (!tag.icon) return "mdi-tag-outline";
+  return tag.icon;
 });
 </script>
 

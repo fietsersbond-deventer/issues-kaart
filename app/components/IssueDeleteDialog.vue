@@ -22,14 +22,11 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    title: string;
-    loading?: boolean;
-    disabled?: boolean;
-  }>(),
-  { loading: false, disabled: false },
-);
+const { disabled = false, loading = false } = defineProps<{
+  title: string;
+  loading?: boolean;
+  disabled?: boolean;
+}>();
 const emit = defineEmits<{ confirm: [] }>();
 const dialog = defineModel<boolean>({ required: true });
 </script>

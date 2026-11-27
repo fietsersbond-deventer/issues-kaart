@@ -15,21 +15,18 @@ interface Props {
   color?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  size: "24px",
-  color: "currentColor",
-});
+const { icon, size = "24px" } = defineProps<Props>();
 
 const iconRef = ref();
 const showFallback = ref(false);
 const isValidated = ref(false);
 
-const isIconify = computed(() => props.icon.includes(":"));
+const isIconify = computed(() => icon.includes(":"));
 
 const iconName = computed(() => {
-  if (isIconify.value) return props.icon;
+  if (isIconify.value) return icon;
   // Ensure icon has mdi- prefix
-  return props.icon.startsWith("mdi-") ? props.icon : `mdi-${props.icon}`;
+  return icon.startsWith("mdi-") ? icon : `mdi-${icon}`;
 });
 
 // Validate icon availability after mount
@@ -41,7 +38,7 @@ onMounted(() => {
 
 // Re-validate when icon changes
 watch(
-  () => props.icon,
+  () => icon,
   () => {
     showFallback.value = false;
     isValidated.value = false;

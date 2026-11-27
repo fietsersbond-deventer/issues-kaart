@@ -55,6 +55,27 @@ describe("repository lint policy", () => {
   );
 
   it.each([
+    "const props = withDefaults(defineProps<{ size?: number }>(), { size: 1 }); console.log(props.size);",
+    "const props = defineProps<{ size: number }>(); console.log(props.size);",
+  ])("requires destructured props without withDefaults: %s", async (code) => {
+    expect(
+      await ruleIds(
+        `<script setup lang="ts">${code}</script>`,
+        "app/components/Example.vue",
+      ),
+    ).toContain("vue/define-props-destructuring");
+  });
+
+  it("accepts destructured props with defaults and optional props without one", async () => {
+    const rules = await ruleIds(
+      '<script setup lang="ts">const { size = 1, label } = defineProps<{ size?: number; label?: string }>(); console.log(size, label);</script>',
+      "app/components/Example.vue",
+    );
+    expect(rules).not.toContain("vue/define-props-destructuring");
+    expect(rules).not.toContain("vue/require-default-prop");
+  });
+
+  it.each([
     [
       'import type { Legend } from "~~/server/database/schema";',
       "app/utils/example.ts",

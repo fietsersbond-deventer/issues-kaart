@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { fromLonLat } from "ol/proj";
 
-const props = defineProps<{
+const { color, coordinates, selected } = defineProps<{
   coordinates: [number, number][][]; // Array of arrays of coordinates for polygon
   color: string;
   selected?: boolean;
@@ -35,14 +35,12 @@ const showTooltip = ref(false);
 
 // Transform coordinates to EPSG:3857
 const transformedCoords = computed(() => {
-  return props.coordinates.map((ring) =>
-    ring.map((coord) => fromLonLat(coord)),
-  );
+  return coordinates.map((ring) => ring.map((coord) => fromLonLat(coord)));
 });
 
 // Calculate center of polygon for tooltip
 const tooltipPosition = computed(() => {
-  const coords = props.coordinates[0]; // Use first ring
+  const coords = coordinates[0]; // Use first ring
   if (!coords?.length) {
     return fromLonLat([0, 0]);
   }
@@ -56,8 +54,8 @@ const tooltipPosition = computed(() => {
 // Create semi-transparent fill color
 const fillColor = computed(() => {
   // Add alpha channel to color
-  const alpha = props.selected ? "80" : "40"; // 50% or 25% opacity
-  return props.color + alpha;
+  const alpha = selected ? "80" : "40"; // 50% or 25% opacity
+  return color + alpha;
 });
 
 function onClick() {

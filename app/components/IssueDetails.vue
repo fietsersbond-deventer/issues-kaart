@@ -47,7 +47,7 @@ const { toggleTag } = useTagFilters();
 const { status } = useAuth();
 const isAuthenticated = computed(() => status.value === "authenticated");
 
-const props = defineProps<{
+const { issue } = defineProps<{
   issue: Issue;
 }>();
 
@@ -105,7 +105,7 @@ onMounted(() => {
 // v-html zet bij een andere omschrijving (ander issue) verse DOM neer zonder overlay-knoppen.
 // flush: "post" zodat de nieuwe HTML al in de DOM staat.
 watch(
-  () => props.issue.description,
+  () => issue.description,
   () => {
     if (descriptionRef.value) {
       activateStreetViewEmbeds(descriptionRef.value);

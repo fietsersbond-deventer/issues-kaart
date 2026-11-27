@@ -41,6 +41,16 @@ export default withNuxt(
     },
   },
   {
+    name: "project/vue-policy",
+    files: ["**/*.vue"],
+    rules: {
+      // Destructure props with default values; never use withDefaults.
+      "vue/define-props-destructuring": "error",
+      // A destructured optional prop without a default is simply undefined.
+      "vue/require-default-prop": "off",
+    },
+  },
+  {
     name: "project/browser-boundaries",
     files: ["app/**/*.{ts,js,vue}", "shared/**/*.{ts,js}"],
     rules: {

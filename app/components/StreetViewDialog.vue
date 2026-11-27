@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import type { StreetViewEmbedValue } from "~/utils/streetViewEmbedBlot";
 
-const props = defineProps<{
+const { modelValue } = defineProps<{
   modelValue: boolean;
 }>();
 
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 }>();
 
 const isOpen = computed({
-  get: () => props.modelValue,
+  get: () => modelValue,
   set: (val: boolean) => emit("update:modelValue", val),
 });
 
@@ -75,7 +75,7 @@ const parseError = ref("");
 const parsedPreview = ref<StreetViewEmbedValue | null>(null);
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (open) => {
     if (open) {
       streetViewUrl.value = "";

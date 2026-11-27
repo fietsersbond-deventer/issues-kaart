@@ -70,7 +70,7 @@ import {
   toPolygonCoords,
 } from "../../utils/issueMapGeometry";
 
-const props = defineProps<{
+const { clusterEnabled, editing, featureStyle, issues, zoom } = defineProps<{
   issues: (MapIssue | NewIssue)[];
   featureStyle: (feature: Feature) => Style | Style[] | undefined;
   modifyEnabled: boolean;
@@ -88,7 +88,7 @@ const source = computed(() => issueSource.value?.source);
 defineExpose({ source });
 // Keep the actual features visible when editing or when zoomed in far enough.
 const clustering = computed(() =>
-  Boolean(props.clusterEnabled && (props.zoom ?? 0) < 18 && !props.editing),
+  Boolean(clusterEnabled && (zoom ?? 0) < 18 && !editing),
 );
 watch(clustering, () => source.value?.changed());
 
@@ -98,18 +98,18 @@ function style(feature: Feature) {
   // The cluster layers render points while the original layer still renders
   // lines and polygons and remains the source for Modify.
   if (clustering.value && feature.getGeometry()?.getType() === "Point") return;
-  return props.featureStyle(feature);
+  return featureStyle(feature);
 }
 
 function clusterStyle(feature: Feature) {
-  return props.featureStyle(feature);
+  return featureStyle(feature);
 }
 
 // Cache the derived properties and projected coordinates until the issues
 // change. Creating new objects during each zoom update makes vue3-openlayers
 // update every feature and forces the cluster sources to recompute.
 const markers = computed(() => {
-  return props.issues
+  return issues
     .filter((issue) => issue.geometry?.type === "Point")
     .map((issue) => ({
       issue,
@@ -136,7 +136,7 @@ const clusterGroups = computed(() => {
 });
 
 const polygons = computed(() => {
-  return props.issues
+  return issues
     .filter((issue) => issue.geometry?.type === "Polygon")
     .map((issue) => ({
       issue,
@@ -146,7 +146,7 @@ const polygons = computed(() => {
 });
 
 const lines = computed(() => {
-  return props.issues
+  return issues
     .filter((issue) => issue.geometry?.type === "LineString")
     .map((issue) => ({
       issue,
