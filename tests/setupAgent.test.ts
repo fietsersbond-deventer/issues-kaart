@@ -85,9 +85,7 @@ describe("agent environment", () => {
       join(root, ".data/development.sqlite3"),
     );
     expect(environment.NUXT_JWT_SECRET).toHaveLength(64);
-    expect(environment.NUXT_SESSION_PASSWORD).not.toBe(
-      environment.NUXT_JWT_SECRET,
-    );
+    expect(environment).not.toHaveProperty("NUXT_SESSION_PASSWORD");
     const original = readFileSync(join(root, ".env"), "utf8");
     expect(configureEnvironment(root)).toEqual(environment);
     expect(readFileSync(join(root, ".env"), "utf8")).toBe(original);
