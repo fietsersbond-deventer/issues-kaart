@@ -20,6 +20,7 @@ import IssueComments from "../app/components/IssueComments.client.vue";
 import CommentEditor from "../app/components/CommentEditor.client.vue";
 import StreetViewDialog from "../app/components/StreetViewDialog.vue";
 import { getContrastColor } from "../app/utils/getContrastColor";
+import { parseDbTimestamp } from "../app/utils/parseDbTimestamp";
 import { useStreetViewEmbeds } from "../app/composables/useStreetViewEmbeds";
 import type { Issue } from "../shared/types/Issue";
 
@@ -75,6 +76,7 @@ beforeEach(() => {
   mobile.value = false;
   vi.stubGlobal("useVDisplay", () => ({ mobile }));
   vi.stubGlobal("getContrastColor", getContrastColor);
+  vi.stubGlobal("parseDbTimestamp", parseDbTimestamp);
   vi.stubGlobal("useAuth", () => ({ status: auth }));
   vi.stubGlobal("storeToRefs", (value: unknown) => value);
   vi.stubGlobal("useCategoryFilters", () => ({
@@ -355,9 +357,25 @@ it("renders issue details while the category is unavailable and shows it when lo
   );
   expect(wrapper.get("h1").text()).toBe("Crossing");
   expect(wrapper.text()).toContain("Details");
+  expect(wrapper.find("time").exists()).toBe(false);
   expect(wrapper.findComponent(CategoryChip).exists()).toBe(false);
   await wrapper.setProps({ issue: { ...issue, legend } });
   expect(wrapper.findComponent(CategoryChip).text()).toContain("Routes");
+
+  // Below the title: the date of the last change, in Dutch and Dutch time
+  // (UTC 23:30 is already the next day).
+  await wrapper.setProps({
+    issue: { ...issue, updated_at: "2026-11-26 23:30:00" },
+  });
+  expect(wrapper.get("time").text()).toBe("27 november 2026");
+  expect(wrapper.get("time").attributes("datetime")).toBe(
+    "2026-11-26T23:30:00.000Z",
+  );
+  // no leading zero for the day
+  await wrapper.setProps({
+    issue: { ...issue, updated_at: "2026-03-01 10:00:00" },
+  });
+  expect(wrapper.get("time").text()).toBe("1 maart 2026");
 });
 
 it("shares the current URL and title through the native share dialog", async () => {

@@ -12,6 +12,7 @@ import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
 import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import IssueCommentsDialog from "../app/components/IssueCommentsDialog.vue";
 import { useFilter } from "../app/composables/useFilter";
+import { parseDbTimestamp } from "../app/utils/parseDbTimestamp";
 import { useFilterQuery } from "../app/composables/useFilterQuery";
 import { useListQuery } from "../app/composables/useListQuery";
 import { parseSearchTerms } from "../app/utils/parseSearchTerms";
@@ -55,6 +56,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal("useTitle", vi.fn());
   vi.stubGlobal("navigateTo", vi.fn());
+  vi.stubGlobal("parseDbTimestamp", parseDbTimestamp);
   route.query = {};
   router.push.mockClear();
   router.replace.mockClear();
