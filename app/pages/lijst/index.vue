@@ -78,9 +78,7 @@ const route = useRoute();
 const router = useRouter();
 const filterQuery = useFilterQuery();
 
-const itemsPerPage = useState("issues-items-per-page", () => 10);
-
-// Search (?s=), page and the category/tag filters live in the URL, so a
+// Search (?s=), page, page size and the category/tag filters live in the URL, so a
 // selection can be shared and is kept when switching between map and list.
 // Changes are pushed, so the browser back button undoes them.
 function updateQuery(
@@ -107,6 +105,23 @@ const page = computed({
     updateQuery({ page: value > 1 ? String(value) : undefined }),
 });
 
+const DEFAULT_PAGE_SIZE = 10;
+// The search API accepts at most 100 items per page.
+const itemsPerPage = computed({
+  get: () => {
+    const value = Number(route.query.pageSize);
+    return Number.isInteger(value) && value > 0 && value <= 100
+      ? value
+      : DEFAULT_PAGE_SIZE;
+  },
+  // Another page size gives different pages: start at the first one.
+  set: (value: number) =>
+    updateQuery({
+      pageSize: value !== DEFAULT_PAGE_SIZE ? String(value) : undefined,
+      page: undefined,
+    }),
+});
+
 // The input updates immediately; the URL (and thus the request) is debounced.
 const search = ref(urlSearch.value);
 const debouncedSearch = refDebounced(
@@ -121,6 +136,17 @@ watch(debouncedSearch, (value) => {
 watch(urlSearch, (value) => {
   if (value !== debouncedSearch.value) search.value = value;
 });
+
+// Remember search, page and page size, so the list link brings them back after a visit
+// to the map. Only on the list itself: route also changes while leaving.
+const { rememberListQuery } = useListQuery();
+watch(
+  () => route.query,
+  (query) => {
+    if (route.path === "/lijst") rememberListQuery(query);
+  },
+  { immediate: true },
+);
 
 // A different filter gives different pages: start at the first one.
 watch([() => route.query.cat, () => route.query.tag], () => {

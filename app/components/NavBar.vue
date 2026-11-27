@@ -20,7 +20,7 @@
     />
     <v-btn
       v-tooltip:top="'Lijst'"
-      :to="{ path: '/lijst', query: filterQuery }"
+      :to="{ path: '/lijst', query: listQuery }"
       variant="text"
       aria-label="Ga naar lijst"
       icon="mdi-list-box-outline"
@@ -84,6 +84,7 @@ import { NuxtLink } from "#components";
 
 const { status, signOut } = useAuth();
 const filterQuery = useFilterQuery();
+const { listQuery } = useListQuery();
 const { getText } = useCachedTexts();
 
 const headerText = computed(() => {
