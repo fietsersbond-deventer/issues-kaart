@@ -18,7 +18,6 @@ const environment = {
   NODE_ENV: "production",
   NUXT_DB_PATH: join(directory, "test.sqlite3"),
   NUXT_JWT_SECRET: "e2e-only-jwt-secret-never-use-in-production",
-  NUXT_SESSION_PASSWORD: "e2e-only-session-password-at-least-32-characters",
   AUTH_ORIGIN: "http://127.0.0.1:3100/api/auth",
   NUXT_PUBLIC_APP_URL: "http://127.0.0.1:3100",
   NUXT_PUBLIC_MAP_CENTER_LAT: "52.2511467",

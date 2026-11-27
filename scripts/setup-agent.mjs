@@ -23,10 +23,6 @@ export function configureEnvironment(root) {
     const template = readFileSync(join(root, ".env.example"), "utf8");
     const content = template
       .replace(
-        "<randomly generated strong password>",
-        randomBytes(32).toString("hex"),
-      )
-      .replace(
         "<randomly generated strong secret>",
         randomBytes(32).toString("hex"),
       )
@@ -42,14 +38,11 @@ export function configureEnvironment(root) {
     );
   }
   const environment = parse(readFileSync(envPath));
-  for (const key of ["NUXT_JWT_SECRET", "NUXT_SESSION_PASSWORD"]) {
-    if (
-      !environment[key] ||
-      environment[key].length < 32 ||
-      /<.*>/.test(environment[key])
-    ) {
-      throw new Error(`Set a local ${key} of at least 32 characters in .env.`);
-    }
+  const jwtSecret = environment.NUXT_JWT_SECRET;
+  if (!jwtSecret || jwtSecret.length < 32 || /<.*>/.test(jwtSecret)) {
+    throw new Error(
+      "Set a local NUXT_JWT_SECRET of at least 32 characters in .env.",
+    );
   }
   const dbPath = environment.NUXT_DB_PATH;
   if (!dbPath || dirname(dbPath) !== dataPath || resolve(dbPath) !== dbPath) {
