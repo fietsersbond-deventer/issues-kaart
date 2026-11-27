@@ -11,6 +11,7 @@ type IssueRow = {
   legend_id: number;
   geometry: string;
   created_at: string;
+  updated_at: string;
   slug: string;
 };
 
@@ -35,7 +36,8 @@ export default defineEventHandler(async (event) => {
   const row = db
     .prepare(
       `SELECT i.id, i.slug, i.title, i.description, i.legend_id,
-     i.geometry, i.created_at 
+     i.geometry, i.created_at,
+     COALESCE(i.updated_at, i.created_at) AS updated_at
      FROM issues i 
      WHERE i.id = ?`,
     )

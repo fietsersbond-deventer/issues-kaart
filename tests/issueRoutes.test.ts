@@ -235,8 +235,11 @@ describe("issue persistence contracts with the migrated schema", () => {
         tags: ["cafe", "bike"],
       }),
     );
+    // the date of the last change is shown below the title
+    expect(issue).toMatchObject({ updated_at: expect.any(String) });
     const loaded = await routes.get(h.event);
     expect(loaded).toMatchObject({
+      updated_at: expect.any(String),
       geometry,
       tags: ["bike", "cafe"],
       imageUrl: `/api/issues/${issue.id}/image?v=${imageVersion}`,
@@ -246,6 +249,12 @@ describe("issue persistence contracts with the migrated schema", () => {
       id: issue.id,
       slug: issue.slug,
     });
+    // issues from before updated_at existed show their creation date
+    db.prepare("UPDATE issues SET updated_at = NULL WHERE id = ?").run(
+      issue.id!,
+    );
+    const legacy = await routes.get(h.event);
+    expect(legacy.updated_at).toBe(legacy.created_at);
   });
   it("houdt afbeeldingsversies gelijk in ophalen, opslaan, lijsten, zoeken en WebSocket-updates", async () => {
     const created = await create();
@@ -258,7 +267,13 @@ describe("issue persistence contracts with the migrated schema", () => {
       description:
         '<p>Andere tekst</p><img src="data:image/png;base64,aGVsbG8=">',
     };
-    expect((await routes.update(h.event)).imageUrl).toBe(originalUrl);
+    expect(await routes.update(h.event)).toMatchObject({
+      imageUrl: originalUrl,
+      updated_at: expect.any(String),
+    });
+    expect(emitted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ updated_at: expect.any(String) }),
+    );
 
     const source = "data:image/png;base64,bmV3";
     const newUrl = `/api/issues/${created.id}/image?v=${createHash("sha256").update(source).digest("hex")}`;

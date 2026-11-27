@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const selectStmt = db.prepare(
-    "SELECT id, slug, title, description, legend_id, geometry, created_at FROM issues WHERE id = ?",
+    "SELECT id, slug, title, description, legend_id, geometry, created_at, COALESCE(updated_at, created_at) AS updated_at FROM issues WHERE id = ?",
   );
   const row = selectStmt.get(result.lastInsertRowid);
   if (!row) {

@@ -17,7 +17,10 @@ export type Issue = BaseIssue & {
   slug: string;
   description: string;
   geometry: Point | Polygon | LineString;
-  created_at: Date;
+  // SQLite UTC timestamps ("YYYY-MM-DD HH:MM:SS"); see parseDbTimestamp
+  created_at: string;
+  // last change, or created_at when the issue was never changed
+  updated_at: string;
   imageUrl: string | null; // URL path to image endpoint if issue has image
 };
 
@@ -26,6 +29,7 @@ export type NewIssue = Omit<
   | "id"
   | "slug"
   | "created_at"
+  | "updated_at"
   | "imageUrl"
   | "geometry"
   | "legend_id"

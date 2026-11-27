@@ -26,10 +26,8 @@ defineProps<{
 const dialog = defineModel<boolean>({ required: true });
 
 function formatUpdatedAt(value: string | null) {
-  if (!value) return "Datum niet geregistreerd";
-
-  const timestamp = new Date(`${value.replace(" ", "T")}Z`);
-  if (Number.isNaN(timestamp.getTime())) return "Datum niet geregistreerd";
+  const timestamp = parseDbTimestamp(value);
+  if (!timestamp) return "Datum niet geregistreerd";
 
   return new Intl.DateTimeFormat("nl-NL", {
     dateStyle: "medium",

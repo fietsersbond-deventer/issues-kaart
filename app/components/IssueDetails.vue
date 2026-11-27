@@ -1,16 +1,21 @@
 <template>
-  <article>
+  <article class="issue-details">
     <div class="issue-details-heading d-flex align-start">
-      <h1>{{ issue.title }}</h1>
+      <div class="issue-details-title">
+        <h1>{{ issue.title }}</h1>
+        <time
+          v-if="issueDate"
+          :datetime="issueDate.toISOString()"
+          class="d-block text-body-2 text-medium-emphasis mb-3"
+        >
+          {{ dateFormat.format(issueDate) }}
+        </time>
+      </div>
       <ShareButton :title="issue.title" class="mt-2" />
     </div>
 
-    <div class="d-flex flex-wrap align-center ga-2 mb-4">
-      <CategoryChip
-        v-if="issue.legend"
-        :legend="issue.legend"
-        :style="'margin-left: 12px;'"
-      />
+    <div class="issue-details-chips d-flex flex-wrap align-center ga-2 mb-4">
+      <CategoryChip v-if="issue.legend" :legend="issue.legend" />
 
       <Tag v-for="tag in issue.tags" :key="tag" :tag="getTag(tag)" />
     </div>
@@ -46,6 +51,15 @@ const { issue } = defineProps<{
 }>();
 
 const { getTag } = useTagsApi();
+
+// A fixed time zone keeps server and client rendering the same date.
+const dateFormat = new Intl.DateTimeFormat("nl-NL", {
+  dateStyle: "long",
+  timeZone: "Europe/Amsterdam",
+});
+
+// Date of the last change (the API falls back to the creation date).
+const issueDate = computed(() => parseDbTimestamp(issue.updated_at));
 
 // if a link is relative, use navigateTo()
 function handleLocalLinks(event: MouseEvent) {
@@ -109,10 +123,30 @@ watch(
 );
 </script>
 <style>
-.issue-details-heading > h1 {
+/* One inset for title, date, chips and description: Quill's own padding,
+   so the description text stays where it was. */
+.issue-details {
+  --issue-details-inset: 15px;
+}
+
+.issue-details-title {
   flex: 1;
   min-width: 0;
+  padding-inline-start: var(--issue-details-inset);
+}
+
+/* The global h1 padding scales with the font size; only keep it vertically. */
+.issue-details-title > h1 {
   overflow-wrap: anywhere;
+  padding-inline: 0;
+}
+
+.issue-details-chips {
+  padding-inline: var(--issue-details-inset);
+}
+
+.issue-details .ql-editor.viewer {
+  padding-inline: var(--issue-details-inset);
 }
 
 /* Wrapper-element voor een streetview-embed: bevat afwisselend de statische
