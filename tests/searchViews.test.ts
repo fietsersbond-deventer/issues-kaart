@@ -39,7 +39,7 @@ const stubs = {
   VTooltip: Slot,
   VPagination: defineComponent({
     name: "VPagination",
-    props: ["modelValue", "length"],
+    props: ["modelValue", "length", "totalVisible", "showFirstLastPage"],
     emits: ["update:modelValue"],
     template: "<div />",
   }),
@@ -67,6 +67,7 @@ const wrappers: Array<{
 beforeEach(() => {
   vueGlobals();
   mobile.value = false;
+  vi.stubGlobal("useVDisplay", () => ({ mobile }));
   vi.useFakeTimers();
   vi.stubGlobal("useTitle", vi.fn());
   vi.stubGlobal("navigateTo", vi.fn());
@@ -431,7 +432,20 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   expect(paginations).toHaveLength(2);
   expect(paginations[0]!.text()).toContain("11–2 van 2");
   const bottomPager = paginations[1]!.getComponent({ name: "VPagination" });
-  expect(bottomPager.props()).toMatchObject({ modelValue: 2, length: 1 });
+  expect(bottomPager.props()).toMatchObject({
+    modelValue: 2,
+    length: 1,
+    totalVisible: 7,
+    showFirstLastPage: true,
+  });
+  // fewer buttons on mobile, so the outer ones stay on screen
+  mobile.value = true;
+  await flushPromises();
+  expect(bottomPager.props()).toMatchObject({
+    totalVisible: 5,
+    showFirstLastPage: false,
+  });
+  mobile.value = false;
   bottomPager.vm.$emit("update:modelValue", 1);
   await flushPromises();
   expect(route.query.page).toBeUndefined();

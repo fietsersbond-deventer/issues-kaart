@@ -3,8 +3,9 @@
     <v-pagination
       v-model="page"
       :length="pageCount"
-      :total-visible="7"
-      show-first-last-page
+      :total-visible="mobile ? 5 : 7"
+      :show-first-last-page="!mobile"
+      :density="mobile ? 'compact' : 'default'"
     />
     <div class="table-pagination__size">
       <span>{{ range }}</span>
@@ -28,6 +29,10 @@ const { totalItems, pageSizeOptions = [5, 10, 25, 50] } = defineProps<{
 
 const page = defineModel<number>("page", { required: true });
 const itemsPerPage = defineModel<number>("itemsPerPage", { required: true });
+
+// On narrow screens fewer buttons fit; the first and last page stay reachable
+// through the numbered buttons.
+const { mobile } = useVDisplay();
 
 const pageCount = computed(() =>
   Math.max(1, Math.ceil(totalItems / itemsPerPage.value)),
