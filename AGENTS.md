@@ -4,6 +4,7 @@
 
 - Communiceer kort en feitelijk. Vermijd opsmuk en onnodig jargon.
 - Alle variables en functie namen moeten in het Engels geschreven worden.
+- Vue-props: destructureer uit `defineProps` met defaults in de destructuring; gebruik nooit `withDefaults`. ESLint dwingt dit af (`vue/define-props-destructuring`).
 - Schrijf commitberichten en PR's in het Nederlands. Gebruik Engels voor technische beschrijvingen als Nederlands onnatuurlijk klinkt; behoud namen in code en commando's.
 
 ## Lokale ontwikkeling en controles

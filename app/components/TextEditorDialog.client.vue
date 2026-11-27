@@ -42,7 +42,7 @@ import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import type { TextEntry } from "~~/shared/types/Text";
 
-const props = defineProps<{
+const { entry } = defineProps<{
   entry: TextEntry | null;
 }>();
 
@@ -65,7 +65,7 @@ const toolbar = [
 ];
 
 watch(
-  () => [isOpen.value, props.entry] as const,
+  () => [isOpen.value, entry] as const,
   ([open, entry]) => {
     if (open && entry) {
       editorText.value = entry.text;
@@ -76,14 +76,14 @@ watch(
 );
 
 async function save() {
-  if (!props.entry) {
+  if (!entry) {
     return;
   }
 
   isSaving.value = true;
   error.value = "";
   try {
-    await updateText(props.entry.key, editorText.value);
+    await updateText(entry.key, editorText.value);
     emit("saved");
     isOpen.value = false;
   } catch {

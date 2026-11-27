@@ -25,29 +25,25 @@ interface Props {
   showTooltip?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  size: 32,
-  showTooltip: true,
-});
+const { showTooltip = true, size = 32, user } = defineProps<Props>();
 
 const onlineUsersStore = useOnlineUsers();
 const { getUserDisplayName, getUserInitials, getUserAvatarColor } =
   onlineUsersStore;
 
-const initials = computed(() => getUserInitials(props.user));
-const backgroundColor = computed(() => getUserAvatarColor(props.user));
-const displayName = computed(() => getUserDisplayName(props.user));
+const initials = computed(() => getUserInitials(user));
+const backgroundColor = computed(() => getUserAvatarColor(user));
+const displayName = computed(() => getUserDisplayName(user));
 
 const tooltipText = computed(() => {
-  if (!props.showTooltip) return "";
+  if (!showTooltip) return "";
 
-  const timeAgo = getTimeAgo(props.user.connectedAt);
+  const timeAgo = getTimeAgo(user.connectedAt);
   return `${displayName.value} (${timeAgo} online)`;
 });
 
 const textSize = computed(() => {
-  const sizeNum =
-    typeof props.size === "number" ? props.size : parseInt(props.size);
+  const sizeNum = typeof size === "number" ? size : parseInt(size);
   return `${Math.max(8, sizeNum * 0.4)}px`;
 });
 

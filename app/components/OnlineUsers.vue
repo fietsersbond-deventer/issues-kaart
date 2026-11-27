@@ -56,11 +56,7 @@ interface Props {
   orientation?: "horizontal" | "vertical";
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  avatarSize: 32,
-  maxAvatars: 5,
-  orientation: "horizontal",
-});
+const { avatarSize = 32, maxAvatars = 5 } = defineProps<Props>();
 
 const onlineUsersStore = useOnlineUsers();
 const { displayedOnlineUsers, displayedUserCount } =
@@ -70,7 +66,7 @@ const { displayedOnlineUsers, displayedUserCount } =
 const { getUserDisplayName } = onlineUsersStore;
 
 const overflowTooltip = computed(() => {
-  const hiddenUsers = displayedOnlineUsers.value.slice(props.maxAvatars - 1);
+  const hiddenUsers = displayedOnlineUsers.value.slice(maxAvatars - 1);
   const names = hiddenUsers.map((user: OnlineUser) => getUserDisplayName(user));
 
   if (names.length <= 3) {

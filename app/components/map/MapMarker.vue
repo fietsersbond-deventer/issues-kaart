@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { fromLonLat } from "ol/proj";
 
-const props = defineProps<{
+const { coordinates } = defineProps<{
   coordinates: [number, number];
   color: string;
   selected?: boolean;
@@ -45,7 +45,7 @@ const markerUrl =
 `);
 
 const transformedCoords = computed(() => {
-  return fromLonLat(props.coordinates);
+  return fromLonLat(coordinates);
 });
 
 function onClick() {

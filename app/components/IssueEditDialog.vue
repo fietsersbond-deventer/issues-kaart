@@ -26,18 +26,15 @@
 <script setup lang="ts">
 import type { Issue, NewIssue } from "~~/shared/types/Issue";
 
-withDefaults(
-  defineProps<{
-    loading?: boolean;
-    navigateOnSlugChange?: boolean;
-    fullscreen?: boolean;
-  }>(),
-  {
-    loading: false,
-    navigateOnSlugChange: false,
-    fullscreen: false,
-  },
-);
+const {
+  fullscreen = false,
+  loading = false,
+  navigateOnSlugChange = false,
+} = defineProps<{
+  loading?: boolean;
+  navigateOnSlugChange?: boolean;
+  fullscreen?: boolean;
+}>();
 const emit = defineEmits<{ save: []; cancel: [] }>();
 const issue = defineModel<Issue | NewIssue | null>("issue", { required: true });
 const dialog = defineModel<boolean>("dialog", { required: true });

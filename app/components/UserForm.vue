@@ -37,7 +37,7 @@ import { useRoles } from "~/composables/useRoles";
 
 const validForm = ref(true);
 
-const props = defineProps<{
+const { user } = defineProps<{
   user?: Pick<User, "id" | "username" | "name" | "role">;
   loading?: boolean;
 }>();
@@ -54,14 +54,14 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 
-const editMode = computed(() => !!props.user);
+const editMode = computed(() => !!user);
 const { getAllRoles } = useRoles();
 const roles = getAllRoles();
 
 const form = ref({
-  username: props.user?.username ?? "",
-  name: props.user?.name ?? "",
-  role: props.user?.role ?? "user",
+  username: user?.username ?? "",
+  name: user?.name ?? "",
+  role: user?.role ?? "user",
   password: "",
 });
 

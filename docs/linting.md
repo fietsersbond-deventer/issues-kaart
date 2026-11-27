@@ -48,12 +48,18 @@ ambient typepakketten; de bibliotheken ES2022 en DOM zijn wel beschikbaar.
 Een bestand krijgt alle blokken waarvan het `files`-patroon overeenkomt.
 Deze projectregels komen dus boven op de bestaande Nuxt-regels:
 
-| Blok in `eslint.config.mjs`  | Bereik                                                                                                            | Toegevoegde controle                                                                                          |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `project/typescript-policy`  | Alle niet genegeerde TS/TSX/MTS/CTS- en Vue-bestanden, ook tests, scripts en toekomstige E2E-/lintregelbestanden. | Geen expliciete `any`, `@ts-ignore` of `@ts-nocheck`; `@ts-expect-error` vereist minimaal tien tekens uitleg. |
-| `project/browser-boundaries` | TS/JS/Vue in `app`, TS/JS in `shared`.                                                                            | Geen statische runtime-imports of re-exports van servercode, server-only pakketten of Node-built-ins.         |
-| `project/shared-boundaries`  | TS/JS in `shared`.                                                                                                | Dezelfde grenzen, plus geen app-code of Nuxt-appimports zoals `#app` en `#imports`.                           |
-| `project/shared-type-safety` | Alleen `shared/**/*.ts`.                                                                                          | Vier regels die type-informatie nodig hebben; zie hieronder.                                                  |
+| Blok in `eslint.config.mjs`  | Bereik                                                                                                            | Toegevoegde controle                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `project/typescript-policy`  | Alle niet genegeerde TS/TSX/MTS/CTS- en Vue-bestanden, ook tests, scripts en toekomstige E2E-/lintregelbestanden. | Geen expliciete `any`, `@ts-ignore` of `@ts-nocheck`; `@ts-expect-error` vereist minimaal tien tekens uitleg.  |
+| `project/vue-policy`         | Alle Vue-bestanden.                                                                                               | Props worden gedestructureerd uit `defineProps`, met defaults in de destructuring; `withDefaults` is verboden. |
+| `project/browser-boundaries` | TS/JS/Vue in `app`, TS/JS in `shared`.                                                                            | Geen statische runtime-imports of re-exports van servercode, server-only pakketten of Node-built-ins.          |
+| `project/shared-boundaries`  | TS/JS in `shared`.                                                                                                | Dezelfde grenzen, plus geen app-code of Nuxt-appimports zoals `#app` en `#imports`.                            |
+| `project/shared-type-safety` | Alleen `shared/**/*.ts`.                                                                                          | Vier regels die type-informatie nodig hebben; zie hieronder.                                                   |
+
+`project/vue-policy` zet `vue/define-props-destructuring` aan en
+`vue/require-default-prop` uit: een gedestructureerde optionele prop zonder
+default is gewoon `undefined`. Gebruik `const { size = 24, label } = defineProps<…>()`
+en lees een prop in een `watch` via een getter: `watch(() => size, …)`.
 
 Daarnaast zijn ongebruikte ESLint-suppressies fouten. Gegenereerde bestanden en
 andere Nuxt-ignores vallen onder de basisconfiguratie; onze extra ignores zijn

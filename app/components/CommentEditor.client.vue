@@ -82,16 +82,16 @@ interface Props {
   editorHeight?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  modelValue: "",
-  placeholder: "Schrijf een opmerking...",
-  submitText: "Plaatsen",
-  cancelText: "Annuleren",
-  showCancel: false,
-  loading: false,
-  disabled: false,
-  editorHeight: "150px",
-});
+const {
+  cancelText = "Annuleren",
+  disabled = false,
+  editorHeight = "150px",
+  loading = false,
+  modelValue = "",
+  placeholder = "Schrijf een opmerking...",
+  showCancel = false,
+  submitText = "Plaatsen",
+} = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
@@ -100,7 +100,7 @@ const emit = defineEmits<{
 }>();
 
 const content = computed({
-  get: () => props.modelValue,
+  get: () => modelValue,
   set: (val: string) => emit("update:modelValue", val),
 });
 
@@ -110,7 +110,7 @@ const quillEditorRef = ref<InstanceType<typeof QuillEditor> | null>(null);
 const errorMessage = ref("");
 
 const canSubmit = computed(() => {
-  return !!content.value && isConnected.value && !props.loading;
+  return !!content.value && isConnected.value && !loading;
 });
 
 // Street View dialog logic

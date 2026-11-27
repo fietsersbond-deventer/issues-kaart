@@ -14,9 +14,9 @@
 <script setup lang="ts">
 import type { Feature } from "ol";
 
-const props = defineProps<{ members: Feature[] }>();
+const { members } = defineProps<{ members: Feature[] }>();
 const category = computed<string | undefined>(
-  () => props.members[0]?.get("legend")?.name,
+  () => members[0]?.get("legend")?.name,
 );
 </script>
 

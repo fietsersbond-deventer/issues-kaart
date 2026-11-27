@@ -53,7 +53,7 @@
 import type { Legend } from "~~/server/database/schema";
 import type { LegendUsage } from "~/composables/useCategories";
 
-const props = defineProps<{
+const { usage } = defineProps<{
   legends: Legend[];
   usage: LegendUsage;
 }>();
@@ -64,12 +64,12 @@ const emit = defineEmits<{
 
 function hasUsage(item: Legend) {
   if (!item?.id) return false;
-  return (props.usage?.[item.id]?.usage_count ?? 0) > 0;
+  return (usage?.[item.id]?.usage_count ?? 0) > 0;
 }
 
 function getUsageText(item: Legend) {
   if (!item?.id) return "";
-  const count = props.usage?.[item.id]?.usage_count;
+  const count = usage?.[item.id]?.usage_count;
   if (!count) return "";
   return `Dit legenda item wordt gebruikt`;
 }

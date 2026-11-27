@@ -20,11 +20,11 @@ const COLLECTION_ICONS: Record<string, string> = {
   coordinate: "mdi-crosshairs-gps",
 };
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: SearchResult;
 }>();
 
 const icon = computed(
-  () => COLLECTION_ICONS[getCollectionId(props.item) ?? ""] ?? "mdi-map-marker",
+  () => COLLECTION_ICONS[getCollectionId(item) ?? ""] ?? "mdi-map-marker",
 );
 </script>

@@ -42,7 +42,7 @@ const rdProjection = new Projection({
   extent: [-285401.92, 22598.08, 595401.92, 903401.92],
 });
 
-const props = defineProps<{
+const { boundingbox, geometry, lat, lon } = defineProps<{
   lat: number;
   lon: number;
   boundingbox?: { south: number; west: number; north: number; east: number };
@@ -54,10 +54,10 @@ const geoJsonFormat = new GeoJSONFormat({
   featureProjection: "EPSG:3857",
 });
 
-const center = computed(() => fromLonLat([props.lon, props.lat]));
+const center = computed(() => fromLonLat([lon, lat]));
 
 const hasAreaGeometry = computed(() => {
-  const type = props.geometry?.type;
+  const type = geometry?.type;
   return (
     type === "Polygon" ||
     type === "LineString" ||
@@ -70,7 +70,7 @@ const hasAreaGeometry = computed(() => {
 // gebied laten zien via een rechthoek, mits de bbox niet verwaarloosbaar klein is.
 const MIN_BBOX_SPAN = 0.0005; // graden, ruwweg 50 meter
 const hasUsableBbox = computed(() => {
-  const b = props.boundingbox;
+  const b = boundingbox;
   return (
     !!b &&
     Math.abs(b.east - b.west) > MIN_BBOX_SPAN &&
@@ -85,11 +85,11 @@ const features = computed(() => {
     return geoJsonFormat.readFeatures({
       type: "Feature",
       properties: {},
-      geometry: props.geometry as Geometry,
+      geometry: geometry as Geometry,
     });
   }
   if (hasUsableBbox.value) {
-    const { west, south, east, north } = props.boundingbox!;
+    const { west, south, east, north } = boundingbox!;
     return geoJsonFormat.readFeatures({
       type: "Feature",
       properties: {},
@@ -141,7 +141,7 @@ function fitToTarget() {
 
 onMounted(() => nextTick(fitToTarget));
 watch(
-  () => [props.lat, props.lon, props.geometry, props.boundingbox],
+  () => [lat, lon, geometry, boundingbox],
   () => nextTick(fitToTarget),
 );
 </script>
