@@ -110,7 +110,8 @@ Prettier formatteerde eerst alleen een beperkte lijst bestanden, omdat de
 repository niet overal op dezelfde manier was opgemaakt en een opmaak-brede
 diff ongewenst was. Die migratie is afgerond: `pnpm format`/`pnpm format:check`
 draaien nu over de hele checkout (met `.gitignore` gerespecteerd, net als
-ESLint). Nieuwe bestanden moeten dus al bij het schrijven aan Prettier voldoen;
+ESLint). `pnpm-lock.yaml` staat in `.prettierignore`, omdat pnpm dat bestand
+zelf genereert. Nieuwe bestanden moeten dus al bij het schrijven aan Prettier voldoen;
 `pnpm lint:fix` of je editor met `esbenp.prettier-vscode` als formatter lost
 afwijkingen automatisch op.
 
