@@ -77,6 +77,15 @@ beforeEach(() => {
   vi.stubGlobal("getContrastColor", getContrastColor);
   vi.stubGlobal("useAuth", () => ({ status: auth }));
   vi.stubGlobal("storeToRefs", (value: unknown) => value);
+  vi.stubGlobal("useCategoryFilters", () => ({
+    isShowingAllCategories: ref(true),
+    isCategoryVisible: () => true,
+    toggleCategoryVisibility: vi.fn(),
+  }));
+  vi.stubGlobal("useTagFilters", () => ({
+    hasTag: () => false,
+    toggleTag: vi.fn(),
+  }));
   vi.stubGlobal("useSnackbar", () => ({
     showError,
     showSuccess,
@@ -106,27 +115,66 @@ it("renders legacy and Iconify icons and category/tag labels with their fallback
   expect(icon.get("i").attributes("data-icon")).toBe("mdi-bike");
   await icon.setProps({ icon: "tabler:bike", color: "red" });
   expect(icon.get("i").attributes("data-icon")).toBe("tabler:bike");
-  const chip = keep(
-    mount(CategoryChip, {
-      props: { legend },
+
+  // Chips show and toggle their own filter state, without triggering a
+  // surrounding link or row.
+  const showingAll = ref(true);
+  const selectedTags = ref<string[]>([]);
+  const toggleCategoryVisibility = vi.fn();
+  const toggleTag = vi.fn();
+  vi.stubGlobal("useCategoryFilters", () => ({
+    isShowingAllCategories: showingAll,
+    isCategoryVisible: (id: number) => id === 1,
+    toggleCategoryVisibility,
+  }));
+  vi.stubGlobal("useTagFilters", () => ({
+    hasTag: (tag: string) => selectedTags.value.includes(tag),
+    toggleTag,
+  }));
+  const parentClick = vi.fn();
+  const Chips = defineComponent({
+    components: { CategoryChip, Tag },
+    props: ["legend", "tag", "filterable"],
+    setup: () => ({ parentClick }),
+    template:
+      '<a @click="parentClick"><CategoryChip :legend="legend" /><Tag :tag="tag" :filterable="filterable" /></a>',
+  });
+  const chips = keep(
+    mount(Chips, {
+      props: {
+        legend,
+        tag: { tag: "bike", label: null, description: "Cycling", icon: null },
+      },
       global: { stubs, mocks: { getContrastColor } },
     }),
   );
+  const chip = chips.findComponent(CategoryChip);
+  const tag = chips.findComponent(Tag);
   expect(chip.text()).toContain("Routes");
   expect(chip.text()).toContain("Safe routes");
-  const tag = keep(
-    mount(Tag, {
-      props: {
-        tag: { tag: "bike", label: null, description: "Cycling", icon: null },
-      },
-      global: { stubs },
-    }),
-  );
   expect(tag.text()).toContain("bike");
   expect(tag.findComponent(AppIcon).props("icon")).toBe("mdi-tag-outline");
-  await tag.setProps({
+  // no filter: nothing is active
+  expect(chips.find('[data-icon="mdi-check"]').exists()).toBe(false);
+  showingAll.value = false;
+  selectedTags.value = ["bike"];
+  await flushPromises();
+  expect(chip.find('[data-icon="mdi-check"]').exists()).toBe(true);
+  expect(chip.attributes("aria-pressed")).toBe("true");
+  expect(tag.find('[data-icon="mdi-check"]').exists()).toBe(true);
+  await chip.trigger("click");
+  await tag.trigger("click");
+  expect(toggleCategoryVisibility).toHaveBeenCalledWith(1);
+  expect(toggleTag).toHaveBeenCalledWith("bike");
+  expect(parentClick).not.toHaveBeenCalled();
+  // in a form a tag click means something else
+  await chips.setProps({ filterable: false });
+  await tag.trigger("click");
+  expect(toggleTag).toHaveBeenCalledTimes(1);
+  expect(tag.attributes("aria-pressed")).toBeUndefined();
+  expect(tag.find('[data-icon="mdi-check"]').exists()).toBe(false);
+  await chips.setProps({
     tag: { tag: "bike", label: "Bicycle", description: null, icon: "mdi-bike" },
-    active: true,
   });
   expect(tag.text()).toBe("Bicycle");
   expect(tag.findComponent(AppIcon).props("icon")).toBe("mdi-bike");
@@ -241,10 +289,8 @@ it("opens the intro editor only for authenticated users and renders configured r
 });
 
 it("routes relative description links locally and preserves external/hash links", async () => {
-  const navigate = vi.fn(),
-    toggleTag = vi.fn();
+  const navigate = vi.fn();
   vi.stubGlobal("navigateTo", navigate);
-  vi.stubGlobal("useTagFilters", () => ({ toggleTag }));
   vi.stubGlobal("useTagsApi", () => ({
     getTag: (tag: string) => ({ tag, label: tag }),
   }));
@@ -282,8 +328,7 @@ it("routes relative description links locally and preserves external/hash links"
   await wrapper.findAll("a")[1]!.trigger("click");
   await wrapper.findAll("a")[2]!.trigger("click");
   expect(navigate).toHaveBeenCalledTimes(1);
-  await wrapper.get("button.tag").trigger("click");
-  expect(toggleTag).toHaveBeenCalledWith("bike");
+  expect(wrapper.find("button.tag").exists()).toBe(true);
   await wrapper.setProps({
     issue: { ...issue, description: "<p>Updated</p>" },
   });

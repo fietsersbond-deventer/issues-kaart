@@ -73,13 +73,11 @@ it("syncs tag selections with navigation and preserves unrelated query parameter
     path: "/kaart",
     query: { tag: "bike,bike+safe", cat: "1" } as Record<string, unknown>,
   });
-  const replace = vi.fn(
-    async ({ query }: { query: Record<string, unknown> }) => {
-      route.query = query;
-    },
-  );
+  const push = vi.fn(async ({ query }: { query: Record<string, unknown> }) => {
+    route.query = query;
+  });
   vi.stubGlobal("useRoute", () => route);
-  vi.stubGlobal("useRouter", () => ({ replace }));
+  vi.stubGlobal("useRouter", () => ({ push }));
   const { useTagFilters } = await import("../app/composables/useTagFilter");
   const tags = scope.run(() => useTagFilters())!;
   expect(tags.selectedTags).toEqual(["bike", "safe"]);
@@ -105,7 +103,7 @@ it("filters by categories in use, toggles show-all state and keeps other query p
   vi.stubGlobal("useIssues", () => ({ issues }));
   vi.stubGlobal("useRoute", () => route);
   vi.stubGlobal("useRouter", () => ({
-    replace: async ({ query }: { query: Record<string, unknown> }) => {
+    push: async ({ query }: { query: Record<string, unknown> }) => {
       route.query = query;
     },
   }));
@@ -126,6 +124,16 @@ it("filters by categories in use, toggles show-all state and keeps other query p
   await filters.showAllCategories();
   expect(filters.isCategoryVisible(1)).toBe(true);
   filters.$dispose();
+});
+it("resets category and tag filters in one history step and keeps other query parameters", async () => {
+  const push = vi.fn();
+  vi.stubGlobal("useRoute", () => ({
+    query: { cat: "1,2", tag: "bike", s: "crossing" },
+  }));
+  vi.stubGlobal("useRouter", () => ({ push }));
+  const { useResetFilters } = await import("../app/composables/useFilterQuery");
+  await useResetFilters()();
+  expect(push).toHaveBeenCalledExactlyOnceWith({ query: { s: "crossing" } });
 });
 it("combines tag AND selection with visible categories and handles empty data", async () => {
   const all = ref([

@@ -28,10 +28,7 @@ const hasActiveFilters = computed(
   () => !isShowingAllCategories.value || selectedTags.value.length > 0,
 );
 
-async function resetFilters() {
-  await catalogFilters.showAllCategories();
-  await mapFilters.clearTags();
-}
+const resetFilters = useResetFilters();
 </script>
 
 <style scoped>

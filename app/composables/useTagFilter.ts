@@ -27,7 +27,8 @@ export const useTagFilters = defineStore("tagFilters", () => {
     if (sortedTags.length > 0) query.tag = sortedTags.join("+");
     else delete query.tag;
 
-    await router.replace({ query });
+    // push: a selection can be undone with the browser back button
+    await router.push({ query });
   }
 
   function hasTag(tag: string) {

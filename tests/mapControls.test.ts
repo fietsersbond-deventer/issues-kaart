@@ -11,6 +11,7 @@ import AddFeature from "../app/components/map/AddFeature.vue";
 import Toolbar from "../app/components/Toolbar.vue";
 import Legend from "../app/components/map/Legend.vue";
 import Summary from "../app/components/map/MapFilterSummary.vue";
+import IssueFilter from "../app/components/IssueFilter.vue";
 import Reset from "../app/components/map/ResetExtentControl.vue";
 import SidePanel from "../app/components/map/SidePanel.vue";
 import LayerPreview from "../app/components/map/LayerPreview.client.vue";
@@ -212,23 +213,74 @@ it("renders category/tag counts, supports keyboard toggles and keeps an active z
   expect(toggleTag).toHaveBeenCalledTimes(2);
 });
 it("resets both filter groups and exposes the correct result count", async () => {
-  const showAllCategories = vi.fn(),
-    clearTags = vi.fn();
+  const resetFilters = vi.fn();
+  vi.stubGlobal("useResetFilters", () => resetFilters);
   vi.stubGlobal("useCategoryFilters", () => ({
     isShowingAllCategories: ref(false),
-    showAllCategories,
   }));
   vi.stubGlobal("useTagFilters", () => ({
     selectedTags: ref(["bike"]),
-    clearTags,
   }));
   vi.stubGlobal("useSelectedIssues", () => ({ selectedIssues: ref([{}]) }));
   const wrapper = keep(mount(Summary, { global: { stubs } }));
   expect(wrapper.text()).toContain("1 plek op de kaart");
   await wrapper.get("button").trigger("click");
   await flushPromises();
-  expect(showAllCategories).toHaveBeenCalledTimes(1);
-  expect(clearTags).toHaveBeenCalledTimes(1);
+  expect(resetFilters).toHaveBeenCalledTimes(1);
+  vi.stubGlobal("useRoute", () => ({ query: { tag: "bike" } }));
+  const load = vi.fn();
+  vi.stubGlobal("useIssues", () => ({
+    isLoaded: false,
+    load,
+    issues: ref([{ tags: ["safe", "bike"] }, { tags: ["night"] }]),
+  }));
+  vi.stubGlobal("useCategoryFilters", () => ({
+    usedCategories: ref([{ id: 1, name: "Routes" }]),
+  }));
+  vi.stubGlobal("useTagFilters", () => ({
+    hasTag: (tag: string) => tag === "bike",
+  }));
+  vi.stubGlobal("useSelectedIssues", () => ({
+    selectedIssues: ref([{ tags: ["safe", "bike"] }]),
+  }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag }),
+  }));
+  const filter = keep(
+    mount(IssueFilter, {
+      global: {
+        stubs: {
+          ...stubs,
+          VBadge: Slot,
+          CategoryChip: true,
+          Tag: defineComponent({
+            name: "IssueTag",
+            props: ["tag", "disabled"],
+            template: "<span />",
+          }),
+        },
+        directives: { tooltip: () => {} },
+      },
+    }),
+  );
+  expect(load).toHaveBeenCalledTimes(1);
+  expect(filter.findAll("category-chip-stub")).toHaveLength(1);
+  // tags sorted; a tag without results can't be chosen
+  const tags = filter.findAllComponents({ name: "IssueTag" });
+  expect(
+    tags.map((tag) => [tag.props("tag").tag, tag.props("disabled")]),
+  ).toEqual([
+    ["bike", false],
+    ["night", true],
+    ["safe", false],
+  ]);
+  const resetButton = filter
+    .findAll("button")
+    .find((button) => button.text() === "Toon alles")!;
+  expect(resetButton.attributes("disabled")).toBeUndefined();
+  await resetButton.trigger("click");
+  await flushPromises();
+  expect(resetFilters).toHaveBeenCalledTimes(2);
   const reset = keep(mount(Reset, { global: { stubs } }));
   await reset.get("button").trigger("click");
   expect(reset.emitted("reset")).toHaveLength(1);

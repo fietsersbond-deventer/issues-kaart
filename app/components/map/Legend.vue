@@ -58,11 +58,7 @@
       >
         <td colspan="2" class="py-1">
           <!-- description is shown via the info icon, not Tag's own tooltip -->
-          <Tag
-            :tag="{ ...tag, description: null }"
-            :active="hasTag(tag.tag)"
-            class="w-100"
-          />
+          <Tag :tag="{ ...tag, description: null }" class="w-100" />
         </td>
         <td>
           <v-tooltip v-if="tag.description" location="top" max-width="40em">

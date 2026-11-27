@@ -2,8 +2,19 @@
   <div class="tooltip">
     <img v-if="image" :src="image" class="tooltip-img" />
     <span class="tooltip-title">{{ title }}</span>
-    <Tag v-for="tag in visibleTags" :key="tag.tag" :tag="tag" class="mt-2" />
-    <Tag v-if="overflowCount > 0" :tag="overflowTag" class="mt-2" />
+    <Tag
+      v-for="tag in visibleTags"
+      :key="tag.tag"
+      :tag="tag"
+      :filterable="false"
+      class="mt-2"
+    />
+    <Tag
+      v-if="overflowCount > 0"
+      :tag="overflowTag"
+      :filterable="false"
+      class="mt-2"
+    />
   </div>
 </template>
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { defineComponent, h, ref, watch } from "vue";
+import { defineComponent, h, reactive, ref, watch } from "vue";
 import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import Search from "../app/components/map/Search.vue";
@@ -12,6 +12,7 @@ import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
 import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import IssueCommentsDialog from "../app/components/IssueCommentsDialog.vue";
 import { useFilter } from "../app/composables/useFilter";
+import { useFilterQuery } from "../app/composables/useFilterQuery";
 import { parseSearchTerms } from "../app/utils/parseSearchTerms";
 import { transformBboxToOpenLayers } from "../app/utils/getIssuesBbox";
 vi.mock("vuetify", () => ({ useDisplay: () => ({ mobile }) }));
@@ -33,7 +34,17 @@ const stubs = {
   }),
   VProgressCircular: true,
   VTooltip: Slot,
+  IssueFilter: true,
 };
+const route = reactive({
+  path: "/lijst",
+  query: {} as Record<string, string>,
+});
+const navigate = ({ query }: { query: Record<string, string> }) => {
+  route.query = query;
+  return Promise.resolve();
+};
+const router = { push: vi.fn(navigate), replace: vi.fn(navigate) };
 const wrappers: Array<{
   unmount(): void;
 }> = [];
@@ -43,6 +54,12 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal("useTitle", vi.fn());
   vi.stubGlobal("navigateTo", vi.fn());
+  route.query = {};
+  router.push.mockClear();
+  router.replace.mockClear();
+  vi.stubGlobal("useRoute", () => route);
+  vi.stubGlobal("useRouter", () => router);
+  vi.stubGlobal("useFilterQuery", useFilterQuery);
   vi.spyOn(console, "log").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -374,19 +391,59 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     true,
   );
   expect(confirmButton.attributes("disabled")).toBeUndefined();
+  route.query = { cat: "1", tag: "bike", other: "x" };
+  await flushPromises();
   table.vm.$emit("click:row", new Event("click"), {
     item: response.value.items[0],
   });
-  expect(globalThis.navigateTo).toHaveBeenCalledWith("/kaart/1");
+  expect(globalThis.navigateTo).toHaveBeenCalledWith({
+    path: "/kaart/1",
+    query: { cat: "1", tag: "bike" },
+  });
   table.vm.$emit("update:page", 2);
   await flushPromises();
+  // query changes are pushed, so the back button undoes them
+  expect(router.push).toHaveBeenLastCalledWith({
+    query: { cat: "1", tag: "bike", other: "x", page: "2" },
+  });
+  expect(route.query.page).toBe("2");
+  expect(table.props("page")).toBe(2);
   await wrapper.get("input").setValue("crossing");
   await vi.advanceTimersByTimeAsync(301);
   await flushPromises();
+  // search goes to the URL as ?s= and returns to the first page
+  expect(route.query).toEqual({
+    cat: "1",
+    tag: "bike",
+    other: "x",
+    s: "crossing",
+  });
   expect(table.props("page")).toBe(1);
   const query = useFetch.mock.calls[0]![1].query.value;
-  expect(query).toMatchObject({
+  expect(query).toEqual({
+    page: 1,
     search: "crossing",
+    itemsPerPage: 10,
+    cat: "1",
+    tag: "bike",
+  });
+  // a changed filter also returns to the first page
+  table.vm.$emit("update:page", 3);
+  await flushPromises();
+  route.query = { ...route.query, cat: "2" };
+  await flushPromises();
+  expect(route.query.page).toBeUndefined();
+  // the automatic return to page 1 adds no extra history entry
+  expect(router.replace).toHaveBeenCalledTimes(1);
+  // browser navigation updates the search field
+  route.query = { s: "parking" };
+  await flushPromises();
+  expect((wrapper.get("input").element as HTMLInputElement).value).toBe(
+    "parking",
+  );
+  expect(useFetch.mock.calls[0]![1].query.value).toEqual({
+    page: 1,
+    search: "parking",
     itemsPerPage: 10,
   });
   expect(useFetch.mock.calls[0]![1].headers.value).toEqual({

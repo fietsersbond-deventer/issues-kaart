@@ -13,13 +13,13 @@
     hide-selected
   >
     <template #chip="{ item, props: chipProps }">
-      <Tag :tag="resolveTag(item)" v-bind="chipProps" />
+      <Tag :tag="resolveTag(item)" :filterable="false" v-bind="chipProps" />
     </template>
 
     <template #item="{ props: itemProps, item }">
       <v-list-item v-bind="itemProps">
         <template #title>
-          <Tag :tag="resolveTag(item)" />
+          <Tag :tag="resolveTag(item)" :filterable="false" />
         </template>
       </v-list-item>
     </template>
