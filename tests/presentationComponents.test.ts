@@ -558,6 +558,42 @@ it("opens desktop image previews and prevents mobile lightboxes", async () => {
   expect(second.findAll("img")).toHaveLength(1);
 });
 
+it("browses the images of the viewer with arrow keys and buttons", async () => {
+  const wrapper = keep(
+    mount(ImageViewer, {
+      props: { selector: "img:not(.skip)" },
+      slots: {
+        default:
+          '<img src="https://example.test/a.png"><img class="skip" src="https://example.test/x.png"><img><img src="https://example.test/b.png"><img src="https://example.test/c.png">',
+      },
+      global: { stubs },
+      attachTo: document.body,
+    }),
+  );
+  const dialogSrc = () => wrapper.get(".dialog-image").attributes("src");
+  // an image without src does not open the viewer
+  await wrapper.findAll("img")[2]!.trigger("click");
+  expect(wrapper.find(".dialog-image").exists()).toBe(false);
+  await wrapper.findAll("img")[3]!.trigger("click");
+  expect(dialogSrc()).toContain("b.png");
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+  await flushPromises();
+  expect(dialogSrc()).toContain("c.png");
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+  await flushPromises();
+  expect(dialogSrc()).toContain("a.png");
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
+  await flushPromises();
+  expect(dialogSrc()).toContain("c.png");
+  await wrapper.get('[aria-label="Vorige foto"]').trigger("click");
+  expect(dialogSrc()).toContain("b.png");
+  await wrapper.get('[aria-label="Volgende foto"]').trigger("click");
+  expect(dialogSrc()).toContain("c.png");
+  // clicking the enlarged image itself does not reset the selection
+  await wrapper.get(".dialog-image").trigger("click");
+  expect(dialogSrc()).toContain("c.png");
+});
+
 it("renders comments only for authenticated users on IssueDetails and excludes them when logged out", async () => {
   vi.stubGlobal("useTagFilters", () => ({ toggleTag: vi.fn() }));
   vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
