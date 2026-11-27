@@ -16,6 +16,12 @@
       <slot name="actions" />
     </v-card-title>
     <v-card-text>
+      <TablePagination
+        v-if="!isPrinting"
+        v-model:page="page"
+        v-model:items-per-page="itemsPerPage"
+        :total-items="totalItems"
+      />
       <v-data-table-server
         v-model:page="page"
         v-model:items-per-page="itemsPerPage"
@@ -26,8 +32,7 @@
         class="elevation-1"
         density="compact"
         :loading="pending"
-        :items-per-page-options="[5, 10, 25, 50]"
-        show-current-page
+        hide-default-footer
         @click:row="onRowClick"
       >
         <template #item.imageUrl="{ item }">
@@ -164,6 +169,12 @@
           </div>
         </template>
       </v-data-table-server>
+      <TablePagination
+        v-if="!isPrinting"
+        v-model:page="page"
+        v-model:items-per-page="itemsPerPage"
+        :total-items="totalItems"
+      />
     </v-card-text>
   </v-card>
 </template>
