@@ -181,6 +181,27 @@ mark {
   border-radius: 9999px !important;
 }
 
+/* Pagination: black on white, border only on hover; active page black on yellow */
+.v-pagination .v-btn {
+  border-color: transparent;
+}
+
+.v-pagination .v-btn:hover:not(:disabled),
+.v-pagination .v-btn:focus-visible {
+  border-color: currentColor;
+}
+
+/* No grey overlay for the active, hovered or focused state */
+.v-pagination .v-btn__overlay {
+  display: none;
+}
+
+.v-pagination__item--is-active .v-btn {
+  background-color: var(--fietsersbond-geel);
+  border-color: transparent;
+  color: rgb(var(--v-theme-on-surface));
+}
+
 /* Form inputs */
 .v-field__input,
 .v-text-field input {

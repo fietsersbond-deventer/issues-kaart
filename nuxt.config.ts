@@ -197,6 +197,20 @@ export default defineNuxtConfig({
           },
         },
       },
+      defaults: {
+        // Round page buttons as on the Fietsersbond site; see main.css for the
+        // yellow active page and the border on hover.
+        VPagination: {
+          color: "primary",
+          variant: "outlined",
+          rounded: "circle",
+          prevIcon: "mdi-arrow-left",
+          nextIcon: "mdi-arrow-right",
+          firstIcon: "mdi-arrow-collapse-left",
+          lastIcon: "mdi-arrow-collapse-right",
+          density: "comfortable",
+        },
+      },
     },
   },
   vite: {

@@ -7,6 +7,7 @@ import { Slot, uiStubs } from "./helpers/ui";
 import Search from "../app/components/map/Search.vue";
 import List from "../app/pages/lijst/index.vue";
 import IssueSearchTable from "../app/components/IssueSearchTable.vue";
+import TablePagination from "../app/components/TablePagination.vue";
 import IssueEditDialog from "../app/components/IssueEditDialog.vue";
 import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
 import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
@@ -36,6 +37,19 @@ const stubs = {
   }),
   VProgressCircular: true,
   VTooltip: Slot,
+  VPagination: defineComponent({
+    name: "VPagination",
+    props: ["modelValue", "length"],
+    emits: ["update:modelValue"],
+    template: "<div />",
+  }),
+  VSelect: defineComponent({
+    name: "VSelect",
+    props: ["modelValue", "items"],
+    emits: ["update:modelValue"],
+    template: "<div />",
+  }),
+  TablePagination,
   IssueFilter: true,
 };
 const route = reactive({
@@ -412,6 +426,20 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   });
   expect(route.query.page).toBe("2");
   expect(table.props("page")).toBe(2);
+  // page navigation above and below the table, with Fietsersbond-styled buttons
+  const paginations = wrapper.findAllComponents(TablePagination);
+  expect(paginations).toHaveLength(2);
+  expect(paginations[0]!.text()).toContain("11–2 van 2");
+  const bottomPager = paginations[1]!.getComponent({ name: "VPagination" });
+  expect(bottomPager.props()).toMatchObject({ modelValue: 2, length: 1 });
+  bottomPager.vm.$emit("update:modelValue", 1);
+  await flushPromises();
+  expect(route.query.page).toBeUndefined();
+  expect(
+    paginations[0]!.getComponent({ name: "VPagination" }).props("modelValue"),
+  ).toBe(1);
+  table.vm.$emit("update:page", 2);
+  await flushPromises();
   await wrapper.get("input").setValue("crossing");
   await vi.advanceTimersByTimeAsync(301);
   await flushPromises();
