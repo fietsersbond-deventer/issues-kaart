@@ -6,6 +6,7 @@ import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import NavBar from "../app/components/NavBar.vue";
 import { useFilterQuery } from "../app/composables/useFilterQuery";
+import { useListQuery } from "../app/composables/useListQuery";
 import Desktop from "../app/components/layout/Desktop.vue";
 import Mobile from "../app/components/layout/Mobile.vue";
 import MapPage from "../app/pages/kaart.vue";
@@ -163,18 +164,30 @@ it("shows authenticated actions and logs out, then displays configured public li
     query: { cat: "1,2", tag: "bike", s: "crossing", page: "2" },
   }));
   vi.stubGlobal("useFilterQuery", useFilterQuery);
+  vi.stubGlobal("useListQuery", useListQuery);
+  useListQuery().rememberListQuery({
+    s: "old",
+    page: "4",
+    pageSize: "25",
+    cat: "1,2",
+    tag: "bike",
+  });
   const wrapper = keep(
     mount(NavBar, { global: { stubs, directives: { tooltip: () => {} } } }),
   );
   expect(wrapper.text()).toContain("Organization");
-  // Map and list links keep the category and tag filters, nothing else.
+  // Map and list links keep the category and tag filters; the list link also
+  // brings back the list's last search, page and page size.
   const links = wrapper
     .findAllComponents({ name: "VBtn" })
     .map((button) => button.vm.$attrs.to)
     .filter((to) => typeof to === "object");
   expect(links).toEqual([
     { path: "/kaart", query: { cat: "1,2", tag: "bike" } },
-    { path: "/lijst", query: { cat: "1,2", tag: "bike" } },
+    {
+      path: "/lijst",
+      query: { s: "old", page: "4", pageSize: "25", cat: "1,2", tag: "bike" },
+    },
   ]);
   await wrapper.get('button[aria-label="Uitloggen"]').trigger("click");
   await flushPromises();

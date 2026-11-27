@@ -131,9 +131,42 @@ it("resets category and tag filters in one history step and keeps other query pa
     query: { cat: "1,2", tag: "bike", s: "crossing" },
   }));
   vi.stubGlobal("useRouter", () => ({ push }));
-  const { useResetFilters } = await import("../app/composables/useFilterQuery");
+  const { useResetFilters } =
+    await import("../app/composables/useResetFilters");
   await useResetFilters()();
   expect(push).toHaveBeenCalledExactlyOnceWith({ query: { s: "crossing" } });
+});
+it("links to the list with its last search, and its page only while the filters are unchanged", async () => {
+  const route = reactive({ query: {} as Record<string, unknown> });
+  vi.stubGlobal("useRoute", () => route);
+  const { useFilterQuery } = await import("../app/composables/useFilterQuery");
+  const { useListQuery } = await import("../app/composables/useListQuery");
+  vi.stubGlobal("useFilterQuery", useFilterQuery);
+  const { listQuery, rememberListQuery } = scope.run(() => useListQuery())!;
+  expect(listQuery.value).toEqual({});
+  rememberListQuery({
+    s: "crossing",
+    page: "3",
+    pageSize: "25",
+    cat: "1",
+    other: "x",
+    tag: "",
+  });
+  route.query = { cat: "1" };
+  expect(listQuery.value).toEqual({
+    s: "crossing",
+    page: "3",
+    pageSize: "25",
+    cat: "1",
+  });
+  // other filters: the page may not exist anymore, the page size still does
+  route.query = { cat: "2", tag: "bike" };
+  expect(listQuery.value).toEqual({
+    s: "crossing",
+    pageSize: "25",
+    cat: "2",
+    tag: "bike",
+  });
 });
 it("combines tag AND selection with visible categories and handles empty data", async () => {
   const all = ref([

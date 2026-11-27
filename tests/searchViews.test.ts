@@ -13,6 +13,7 @@ import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import IssueCommentsDialog from "../app/components/IssueCommentsDialog.vue";
 import { useFilter } from "../app/composables/useFilter";
 import { useFilterQuery } from "../app/composables/useFilterQuery";
+import { useListQuery } from "../app/composables/useListQuery";
 import { parseSearchTerms } from "../app/utils/parseSearchTerms";
 import { transformBboxToOpenLayers } from "../app/utils/getIssuesBbox";
 vi.mock("vuetify", () => ({ useDisplay: () => ({ mobile }) }));
@@ -60,6 +61,7 @@ beforeEach(() => {
   vi.stubGlobal("useRoute", () => route);
   vi.stubGlobal("useRouter", () => router);
   vi.stubGlobal("useFilterQuery", useFilterQuery);
+  vi.stubGlobal("useListQuery", useListQuery);
   vi.spyOn(console, "log").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -238,7 +240,7 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
       "itemsPerPage",
       "headers",
     ],
-    emits: ["click:row", "update:page"],
+    emits: ["click:row", "update:page", "update:itemsPerPage"],
     setup(props, { slots }) {
       return () =>
         h(
@@ -419,6 +421,12 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     s: "crossing",
   });
   expect(table.props("page")).toBe(1);
+  // remembered for the list link, without unrelated parameters
+  expect(globalThis.useState("last-list-query", () => ({})).value).toEqual({
+    cat: "1",
+    tag: "bike",
+    s: "crossing",
+  });
   const query = useFetch.mock.calls[0]![1].query.value;
   expect(query).toEqual({
     page: 1,
@@ -446,6 +454,22 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
     search: "parking",
     itemsPerPage: 10,
   });
+  // the page size is in the URL too and returns to the first page
+  table.vm.$emit("update:page", 2);
+  await flushPromises();
+  table.vm.$emit("update:itemsPerPage", 25);
+  await flushPromises();
+  expect(route.query).toEqual({ s: "parking", pageSize: "25" });
+  expect(table.props("itemsPerPage")).toBe(25);
+  expect(useFetch.mock.calls[0]![1].query.value).toMatchObject({
+    itemsPerPage: 25,
+  });
+  table.vm.$emit("update:itemsPerPage", 10);
+  await flushPromises();
+  expect(route.query).toEqual({ s: "parking" });
+  route.query = { pageSize: "500" };
+  await flushPromises();
+  expect(table.props("itemsPerPage")).toBe(10);
   expect(useFetch.mock.calls[0]![1].headers.value).toEqual({
     Authorization: "Bearer test-token",
   });
