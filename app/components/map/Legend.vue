@@ -154,12 +154,13 @@ const countIssues = computed(() => {
 /*
  * Vuetify rendert de daadwerkelijke scrollcontainer als een interne
  * .v-table__wrapper div (niet het buitenste .v-table-element), dus
- * overflow en scrollbar-gutter moeten daar via :deep() worden toegepast.
+ * overflow en scrollbar-gutter moeten daar worden toegepast (style is niet
+ * scoped, dus zonder :deep()).
  * We forceren scrollbar-gutter: stable hier ook (zelfs zonder scrollbar),
  * zodat deze tabel dezelfde breedte reserveert als de tags-tabel eronder.
  * Zo blijven de tellerkolommen van beide tabellen mooi uitgelijnd.
  */
-.categories-list :deep(.v-table__wrapper) {
+.categories-list .v-table__wrapper {
   overflow-y: hidden;
   scrollbar-gutter: stable;
 }
@@ -167,14 +168,15 @@ const countIssues = computed(() => {
 /* Tags nemen alleen de ruimte die ze nodig hebben en scrollen zodra max-height wordt overschreden. */
 .tags-list {
   flex: 0 1 auto;
-  min-height: 3 em;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.tags-list :deep(.v-table__wrapper) {
+.tags-list .v-table__wrapper {
   overflow-y: auto;
   height: auto;
+  min-height: 0;
   max-height: var(--legend-tags-max-height, 10em);
   scrollbar-gutter: stable;
 }
