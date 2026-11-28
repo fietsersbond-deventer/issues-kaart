@@ -721,10 +721,15 @@ function mountPrintPage(fetchIssues: ReturnType<typeof vi.fn>) {
   vi.stubGlobal("getContrastColor", getContrastColor);
   vi.stubGlobal("useAuth", () => ({ token: ref("Bearer t") }));
   vi.stubGlobal("useTagsApi", () => ({
-    getTag: (tag: string) => ({ tag, label: tag === "bike" ? "Fiets" : "" }),
+    getTag: (tag: string) =>
+      tag === "bike"
+        ? { tag, label: "Fiets", icon: "mdi-bike" }
+        : { tag, label: "", icon: null },
   }));
   vi.stubGlobal("useCategories", () => ({
-    categories: ref([{ id: 1, name: "Routes", color: "#ffffff" }]),
+    categories: ref([
+      { id: 1, name: "Routes", color: "#ffffff", icon: "mdi-road" },
+    ]),
   }));
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
   vi.stubGlobal("useRuntimeConfig", () => ({
@@ -743,6 +748,10 @@ function mountPrintPage(fetchIssues: ReturnType<typeof vi.fn>) {
           template: "<div><slot /></div>",
         }),
         VChip: Slot,
+        AppIcon: defineComponent({
+          props: ["icon"],
+          template: '<i class="app-icon" :data-icon="icon" />',
+        }),
         VBtnToggle: defineComponent({
           name: "VBtnToggle",
           props: ["modelValue"],
@@ -864,6 +873,12 @@ it("prints the selected issues with the chosen columns", async () => {
     "map",
   ]);
   expect(rows[0]!.get(".print-category").text()).toBe("Routes");
+  // with the icons of the category and tags; a tag without one gets the default
+  expect(
+    rows[0]!
+      .findAll(".print-col-categories .app-icon")
+      .map((icon) => icon.attributes("data-icon")),
+  ).toEqual(["mdi-road", "mdi-bike", "mdi-tag-outline"]);
   expect(rows[0]!.findAll(".print-tag").map((tag) => tag.text())).toEqual([
     "Fiets",
     "cafe",

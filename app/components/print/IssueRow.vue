@@ -25,11 +25,14 @@
     </td>
     <td v-if="isVisible('categories')" class="print-col-categories">
       <a class="print-link" :href="link">
+        <!-- Same icons as CategoryChip and Tag, without their filter clicks. -->
         <span v-if="category" class="print-category" :style="categoryStyle">
+          <AppIcon v-if="category.icon" :icon="category.icon" size="12" />
           {{ category.name }}
         </span>
-        <span v-for="tag in issue.tags" :key="tag" class="print-tag">
-          {{ getTag(tag).label || tag }}
+        <span v-for="tag in tags" :key="tag.tag" class="print-tag">
+          <AppIcon :icon="tag.icon || 'mdi-tag-outline'" size="12" />
+          {{ tag.label || tag.tag }}
         </span>
       </a>
     </td>
@@ -95,6 +98,8 @@ const changedOn = computed(() => {
   return date ? dateFormat.format(date) : "";
 });
 
+const tags = computed(() => issue.tags.map((tag) => getTag(tag)));
+
 const category = computed(() =>
   categories.value?.find((legend) => legend.id === issue.legend_id),
 );
@@ -156,7 +161,9 @@ const categoryStyle = computed(() =>
 
 .print-category,
 .print-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   margin: 0 4px 4px 0;
   padding: 1px 6px;
   border-radius: 4px;
