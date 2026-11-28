@@ -2,7 +2,7 @@
   <v-badge :model-value="hasActiveFilters" color="primary" dot>
     <v-btn
       v-tooltip:top="'Filter op categorie en tag'"
-      icon="mdi-filter-variant"
+      icon="mdi-filter-cog"
       variant="text"
       aria-label="Filter"
       @click="dialog = true"
