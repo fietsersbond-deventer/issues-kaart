@@ -286,3 +286,10 @@ mark {
     margin-bottom: 0.5em;
   }
 }
+
+/* Touch devices: tooltips open on tap and often stay visible, so hide them. */
+@media (hover: none) {
+  .v-tooltip {
+    display: none !important;
+  }
+}
