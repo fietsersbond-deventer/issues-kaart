@@ -18,6 +18,7 @@ let routes: {
   list: typeof import("../server/api/issues/index.get").default;
   search: typeof import("../server/api/issues/search.get").default;
   searchLocations: typeof import("../server/api/issues/search-locations.get").default;
+  print: typeof import("../server/api/issues/print.get").default;
   updatedBy: typeof import("../server/api/issues/[id]/updated-by.get").default;
   geojson: typeof import("../server/api/issues/geojson.get").default;
 };
@@ -44,6 +45,7 @@ beforeEach(async () => {
     search: (await import("../server/api/issues/search.get")).default,
     searchLocations: (await import("../server/api/issues/search-locations.get"))
       .default,
+    print: (await import("../server/api/issues/print.get")).default,
     updatedBy: (await import("../server/api/issues/[id]/updated-by.get"))
       .default,
     geojson: (await import("../server/api/issues/geojson.get")).default,
@@ -573,13 +575,14 @@ describe("issue persistence contracts with the migrated schema", () => {
     h.input.query = { search: '"safe crossing"', itemsPerPage: "1", page: "1" };
     const result = await routes.search(h.event);
     expect(result.total).toBe(2);
+    // equal timestamps: the newest issue comes first
     expect(result.items).toEqual([
       expect.objectContaining({
-        id: 1,
-        slug: "safe-cycle-route",
+        id: 2,
+        slug: "parking",
         tags: ["bike", "cafe"],
         snippets: expect.any(Array),
-        imageUrl: `/api/issues/1/image?v=${imageVersion}`,
+        imageUrl: `/api/issues/2/image?v=${imageVersion}`,
       }),
     ]);
     for (const term of ["routes", "cafe"]) {
@@ -616,6 +619,56 @@ describe("issue persistence contracts with the migrated schema", () => {
     ]);
     h.input.query = { tag: "bike" };
     expect((await routes.search(h.event)).total).toBe(1);
+  });
+  it("returns all matching ids, most recent first, with idsOnly", async () => {
+    await create();
+    const parking = await create("Parking");
+    await create("Bridge");
+    db.prepare(
+      "UPDATE issues SET updated_at = '2000-01-01 00:00:00' WHERE id = ?",
+    ).run(parking.id!);
+    h.input.query = { idsOnly: "1", itemsPerPage: "1" };
+    expect(await routes.search(h.event)).toEqual({ ids: [3, 1, 2] });
+    h.input.query = { idsOnly: "1", search: "parking" };
+    expect(await routes.search(h.event)).toEqual({ ids: [2] });
+  });
+  it("returns the print data of the requested issues, most recent first", async () => {
+    await create();
+    const parking = await create("Parking");
+    await create("Bridge");
+    db.prepare(
+      "UPDATE issues SET updated_at = '2000-01-01 00:00:00' WHERE id = ?",
+    ).run(parking.id!);
+    h.input.query = { ids: "2,1,99" };
+    const items = await routes.print(h.event);
+    expect(items.map((item) => item.id)).toEqual([1, 2]);
+    expect(items[0]).toEqual({
+      id: 1,
+      slug: "safe-cycle-route",
+      title: "Safe cycle route",
+      legend_id: 1,
+      geometry,
+      tags: ["bike", "cafe"],
+      imageUrl: `/api/issues/1/image?v=${imageVersion}`,
+      updated_at: expect.any(String),
+    });
+  });
+  it.each([{}, { ids: "" }, { ids: "1,x" }, { ids: ["1"] }])(
+    "rejects invalid print ids %j",
+    async (query) => {
+      h.input.query = query;
+      await expect(routes.print(h.event)).rejects.toMatchObject({
+        statusCode: 400,
+      });
+    },
+  );
+  it("only returns print data to authenticated users", async () => {
+    await create();
+    h.event.context.user = null;
+    h.input.query = { ids: "1" };
+    await expect(routes.print(h.event)).rejects.toMatchObject({
+      statusCode: 401,
+    });
   });
   it("finds issues by title or tag with their location for the gazetteer", async () => {
     await create();

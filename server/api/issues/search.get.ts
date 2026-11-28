@@ -144,6 +144,23 @@ export default defineEventHandler(async (event) => {
   const whereClause = conditions.length
     ? `WHERE ${conditions.join(" AND ")}`
     : "";
+  // The id tiebreaker keeps the order, and thus the pages, stable.
+  const orderClause = `ORDER BY ${orderBy} ${requestedOrder}, i.id DESC`;
+
+  // ?idsOnly=1 returns the ids of all matches, without paging, so a list
+  // selection can include every result (see the print selection).
+  if (getStringParam("idsOnly", "") === "1") {
+    const idRows = db
+      .prepare(
+        `SELECT i.id
+         FROM issues i
+         LEFT JOIN legend l ON l.id = i.legend_id
+         ${whereClause}
+         ${orderClause}`,
+      )
+      .all(...whereParams) as { id: number }[];
+    return { ids: idRows.map((row) => row.id) };
+  }
 
   const countRow = db
     .prepare(
@@ -165,7 +182,7 @@ export default defineEventHandler(async (event) => {
      FROM issues i
      LEFT JOIN legend l ON l.id = i.legend_id
      ${whereClause}
-     ORDER BY ${orderBy} ${requestedOrder}
+     ${orderClause}
      LIMIT ? OFFSET ?
      `;
   const rows = db

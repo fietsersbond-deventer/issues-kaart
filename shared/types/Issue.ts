@@ -86,3 +86,16 @@ export function isNewIssue(
 ): issue is NewIssue {
   return !("id" in issue);
 }
+
+/** An issue as returned by /api/issues/print */
+export type PrintIssue = Pick<
+  Issue,
+  | "id"
+  | "slug"
+  | "title"
+  | "legend_id"
+  | "geometry"
+  | "tags"
+  | "imageUrl"
+  | "updated_at"
+>;
