@@ -651,7 +651,16 @@ describe("issue persistence contracts with the migrated schema", () => {
       tags: ["bike", "cafe"],
       imageUrl: `/api/issues/1/image?v=${imageVersion}`,
       updated_at: expect.any(String),
+      excerpt: "Safe crossing",
     });
+    // a long description is cut at a word, with an ellipsis
+    db.prepare("UPDATE issues SET plain_text = ? WHERE id = 1").run(
+      `${"woord ".repeat(60)}\n  einde`,
+    );
+    db.prepare("UPDATE issues SET plain_text = '' WHERE id = 2").run();
+    const [long, empty] = await routes.print(h.event);
+    expect(long!.excerpt).toBe(`${"woord ".repeat(16).trim()}…`);
+    expect(empty!.excerpt).toBe("");
   });
   it.each([{}, { ids: "" }, { ids: "1,x" }, { ids: ["1"] }])(
     "rejects invalid print ids %j",

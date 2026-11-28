@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Feature } from "ol";
 import { Point, LineString, Polygon } from "ol/geom";
 import type { Circle, Icon, Style } from "ol/style";
@@ -8,6 +8,59 @@ import {
   getClusterMapStyle,
   getIssueMapStyle,
 } from "../app/utils/issueMapStyle";
+import {
+  exportMapImage,
+  renderIssueMapImages,
+} from "../app/utils/renderIssueMapImages";
+
+// A map that renders immediately, with one layer canvas at pixel ratio 2.
+const mapInstances = vi.hoisted(() => [] as FakeMap[]);
+type FakeMap = {
+  options: Record<string, unknown>;
+  fit: ReturnType<typeof import("vitest").vi.fn>;
+  setTarget: ReturnType<typeof import("vitest").vi.fn>;
+  viewport: HTMLElement;
+};
+vi.mock("ol/Map", () => ({
+  default: class {
+    options: Record<string, unknown>;
+    fit = vi.fn();
+    setTarget = vi.fn();
+    viewport = document.createElement("div");
+    private listener?: () => void;
+    constructor(options: Record<string, unknown>) {
+      this.options = options;
+      const layer = document.createElement("div");
+      layer.className = "ol-layer";
+      layer.style.opacity = "0.5";
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.style.transform = "matrix(0.5, 0, 0, 0.5, 0, 0)";
+      layer.append(canvas, document.createElement("canvas"));
+      (layer.lastChild as HTMLCanvasElement).width = 0;
+      this.viewport.append(layer);
+      mapInstances.push(this as unknown as FakeMap);
+    }
+    getView() {
+      return { fit: this.fit };
+    }
+    getSize() {
+      return [320, 240];
+    }
+    getPixelRatio() {
+      return 2;
+    }
+    getViewport() {
+      return this.viewport;
+    }
+    once(_event: string, listener: () => void) {
+      this.listener = listener;
+    }
+    render() {
+      this.listener?.();
+    }
+  },
+}));
 
 const point = new Feature(new Point([0, 0]));
 const line = new Feature(
@@ -187,5 +240,72 @@ describe("getIssueMapStyle", () => {
     expect(styles(point, item, false, 10)[0]!.getZIndex()).toBe(1);
     expect(styles(point, item, true, 18)[0]!.getZIndex()).toBe(1000);
     expect(item).toEqual(before);
+  });
+});
+
+describe("renderIssueMapImages", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    mapInstances.length = 0;
+  });
+
+  function fakeCanvas(toDataURL = () => "data:image/png;base64,map") {
+    const context = {
+      globalAlpha: 1,
+      setTransform: vi.fn(),
+      drawImage: vi.fn(),
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      context as unknown as CanvasRenderingContext2D,
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockImplementation(
+      toDataURL,
+    );
+    return context;
+  }
+
+  const printIssue = (id: number) => ({
+    ...issue(),
+    id,
+    slug: `issue-${id}`,
+    legend_id: 1,
+    imageUrl: null,
+    geometry: { type: "Point" as const, coordinates: [6.16, 52.25] },
+  });
+
+  it("renders one image per issue with a single, removed map", async () => {
+    const context = fakeCanvas();
+    const onImage = vi.fn();
+    await renderIssueMapImages([printIssue(1), printIssue(2)], { onImage });
+    expect(mapInstances).toHaveLength(1);
+    const [map] = mapInstances;
+    expect(map!.fit).toHaveBeenCalledTimes(2);
+    expect(map!.fit.mock.calls[0]![1]).toMatchObject({ maxZoom: 16 });
+    expect(onImage.mock.calls).toEqual([
+      [1, "data:image/png;base64,map"],
+      [2, "data:image/png;base64,map"],
+    ]);
+    // the layer canvas is scaled back to the pixel ratio, with its opacity
+    expect(context.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 0, 0);
+    expect(context.drawImage).toHaveBeenCalledTimes(2);
+    expect(context.globalAlpha).toBe(0.5);
+    expect(map!.setTarget).toHaveBeenCalledWith(undefined);
+    expect(document.body.children).toHaveLength(0);
+  });
+
+  it("skips images that cannot be exported", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    fakeCanvas(() => {
+      throw new DOMException("Tainted canvas", "SecurityError");
+    });
+    const onImage = vi.fn();
+    await renderIssueMapImages([printIssue(1)], { onImage });
+    expect(onImage).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalled();
+
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    expect(exportMapImage(mapInstances[0] as never)).toBeNull();
+    mapInstances[0]!.viewport.innerHTML = "";
+    expect(exportMapImage(mapInstances[0] as never)).toBeNull();
   });
 });

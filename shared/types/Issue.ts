@@ -98,4 +98,7 @@ export type PrintIssue = Pick<
   | "tags"
   | "imageUrl"
   | "updated_at"
->;
+> & {
+  /** Start of the description as plain text */
+  excerpt: string;
+};
