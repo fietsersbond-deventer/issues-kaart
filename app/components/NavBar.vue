@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar class="navbar">
+  <v-app-bar class="navbar" :class="{ 'navbar--mobile': mobile }">
     <div class="navbar-ellipse" />
     <NuxtLink to="/" class="d-flex align-center logo">
       <img
@@ -15,6 +15,7 @@
       v-tooltip:top="'Kaart'"
       :to="{ path: '/kaart', query: filterQuery }"
       variant="text"
+      :density="mobile ? 'comfortable' : 'default'"
       aria-label="Ga naar kaart"
       icon="mdi-map"
     />
@@ -22,58 +23,61 @@
       v-tooltip:top="'Lijst'"
       :to="{ path: '/lijst', query: listQuery }"
       variant="text"
+      :density="mobile ? 'comfortable' : 'default'"
       aria-label="Ga naar lijst"
       icon="mdi-list-box-outline"
     />
 
-    <!-- Show online users when authenticated -->
     <template v-if="status === 'authenticated'">
-      <OnlineUsers :avatar-size="28" :max-avatars="4" class="mr-4" />
+      <OnlineUsers
+        :avatar-size="28"
+        :max-avatars="mobile ? 1 : 4"
+        :class="mobile ? 'mr-1' : 'mr-4'"
+      />
       <v-btn
         v-tooltip:top="'Nieuw onderwerp toevoegen'"
         to="/kaart/new"
         aria-label="Nieuw onderwerp toevoegen"
         variant="text"
+        :density="mobile ? 'comfortable' : 'default'"
         icon="mdi-plus-circle"
       />
-      <v-btn
-        v-tooltip:top="'Beheer'"
-        to="/admin"
-        variant="text"
-        aria-label="Beheer"
-        icon="mdi-cog"
-      />
-      <v-btn
-        v-tooltip:top="'Uitloggen'"
-        aria-label="Uitloggen"
-        variant="text"
-        icon="mdi-logout"
-        @click="handleLogout"
-      />
     </template>
+
+    <!-- On mobile the secondary actions move into an overflow menu -->
+    <v-menu v-if="mobile" location="bottom end">
+      <template #activator="{ props: menuProps }">
+        <v-btn
+          v-bind="menuProps"
+          variant="text"
+          density="comfortable"
+          icon="mdi-dots-vertical"
+          aria-label="Meer"
+        />
+      </template>
+      <v-list density="compact">
+        <v-list-item
+          v-for="action in secondaryActions"
+          :key="action.title"
+          :title="action.title"
+          :prepend-icon="action.icon"
+          :to="action.to"
+          :href="action.href"
+          @click="action.onClick?.()"
+        />
+      </v-list>
+    </v-menu>
     <template v-else>
       <v-btn
-        v-if="websiteUrl"
-        v-tooltip:top="'Afdeling'"
-        :href="websiteUrl"
+        v-for="action in secondaryActions"
+        :key="action.title"
+        v-tooltip:top="action.title"
+        :to="action.to"
+        :href="action.href"
         variant="text"
-        icon="mdi-home"
-        aria-label="Afdeling"
-      />
-      <v-btn
-        v-if="contactUrl"
-        v-tooltip:top="'Contact'"
-        :href="contactUrl"
-        variant="text"
-        icon="mdi-email"
-        aria-label="Contact"
-      />
-      <v-btn
-        v-tooltip:top="'Inloggen beheer'"
-        to="/login"
-        variant="text"
-        icon="mdi-login"
-        aria-label="Inloggen beheer"
+        :icon="action.icon"
+        :aria-label="action.title"
+        @click="action.onClick?.()"
       />
     </template>
   </v-app-bar>
@@ -86,6 +90,7 @@ const { status, signOut } = useAuth();
 const filterQuery = useFilterQuery();
 const { listQuery } = useListQuery();
 const { getText } = useCachedTexts();
+const { mobile } = useVDisplay();
 
 const headerText = computed(() => {
   return getText("navbar.header")?.text ?? "";
@@ -102,6 +107,40 @@ const contactUrl = computed(() => {
 async function handleLogout() {
   await signOut({ callbackUrl: "/" });
 }
+
+interface NavAction {
+  title: string;
+  icon: string;
+  to?: string;
+  href?: string;
+  onClick?: () => void;
+}
+
+const secondaryActions = computed<NavAction[]>(() => {
+  if (status.value === "authenticated") {
+    return [
+      { title: "Beheer", icon: "mdi-cog", to: "/admin" },
+      { title: "Uitloggen", icon: "mdi-logout", onClick: handleLogout },
+    ];
+  }
+  const actions: NavAction[] = [];
+  if (websiteUrl.value) {
+    actions.push({
+      title: "Afdeling",
+      icon: "mdi-home",
+      href: websiteUrl.value,
+    });
+  }
+  if (contactUrl.value) {
+    actions.push({
+      title: "Contact",
+      icon: "mdi-email",
+      href: contactUrl.value,
+    });
+  }
+  actions.push({ title: "Inloggen beheer", icon: "mdi-login", to: "/login" });
+  return actions;
+});
 </script>
 
 <style>
@@ -153,6 +192,10 @@ a.v-btn {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
+}
+
+.navbar--mobile .v-btn--icon {
+  margin-inline: 2px;
 }
 
 @media (max-width: 600px) {
