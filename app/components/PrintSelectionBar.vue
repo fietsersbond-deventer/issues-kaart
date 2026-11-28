@@ -1,11 +1,5 @@
 <template>
-  <v-alert
-    class="print-selection-bar mb-4 d-print-none"
-    type="info"
-    variant="tonal"
-    density="compact"
-    icon="mdi-printer"
-  >
+  <div class="print-selection-bar mb-4 d-print-none">
     <div class="print-selection-bar__content">
       <span class="print-selection-bar__count" aria-live="polite">
         {{ selectedCount }} geselecteerd
@@ -33,7 +27,6 @@
       </v-btn>
       <v-btn
         color="primary"
-        variant="flat"
         size="small"
         prepend-icon="mdi-printer"
         :disabled="selectedCount === 0"
@@ -42,7 +35,7 @@
         Afdrukken
       </v-btn>
     </div>
-  </v-alert>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -61,6 +54,12 @@ const emit = defineEmits<{
 </script>
 
 <style scoped>
+.print-selection-bar {
+  padding: 8px 12px;
+  border: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 4px;
+}
+
 .print-selection-bar__content {
   display: flex;
   flex-wrap: wrap;

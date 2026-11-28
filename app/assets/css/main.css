@@ -163,6 +163,21 @@ mark {
   color: var(--color-text);
 }
 
+/*
+ * Never print the fixed app bar: Chrome repeats fixed elements at the top of every
+ * page, over the content. app.vue also removes it while printing, but that relies
+ * on JavaScript reacting in time.
+ */
+@media print {
+  .v-app-bar {
+    display: none !important;
+  }
+
+  .v-main {
+    padding-top: 0 !important;
+  }
+}
+
 /* Vuetify overrides */
 .v-application {
   font-family: var(--font-family-primary) !important;
