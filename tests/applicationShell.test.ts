@@ -199,6 +199,46 @@ it("shows authenticated actions and logs out, then displays configured public li
   );
   expect(wrapper.find('button[aria-label="Beheer"]').exists()).toBe(false);
 });
+it("moves secondary navbar actions into an overflow menu on mobile", async () => {
+  mobile.value = true;
+  vi.stubGlobal("useFilterQuery", () => ({}));
+  vi.stubGlobal("useListQuery", () => ({ listQuery: {} }));
+  const VMenu = defineComponent({
+    template: '<div><slot name="activator" :props="{}" /><slot /></div>',
+  });
+  const wrapper = keep(
+    mount(NavBar, {
+      global: {
+        stubs: { ...stubs, VMenu },
+        directives: { tooltip: () => {} },
+      },
+    }),
+  );
+  const buttonLabels = wrapper
+    .findAll("button")
+    .map((button) => button.attributes("aria-label"));
+  expect(buttonLabels).toEqual([
+    "Ga naar kaart",
+    "Ga naar lijst",
+    "Nieuw onderwerp toevoegen",
+    "Meer",
+  ]);
+  expect(
+    wrapper.findComponent({ name: "OnlineUsers" }).attributes("max-avatars"),
+  ).toBe("1");
+  const items = wrapper.findAll("a:not(.logo)");
+  expect(items.map((item) => item.text())).toEqual(["Beheer", "Uitloggen"]);
+  await items[1]!.trigger("click");
+  await flushPromises();
+  expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/" });
+  status.value = "unauthenticated";
+  await flushPromises();
+  expect(wrapper.findAll("a:not(.logo)").map((item) => item.text())).toEqual([
+    "Afdeling",
+    "Contact",
+    "Inloggen beheer",
+  ]);
+});
 it("renders the shared snackbar as a persistent alert or transient snackbar", async () => {
   const App = (await import("../app/app.vue")).default;
   const { useSnackbar } = await import("../app/composables/useSnackbar");
