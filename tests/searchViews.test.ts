@@ -12,7 +12,12 @@ import IssueEditDialog from "../app/components/IssueEditDialog.vue";
 import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
 import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import IssueCommentsDialog from "../app/components/IssueCommentsDialog.vue";
-import PrintSelectionBar from "../app/components/PrintSelectionBar.vue";
+import PrintSelectionBar from "../app/components/print/SelectionBar.vue";
+import PrintToolbar from "../app/components/print/Toolbar.vue";
+import PrintTable from "../app/components/print/Table.vue";
+import PrintIssueRow from "../app/components/print/IssueRow.vue";
+import { usePrintIssues } from "../app/composables/usePrintIssues";
+import { usePrintMapImages } from "../app/composables/usePrintMapImages";
 import { usePrintSelection } from "../app/composables/usePrintSelection";
 import { usePrintColumns } from "../app/composables/usePrintColumns";
 import { usePrintOrientation } from "../app/composables/usePrintOrientation";
@@ -708,6 +713,8 @@ function mountPrintPage(fetchIssues: ReturnType<typeof vi.fn>) {
   vi.stubGlobal("definePageMeta", vi.fn());
   vi.stubGlobal("usePrintColumns", usePrintColumns);
   vi.stubGlobal("usePrintOrientation", usePrintOrientation);
+  vi.stubGlobal("usePrintIssues", usePrintIssues);
+  vi.stubGlobal("usePrintMapImages", usePrintMapImages);
   vi.stubGlobal("useHead", (input: () => unknown) => {
     head.value = computed(input);
   });
@@ -726,7 +733,7 @@ function mountPrintPage(fetchIssues: ReturnType<typeof vi.fn>) {
   vi.stubGlobal("useRequestURL", () => new URL("https://example.test/lijst"));
   const wrapper = mount(PrintPage, {
     global: {
-      components: { QrCode },
+      components: { QrCode, PrintToolbar, PrintTable, PrintIssueRow },
       stubs: {
         ...stubs,
         VChipGroup: defineComponent({
