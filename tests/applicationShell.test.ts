@@ -467,6 +467,19 @@ it("limits ordinary users' admin navigation to categories, tags and texts", () =
   expect(admin.find('a[href="/admin/users"]').exists()).toBe(false);
   expect(admin.text()).not.toContain("Gebruikers");
 });
+it("collapses the admin navigation to a rail on mobile that can be expanded", async () => {
+  const desktop = keep(mount(Admin, { global: { stubs } }));
+  expect(desktop.get("aside").attributes("rail")).toBe("false");
+  expect(desktop.find('[aria-label="Menu uitklappen"]').exists()).toBe(false);
+
+  mobile.value = true;
+  const admin = keep(mount(Admin, { global: { stubs } }));
+  expect(admin.get("aside").attributes("rail")).toBe("true");
+  await admin.get('[aria-label="Menu uitklappen"]').trigger("click");
+  expect(admin.get("aside").attributes("rail")).toBe("false");
+  await admin.get('a[href="/admin/tags"]').trigger("click");
+  expect(admin.get("aside").attributes("rail")).toBe("true");
+});
 it("initializes analytics, records page views/events and installs OpenLayers", async () => {
   vi.useFakeTimers();
   const scope = effectScope();
