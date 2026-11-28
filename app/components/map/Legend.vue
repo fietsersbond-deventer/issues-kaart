@@ -21,20 +21,11 @@
           {{ item.name }}
         </td>
         <td>
-          <v-tooltip v-if="item.description" location="top" max-width="40em">
-            <template #default>
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <div class="tooltip-content" v-html="item.description" />
-            </template>
-            <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
-            </template>
-          </v-tooltip>
+          <MapLegendDescription
+            v-if="item.description"
+            :name="item.name"
+            :description="item.description"
+          />
         </td>
         <td class="ps-2 font-weight-thin text-right counter">
           {{ countIssues[item.id] }}
@@ -61,20 +52,11 @@
           <Tag :tag="{ ...tag, description: null }" class="w-100" />
         </td>
         <td>
-          <v-tooltip v-if="tag.description" location="top" max-width="40em">
-            <template #default>
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <div class="tooltip-content" v-html="tag.description" />
-            </template>
-            <template #activator="{ props }">
-              <v-icon
-                v-bind="props"
-                icon="mdi-information"
-                size="x-small"
-                color="grey"
-              />
-            </template>
-          </v-tooltip>
+          <MapLegendDescription
+            v-if="tag.description"
+            :name="tag.label ?? tag.tag"
+            :description="tag.description"
+          />
         </td>
         <td class="ps-2 font-weight-thin text-right counter">
           {{ selectedIssuesTagCount[tag.tag] ?? 0 }}

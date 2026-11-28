@@ -10,6 +10,7 @@ import { Slot, uiStubs } from "./helpers/ui";
 import AddFeature from "../app/components/map/AddFeature.vue";
 import Toolbar from "../app/components/Toolbar.vue";
 import Legend from "../app/components/map/Legend.vue";
+import LegendDescription from "../app/components/map/LegendDescription.vue";
 import Summary from "../app/components/map/MapFilterSummary.vue";
 import IssueFilter from "../app/components/IssueFilter.vue";
 import Reset from "../app/components/map/ResetExtentControl.vue";
@@ -211,6 +212,45 @@ it("renders category/tag counts, supports keyboard toggles and keeps an active z
   await flushPromises();
   await rows[2]!.trigger("click");
   expect(toggleTag).toHaveBeenCalledTimes(2);
+});
+it("shows legend descriptions behind an info button that does not toggle the row", async () => {
+  const toggleCategoryVisibility = vi.fn();
+  vi.stubGlobal("useCategoryFilters", () => ({
+    usedCategories: ref([
+      { id: 1, name: "Routes", description: "<p>Roads</p>" },
+      { id: 2, name: "Parking" },
+    ]),
+    toggleCategoryVisibility,
+    isCategoryVisible: () => true,
+  }));
+  vi.stubGlobal("useIssues", () => ({ issues: ref([]) }));
+  vi.stubGlobal("useSelectedIssues", () => ({ selectedIssues: ref([]) }));
+  vi.stubGlobal("useTagFilters", () => ({ hasTag: () => false }));
+  vi.stubGlobal("useTagsApi", () => ({ getTag: vi.fn() }));
+  const VMenu = defineComponent({
+    template: '<div><slot name="activator" :props="{}" /><slot /></div>',
+  });
+  const wrapper = keep(
+    mount(Legend, {
+      global: {
+        stubs: {
+          ...stubs,
+          VMenu,
+          VCard: Slot,
+          MapLegendDescription: LegendDescription,
+        },
+      },
+    }),
+  );
+  const infoButtons = wrapper.findAll("button");
+  expect(infoButtons.map((button) => button.attributes("aria-label"))).toEqual([
+    "Toelichting Routes",
+  ]);
+  expect(wrapper.find(".tooltip-content").html()).toContain("<p>Roads</p>");
+  await infoButtons[0]!.trigger("click");
+  await infoButtons[0]!.trigger("keydown", { key: "Enter" });
+  await infoButtons[0]!.trigger("keydown", { key: " " });
+  expect(toggleCategoryVisibility).not.toHaveBeenCalled();
 });
 it("resets both filter groups and exposes the correct result count", async () => {
   const resetFilters = vi.fn();
