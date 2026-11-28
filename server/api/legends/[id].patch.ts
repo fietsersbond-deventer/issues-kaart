@@ -4,6 +4,7 @@ import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
 import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionOptions";
 import { toLegendType } from "~~/server/utils/typeConversions";
+import { toCategoryColor } from "~~/shared/utils/categoryColors";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -42,9 +43,21 @@ export default defineEventHandler(async (event) => {
         : null,
     );
   }
+  const db = getDb();
   if (updates.color !== undefined) {
+    const allowedColor = toCategoryColor(updates.color);
+    // Categories from before the palette may keep their color unchanged.
+    const current = db
+      .prepare("SELECT color FROM legend WHERE id = ?")
+      .get(id) as { color: string } | undefined;
+    if (!allowedColor && updates.color !== current?.color) {
+      throw createError({
+        statusCode: 400,
+        message: "Color must be one of the category palette colors",
+      });
+    }
     updateFields.push(`color = ?`);
-    values.push(updates.color);
+    values.push(allowedColor ?? updates.color);
   }
   updateFields.push(`icon = ?`);
   if (updates.icon !== undefined) {
@@ -62,7 +75,6 @@ export default defineEventHandler(async (event) => {
   // Add the ID as the last parameter
   values.push(id);
 
-  const db = getDb();
   const updateStmt = db.prepare(
     `UPDATE legend SET ${updateFields.join(", ")} WHERE id = ?`,
   );

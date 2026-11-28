@@ -201,4 +201,95 @@ describe("API composable contracts", () => {
       headers: undefined,
     });
   });
+  it("posts import requests, image downloads and KMZ uploads with authorization", async () => {
+    const { useImportApi } = await import("../app/composables/useImportApi");
+    const api = useImportApi();
+    fetch.mockResolvedValueOnce({ ref: "import-image:1" });
+    await expect(api.downloadImage("https://img.test/a.png")).resolves.toBe(
+      "import-image:1",
+    );
+    expect(fetch).toHaveBeenLastCalledWith("/api/admin/import/image", {
+      method: "POST",
+      headers: expect.objectContaining(auth),
+      body: { url: "https://img.test/a.png" },
+    });
+    fetch.mockResolvedValueOnce({ ref: "import-image:2" });
+    await expect(
+      api.uploadImage({ bytes: new Uint8Array([1, 2]), type: "image/png" }),
+    ).resolves.toBe("import-image:2");
+    const [, options] = fetch.mock.lastCall!;
+    expect(options.headers).toEqual({
+      "Content-Type": "image/png",
+      Authorization: "Bearer access-token",
+    });
+    expect(options.body).toBeInstanceOf(Blob);
+    expect((options.body as Blob).size).toBe(2);
+    const request = {
+      geojson: { type: "FeatureCollection" as const, features: [] },
+      settings: { title: "T", description: "D", fields: [] },
+      mappings: {},
+    };
+    await api.importIssues(request);
+    expect(fetch).toHaveBeenLastCalledWith("/api/admin/import", {
+      method: "POST",
+      headers: expect.objectContaining(auth),
+      body: request,
+    });
+  });
+  it("processes import images in parallel, keeps finished ones and retries failures", async () => {
+    const uploadImage = vi.fn(async () => "import-image:kmz");
+    vi.stubGlobal("useImportApi", () => ({
+      downloadImage: async (url: string) => {
+        if (url.includes("bad")) {
+          throw Object.assign(new Error("x"), {
+            data: { message: "HTTP 404" },
+          });
+        }
+        if (url.includes("plain")) throw new Error("Netwerkfout");
+        if (url.includes("odd")) throw "odd";
+        return `import-image:${url}`;
+      },
+      uploadImage,
+    }));
+    const { useImportImages } =
+      await import("../app/composables/useImportImages");
+    const images = useImportImages();
+    const kmz = { bytes: new Uint8Array([1]), type: "image/png" };
+    await images.download(
+      ["ok1", "bad", "plain", "odd", "kmz-file:a.png", "kmz-file:missing.png"],
+      new Map([["kmz-file:a.png", kmz]]),
+    );
+    expect(uploadImage).toHaveBeenCalledWith(kmz);
+    expect(images.done.value.map(({ source }) => source)).toEqual([
+      "ok1",
+      "kmz-file:a.png",
+    ]);
+    expect(images.failed.value.map(({ error }) => error)).toEqual([
+      "HTTP 404",
+      "Netwerkfout",
+      "Verwerken mislukt",
+      "Afbeelding ontbreekt in het KMZ-bestand",
+    ]);
+    expect(images.isDownloading.value).toBe(false);
+    expect(images.replacements()).toEqual(
+      new Map([
+        ["ok1", "import-image:ok1"],
+        ["bad", null],
+        ["plain", null],
+        ["odd", null],
+        ["kmz-file:a.png", "import-image:kmz"],
+        ["kmz-file:missing.png", null],
+      ]),
+    );
+    await images.download(["ok1", "ok2"]);
+    expect(images.images.value.map(({ status }) => status)).toEqual([
+      "done",
+      "done",
+    ]);
+    await images.download(["bad"]);
+    await images.retryFailed();
+    expect(images.failed.value).toHaveLength(1);
+    images.reset();
+    expect(images.images.value).toEqual([]);
+  });
 });

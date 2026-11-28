@@ -61,6 +61,16 @@ emitter.on(
   },
 );
 
+emitter.on("issues:imported", (data: WebSocketEvents["issues-imported"]) => {
+  console.log(
+    "[ws/notify] Broadcasting issues:imported event for",
+    data.count,
+    "issues",
+  );
+  const message = createIssueMessage("issues-imported", data);
+  connectedPeers.forEach((peer) => peer.send(message));
+});
+
 /**
  * Registers a public WebSocket peer for issue broadcasts.
  */

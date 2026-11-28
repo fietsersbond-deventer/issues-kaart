@@ -1,4 +1,5 @@
 import type { Issue } from "~~/shared/types/Issue";
+import type { WebSocketMessage } from "~~/shared/types/WebSocketMessages";
 
 /**
  * Handles notifications for issue mutations
@@ -51,6 +52,18 @@ export function useIssueNotifications() {
           // Full info for others
           snackbar.showPersistent(
             `Onderwerp "${payload.title}" gewijzigd door ${payload.modifiedBy}`,
+            "info",
+          );
+        }
+        break;
+      }
+      case "issues-imported": {
+        const payload = (parsed as WebSocketMessage<"issues-imported">).payload;
+        const isOwnAction =
+          Number(authData.value?.id) === payload.createdByUserId;
+        if (!isOwnAction) {
+          snackbar.showPersistent(
+            `${payload.count} onderwerpen geïmporteerd door ${payload.createdBy}`,
             "info",
           );
         }

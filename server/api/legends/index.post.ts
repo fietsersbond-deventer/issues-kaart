@@ -4,6 +4,7 @@ import type { Legend } from "~~/server/database/schema";
 import { getDb } from "~~/server/utils/db";
 import { sanitizeDescriptionHtml } from "~~/shared/utils/sanitizeDescriptionOptions";
 import { toLegendType } from "~~/server/utils/typeConversions";
+import { toCategoryColor } from "~~/shared/utils/categoryColors";
 
 export default defineEventHandler(async (event) => {
   requireUserSession(event);
@@ -11,10 +12,11 @@ export default defineEventHandler(async (event) => {
   const { name, description, color, icon, icon_data_url } =
     await readBody<Partial<Legend>>(event);
 
-  if (!name || !color) {
+  const allowedColor = toCategoryColor(color);
+  if (!name || !allowedColor) {
     throw createError({
       statusCode: 400,
-      message: "Name and color are required",
+      message: "Name and a color from the category palette are required",
     });
   }
 
@@ -25,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const result = insertStmt.run(
     name,
     description?.trim() ? sanitizeDescriptionHtml(description) : null,
-    color,
+    allowedColor,
     icon || null,
     icon_data_url || null,
   );

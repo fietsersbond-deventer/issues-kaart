@@ -63,3 +63,32 @@ describe("setTagMetadata", () => {
     });
   });
 });
+
+describe("createImportTag", () => {
+  it("creates a unique Amsterdam-time import tag with label and description", async () => {
+    const { migratedDatabase } = await import("./helpers/server");
+    const { createImportTag } = await import("../server/utils/issueTags");
+    const db = await migratedDatabase();
+    const now = new Date("2026-11-28T14:30:00Z");
+    const metadata = {
+      label: "Import kaart.kmz",
+      description: "Uit kaart.kmz",
+    };
+    const first = createImportTag(db, metadata, now);
+    const second = createImportTag(db, metadata, now);
+    expect([first.tag, second.tag]).toEqual([
+      "import-20261128-1530",
+      "import-20261128-1530-2",
+    ]);
+    expect(
+      db
+        .prepare("SELECT id, label, description FROM tags WHERE tag = ?")
+        .get(first.tag),
+    ).toEqual({
+      id: first.id,
+      label: "Import kaart.kmz",
+      description: "Uit kaart.kmz",
+    });
+    db.close();
+  });
+});

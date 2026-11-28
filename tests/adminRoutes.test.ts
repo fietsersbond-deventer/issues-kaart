@@ -104,19 +104,21 @@ describe("admin boundary and metadata persistence", () => {
     h.input.body = {
       name: "Lighting",
       description: "Night routes",
-      color: "#123456",
+      color: "#0177a9",
       icon: "mdi-bike",
       icon_data_url: "data:image/png;base64,YQ==",
     };
     const category = (await call("legends/index.post")) as {
       id: number;
+      color: string;
     };
+    expect(category.color).toBe("#0177A9");
     h.input.params.id = String(category.id);
     expect(await call("legends/[id].get")).toEqual(category);
     h.input.body = {
       name: "Updated",
       description: "desc",
-      color: "#ffffff",
+      color: "#E31E1E",
       icon: "mdi-car",
       icon_data_url: "data:x",
     };
@@ -169,6 +171,28 @@ describe("admin boundary and metadata persistence", () => {
     h.input.params.id = "1";
     await expect(call("legends/[id].patch")).rejects.toMatchObject({
       statusCode: 400,
+    });
+  });
+  it("only accepts palette colors, but keeps an unchanged older color", async () => {
+    h.input.body = { name: "Lighting", color: "#123456" };
+    await expect(call("legends/index.post")).rejects.toMatchObject({
+      statusCode: 400,
+      message: expect.stringContaining("category palette"),
+    });
+    // Seeded category 1 has the pre-palette color #ff0000.
+    h.input.params.id = "1";
+    h.input.body = { name: "Renamed", color: "#ff0000" };
+    await expect(call("legends/[id].patch")).resolves.toMatchObject({
+      name: "Renamed",
+      color: "#ff0000",
+    });
+    h.input.body = { name: "Renamed", color: "#00ff00" };
+    await expect(call("legends/[id].patch")).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    h.input.body = { name: "Renamed", color: "#ffd503ff" };
+    await expect(call("legends/[id].patch")).resolves.toMatchObject({
+      color: "#FFD503",
     });
   });
   it("normalizes, lists, searches and updates tag metadata, then removes links on deletion", async () => {

@@ -99,18 +99,19 @@ it("broadcasts one notification per connected peer and never sends to closed pee
     ["issue:created", "issue-created"],
     ["issue:modified", "issue-modified"],
     ["issue:deleted", "issue-deleted"],
+    ["issues:imported", "issues-imported"],
   ]) {
     getEmitter().emit(event!, { id: 1, title: "Issue" });
     expect(a.send).toHaveBeenLastCalledWith(
       JSON.stringify({ type, payload: { id: 1, title: "Issue" } }),
     );
   }
-  expect(a.send).toHaveBeenCalledTimes(3);
-  expect(b.send).toHaveBeenCalledTimes(3);
+  expect(a.send).toHaveBeenCalledTimes(4);
+  expect(b.send).toHaveBeenCalledTimes(4);
   notify.close(cast(a));
   getEmitter().emit("issue:created", { id: 2 });
-  expect(a.send).toHaveBeenCalledTimes(3);
-  expect(b.send).toHaveBeenCalledTimes(4);
+  expect(a.send).toHaveBeenCalledTimes(4);
+  expect(b.send).toHaveBeenCalledTimes(5);
   notify.close(cast(b));
 });
 

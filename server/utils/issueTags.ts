@@ -72,6 +72,39 @@ export function setTagMetadata(
   return normalizedTag;
 }
 
+/**
+ * Creates a unique tag such as "import-20261128-1530" that marks all issues of
+ * one import, so they are easy to find afterwards.
+ */
+export function createImportTag(
+  db: DatabaseSync,
+  metadata: { label: string; description: string },
+  now = new Date(),
+): { id: number; tag: string } {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Amsterdam",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(now)
+      .map(({ type, value }) => [type, value]),
+  );
+  const base = `import-${parts.year}${parts.month}${parts.day}-${parts.hour}${parts.minute}`;
+  const exists = db.prepare("SELECT 1 FROM tags WHERE tag = ?");
+  let tag = base;
+  for (let suffix = 2; exists.get(tag); suffix++) tag = `${base}-${suffix}`;
+  setTagMetadata(db, tag, { ...metadata, icon: null });
+  const { id } = db.prepare("SELECT id FROM tags WHERE tag = ?").get(tag) as {
+    id: number;
+  };
+  return { id, tag };
+}
+
 export function setTagDescription(
   db: DatabaseSync,
   tag: unknown,

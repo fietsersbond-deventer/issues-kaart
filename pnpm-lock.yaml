@@ -29,6 +29,9 @@ importers:
       '@sidebase/nuxt-auth':
         specifier: ^1.4.0
         version: 1.4.0(@nuxt/schema@4.7.0)(acorn@8.19.0)(confbox@0.3.2)(dotenv@18.0.9)(giget@3.3.1)(ioredis@5.11.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(oxc-parser@0.141.0)(rolldown@1.2.19)(srvx@1.0.8)(unplugin@3.7.0(esbuild@0.25.12)(rolldown@1.2.19)(rollup@4.68.8)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.4)(tsx@4.23.15)(yaml@2.9.1)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.4)(tsx@4.23.15)(yaml@2.9.1))
+      '@tmcw/togeojson':
+        specifier: ^7.1.4
+        version: 7.1.4
       '@turf/bbox':
         specifier: ^7.4.0
         version: 7.4.0
@@ -48,6 +51,9 @@ importers:
         specifier: ^7.4.0
         version: 7.4.0
       '@turf/meta':
+        specifier: ^7.4.0
+        version: 7.4.0
+      '@turf/truncate':
         specifier: ^7.4.0
         version: 7.4.0
       '@turf/union':
@@ -77,6 +83,9 @@ importers:
       dotenv:
         specifier: ^18.0.9
         version: 18.0.9
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       geojson:
         specifier: ^0.5.0
         version: 0.5.0
@@ -1861,6 +1870,9 @@ packages:
     peerDependencies:
       eslint: ^9.0.0 || ^10.0.0
 
+  '@tmcw/togeojson@7.1.4':
+    resolution: {integrity: sha512-plPYr+qhVPoRPy7HwbptxPm8r4meK4KzdfLjJXGTxOONir/gIp9oFs5IqSaJLTmpT1/SUD3LLBGBMdg3S540pg==}
+
   '@turf/bbox@7.4.0':
     resolution: {integrity: sha512-yOX9lALc2GmjYUIE99+nRj7eZA7eDtx7Ixu/hrgIo+YqHvL1reaPVTC9rQWMHMm0pH0/WHjzk8uOpAHjptrudQ==}
 
@@ -1935,6 +1947,9 @@ packages:
 
   '@turf/projection@7.4.0':
     resolution: {integrity: sha512-ZS932qM+18V1UBvNlrNXUCD7mh9CzQqZzw/ElVtb0kAk6N00FYQ9bo26Cca08UZKXh3rZqG/e4eCK74JNGS4Zg==}
+
+  '@turf/truncate@7.4.0':
+    resolution: {integrity: sha512-eTXO62l1mD++mKlhUqLNHGcgCQvhxXJGB/EUL1KSzpVIeMYtgcmItAneWdHW+gEpmHfjeDjBuvtbZWA23r7Eig==}
 
   '@turf/union@7.4.0':
     resolution: {integrity: sha512-SYVtsCW9IznTyKlcGWxssRrf90p/hdpch1UeIcZc31pkSVdmeLOyuzPx0ef3UPmaF//fgXAphMph6JWA/FpKbA==}
@@ -7525,6 +7540,8 @@ snapshots:
       estraverse: 5.3.0
       picomatch: 4.0.7
 
+  '@tmcw/togeojson@7.1.4': {}
+
   '@turf/bbox@7.4.0':
     dependencies:
       '@turf/helpers': 7.4.0
@@ -7729,6 +7746,13 @@ snapshots:
   '@turf/projection@7.4.0':
     dependencies:
       '@turf/clone': 7.4.0
+      '@turf/helpers': 7.4.0
+      '@turf/meta': 7.4.0
+      '@types/geojson': 7946.0.16
+      tslib: 2.9.1
+
+  '@turf/truncate@7.4.0':
+    dependencies:
       '@turf/helpers': 7.4.0
       '@turf/meta': 7.4.0
       '@types/geojson': 7946.0.16

@@ -13,7 +13,8 @@ export const useIssues = defineStore("issues", () => {
   const issues = ref<(MapIssue | NewIssue)[]>([]);
 
   // Get categories for enriching issues
-  const { categories } = storeToRefs(useCategories());
+  const categoryStore = useCategories();
+  const { categories } = storeToRefs(categoryStore);
 
   const fetchOptions = {
     query: { fields: "id,slug,title,legend_id,geometry,imageUrl,tags" },
@@ -85,6 +86,13 @@ export const useIssues = defineStore("issues", () => {
         const issueId = payload.id;
 
         issues.value = issues.value.filter((i) => i.id !== issueId);
+        break;
+      }
+      case "issues-imported": {
+        // An import adds a tag and may add categories; load those first.
+        void Promise.all([categoryStore.refresh(), tagsApi.refreshTags()]).then(
+          () => refreshIssues(),
+        );
         break;
       }
       default:

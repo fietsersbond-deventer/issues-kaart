@@ -47,6 +47,12 @@ export interface WebSocketEvents {
     deletedBy: string;
     deletedByUserId: number;
   };
+  // One message per bulk import instead of one per issue.
+  "issues-imported": {
+    count: number;
+    createdBy: string;
+    createdByUserId: number;
+  };
 
   // Comment notification messages (authenticated channel only)
   "comment-created": Comment & { createdBy: string; createdByUserId: number };

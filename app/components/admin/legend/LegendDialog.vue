@@ -30,17 +30,7 @@
               </v-col>
               <v-col cols="4">
                 <h4 class="mb-3">Kleur</h4>
-                <v-color-picker
-                  v-model="editedItem.color"
-                  v-model:mode="mode"
-                  :swatches="colorSwatches"
-                  show-swatches
-                  hide-canvas
-                  hide-inputs
-                  hide-mode-switch
-                  hide-sliders
-                  swatches-max-height="none"
-                />
+                <ColorPicker v-model="editedItem.color" />
               </v-col>
               <v-col cols="8">
                 <h4 class="mb-3">Icoon</h4>
@@ -91,6 +81,8 @@
 import type { Legend } from "~~/shared/types/Legend";
 import type { SanitizedHTML } from "~~/shared/types/SanitizedHTML";
 import RichTextEditor from "~/components/RichTextEditor.vue";
+import ColorPicker from "~/components/admin/legend/ColorPicker.vue";
+import { DEFAULT_CATEGORY_COLOR } from "~~/shared/utils/categoryColors";
 import { sanitizeDescriptionOptions } from "~~/shared/utils/sanitizeDescriptionOptions";
 import {
   createIconCanvasDataUrl,
@@ -99,39 +91,6 @@ import {
 
 const modelValue = defineModel<boolean>("modelValue");
 const sanitizeOptions = sanitizeDescriptionOptions();
-const mode = ref<"rgb" | "rgba" | "hsl" | "hsla" | "hex" | "hexa">("hexa");
-const colorSwatches = [
-  "#FFD503",
-  "#F9C80E",
-  "#E9C46A",
-  "#A7C957",
-  "#6A994E",
-  "#1F921F",
-  "#386641",
-  "#2D6A4F",
-  "#40916C",
-  "#52B788",
-  "#2A9D8F",
-  "#4D908E",
-  "#0177A9",
-  "#0077B6",
-  "#0096C7",
-  "#48CAE4",
-  "#5DADE2",
-  "#264653",
-  "#FF7F27",
-  "#F8961E",
-  "#F4A261",
-  "#E76F51",
-  "#D84315",
-  "#E31E1E",
-  "#C1121F",
-  "#B23A48",
-  "#D45087",
-  "#A23B72",
-  "#9D4EDD",
-  "#6C757D",
-].map((color) => [color]);
 
 const { legend = undefined } = defineProps<{
   legend?: Pick<
@@ -164,7 +123,7 @@ const editedItem = ref<LegendFormData>(
     : {
         name: "",
         description: "" as SanitizedHTML,
-        color: "#2196F3",
+        color: DEFAULT_CATEGORY_COLOR,
         icon: undefined as string | undefined,
         icon_data_url: undefined as string | undefined,
       },
@@ -205,7 +164,7 @@ watch(
       editedItem.value = {
         name: "",
         description: "" as SanitizedHTML,
-        color: "#2196F3",
+        color: DEFAULT_CATEGORY_COLOR,
         icon: undefined as string | undefined,
         icon_data_url: undefined as string | undefined,
       };

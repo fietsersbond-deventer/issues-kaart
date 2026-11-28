@@ -36,6 +36,12 @@
           title="Gebruikers"
           to="/admin/users"
         />
+        <v-list-item
+          v-if="isAdmin"
+          prepend-icon="mdi-file-import"
+          title="Importeren"
+          to="/admin/import"
+        />
       </v-list>
     </v-navigation-drawer>
 

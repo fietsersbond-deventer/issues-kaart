@@ -84,3 +84,97 @@ test("9 — admin manages users, categories, tags and texts; validation and role
   ).toBeTruthy();
   // Tags/categories/texts APIs are intentionally available to authenticated ordinary users; only user management is admin-only.
 });
+
+test("admin imports a Google My Maps KMZ with folders as new and existing categories", async ({
+  app,
+  page,
+  request,
+}) => {
+  const { zipSync, strToU8 } = await import("fflate");
+  const placemark = (name: string, coordinates: string, description = "") =>
+    `<Placemark><name>${name}</name><description><![CDATA[${description}]]></description>` +
+    `<ExtendedData><Data name="Urgentie"><value>Hoog</value></Data></ExtendedData>` +
+    `<Point><coordinates>${coordinates},0</coordinates></Point></Placemark>`;
+  const kml =
+    `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>` +
+    `<Folder><name>E2E Knelpunten</name>${placemark("E2E Kruising", "6.15,52.25", '<img src="files/foto.png">')}</Folder>` +
+    `<Folder><name>Verkeer</name>${placemark("E2E Rotonde", "6.16,52.26")}</Folder>` +
+    `</Document></kml>`;
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  const kmz = zipSync({
+    "doc.kml": strToU8(kml),
+    "files/foto.png": new Uint8Array(png),
+  });
+
+  await app.loginPage.login("admin@example.test");
+  await page.goto("/admin/import");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "mymaps.kmz",
+    mimeType: "application/vnd.google-earth.kmz",
+    buffer: Buffer.from(kmz),
+  });
+  await expect(
+    page.getByText("mymaps.kmz: 2 objecten met een geometrie."),
+  ).toBeVisible();
+  // The stepper keeps visited steps in the DOM; act within the active step.
+  const step = page.locator(".v-window-item--active");
+  const next = step.getByRole("button", { name: "Volgende", exact: true });
+  await next.click();
+  await expect(step.getByText("Urgentie — Hoog")).toBeVisible();
+  await next.click();
+
+  const importButton = next;
+  await expect(importButton).toBeDisabled();
+  await step.getByLabel("Categorie voor E2E Knelpunten").press("Enter");
+  await page.getByRole("option", { name: "Nieuwe categorie…" }).click();
+  await expect(step.getByLabel("Naam nieuwe categorie")).toHaveValue(
+    "E2E Knelpunten",
+  );
+  await expect(page.getByRole("option")).toHaveCount(0);
+  await step.getByLabel("Categorie voor Verkeer").press("Enter");
+  await page.getByRole("option", { name: "E2E Verkeer" }).click();
+  await importButton.click();
+
+  await expect(
+    page.getByText(
+      "Er worden 2 onderwerpen aangemaakt en 1 nieuwe categorieën.",
+    ),
+  ).toBeVisible();
+  await step.getByRole("button", { name: "Importeren", exact: true }).click();
+  await expect(page.getByText("2 onderwerpen geïmporteerd.")).toBeVisible();
+  await expect(
+    page.getByText("1 onderwerpen met afbeelding, 1 zonder"),
+  ).toBeVisible();
+  const tag = await page.locator(".v-alert strong").textContent();
+  expect(tag).toMatch(/^import-\d{8}-\d{4}/);
+
+  const categories = await (await request.get("/api/legends")).json();
+  const created = categories.find(
+    (category: { name: string }) => category.name === "E2E Knelpunten",
+  );
+  const existing = categories.find(
+    (category: { name: string }) => category.name === "E2E Verkeer",
+  );
+  const rows = await (
+    await request.get("/api/issues?fields=id,title,legend_id,description")
+  ).json();
+  const crossing = rows.find(
+    (row: { title: string }) => row.title === "E2E Kruising",
+  );
+  const roundabout = rows.find(
+    (row: { title: string }) => row.title === "E2E Rotonde",
+  );
+  expect(crossing.legend_id).toBe(created.id);
+  expect(crossing.description).toContain('src="data:image/jpeg;base64,');
+  expect(roundabout.legend_id).toBe(existing.id);
+  // Both issues carry the import tag, so the import can be found afterwards.
+  const tagged = await (
+    await request.get(`/api/issues?fields=id&tag=${tag}`)
+  ).json();
+  expect(tagged.map((row: { id: number }) => row.id).sort()).toEqual(
+    [crossing.id, roundabout.id].sort(),
+  );
+});

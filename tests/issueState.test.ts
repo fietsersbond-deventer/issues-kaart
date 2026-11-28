@@ -10,6 +10,8 @@ const data = ref<unknown[] | null>([]),
   selected = ref<unknown>(null),
   status = ref("pending");
 const refresh = vi.fn(),
+  refreshCategories = vi.fn(),
+  refreshTagList = vi.fn(),
   unsubscribe = vi.fn();
 const socketStatus = ref("OPEN");
 const isEditing = ref(false);
@@ -30,7 +32,12 @@ beforeEach(() => {
   status.value = "pending";
   vi.clearAllMocks();
   vi.stubGlobal("storeToRefs", (x: unknown) => x);
-  vi.stubGlobal("useCategories", () => ({ categories }));
+  refreshCategories.mockResolvedValue(undefined);
+  refreshTagList.mockResolvedValue(undefined);
+  vi.stubGlobal("useCategories", () => ({
+    categories,
+    refresh: refreshCategories,
+  }));
   vi.stubGlobal("useSelectedIssue", () => ({ issue: selected }));
   vi.stubGlobal("useIsEditing", () => ({ isEditing }));
   vi.stubGlobal("useFetch", () => ({ data, status, refresh }));
@@ -43,7 +50,10 @@ beforeEach(() => {
       return unsubscribe;
     },
   }));
-  vi.stubGlobal("useTagsApi", () => ({ tags: { value: [] } }));
+  vi.stubGlobal("useTagsApi", () => ({
+    tags: { value: [] },
+    refreshTags: refreshTagList,
+  }));
 });
 afterEach(() => {
   stores.splice(0).forEach((s) => s.$dispose());
@@ -107,6 +117,14 @@ it("applies created/modified/deleted notifications and upserts unseen modificati
   message("issue-deleted", { id: 1 });
   expect(store.issues.map((x) => x.id)).toEqual([2]);
 });
+it("reloads categories, tags and then issues after a bulk import", async () => {
+  await setup();
+  message("issues-imported", { count: 3, createdBy: "Me", createdByUserId: 1 });
+  expect(refreshCategories).toHaveBeenCalledTimes(1);
+  expect(refreshTagList).toHaveBeenCalledTimes(1);
+  expect(refresh).not.toHaveBeenCalled();
+  await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+});
 it("keeps a single live preview per selected draft or saved issue and removes its subscription on unmount", async () => {
   const store = await setup();
   selected.value = { title: "Draft", tags: [], description: "text" };
@@ -155,6 +173,18 @@ it("shows short own-action notifications, attributed remote notifications and ig
       "info",
     );
   }
+  // The importer sees the result page; others get one attributed message.
+  message("issues-imported", { count: 3, createdBy: "Me", createdByUserId: 1 });
+  expect(showMessage).toHaveBeenCalledTimes(3);
+  message("issues-imported", {
+    count: 3,
+    createdBy: "Other",
+    createdByUserId: 2,
+  });
+  expect(showPersistent).toHaveBeenLastCalledWith(
+    "3 onderwerpen geïmporteerd door Other",
+    "info",
+  );
   authenticated.value = "unauthenticated";
   message("issue-deleted", { id: 1, title: "Issue", deletedByUserId: 1 });
   expect(showMessage).toHaveBeenCalledTimes(3);

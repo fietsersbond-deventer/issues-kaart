@@ -75,7 +75,7 @@ it("creates category form data and regenerates icon previews, with a canvas fall
   expect(wrapper.emitted("save")?.at(-1)?.[0]).toMatchObject({
     name: "New",
     description: "Description",
-    color: "#2196F3",
+    color: "#FFD503",
   });
   await wrapper.setProps({ legend });
   await flushPromises();
