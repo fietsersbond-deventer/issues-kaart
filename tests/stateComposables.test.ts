@@ -218,3 +218,72 @@ it("sets the page title and preserves the last nonempty title", async () => {
   expect(result.currentTitle.value).toBe("Issue");
   expect(computed(() => result.currentTitle.value).value).toBe("Issue");
 });
+it("keeps the print selection in sessionStorage, shared between users of the composable", async () => {
+  const { usePrintSelection } =
+    await import("../app/composables/usePrintSelection");
+  const { withSetup } = await import("./helpers/vue");
+  sessionStorage.clear();
+  const { value: list, wrapper } = withSetup(usePrintSelection);
+  await nextTick();
+  expect(list.isSelecting.value).toBe(false);
+  list.startSelecting();
+  list.toggleSelected(3);
+  list.addSelected([1, 3, 2]);
+  list.toggleSelected(1);
+  await nextTick();
+  expect(list.selectedIds.value).toEqual([3, 2]);
+  expect(JSON.parse(sessionStorage.getItem("print-selected-ids")!)).toEqual([
+    3, 2,
+  ]);
+  wrapper.unmount();
+
+  // e.g. the print page, or the list after a reload
+  const { value: printPage } = withSetup(usePrintSelection);
+  await nextTick();
+  expect(printPage.isSelecting.value).toBe(true);
+  expect(printPage.selectedIds.value).toEqual([3, 2]);
+  printPage.clearSelected();
+  expect(printPage.selectedIds.value).toEqual([]);
+  printPage.addSelected([5]);
+  printPage.stopSelecting();
+  await nextTick();
+  expect(printPage.isSelecting.value).toBe(false);
+  expect(printPage.selectedIds.value).toEqual([]);
+});
+it("keeps the chosen print columns in localStorage, in print order", async () => {
+  const { usePrintColumns } =
+    await import("../app/composables/usePrintColumns");
+  const { withSetup } = await import("./helpers/vue");
+  localStorage.clear();
+  const { value: first, wrapper } = withSetup(usePrintColumns);
+  await nextTick();
+  expect(first.columns.value).toEqual(["image", "title", "qr"]);
+  first.columns.value = ["notes", "id", "title"];
+  expect(first.columns.value).toEqual(["id", "title", "notes"]);
+  expect(first.isVisible("notes")).toBe(true);
+  expect(first.isVisible("image")).toBe(false);
+  wrapper.unmount();
+
+  localStorage.setItem("print-columns", JSON.stringify(["map", "unknown"]));
+  const { value: second } = withSetup(usePrintColumns);
+  await nextTick();
+  expect(second.columns.value).toEqual(["map"]);
+});
+it("keeps the print orientation in localStorage, landscape by default", async () => {
+  const { usePrintOrientation } =
+    await import("../app/composables/usePrintOrientation");
+  const { withSetup } = await import("./helpers/vue");
+  localStorage.clear();
+  const { value: first, wrapper } = withSetup(usePrintOrientation);
+  await nextTick();
+  expect(first.orientation.value).toBe("landscape");
+  first.orientation.value = "portrait";
+  await nextTick();
+  expect(localStorage.getItem("print-orientation")).toBe("portrait");
+  wrapper.unmount();
+
+  localStorage.setItem("print-orientation", "sideways");
+  const { value: second } = withSetup(usePrintOrientation);
+  await nextTick();
+  expect(second.orientation.value).toBe("landscape");
+});

@@ -25,6 +25,8 @@
       <v-data-table-server
         v-model:page="page"
         v-model:items-per-page="itemsPerPage"
+        v-model="selected"
+        :show-select="selectable"
         :headers="headers"
         :items="items"
         :items-length="totalItems"
@@ -36,7 +38,7 @@
         @click:row="onRowClick"
       >
         <template #item.imageUrl="{ item }">
-          <NuxtLink :to="issueURL(item)">
+          <component :is="linkComponent" v-bind="linkAttrs(item)">
             <v-img
               v-if="item.imageUrl"
               :src="thumbnailUrl(item.imageUrl)"
@@ -53,22 +55,22 @@
                 </div>
               </template>
             </v-img>
-          </NuxtLink>
+          </component>
         </template>
 
         <template #item.legend="{ item }">
-          <NuxtLink :to="issueURL(item)">
+          <component :is="linkComponent" v-bind="linkAttrs(item)">
             <div class="legend-grid">
               <CategoryChip v-if="item.legend" :legend="item.legend" />
               <Tag v-for="tag in item.tags" :key="tag" :tag="getTag(tag)" />
             </div>
-          </NuxtLink>
+          </component>
         </template>
 
         <!-- emphasizeFilter escapes all result text before adding mark tags. -->
         <!-- eslint-disable vue/no-v-html -->
         <template #item.title="{ item }">
-          <NuxtLink :to="issueURL(item)">
+          <component :is="linkComponent" v-bind="linkAttrs(item)">
             <template v-if="item.snippets?.length">
               <b v-html="emphasizeFilter(item.title)" />
               <div
@@ -90,7 +92,7 @@
             <template v-else>
               <span v-html="emphasizeFilter(item.title)" />
             </template>
-          </NuxtLink>
+          </component>
         </template>
         <!-- eslint-enable vue/no-v-html -->
 
@@ -181,6 +183,7 @@
 
 <script setup lang="ts">
 import { useMediaQuery } from "@vueuse/core";
+import { NuxtLink } from "#components";
 import CategoryChip from "~/components/CategoryChip.vue";
 import type { IssueEditAvailability } from "~/composables/useIssueLocks";
 import type { IssueSearchItem } from "~/types/IssueSearch";
@@ -188,11 +191,14 @@ import { thumbnailUrl } from "~/utils/thumbnailUrl";
 
 type IssueSearchRow = IssueSearchItem & IssueEditAvailability;
 
-defineProps<{
+// selectable: checkboxes per row for the print selection; links and actions are
+// left out then, so a click on a row only toggles its checkbox.
+const { selectable = false } = defineProps<{
   items: IssueSearchRow[];
   totalItems: number;
   pending: boolean;
   emphasizeFilter: (text: string) => string;
+  selectable?: boolean;
 }>();
 const emit = defineEmits<{
   rowClick: [event: Event, item: IssueSearchItem];
@@ -205,6 +211,7 @@ const emit = defineEmits<{
 const page = defineModel<number>("page", { required: true });
 const itemsPerPage = defineModel<number>("itemsPerPage", { required: true });
 const search = defineModel<string>("search", { required: true });
+const selected = defineModel<number[]>("selected", { default: () => [] });
 const { status } = useAuth();
 const { getTag } = useTagsApi();
 const isPrinting = useMediaQuery("print");
@@ -214,7 +221,7 @@ const headers = computed(() => {
     { title: "", value: "title", sortable: false },
     { title: "", value: "legend", sortable: false, width: "20em" },
   ];
-  if (status.value === "authenticated") {
+  if (status.value === "authenticated" && !selectable) {
     columns.push({
       title: "Acties",
       value: "actions",
@@ -228,6 +235,11 @@ const headers = computed(() => {
 const filterQuery = useFilterQuery();
 function issueURL(item: IssueSearchItem) {
   return { path: `/kaart/${item.slug || item.id}`, query: filterQuery.value };
+}
+
+const linkComponent = computed(() => (selectable ? "div" : NuxtLink));
+function linkAttrs(item: IssueSearchItem) {
+  return selectable ? {} : { to: issueURL(item) };
 }
 
 function onRowClick(event: Event, { item }: { item: IssueSearchItem }) {

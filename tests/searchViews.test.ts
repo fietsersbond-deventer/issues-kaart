@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { defineComponent, h, reactive, ref, watch } from "vue";
+import { computed, defineComponent, h, reactive, ref, watch } from "vue";
 import { vueGlobals } from "./helpers/vue";
 import { Slot, uiStubs } from "./helpers/ui";
 import Search from "../app/components/map/Search.vue";
@@ -12,6 +12,13 @@ import IssueEditDialog from "../app/components/IssueEditDialog.vue";
 import IssueDeleteDialog from "../app/components/IssueDeleteDialog.vue";
 import IssueInfoDialog from "../app/components/IssueInfoDialog.vue";
 import IssueCommentsDialog from "../app/components/IssueCommentsDialog.vue";
+import PrintSelectionBar from "../app/components/PrintSelectionBar.vue";
+import { usePrintSelection } from "../app/composables/usePrintSelection";
+import { usePrintColumns } from "../app/composables/usePrintColumns";
+import { usePrintOrientation } from "../app/composables/usePrintOrientation";
+import PrintPage from "../app/pages/lijst/afdrukken.vue";
+import QrCode from "../app/components/QrCode.vue";
+import { getContrastColor } from "../app/utils/getContrastColor";
 import { useFilter } from "../app/composables/useFilter";
 import { parseDbTimestamp } from "../app/utils/parseDbTimestamp";
 import { useFilterQuery } from "../app/composables/useFilterQuery";
@@ -79,6 +86,8 @@ beforeEach(() => {
   vi.stubGlobal("useRouter", () => router);
   vi.stubGlobal("useFilterQuery", useFilterQuery);
   vi.stubGlobal("useListQuery", useListQuery);
+  vi.stubGlobal("usePrintSelection", usePrintSelection);
+  sessionStorage.clear();
   vi.spyOn(console, "log").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -532,6 +541,380 @@ it("renders paginated issue search, enriches category/tag labels and opens the s
   expect(unsubscribe).toHaveBeenCalledTimes(1);
 });
 
+it("selects issues for printing across pages when logged in", async () => {
+  const authStatus = ref("authenticated");
+  vi.stubGlobal("useAuth", () => ({ status: authStatus, token: ref("t") }));
+  vi.stubGlobal(
+    "useFetch",
+    vi.fn().mockResolvedValue({
+      data: ref({
+        items: [
+          {
+            id: 1,
+            title: "Safe crossing",
+            legend_id: 1,
+            tags: [],
+            snippets: [],
+            imageUrl: null,
+          },
+          {
+            id: 2,
+            title: "Parking",
+            legend_id: 1,
+            tags: [],
+            snippets: [],
+            imageUrl: null,
+          },
+        ],
+        total: 12,
+      }),
+      pending: ref(false),
+      refresh: vi.fn(),
+    }),
+  );
+  const fetchIds = vi.fn().mockResolvedValue({ ids: [1, 2, 7] });
+  vi.stubGlobal("$fetch", fetchIds);
+  vi.stubGlobal("useSharedIssuesWebSocket", () => ({
+    status: ref("OPEN"),
+    subscribe: () => vi.fn(),
+  }));
+  vi.stubGlobal("useSharedAuthWebSocket", () => ({ subscribe: () => vi.fn() }));
+  vi.stubGlobal("useTagsApi", () => ({ getTag: (tag: string) => ({ tag }) }));
+  vi.stubGlobal("parseSearchTerms", parseSearchTerms);
+  vi.stubGlobal("useIssueLocks", () => ({
+    getEditAvailability: () => ({
+      isConnected: true,
+      isLockedByOther: false,
+      canEdit: true,
+    }),
+  }));
+  vi.stubGlobal("useIssueEditLock", vi.fn());
+  vi.stubGlobal("useIssuesMethods", () => ({}));
+  const showError = vi.fn();
+  vi.stubGlobal("useSnackbar", () => ({ showError }));
+  vi.stubGlobal("useCategories", () => ({ categories: ref([]) }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useFilter", useFilter);
+  vi.stubGlobal("useMatomoTracking", () => ({ trackSiteSearch: vi.fn() }));
+  const Table = defineComponent({
+    name: "ServerTableBoundary",
+    props: ["items", "headers", "showSelect", "modelValue"],
+    emits: ["click:row", "update:modelValue"],
+    template:
+      '<div><div v-for="item in items" :key="item.id"><slot name="item.title" :item="item" /></div></div>',
+  });
+  const wrapper = mount(
+    defineComponent({
+      components: { List },
+      template: "<Suspense><List /></Suspense>",
+    }),
+    {
+      global: {
+        components: { IssueSearchTable, PrintSelectionBar },
+        stubs: {
+          ...stubs,
+          VDataTableServer: Table,
+          IssueEditDialog: true,
+          IssueDeleteDialog: true,
+          IssueInfoDialog: true,
+          IssueCommentsDialog: true,
+        },
+      },
+    },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+  const table = wrapper.getComponent(Table);
+  const button = (text: string) =>
+    wrapper.findAll("button").find((b) => b.text().includes(text))!;
+  // the list's own button, which starts selecting
+  const startButton = () =>
+    wrapper
+      .findAll("button")
+      .find(
+        (b) =>
+          b.text().includes("Afdrukken") &&
+          !b.element.closest(".print-selection-bar"),
+      );
+  expect(table.props("showSelect")).toBe(false);
+  expect(wrapper.findComponent(PrintSelectionBar).exists()).toBe(false);
+  // normally titles link to the issue
+  expect(wrapper.find("a").exists()).toBe(true);
+
+  await startButton()!.trigger("click");
+  await flushPromises();
+  expect(table.props("showSelect")).toBe(true);
+  expect(startButton()).toBeUndefined();
+  // no links or actions column while selecting: a row click selects
+  expect(wrapper.find("a").exists()).toBe(false);
+  expect(
+    table.props("headers").map((h: { value: string }) => h.value),
+  ).not.toContain("actions");
+  expect(button("Afdrukken").attributes("disabled")).toBeDefined();
+  table.vm.$emit("click:row", new Event("click"), { item: { id: 2 } });
+  await flushPromises();
+  expect(globalThis.navigateTo).not.toHaveBeenCalled();
+  expect(table.props("modelValue")).toEqual([2]);
+  // checkboxes; the selection is kept over pages
+  table.vm.$emit("update:modelValue", [2, 1]);
+  await flushPromises();
+  route.query = { page: "2" };
+  await flushPromises();
+  expect(wrapper.text()).toContain("2 geselecteerd");
+
+  route.query = { s: "fiets", cat: "1" };
+  await flushPromises();
+  await button("Alle 12 resultaten selecteren").trigger("click");
+  await flushPromises();
+  expect(fetchIds).toHaveBeenCalledWith("/api/issues/search", {
+    query: { idsOnly: "1", search: "fiets", cat: "1" },
+    headers: { Authorization: "Bearer t" },
+  });
+  expect(table.props("modelValue")).toEqual([2, 1, 7]);
+  fetchIds.mockRejectedValueOnce(new Error("offline"));
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await button("Alle 12 resultaten selecteren").trigger("click");
+  await flushPromises();
+  expect(showError).toHaveBeenCalledWith(
+    "Resultaten konden niet worden geselecteerd",
+  );
+
+  await button("Afdrukken").trigger("click");
+  expect(globalThis.navigateTo).toHaveBeenCalledWith("/lijst/afdrukken");
+  await button("Selectie wissen").trigger("click");
+  await flushPromises();
+  expect(wrapper.text()).toContain("0 geselecteerd");
+  table.vm.$emit("update:modelValue", [1]);
+  await button("Annuleren").trigger("click");
+  await flushPromises();
+  expect(table.props("showSelect")).toBe(false);
+  expect(table.props("modelValue")).toEqual([]);
+  table.vm.$emit("click:row", new Event("click"), {
+    item: { id: 2, slug: "parking" },
+  });
+  expect(globalThis.navigateTo).toHaveBeenLastCalledWith({
+    path: "/kaart/parking",
+    query: { cat: "1" },
+  });
+
+  // selecting is not available when logged out
+  await startButton()!.trigger("click");
+  authStatus.value = "unauthenticated";
+  await flushPromises();
+  expect(table.props("showSelect")).toBe(false);
+  expect(startButton()).toBeUndefined();
+});
+const head = ref<{ value: unknown }>();
+function pageStyle() {
+  return (head.value?.value as { style: { textContent: string }[] }).style[0]!
+    .textContent;
+}
+
+function mountPrintPage(fetchIssues: ReturnType<typeof vi.fn>) {
+  vi.stubGlobal("$fetch", fetchIssues);
+  vi.stubGlobal("definePageMeta", vi.fn());
+  vi.stubGlobal("usePrintColumns", usePrintColumns);
+  vi.stubGlobal("usePrintOrientation", usePrintOrientation);
+  vi.stubGlobal("useHead", (input: () => unknown) => {
+    head.value = computed(input);
+  });
+  vi.stubGlobal("getContrastColor", getContrastColor);
+  vi.stubGlobal("useAuth", () => ({ token: ref("Bearer t") }));
+  vi.stubGlobal("useTagsApi", () => ({
+    getTag: (tag: string) => ({ tag, label: tag === "bike" ? "Fiets" : "" }),
+  }));
+  vi.stubGlobal("useCategories", () => ({
+    categories: ref([{ id: 1, name: "Routes", color: "#ffffff" }]),
+  }));
+  vi.stubGlobal("storeToRefs", (x: unknown) => x);
+  vi.stubGlobal("useRuntimeConfig", () => ({
+    public: { organization: { name: "Fietsersbond Deventer" } },
+  }));
+  vi.stubGlobal("useRequestURL", () => new URL("https://example.test/lijst"));
+  const wrapper = mount(PrintPage, {
+    global: {
+      components: { QrCode },
+      stubs: {
+        ...stubs,
+        VChipGroup: defineComponent({
+          name: "VChipGroup",
+          props: ["modelValue"],
+          emits: ["update:modelValue"],
+          template: "<div><slot /></div>",
+        }),
+        VChip: Slot,
+        VBtnToggle: defineComponent({
+          name: "VBtnToggle",
+          props: ["modelValue"],
+          emits: ["update:modelValue"],
+          template: "<div><slot /></div>",
+        }),
+        VProgressLinear: true,
+        VProgressCircular: true,
+      },
+    },
+  });
+  wrappers.push(wrapper);
+  return wrapper;
+}
+
+it("prints the selected issues with the chosen columns", async () => {
+  localStorage.clear();
+  sessionStorage.setItem("print-selected-ids", "[2,1]");
+  const fetchIssues = vi.fn().mockResolvedValue([
+    {
+      id: 2,
+      slug: "parking",
+      title: "Parking",
+      legend_id: 1,
+      tags: ["bike", "cafe"],
+      imageUrl: "/api/issues/2/image?v=1",
+      updated_at: "2026-11-20 10:00:00",
+      excerpt: "Fietsen staan overal",
+      geometry: { type: "Point", coordinates: [6.1, 52.2] },
+    },
+    {
+      id: 1,
+      slug: "",
+      title: "Safe crossing",
+      legend_id: 9,
+      tags: [],
+      imageUrl: null,
+      updated_at: "invalid",
+      excerpt: "",
+      geometry: { type: "Point", coordinates: [6.1, 52.2] },
+    },
+  ]);
+  const renderMaps = vi.fn(
+    async (
+      issues: { id: number; legend?: { name: string } }[],
+      { onImage }: { onImage: (id: number, url: string) => void },
+    ) => {
+      expect(issues[0]!.legend?.name).toBe("Routes");
+      onImage(2, "data:image/png;base64,map");
+    },
+  );
+  vi.stubGlobal("renderIssueMapImages", renderMaps);
+  const wrapper = mountPrintPage(fetchIssues);
+  await flushPromises();
+  expect(fetchIssues).toHaveBeenCalledWith("/api/issues/print", {
+    query: { ids: "2,1" },
+    headers: { Authorization: "Bearer t" },
+  });
+  expect(wrapper.get("h1").text()).toBe("Fietsersbond Deventer – Onderwerpen");
+  // landscape by default; portrait can be chosen and is remembered
+  expect(pageStyle()).toContain("size: A4 landscape");
+  expect(wrapper.find(".print-sheet--landscape").exists()).toBe(true);
+  wrapper
+    .getComponent({ name: "VBtnToggle" })
+    .vm.$emit("update:modelValue", "portrait");
+  await flushPromises();
+  expect(pageStyle()).toContain("size: A4 portrait");
+  expect(wrapper.find(".print-sheet--portrait").exists()).toBe(true);
+  expect(localStorage.getItem("print-orientation")).toBe("portrait");
+  expect(wrapper.text()).toContain("2 onderwerpen");
+  // default columns
+  expect(wrapper.findAll("th").map((th) => th.text())).toEqual([
+    "Foto",
+    "Onderwerp",
+    "QR-code",
+  ]);
+  const rows = wrapper.findAll("tbody tr");
+  expect(rows[0]!.text()).toContain("Parking");
+  expect(rows[0]!.text()).toContain("Gewijzigd op 20 november 2026");
+  expect(rows[0]!.get(".print-excerpt").text()).toBe("Fietsen staan overal");
+  // title, date, excerpt
+  expect(
+    [...rows[0]!.get(".print-col-title a").element.children].map(
+      (child) => child.className || child.tagName,
+    ),
+  ).toEqual(["STRONG", "print-date", "print-excerpt"]);
+  expect(rows[1]!.find(".print-excerpt").exists()).toBe(false);
+  // every cell links to the issue, without showing the address
+  expect(rows[0]!.text()).not.toContain("https://");
+  expect(
+    rows[0]!.findAll("td").map((td) => td.get("a").attributes("href")),
+  ).toEqual(Array(3).fill("https://example.test/kaart/parking"));
+  expect(rows[1]!.get("a").attributes("href")).toBe(
+    "https://example.test/kaart/1",
+  );
+  expect(rows[0]!.get("img").attributes("src")).toBe(
+    "/api/issues/2/image?v=1&width=300&height=300",
+  );
+  expect(rows[0]!.get(".qr-code").attributes("aria-label")).toBe(
+    "QR-code: https://example.test/kaart/parking",
+  );
+  expect(rows[0]!.get(".qr-code svg").exists()).toBe(true);
+  expect(renderMaps).not.toHaveBeenCalled();
+
+  wrapper
+    .getComponent({ name: "VChipGroup" })
+    .vm.$emit("update:modelValue", ["notes", "id", "categories", "map"]);
+  await flushPromises();
+  expect(wrapper.findAll("th").map((th) => th.text())).toEqual([
+    "Nummer",
+    "Categorie en tags",
+    "Kaartje",
+    "Notities",
+  ]);
+  expect(JSON.parse(localStorage.getItem("print-columns")!)).toEqual([
+    "notes",
+    "id",
+    "categories",
+    "map",
+  ]);
+  expect(rows[0]!.get(".print-category").text()).toBe("Routes");
+  expect(rows[0]!.findAll(".print-tag").map((tag) => tag.text())).toEqual([
+    "Fiets",
+    "cafe",
+  ]);
+  expect(rows[1]!.find(".print-category").exists()).toBe(false);
+  // the notes stay free for writing
+  expect(rows[0]!.get(".print-col-notes").find("a").exists()).toBe(false);
+  expect(renderMaps).toHaveBeenCalledTimes(1);
+  expect(rows[0]!.get(".print-col-map img").attributes("src")).toBe(
+    "data:image/png;base64,map",
+  );
+  // maps are made once
+  wrapper
+    .getComponent({ name: "VChipGroup" })
+    .vm.$emit("update:modelValue", []);
+  await flushPromises();
+  wrapper
+    .getComponent({ name: "VChipGroup" })
+    .vm.$emit("update:modelValue", ["map"]);
+  await flushPromises();
+  expect(renderMaps).toHaveBeenCalledTimes(1);
+
+  // waits for the images before printing
+  const decode = vi.fn().mockRejectedValue(new Error("broken"));
+  HTMLImageElement.prototype.decode = decode;
+  const print = vi.fn();
+  vi.stubGlobal("print", print);
+  const printButton = wrapper
+    .findAll("button")
+    .find((button) => button.text().includes("Afdrukken"))!;
+  await printButton.trigger("click");
+  await flushPromises();
+  expect(decode).toHaveBeenCalled();
+  expect(print).toHaveBeenCalledTimes(1);
+});
+
+it("shows why there is nothing to print", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const renderMaps = vi.fn();
+  vi.stubGlobal("renderIssueMapImages", renderMaps);
+  const empty = mountPrintPage(vi.fn());
+  await flushPromises();
+  expect(empty.text()).toContain("Er zijn geen onderwerpen geselecteerd");
+  expect(empty.find("table").exists()).toBe(false);
+
+  sessionStorage.setItem("print-selected-ids", "[1]");
+  const failed = mountPrintPage(vi.fn().mockRejectedValue(new Error("401")));
+  await flushPromises();
+  expect(failed.text()).toContain("De onderwerpen konden niet worden geladen");
+  expect(renderMaps).not.toHaveBeenCalled();
+});
 it("handles error when fetching issue for editing", async () => {
   const response = ref({
     items: [

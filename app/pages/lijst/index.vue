@@ -1,14 +1,26 @@
 <template>
   <div>
+    <PrintSelectionBar
+      v-if="isSelectingForPrint"
+      :selected-count="selectedIds.length"
+      :total-items="totalItems"
+      :selecting-all="selectingAll"
+      @select-all="selectAllResults"
+      @clear="clearSelected"
+      @cancel="stopSelecting"
+      @print="printSelection"
+    />
     <IssueSearchTable
       v-model:page="page"
       v-model:items-per-page="itemsPerPage"
       v-model:search="search"
+      v-model:selected="selectedIds"
       :items="issues"
       :total-items="totalItems"
       :pending="pending"
       :emphasize-filter="emphasizeFilter"
-      @row-click="gotoIssue"
+      :selectable="isSelectingForPrint"
+      @row-click="onRowClick"
       @edit="openEditDialog"
       @delete="confirmDelete"
       @info="showIssueInfo"
@@ -16,6 +28,14 @@
     >
       <template #actions>
         <IssueFilter />
+        <v-btn
+          v-if="status === 'authenticated' && !isSelectingForPrint"
+          variant="text"
+          prepend-icon="mdi-printer"
+          @click="startSelecting"
+        >
+          Afdrukken
+        </v-btn>
       </template>
     </IssueSearchTable>
 
@@ -64,7 +84,7 @@ const { trackSiteSearch } = useMatomoTracking();
 const issueLocks = useIssueLocks();
 const { get: getIssue, getUpdatedBy, remove: removeIssue } = useIssuesMethods();
 const { showError } = useSnackbar();
-const { token } = useAuth();
+const { token, status } = useAuth();
 const authHeaders = computed(() => {
   if (!token.value) return undefined;
   // Remove "Bearer " if it's already there, then add it back
@@ -338,6 +358,46 @@ const issues = computed(() =>
   })),
 );
 const totalItems = computed(() => searchResponse.value?.total ?? 0);
+
+// Printing a selection of issues is only available when logged in.
+const {
+  isSelecting,
+  selectedIds,
+  startSelecting,
+  stopSelecting,
+  toggleSelected,
+  addSelected,
+  clearSelected,
+} = usePrintSelection();
+const isSelectingForPrint = computed(
+  () => status.value === "authenticated" && isSelecting.value,
+);
+const selectingAll = ref(false);
+
+async function selectAllResults() {
+  selectingAll.value = true;
+  try {
+    const { ids } = await $fetch<{ ids: number[] }>("/api/issues/search", {
+      query: { idsOnly: "1", search: urlSearch.value, ...filterQuery.value },
+      headers: authHeaders.value,
+    });
+    addSelected(ids);
+  } catch (error) {
+    console.error("Failed to select all results:", error);
+    showError("Resultaten konden niet worden geselecteerd");
+  } finally {
+    selectingAll.value = false;
+  }
+}
+
+function printSelection() {
+  navigateTo("/lijst/afdrukken");
+}
+
+function onRowClick(event: Event, item: IssueSearchItem) {
+  if (isSelectingForPrint.value) toggleSelected(item.id);
+  else gotoIssue(event, item);
+}
 
 function gotoIssue(_event: Event, item: IssueSearchItem) {
   navigateTo({
