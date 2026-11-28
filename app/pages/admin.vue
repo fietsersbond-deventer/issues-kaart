@@ -5,8 +5,17 @@
       permanent
       class="noprint"
       :width="256"
+      :rail="mobile && !expanded"
     >
-      <v-list>
+      <v-list v-if="mobile">
+        <v-list-item
+          :prepend-icon="expanded ? 'mdi-chevron-left' : 'mdi-menu'"
+          :title="expanded ? 'Inklappen' : ''"
+          :aria-label="expanded ? 'Menu inklappen' : 'Menu uitklappen'"
+          @click="expanded = !expanded"
+        />
+      </v-list>
+      <v-list @click="expanded = false">
         <v-list-item
           prepend-icon="mdi-palette"
           title="Categorieën"
@@ -20,7 +29,7 @@
           to="/admin/texts"
         />
       </v-list>
-      <v-list>
+      <v-list @click="expanded = false">
         <v-list-item
           v-if="isAdmin"
           prepend-icon="mdi-account-group"
@@ -57,4 +66,8 @@ useTitle("Beheer");
 const { isAdmin } = useRoles();
 
 const isPrinting = useMediaQuery("print");
+
+// On mobile the menu collapses to an icon rail that can be expanded.
+const { mobile } = useVDisplay();
+const expanded = ref(false);
 </script>
