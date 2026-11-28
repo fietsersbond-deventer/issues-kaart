@@ -7,7 +7,7 @@
       :show-first-last-page="!mobile"
       :density="mobile ? 'compact' : 'default'"
     />
-    <div class="table-pagination__size">
+    <div v-if="!mobile" class="table-pagination__size">
       <span>{{ range }}</span>
       <v-select
         v-model="itemsPerPage"
