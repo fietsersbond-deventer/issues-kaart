@@ -628,23 +628,16 @@ it("selects issues for printing across pages when logged in", async () => {
   const button = (text: string) =>
     wrapper.findAll("button").find((b) => b.text().includes(text))!;
   // the list's own button, which starts selecting
-  const startButton = () =>
-    wrapper
-      .findAll("button")
-      .find(
-        (b) =>
-          b.text().includes("Afdrukken") &&
-          !b.element.closest(".print-selection-bar"),
-      );
+  const startButton = () => wrapper.find('button[aria-label="Afdrukken"]');
   expect(table.props("showSelect")).toBe(false);
   expect(wrapper.findComponent(PrintSelectionBar).exists()).toBe(false);
   // normally titles link to the issue
   expect(wrapper.find("a").exists()).toBe(true);
 
-  await startButton()!.trigger("click");
+  await startButton().trigger("click");
   await flushPromises();
   expect(table.props("showSelect")).toBe(true);
-  expect(startButton()).toBeUndefined();
+  expect(startButton().exists()).toBe(false);
   // no links or actions column while selecting: a row click selects
   expect(wrapper.find("a").exists()).toBe(false);
   expect(
@@ -698,11 +691,11 @@ it("selects issues for printing across pages when logged in", async () => {
   });
 
   // selecting is not available when logged out
-  await startButton()!.trigger("click");
+  await startButton().trigger("click");
   authStatus.value = "unauthenticated";
   await flushPromises();
   expect(table.props("showSelect")).toBe(false);
-  expect(startButton()).toBeUndefined();
+  expect(startButton().exists()).toBe(false);
 });
 const head = ref<{ value: unknown }>();
 function pageStyle() {

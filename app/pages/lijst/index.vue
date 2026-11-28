@@ -30,11 +30,17 @@
         <IssueFilter />
         <v-btn
           v-if="status === 'authenticated' && !isSelectingForPrint"
+          icon="mdi-printer"
           variant="text"
-          prepend-icon="mdi-printer"
+          aria-label="Afdrukken"
           @click="startSelecting"
         >
-          Afdrukken
+          <v-icon icon="mdi-printer" />
+          <v-tooltip
+            activator="parent"
+            location="top"
+            text="Onderwerpen selecteren om af te drukken"
+          />
         </v-btn>
       </template>
     </IssueSearchTable>

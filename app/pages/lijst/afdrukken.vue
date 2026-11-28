@@ -10,6 +10,7 @@
       </v-btn>
       <v-chip-group
         v-model="columns"
+        class="print-choice"
         multiple
         filter
         column
@@ -20,12 +21,14 @@
           :key="column.value"
           :value="column.value"
           size="small"
+          variant="outlined"
         >
           {{ column.title }}
         </v-chip>
       </v-chip-group>
       <v-btn-toggle
         v-model="orientation"
+        class="print-choice"
         mandatory
         density="compact"
         variant="outlined"
@@ -305,6 +308,14 @@ async function print() {
   padding: 16px;
 }
 
+/* Chosen columns and orientation in yellow, like the active page button. */
+.print-choice :deep(.v-chip--selected),
+.print-choice :deep(.v-btn--active) {
+  background-color: var(--fietsersbond-geel);
+  border-color: transparent;
+  color: rgb(var(--v-theme-on-surface));
+}
+
 /* A4 minus the 12mm margins */
 .print-sheet {
   max-width: 100%;
@@ -424,6 +435,11 @@ async function print() {
 }
 
 @media print {
+  /* Vuetify's d-print-none has no !important and loses to display: flex above. */
+  .print-toolbar {
+    display: none;
+  }
+
   .print-page {
     padding: 0;
   }
